@@ -1,10 +1,24 @@
-import React, { useRef } from 'react';
-import {
-  Button, ButtonGroup, Slider, Container, Box, Typography, AppBar, Toolbar, IconButton
-} from '@mui/material';
-import { Menu as MenuIcon } from '@mui/icons-material';
+import React, { useRef, useState } from 'react';
+import { Button, ButtonGroup, Slider, Container, Box, Typography, AppBar, Toolbar, IconButton, Drawer, List, ListItem, CssBaseline, Grid, Avatar } from '@mui/material';
+import { Menu as MenuIcon, PhotoCamera, FiberManualRecord } from '@mui/icons-material';
+import { createTheme, ThemeProvider } from '@mui/material/styles';
+import XYZControls from './XYZControls';  // Assuming XYZControls is in the same directory
+
+const darkTheme = createTheme({
+  palette: {
+    mode: 'dark',
+  },
+  typography: {
+    fontFamily: 'Roboto',
+    fontWeightBold: 700,
+  },
+});
+
+
+
 
 function App() {
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const videoRef = useRef(null);
 
   async function startStream() {
@@ -55,7 +69,71 @@ function App() {
       console.error("Error moving stage:", error);
     }
   }
+  
+  return (
+    <ThemeProvider theme={darkTheme}>
+            <CssBaseline />
+            <AppBar position="fixed">
+                <Toolbar>
+                    <IconButton edge="start" color="inherit" aria-label="menu" onClick={() => setDrawerOpen(!drawerOpen)}>
+                        <MenuIcon />
+                    </IconButton>
+                    <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 'bold' }}>
+                        Microscope Control
+                    </Typography>
+                    <Avatar alt="UC2" src="/path_to_your_logo.png" />
+                </Toolbar>
+            </AppBar>
+            <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
+                <List>
+                    {['My Collection', 'Connections', 'Devices', 'Workflows', 'Remote Demo', 'Notifications'].map((text) => (
+                        <ListItem button key={text}>
+                            <Typography variant="h6" fontWeight="bold">{text}</Typography>
+                        </ListItem>
+                    ))}
+                </List>
+            </Drawer>        <Container component="main" sx={{ flexGrow: 1, p: 3, pt: 10 }}>
+            <Typography variant="h6" gutterBottom>
+                Video Display
+            </Typography>
+            <video width={640} height={480} autoPlay ref={videoRef}></video>
 
+            <Box mt={5} mb={5}>
+                <Typography variant="h6" gutterBottom>
+                    XYZ Controls
+                </Typography>
+            </Box>
+            <Box mb={5}>
+                <XYZControls />
+              </Box>          
+            <Box mb={5}>
+                <Typography variant="h6" gutterBottom>
+                    Illumination
+                </Typography>
+                <Slider defaultValue={30} aria-labelledby="continuous-slider" />
+            </Box>
+
+            <Box mb={5}>
+                <Typography variant="h6" gutterBottom>
+                    Recording
+                </Typography>
+                <ButtonGroup variant="contained" color="primary" aria-label="Recording control buttons">
+                    <Button onClick={startStream}><PhotoCamera /></Button>
+                    <Button><FiberManualRecord /></Button>
+                </ButtonGroup>
+            </Box>
+        </Container>
+        <Box component="footer" p={2} mt={5} bgcolor="background.paper">
+                <Typography variant="h6" align="center" fontWeight="bold">
+                    Your Footer Text Here
+                </Typography>
+        </Box>
+    </ThemeProvider>
+);
+}
+
+
+/*
   return (
     <Container maxWidth="">
       <AppBar position="static">
@@ -78,7 +156,6 @@ function App() {
 
       <ButtonGroup variant="contained" color="primary" aria-label="image acquisition buttons">
         <Button onClick={startStream}>Start</Button>
-        {/*... other buttons ...*/}
       </ButtonGroup>
 
       <Box mb={5}>
@@ -93,10 +170,9 @@ function App() {
           ))}
         </ButtonGroup>
       </Box>
-
-      {/*... other components ...*/}
     </Container>
   );
 }
+*/
 
 export default App;
