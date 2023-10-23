@@ -97,6 +97,15 @@ function App() {
                 Video Display
             </Typography>
             <video width={640} height={480} autoPlay ref={videoRef}></video>
+            <Box mb={5}>
+                <Typography variant="h6" gutterBottom>
+                    Recording
+                </Typography>
+                <ButtonGroup variant="contained" color="primary" aria-label="Recording control buttons">
+                    <Button onClick={startStream}><PhotoCamera /></Button>
+                    <Button><FiberManualRecord /></Button>
+                </ButtonGroup>
+            </Box>
 
             <Box mt={5} mb={5}>
                 <Typography variant="h6" gutterBottom>
@@ -113,15 +122,6 @@ function App() {
                 <Slider defaultValue={30} aria-labelledby="continuous-slider" />
             </Box>
 
-            <Box mb={5}>
-                <Typography variant="h6" gutterBottom>
-                    Recording
-                </Typography>
-                <ButtonGroup variant="contained" color="primary" aria-label="Recording control buttons">
-                    <Button onClick={startStream}><PhotoCamera /></Button>
-                    <Button><FiberManualRecord /></Button>
-                </ButtonGroup>
-            </Box>
         </Container>
         <Box component="footer" p={2} mt={5} bgcolor="background.paper">
                 <Typography variant="h6" align="center" fontWeight="bold">

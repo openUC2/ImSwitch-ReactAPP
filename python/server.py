@@ -62,8 +62,8 @@ class VideoTransformTrack(MediaStreamTrack):
         new_frame.time_base = fractions.Fraction(1, 1000)
         return new_frame
     
-@app.post("/start_stream/")
-async def start_stream(offer: RTCSessionDescription):
+@app.post("/request-offer")
+async def request_offer():
     pc = RTCPeerConnection()
     pc_id = "PeerConnection(%s)" % uuid.uuid4()
     pcs.add(pc)
