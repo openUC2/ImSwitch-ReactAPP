@@ -1,6 +1,14 @@
-# Getting Started with Create React App
+# React Frontend for ImSwitch
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+
+This is a first attempt to control an ImSwitch-controlled microscope using the browser using WebRTC implemented in AIORTC.
+
+# Showcase
+
+![](./IMAGES/screencast.gif)
+
+
 
 ## Available Scripts
 
@@ -30,6 +38,10 @@ Your app is ready to be deployed!
 See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
 
 ### `npm run eject`
+
+### `python server.py`
+
+start the server that provides the stream and the control endpoints for accessing the stage and illumination values. 
 
 **Note: this is a one-way operation. Once you `eject`, you can't go back!**
 
