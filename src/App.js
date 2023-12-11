@@ -1,137 +1,192 @@
-import React, { useRef, useState } from 'react';
-import { Button, ButtonGroup, Slider, Container, Box, Typography, AppBar, Toolbar, IconButton, Drawer, List, ListItem, CssBaseline, Grid, Avatar } from '@mui/material';
-import { Menu as MenuIcon, PhotoCamera, FiberManualRecord } from '@mui/icons-material';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
-import XYZControls from './XYZControls';  // Assuming XYZControls is in the same directory
+import React, { useRef, useEffect, useState } from "react";
+import {
+  Button,
+  ButtonGroup,
+  Slider,
+  Container,
+  Box,
+  Typography,
+  AppBar,
+  Toolbar,
+  IconButton,
+  Drawer,
+  List,
+  ListItem,
+  CssBaseline,
+  Grid,
+  Avatar,
+} from "@mui/material";
+import {
+  Menu as MenuIcon,
+  PlayArrow,
+  Stop,
+  PhotoCamera,
+  FiberManualRecord,
+} from "@mui/icons-material";
+import { createTheme, ThemeProvider } from "@mui/material/styles";
+import XYZControls from "./XYZControls"; // Assuming XYZControls is in the same directory
 
 const darkTheme = createTheme({
   palette: {
-    mode: 'dark',
+    mode: "dark",
   },
   typography: {
-    fontFamily: 'Roboto',
+    fontFamily: "Roboto",
     fontWeightBold: 700,
   },
 });
-
-
-
+const hostIP = "192.168.2.223";
 
 function App() {
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const videoRef = useRef(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [streamUrl, setStreamUrl] = useState("");
+  const [isChecked, setIsChecked] = useState(false);
+  const [sliderValue, setSliderValue] = useState(0);
 
-  async function startStream() {
-    const pc = createPeerConnection();
+  function startStream() {
+    // Replace with the IP address of the host system
 
-    // Request an offer from the server
-    const response = await fetch('http://localhost:8080/request-offer', { method: 'POST' });
-    const offer = await response.json();
-    await pc.setRemoteDescription(new RTCSessionDescription(offer));
-
-    const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
-
-    const data = {
-      sdp: answer.sdp,
-      type: answer.type
-    };
-
-    await fetch('http://localhost:8080/answer', {
-        body: JSON.stringify(data),
-        headers: { 'Content-Type': 'application/json' },
-        method: 'POST'
-    });
+    setStreamUrl(`http://${hostIP}:8001/RecordingController/video_feeder`);
   }
 
-  function createPeerConnection() {
-    const config = {
-      sdpSemantics: 'unified-plan'
-    };
-
-    const pc = new RTCPeerConnection(config);
-
-    pc.ontrack = (event) => {
-      if (event.track.kind === 'video') {
-        videoRef.current.srcObject = event.streams[0];
-      }
-    };
-
-    return pc;
+  function pauseStream() {
+    setStreamUrl("");
   }
+
+  
 
   async function handleMove(direction) {
     try {
-      let response = await fetch(`http://localhost:8080/move_stage/${direction}`);
+      let response = await fetch(
+        `http://${hostIP}:8001/move_stage/${direction}`
+      );
       let data = await response.json();
       console.log(data);
     } catch (error) {
       console.error("Error moving stage:", error);
     }
   }
+
   
+  const handleSliderChange = async (event) => {
+    setSliderValue(event.target.value);
+
+    const url = `http://${hostIP}:8001/LaserController/setLaserValue?laserName=488%20Laser&value=${event.target.value}`;
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+    } catch (error) {
+      console.error('There has been a problem with your fetch operation: ', error);
+    }
+  };
+
+  const handleCheckboxChange = async (event) => {
+    setIsChecked(event.target.checked);
+
+    const activeStatus = event.target.checked ? 'true' : 'false';
+    const url = `http://${hostIP}:8001/LaserController/setLaserActive?laserName=488%20Laser&active=${activeStatus}`;
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+    } catch (error) {
+      console.error('There has been a problem with your fetch operation: ', error);
+    }
+  };
+
+
   return (
     <ThemeProvider theme={darkTheme}>
-            <CssBaseline />
-            <AppBar position="fixed">
-                <Toolbar>
-                    <IconButton edge="start" color="inherit" aria-label="menu" onClick={() => setDrawerOpen(!drawerOpen)}>
-                        <MenuIcon />
-                    </IconButton>
-                    <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 'bold' }}>
-                        Microscope Control
-                    </Typography>
-                    <Avatar alt="UC2" src="/path_to_your_logo.png" />
-                </Toolbar>
-            </AppBar>
-            <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
-                <List>
-                    {['My Collection', 'Connections', 'Devices', 'Workflows', 'Remote Demo', 'Notifications'].map((text) => (
-                        <ListItem button key={text}>
-                            <Typography variant="h6" fontWeight="bold">{text}</Typography>
-                        </ListItem>
-                    ))}
-                </List>
-            </Drawer>        <Container component="main" sx={{ flexGrow: 1, p: 3, pt: 10 }}>
-            <Typography variant="h6" gutterBottom>
-                Video Display
-            </Typography>
-            <video width={640} height={480} autoPlay ref={videoRef}></video>
-            <Box mb={5}>
-                <Typography variant="h6" gutterBottom>
-                    Recording
-                </Typography>
-                <ButtonGroup variant="contained" color="primary" aria-label="Recording control buttons">
-                    <Button onClick={startStream}><PhotoCamera /></Button>
-                    <Button><FiberManualRecord /></Button>
-                </ButtonGroup>
-            </Box>
-
-            <Box mt={5} mb={5}>
-                <Typography variant="h6" gutterBottom>
-                    XYZ Controls
-                </Typography>
-            </Box>
-            <Box mb={5}>
-                <XYZControls />
-              </Box>          
-            <Box mb={5}>
-                <Typography variant="h6" gutterBottom>
-                    Illumination
-                </Typography>
-                <Slider defaultValue={30} aria-labelledby="continuous-slider" />
-            </Box>
-
-        </Container>
-        <Box component="footer" p={2} mt={5} bgcolor="background.paper">
-                <Typography variant="h6" align="center" fontWeight="bold">
-                    Your Footer Text Here
-                </Typography>
+      <CssBaseline />
+      <AppBar position="fixed">
+        <Toolbar>
+          <IconButton
+            edge="start"
+            color="inherit"
+            aria-label="menu"
+            onClick={() => setDrawerOpen(!drawerOpen)}
+          >
+            <MenuIcon />
+          </IconButton>
+          <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: "bold" }}>
+            Microscope Control
+          </Typography>
+          <Avatar alt="UC2" src="/path_to_your_logo.png" />
+        </Toolbar>
+      </AppBar>
+      <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
+        <List>
+          {[
+            "My Collection",
+            "Connections",
+            "Devices",
+            "Workflows",
+            "Remote Demo",
+            "Notifications",
+          ].map((text) => (
+            <ListItem button key={text}>
+              <Typography variant="h6" fontWeight="bold">
+                {text}
+              </Typography>
+            </ListItem>
+          ))}
+        </List>
+      </Drawer>
+      <Container component="main" sx={{ flexGrow: 1, p: 3, pt: 10 }}>
+        <Typography variant="h6" gutterBottom>
+          Video Display
+        </Typography>
+        <video
+          width={640}
+          height={480}
+          src={streamUrl}
+          ref={videoRef}
+        ></video>
+        <Box mb={5}>
+          <Typography variant="h6" gutterBottom>
+            Stream Control
+          </Typography>
+          <Button onClick={startStream}>
+            <PlayArrow />
+          </Button>
+          <Button onClick={pauseStream}>
+            <Stop />
+          </Button>
         </Box>
-    </ThemeProvider>
-);
-}
 
+        <Box mt={5} mb={5}>
+          <Typography variant="h6" gutterBottom>
+            XYZ Controls
+          </Typography>
+        </Box>
+        <Box mb={5}>
+          <XYZControls />
+        </Box>
+        <Box mb={5}>
+          <Typography variant="h6" gutterBottom>
+            Illumination
+          </Typography>
+          <div>
+          <Slider defaultValue={30} aria-labelledby="continuous-slider" />
+          <input type="range" min="0" max="1023" value={sliderValue} onChange={handleSliderChange} />
+          <input type="checkbox" checked={isChecked} onChange={handleCheckboxChange} />
+        </div>
+        </Box>
+      </Container>
+      <Box component="footer" p={2} mt={5} bgcolor="background.paper">
+        <Typography variant="h6" align="center" fontWeight="bold">
+          Your Footer Text Here
+        </Typography>
+      </Box>
+    </ThemeProvider>
+  );
+}
 
 /*
   return (
