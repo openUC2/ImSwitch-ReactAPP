@@ -142,12 +142,7 @@ function App() {
         <Typography variant="h6" gutterBottom>
           Video Display
         </Typography>
-        <video
-          width={640}
-          height={480}
-          src={streamUrl}
-          ref={videoRef}
-        ></video>
+        <video width={640} height={480} autoPlay src={streamUrl} ref={videoRef}></video>
         <Box mb={5}>
           <Typography variant="h6" gutterBottom>
             Stream Control
