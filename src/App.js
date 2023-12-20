@@ -1,7 +1,12 @@
 import React, { useRef, useEffect, useState } from "react";
+
 import {
   Button,
   ButtonGroup,
+  Dialog, 
+  DialogTitle, 
+  DialogContent, 
+  DialogActions, 
   Slider,
   Container,
   Box,
@@ -13,6 +18,7 @@ import {
   List,
   ListItem,
   CssBaseline,
+  TextField,
   Grid,
   Avatar,
 } from "@mui/material";
@@ -35,7 +41,7 @@ const darkTheme = createTheme({
     fontWeightBold: 700,
   },
 });
-const hostIP = "localhost";
+
 
 function App() {
   const videoRef = useRef(null);
@@ -43,6 +49,8 @@ function App() {
   const [streamUrl, setStreamUrl] = useState("");
   const [isChecked, setIsChecked] = useState(false);
   const [sliderValue, setSliderValue] = useState(0);
+  const [isDialogOpen, setDialogOpen] = useState(false);
+  const [hostIP, sethostIP] = useState('localhost');
 
   function startStream() {
     // Replace with the IP address of the host system
@@ -55,6 +63,27 @@ function App() {
   }
 
   
+  const handleOpenDialog = () => {
+    hostIP === '' ? sethostIP(hostIP) : sethostIP(hostIP);
+    setDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setDialogOpen(false);
+  };
+
+  const handlehostIPChange = (event) => {
+    sethostIP(event.target.value);
+  };
+
+  const handleSavehostIP = () => {
+    console.log("IP Address saved:", hostIP);
+    sethostIP(hostIP);
+    handleCloseDialog();
+    // Here you can add the logic to use the IP address in your application
+  };
+
+
   const handleButtonPress = async (url) => {
     try {
       const response = await fetch(url);
@@ -140,7 +169,7 @@ function App() {
             "Remote Demo",
             "Notifications",
           ].map((text) => (
-            <ListItem button key={text}>
+            <ListItem button onClick={() => text === "Connections" && handleOpenDialog()}>
               <Typography variant="h6" fontWeight="bold">
                 {text}
               </Typography>
@@ -184,12 +213,36 @@ function App() {
         </div>
         </Box>
       </Container>
+
+      {/* IP Address Dialog */}
+        <Dialog open={isDialogOpen} onClose={handleCloseDialog}>
+          <DialogTitle>Enter IP Address</DialogTitle>
+          <DialogContent>
+            <TextField
+              autoFocus
+              margin="dense"
+              id="ip-address"
+              label="IP Address"
+              type="text"
+              fullWidth
+              value={hostIP}
+              onChange={handlehostIPChange}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseDialog}>Cancel</Button>
+            <Button onClick={handleSavehostIP}>Save</Button>
+          </DialogActions>
+        </Dialog>
+        
       <Box component="footer" p={2} mt={5} bgcolor="background.paper">
         <Typography variant="h6" align="center" fontWeight="bold">
           Your Footer Text Here
         </Typography>
       </Box>
     </ThemeProvider>
+
+
   );
 }
 
