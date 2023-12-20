@@ -35,7 +35,7 @@ const darkTheme = createTheme({
     fontWeightBold: 700,
   },
 });
-const hostIP = "192.168.2.223";
+const hostIP = "localhost";
 
 function App() {
   const videoRef = useRef(null);
@@ -55,6 +55,16 @@ function App() {
   }
 
   
+  const handleButtonPress = async (url) => {
+    try {
+      const response = await fetch(url);
+      const data = await response.json();
+      console.log(data);
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
+
 
   async function handleMove(direction) {
     try {
@@ -142,7 +152,7 @@ function App() {
         <Typography variant="h6" gutterBottom>
           Video Display
         </Typography>
-        <video width={640} height={480} autoPlay src={streamUrl} ref={videoRef}></video>
+        <img style={{width: "100%", height: "auto"}} autoPlay src={streamUrl} ref={videoRef}></img>
         <Box mb={5}>
           <Typography variant="h6" gutterBottom>
             Stream Control
@@ -161,7 +171,7 @@ function App() {
           </Typography>
         </Box>
         <Box mb={5}>
-          <XYZControls />
+            <XYZControls onButtonPress={handleButtonPress} hostIP={hostIP} />
         </Box>
         <Box mb={5}>
           <Typography variant="h6" gutterBottom>
