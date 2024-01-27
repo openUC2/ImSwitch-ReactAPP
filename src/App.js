@@ -1,8 +1,7 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useState } from "react";
 
 import {
   Button,
-  ButtonGroup,
   Dialog, 
   DialogTitle, 
   DialogContent, 
@@ -19,15 +18,12 @@ import {
   ListItem,
   CssBaseline,
   TextField,
-  Grid,
   Avatar,
 } from "@mui/material";
 import {
   Menu as MenuIcon,
   PlayArrow,
   Stop,
-  PhotoCamera,
-  FiberManualRecord,
 } from "@mui/icons-material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import XYZControls from "./XYZControls"; // Assuming XYZControls is in the same directory
@@ -55,7 +51,7 @@ function App() {
   function startStream() {
     // Replace with the IP address of the host system
 
-    setStreamUrl(`http://${hostIP}:8001/RecordingController/video_feeder`);
+    setStreamUrl(`${hostIP}:8001/RecordingController/video_feeder`);
   }
 
   function pauseStream() {
@@ -78,6 +74,8 @@ function App() {
 
   const handleSavehostIP = () => {
     console.log("IP Address saved:", hostIP);
+    // ensure it's in the right format: https://X.X.X.X
+    
     sethostIP(hostIP);
     handleCloseDialog();
     // Here you can add the logic to use the IP address in your application
@@ -98,7 +96,7 @@ function App() {
   async function handleMove(direction) {
     try {
       let response = await fetch(
-        `http://${hostIP}:8001/move_stage/${direction}`
+        `${hostIP}:8001/move_stage/${direction}`
       );
       let data = await response.json();
       console.log(data);
@@ -111,7 +109,7 @@ function App() {
   const handleSliderChange = async (event) => {
     setSliderValue(event.target.value);
 
-    const url = `http://${hostIP}:8001/LaserController/setLaserValue?laserName=488%20Laser&value=${event.target.value}`;
+    const url = `${hostIP}:8001/LaserController/setLaserValue?laserName=488%20Laser&value=${event.target.value}`;
 
     try {
       const response = await fetch(url);
@@ -127,7 +125,7 @@ function App() {
     setIsChecked(event.target.checked);
 
     const activeStatus = event.target.checked ? 'true' : 'false';
-    const url = `http://${hostIP}:8001/LaserController/setLaserActive?laserName=488%20Laser&active=${activeStatus}`;
+    const url = `${hostIP}:8001/LaserController/setLaserActive?laserName=488%20Laser&active=${activeStatus}`;
 
     try {
       const response = await fetch(url);

@@ -8,16 +8,17 @@ const AxisControl = ({ axisLabel, onButtonPress, hostIP }) => {
   const [sliderValue, setSliderValue] = useState(0);
   const [steps, setSteps] = useState('1000');
   const [absPosition, setAbsPosition] = useState('0');
+  const [speedValue, setSpeed] = useState('1000');
 
 
-  const handleIncrement = (steps) => {
-    const url = `http://${hostIP}:8001/PositionerController/movePositioner?positionerName=ESP32Stage&axis=${axisLabel}&dist=${steps}&isAbsolute=false&isBlocking=false&speed=10000`
+  const handleIncrement = (steps, speedValue) => {
+    const url = `${hostIP}:8001/PositionerController/movePositioner?positionerName=ESP32Stage&axis=${axisLabel}&dist=${steps}&isAbsolute=false&isBlocking=false&speed=${speedValue}`
     onButtonPress(url);
   };
 
-  const handleDecrement = (steps) => {
+  const handleDecrement = (steps, speedValue) => {
     steps = -steps;
-    const url = `http://${hostIP}:8001/PositionerController/movePositioner?positionerName=ESP32Stage&axis=${axisLabel}&dist=${steps}&isAbsolute=false&isBlocking=false&speed=10000`
+    const url = `${hostIP}:8001/PositionerController/movePositioner?positionerName=ESP32Stage&axis=${axisLabel}&dist=${steps}&isAbsolute=false&isBlocking=false&speed=${speedValue}`
     onButtonPress(url);
   }
 
@@ -34,21 +35,25 @@ const AxisControl = ({ axisLabel, onButtonPress, hostIP }) => {
     setSteps(event.target.value);
   };
 
+  const handleSpeedChange = (event) =>{
+    setSpeed(event.target.value)
+  }
+
   // Handle slider commit action
   const handleSliderCommit = () => {
-    const url = `http://${hostIP}:8001/PositionerController/movePositioner?positionerName=ESP32Stage&axis=${axisLabel}&dist=${absPosition}&isAbsolute=true&isBlocking=false&speed=${sliderValue}`;
+    const url = `${hostIP}:8001/PositionerController/movePositioner?positionerName=ESP32Stage&axis=${axisLabel}&dist=${absPosition}&isAbsolute=true&isBlocking=false&speed=${sliderValue}`;
     onButtonPress(url);
   };
 
   const handleGoTo = () => {
     // This is just a placeholder. You'll need to modify this to use actual data if necessary.
-    const url = `http://${hostIP}:8001/PositionerController/movePositioner?positionerName=ESP32Stage&axis=${axisLabel}&dist=${absPosition}&isAbsolute=true&isBlocking=false&speed=10000`
+    const url = `${hostIP}:8001/PositionerController/movePositioner?positionerName=ESP32Stage&axis=${axisLabel}&dist=${absPosition}&isAbsolute=true&isBlocking=false&speed=10000`
     onButtonPress(url);
   };
 
   const handleStop = () => {
     // This is just a placeholder. You'll need to modify this to use actual data if necessary.
-    const url = `http://${hostIP}:8001/stop/${axisLabel}`;
+    const url = `${hostIP}:8001/PositionerController/movePositioner?positionerName=ESP32Stage&axis=${axisLabel}&dist=slack0&isAbsolute=false&isBlocking=false&speed=0`;
     onButtonPress(url);
   };
 
@@ -59,13 +64,13 @@ const AxisControl = ({ axisLabel, onButtonPress, hostIP }) => {
       </Grid>
       <Grid container item spacing={1} alignItems="center" xs={12}>
         <Grid item>
-        <Button onClick={() => handleIncrement(steps)} variant="contained" color="primary">+</Button>
+        <Button onClick={() => handleIncrement(steps, speedValue)} variant="contained" color="primary">+</Button>
         </Grid>
         <Grid item>
           <TextField label="Steps" variant="outlined" size="small" value={steps} onChange={handleStepsChange} />
         </Grid>
         <Grid item>
-        <Button onClick={() => handleDecrement(steps)} variant="contained" color="primary">-</Button>
+        <Button onClick={() => handleDecrement(steps, speedValue)} variant="contained" color="primary">-</Button>
         </Grid>
       </Grid>
       <Grid container item spacing={1} alignItems="center" xs={12}>
@@ -73,7 +78,7 @@ const AxisControl = ({ axisLabel, onButtonPress, hostIP }) => {
           <Button onClick={handleGoTo} variant="contained" color="primary">Go To</Button>
         </Grid>
         <Grid item>
-          <TextField label="Speed" variant="outlined" size="small" defaultValue="1000" onChange={handleAbsPositionChange}/>
+          <TextField label="Speed" variant="outlined" size="small" defaultValue="1000" onChange={handleSpeedChange}/>
         </Grid>
         <Grid item>
           <Button onClick={handleStop} variant="contained" color="secondary">Stop</Button>
