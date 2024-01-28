@@ -1,0 +1,32 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [ main ]
+  
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v2
+
+    - name: Install Dependencies
+      run: npm install
+
+    - name: Build React App
+      run: npm run build
+
+    - name: Push to Another Repository
+      uses: cpina/github-action-push-to-another-repository@main
+      env:
+        API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB_YOUSEETOO }}
+      with:
+        source-directory: 'build'
+        destination-github-username: 'beniroquai'
+        destination-repository-name: 'youseetoo/youseetoo.github.io'
+        user-email: 'bene.d@gmx.de'
+        target-branch: 'main'
+        commit-message: 'Deploy React app build'
+        destination-directory: 'imswitch'
