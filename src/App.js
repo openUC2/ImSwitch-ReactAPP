@@ -1,11 +1,13 @@
 import React, { useRef, useState } from "react";
-
+import ControlPanel_1 from "./components/ControlPanel_1";
+import ControlPanel_2 from "./components/ControlPanel_2";
+import { Menu as MenuIcon } from "@mui/icons-material";
 import {
   Button,
-  Dialog, 
-  DialogTitle, 
-  DialogContent, 
-  DialogActions, 
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   Slider,
   Container,
   Box,
@@ -19,14 +21,14 @@ import {
   CssBaseline,
   TextField,
   Avatar,
+  Tab,
+  Tabs,
+  FormControl,
+  InputLabel,
+  Input,
+  FormHelperText,
 } from "@mui/material";
-import {
-  Menu as MenuIcon,
-  PlayArrow,
-  Stop,
-} from "@mui/icons-material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-import XYZControls from "./XYZControls"; // Assuming XYZControls is in the same directory
 
 const darkTheme = createTheme({
   palette: {
@@ -38,105 +40,62 @@ const darkTheme = createTheme({
   },
 });
 
-
 function App() {
-  const videoRef = useRef(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [streamUrl, setStreamUrl] = useState("");
-  const [isChecked, setIsChecked] = useState(false);
-  const [sliderValue, setSliderValue] = useState(0);
+  const [hostIP, sethostIP] = useState("https://localhost");
+  const [selectedTab, setSelectedTab] = useState(0);
   const [isDialogOpen, setDialogOpen] = useState(false);
-  const [hostIP, sethostIP] = useState('localhost');
-
-  function startStream() {
-    // Replace with the IP address of the host system
-
-    setStreamUrl(`${hostIP}:8001/RecordingController/video_feeder`);
-  }
-
-  function pauseStream() {
-    setStreamUrl("");
-  }
+  const [layout, setLayout] = useState([
+    { i: 'widget1', x: 0, y: 0, w: 2, h: 2 },
+    { i: 'widget2', x: 2, y: 0, w: 2, h: 2 },
+    { i: 'widget3', x: 4, y: 0, w: 2, h: 2 },
+    { i: 'FlowStop', x: 6, y: 0, w: 5, h: 5 },
+  ]);
 
   
-  const handleOpenDialog = () => {
-    hostIP === '' ? sethostIP(hostIP) : sethostIP(hostIP);
-    setDialogOpen(true);
+  const handleTabChange = (event, newValue) => {
+    setSelectedTab(newValue);
   };
 
   const handleCloseDialog = () => {
     setDialogOpen(false);
   };
 
+  const handleOpenDialog = () => {
+    hostIP === "" ? sethostIP(hostIP) : sethostIP(hostIP);
+    setDialogOpen(true);
+  };
+
   const handlehostIPChange = (event) => {
-    sethostIP(event.target.value);
+    let ip = event.target.value.trim();
+  
+    // Check if it starts with 'http://' or 'https://', if not, prepend 'https://'
+    if (!ip.startsWith('http://') && !ip.startsWith('https://')) {
+      ip = 'https://' + ip;
+    }
+  
+    // Replace 'http://' with 'https://' if present
+    if (ip.startsWith('http://')) {
+      ip = ip.replace('http://', 'https://');
+    }
+  
+    // Check if the port is specified, if not, append ':8001'
+    if (ip.includes(':8001')) {
+      ip = ip.split(':8001')[0] 
+    } 
+    console.log(ip); // For debugging, to see the formatted IP
+  
+    sethostIP(ip);
+    
   };
 
   const handleSavehostIP = () => {
     console.log("IP Address saved:", hostIP);
-    // ensure it's in the right format: https://X.X.X.X
     
     sethostIP(hostIP);
     handleCloseDialog();
     // Here you can add the logic to use the IP address in your application
   };
-
-
-  const handleButtonPress = async (url) => {
-    try {
-      const response = await fetch(url);
-      const data = await response.json();
-      console.log(data);
-    } catch (error) {
-      console.error("Error:", error);
-    }
-  };
-
-
-  async function handleMove(direction) {
-    try {
-      let response = await fetch(
-        `${hostIP}:8001/move_stage/${direction}`
-      );
-      let data = await response.json();
-      console.log(data);
-    } catch (error) {
-      console.error("Error moving stage:", error);
-    }
-  }
-
-  
-  const handleSliderChange = async (event) => {
-    setSliderValue(event.target.value);
-
-    const url = `${hostIP}:8001/LaserController/setLaserValue?laserName=488%20Laser&value=${event.target.value}`;
-
-    try {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-    } catch (error) {
-      console.error('There has been a problem with your fetch operation: ', error);
-    }
-  };
-
-  const handleCheckboxChange = async (event) => {
-    setIsChecked(event.target.checked);
-
-    const activeStatus = event.target.checked ? 'true' : 'false';
-    const url = `${hostIP}:8001/LaserController/setLaserActive?laserName=488%20Laser&active=${activeStatus}`;
-
-    try {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-    } catch (error) {
-      console.error('There has been a problem with your fetch operation: ', error);
-    }
-  };
-
 
   return (
     <ThemeProvider theme={darkTheme}>
@@ -157,6 +116,7 @@ function App() {
           <Avatar alt="UC2" src="/path_to_your_logo.png" />
         </Toolbar>
       </AppBar>
+
       <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
         <List>
           {[
@@ -167,7 +127,10 @@ function App() {
             "Remote Demo",
             "Notifications",
           ].map((text) => (
-            <ListItem button onClick={() => text === "Connections" && handleOpenDialog()}>
+            <ListItem
+              button
+              onClick={() => text === "Connections" && handleOpenDialog()}
+            >
               <Typography variant="h6" fontWeight="bold">
                 {text}
               </Typography>
@@ -175,115 +138,54 @@ function App() {
           ))}
         </List>
       </Drawer>
-      <Container component="main" sx={{ flexGrow: 1, p: 3, pt: 10 }}>
-        <Typography variant="h6" gutterBottom>
-          Video Display
-        </Typography>
-        <img style={{width: "100%", height: "auto"}} autoPlay src={streamUrl} ref={videoRef}></img>
-        <Box mb={5}>
-          <Typography variant="h6" gutterBottom>
-            Stream Control
-          </Typography>
-          <Button onClick={startStream}>
-            <PlayArrow />
-          </Button>
-          <Button onClick={pauseStream}>
-            <Stop />
-          </Button>
-        </Box>
-
-        <Box mt={5} mb={5}>
-          <Typography variant="h6" gutterBottom>
-            XYZ Controls
-          </Typography>
-        </Box>
-        <Box mb={5}>
-            <XYZControls onButtonPress={handleButtonPress} hostIP={hostIP} />
-        </Box>
-        <Box mb={5}>
-          <Typography variant="h6" gutterBottom>
-            Illumination
-          </Typography>
-          <div>
-          <Slider defaultValue={30} aria-labelledby="continuous-slider" />
-          <input type="range" min="0" max="1023" value={sliderValue} onChange={handleSliderChange} />
-          <input type="checkbox" checked={isChecked} onChange={handleCheckboxChange} />
-        </div>
-        </Box>
-      </Container>
 
       {/* IP Address Dialog */}
-        <Dialog open={isDialogOpen} onClose={handleCloseDialog}>
-          <DialogTitle>Enter IP Address</DialogTitle>
-          <DialogContent>
-            <TextField
-              autoFocus
-              margin="dense"
-              id="ip-address"
-              label="IP Address"
-              type="text"
-              fullWidth
-              value={hostIP}
-              onChange={handlehostIPChange}
-            />
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCloseDialog}>Cancel</Button>
-            <Button onClick={handleSavehostIP}>Save</Button>
-          </DialogActions>
-        </Dialog>
-        
-      <Box component="footer" p={2} mt={5} bgcolor="background.paper">
-        <Typography variant="h6" align="center" fontWeight="bold">
-          Your Footer Text Here
-        </Typography>
-      </Box>
+      <Dialog open={isDialogOpen} onClose={handleCloseDialog}>
+        <DialogTitle>Enter IP Address</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            id="ip-address"
+            label="IP Address"
+            type="text"
+            fullWidth
+            value={hostIP}
+            onChange={handlehostIPChange}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog}>Cancel</Button>
+          <Button onClick={handleSavehostIP}>Save</Button>
+        </DialogActions>
+      </Dialog>
+
+
+      <Tabs
+        value={selectedTab}
+        onChange={handleTabChange}
+        variant="fullWidth"
+        indicatorColor="secondary"
+        textColor="inherit"
+        style={{ marginTop: 64 }} // Adjusts the margin to align below the AppBar
+      >
+        <Tab label="Control Panel 1" />
+        <Tab label="Control Panel 2" />
+        {/* Add more tabs as needed */}
+      </Tabs>
+
+      {/* Render different components based on the selected tab */}
+      {selectedTab === 0 && <div>{
+            <ControlPanel_1 
+            hostIP={hostIP}
+          />
+        }</div>}
+      {selectedTab === 1 && <div>{
+       <ControlPanel_2 hostIP={hostIP} layout={layout} onLayoutChange={(newLayout) => setLayout(newLayout)} />
+       /* Components for Control Panel 2 */}</div>}
+      {/* Add more conditional rendering for additional tabs */}
     </ThemeProvider>
-
-
   );
 }
-
-/*
-  return (
-    <Container maxWidth="">
-      <AppBar position="static">
-        <Toolbar>
-          <IconButton edge="start" color="inherit" aria-label="menu">
-            <MenuIcon />
-          </IconButton>
-          <Typography variant="h6">
-            Microscope Control
-          </Typography>
-        </Toolbar>
-      </AppBar>
-
-      <Box mt={5} mb={5}>
-        <Typography variant="h6" gutterBottom>
-          Video Display
-        </Typography>
-        <video ref={videoRef} width={320} height={240} autoPlay controls></video>
-      </Box>
-
-      <ButtonGroup variant="contained" color="primary" aria-label="image acquisition buttons">
-        <Button onClick={startStream}>Start</Button>
-      </ButtonGroup>
-
-      <Box mb={5}>
-        <Typography variant="h6" gutterBottom>
-          XYZ Controls
-        </Typography>
-        <ButtonGroup variant="contained" color="primary" aria-label="XYZ control buttons">
-          {['X+', 'X-', 'Y+', 'Y-', 'Z+', 'Z-'].map(direction => (
-            <Button key={direction} onClick={() => handleMove(direction)}>
-              {direction}
-            </Button>
-          ))}
-        </ButtonGroup>
-      </Box>
-    </Container>
-  );
-}
-*/
 
 export default App;

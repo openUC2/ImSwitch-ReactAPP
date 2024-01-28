@@ -1,6 +1,6 @@
 import { Button, TextField, Grid, Slider } from '@mui/material';
 import React, { useRef, useEffect, useState } from "react";
-import AxisControl from "./AxisControl";
+import AxisControl from "../AxisControl";
 
 function XYZControls({ onButtonPress, hostIP }) {
   return (
