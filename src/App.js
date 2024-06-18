@@ -43,6 +43,7 @@ const darkTheme = createTheme({
 function App() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [hostIP, sethostIP] = useState("https://localhost");
+  const [hostPort, sethostPort] = useState(8001);
   const [selectedTab, setSelectedTab] = useState(0);
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [layout, setLayout] = useState([
@@ -63,9 +64,15 @@ function App() {
 
   const handleOpenDialog = () => {
     hostIP === "" ? sethostIP(hostIP) : sethostIP(hostIP);
+    hostPort === "" ? sethostPort(hostPort) : sethostPort(hostPort);
     setDialogOpen(true);
   };
 
+  const handlehostPortChange = (event) => {
+    let port = event.target.value.trim();
+    console.log(port);
+    sethostPort(port);
+  }
   const handlehostIPChange = (event) => {
     let ip = event.target.value.trim();
   
@@ -79,20 +86,15 @@ function App() {
       ip = ip.replace('http://', 'https://');
     }
   
-    // Check if the port is specified, if not, append ':8001'
-    if (ip.includes(':8001')) {
-      ip = ip.split(':8001')[0] 
-    } 
-    console.log(ip); // For debugging, to see the formatted IP
-  
     sethostIP(ip);
     
   };
 
   const handleSavehostIP = () => {
-    console.log("IP Address saved:", hostIP);
+    console.log("IP Address saved:", hostIP, hostPort);
     
     sethostIP(hostIP);
+    sethostPort(hostPort);
     handleCloseDialog();
     // Here you can add the logic to use the IP address in your application
   };
@@ -153,6 +155,15 @@ function App() {
             value={hostIP}
             onChange={handlehostIPChange}
           />
+          <TextField
+            margin="dense"
+            id="port"
+            label="Port"
+            type="text"
+            fullWidth
+            value={hostPort}
+            onChange={handlehostPortChange}
+          />
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Cancel</Button>
@@ -178,6 +189,7 @@ function App() {
       {selectedTab === 0 && <div>{
             <ControlPanel_1 
             hostIP={hostIP}
+            hostPort={hostPort}
           />
         }</div>}
       {selectedTab === 1 && <div>{

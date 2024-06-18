@@ -3,7 +3,7 @@ import { Button, TextField, Grid, Slider } from '@mui/material';
 import React, { useRef, useEffect, useState } from "react";
 
 
-const AxisControl = ({ axisLabel, onButtonPress, hostIP }) => {
+const AxisControl = ({ axisLabel, onButtonPress, hostIP, hostPort }) => {
   // State for the slider value
   const [sliderValue, setSliderValue] = useState(0);
   const [steps, setSteps] = useState('1000');
@@ -12,13 +12,13 @@ const AxisControl = ({ axisLabel, onButtonPress, hostIP }) => {
 
 
   const handleIncrement = (steps, speedValue) => {
-    const url = `${hostIP}:8001/PositionerController/movePositioner?positionerName=ESP32Stage&axis=${axisLabel}&dist=${steps}&isAbsolute=false&isBlocking=false&speed=${speedValue}`
+    const url = `${hostIP}:${hostPort}/PositionerController/movePositioner?axis=${axisLabel}&dist=${steps}&isAbsolute=false&isBlocking=false&speed=${speedValue}`
     onButtonPress(url);
   };
 
   const handleDecrement = (steps, speedValue) => {
     steps = -steps;
-    const url = `${hostIP}:8001/PositionerController/movePositioner?positionerName=ESP32Stage&axis=${axisLabel}&dist=${steps}&isAbsolute=false&isBlocking=false&speed=${speedValue}`
+    const url = `${hostIP}:${hostPort}/PositionerController/movePositioner?axis=${axisLabel}&dist=${steps}&isAbsolute=false&isBlocking=false&speed=${speedValue}`
     onButtonPress(url);
   }
 
@@ -41,19 +41,19 @@ const AxisControl = ({ axisLabel, onButtonPress, hostIP }) => {
 
   // Handle slider commit action
   const handleSliderCommit = () => {
-    const url = `${hostIP}:8001/PositionerController/movePositioner?positionerName=ESP32Stage&axis=${axisLabel}&dist=${absPosition}&isAbsolute=true&isBlocking=false&speed=${sliderValue}`;
+    const url = `${hostIP}:${hostPort}/PositionerController/movePositioner?axis=${axisLabel}&dist=${absPosition}&isAbsolute=true&isBlocking=false&speed=${sliderValue}`;
     onButtonPress(url);
   };
 
   const handleGoTo = () => {
     // This is just a placeholder. You'll need to modify this to use actual data if necessary.
-    const url = `${hostIP}:8001/PositionerController/movePositioner?positionerName=ESP32Stage&axis=${axisLabel}&dist=${absPosition}&isAbsolute=true&isBlocking=false&speed=10000`
+    const url = `${hostIP}:${hostPort}/PositionerController/movePositioner?axis=${axisLabel}&dist=${absPosition}&isAbsolute=true&isBlocking=false&speed=10000`
     onButtonPress(url);
   };
 
   const handleStop = () => {
     // This is just a placeholder. You'll need to modify this to use actual data if necessary.
-    const url = `${hostIP}:8001/PositionerController/movePositioner?positionerName=ESP32Stage&axis=${axisLabel}&dist=slack0&isAbsolute=false&isBlocking=false&speed=0`;
+    const url = `${hostIP}:${hostPort}/PositionerController/movePositioner?axis=${axisLabel}&dist=slack0&isAbsolute=false&isBlocking=false&speed=0`;
     onButtonPress(url);
   };
 

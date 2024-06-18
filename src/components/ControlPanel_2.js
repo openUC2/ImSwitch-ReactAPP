@@ -8,6 +8,8 @@ import 'react-resizable/css/styles.css';
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
+//<div key="VideoWidget"><PreviewWidget title="VideoWidget" hostIP={hostIP} /></div>
+      
 const ControlPanel_2 = ({ hostIP, layout, onLayoutChange }) => {
   return (
     <ResponsiveGridLayout
@@ -19,7 +21,6 @@ const ControlPanel_2 = ({ hostIP, layout, onLayoutChange }) => {
       onLayoutChange={(newLayout) => onLayoutChange(newLayout)} >
       <div key="widget1"><DraggableWidget title="Widget 1" /></div>
       <div key="widget2"><DraggableWidget title="Widget 2" /></div>
-      <div key="widget3"><DraggableWidget title="Widget 3" /></div>
       <div key="FlowStop"><FlowStopController hostIP={hostIP} title="Flow Stop" /></div>
     </ResponsiveGridLayout>
   );

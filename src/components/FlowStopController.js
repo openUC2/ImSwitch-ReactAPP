@@ -21,7 +21,7 @@ const TabPanel = (props) => {
   );
 }
 
-const FlowStopController = ({hostIP, WindowTitle}) => {
+const FlowStopController = ({hostIP, hostPort, WindowTitle}) => {
   const [tabIndex, setTabIndex] = useState(0);
   const [timeStamp, setTimeStamp] = useState('0');
   const [experimentName, setExperimentName] = useState('Test');
@@ -33,7 +33,7 @@ const FlowStopController = ({hostIP, WindowTitle}) => {
 
 
   const startExperiment = () => {
-    const url = `${hostIP}:8001/FlowStopController/startFlowStopExperiment?timeStamp=${timeStamp}&experimentName=${experimentName}&experimentDescription=${experimentDescription}&uniqueId=${uniqueId}&numImages=${numImages}&volumePerImage=${volumePerImage}&timeToStabilize=${timeToStabilize}`;
+    const url = `${hostIP}:${hostPort}/FlowStopController/startFlowStopExperiment?timeStamp=${timeStamp}&experimentName=${experimentName}&experimentDescription=${experimentDescription}&uniqueId=${uniqueId}&numImages=${numImages}&volumePerImage=${volumePerImage}&timeToStabilize=${timeToStabilize}`;
 
     // Sending the HTTP request
     fetch(url, { method: 'GET' }) // Add more configurations if needed
@@ -43,7 +43,7 @@ const FlowStopController = ({hostIP, WindowTitle}) => {
   };
 
   const stopExperiment = () => {
-    const url = `${hostIP}:8001/FlowStopController/stopFlowStopExperiment`;
+    const url = `${hostIP}:${hostPort}/FlowStopController/stopFlowStopExperiment`;
 
     // Sending the HTTP request
     fetch(url, { method: 'GET' }) // Add more configurations if needed
