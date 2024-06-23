@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect} from "react";
 import { Menu as MenuIcon, PlayArrow, Stop } from "@mui/icons-material";
 import {
   Box,
@@ -16,11 +16,20 @@ import {
   DialogActions,
   Slider,
   Checkbox,
+  Grid,
   // ... any other imports you need
 } from "@mui/material";
 import XYZControls from "./XYZControls"; // If needed
 
-const ControlPanel_1 = ({ hostIP, hostPort }) => {
+const ControlPanel_1 = ({ hostIP, hostPort, isStreamRunning, setStreamRunning }) => {
+  // Effekt, der auf Änderungen von isStreamRunning reagiert
+  useEffect(() => {
+    if (isStreamRunning) {
+      startStream();
+    } else {
+      pauseStream();
+    }
+  }, [isStreamRunning]);
   const videoRef = useRef(null);
   const [isIllumination1Checked, setisIllumination1Checked] = useState(false);
   const [isIllumination2Checked, setisIllumination2Checked] = useState(false);
@@ -192,107 +201,112 @@ const ControlPanel_1 = ({ hostIP, hostPort }) => {
   return (
     <div>
       <Container component="main" sx={{ flexGrow: 1, p: 3, pt: 10 }}>
-        <Typography variant="h6" gutterBottom>
-          Video Display
-        </Typography>
-        <img
-          style={{ width: "100%", height: "auto" }}
-          autoPlay
-          src={streamUrl}
-          ref={videoRef}
-        ></img>
+        <Grid container spacing={3}>
+          <Grid item xs={12} sm={8}>
+            <Typography variant="h6" gutterBottom>
+              Video Display
+            </Typography>
+            <img
+              style={{ width: "100%", height: "auto" }}
+              autoPlay
+              src={streamUrl}
+              ref={videoRef}
+            ></img>
 
-        <Box mb={5}>
-          <Typography variant="h6" gutterBottom>
-            Stream Control
-          </Typography>
-          <Button onClick={startStream}>
-            <PlayArrow />
-          </Button>
-          <Button onClick={pauseStream}>
-            <Stop />
-          </Button>
-          <TextField
-            id="exposure-time"
-            label="Exposure Time"
-            type="number"
-            value={exposureTime}
-            onChange={handleExposureChange}
-          />
-          <TextField
-            id="gain"
-            label="Gain"
-            type="number"
-            value={gain}
-            onChange={handleGainChange}
-          />
-        </Box>
-
-        <Box mt={5} mb={5}>
-          <Typography variant="h6" gutterBottom>
-            XYZ Controls
-          </Typography>
-        </Box>
-        <Box mb={5}>
-          <XYZControls
-            onButtonPress={handleButtonPress}
-            hostIP={hostIP}
-            hostPort={hostPort}
-          />
-        </Box>
-        <Box mb={5}>
-          <Typography variant="h6" gutterBottom>
-            Illumination
-          </Typography>
-          <div style={{ display: "flex", alignItems: "center" }}>
-            <Typography variant="h8" gutterBottom>
-              Laser 488 nm
-            </Typography>
-            <Slider
-              defaultValue={30}
-              min={0}
-              max={1023}
-              onChange={handleIllumination1SliderChange}
-              aria-labelledby="continuous-slider"
-            />
-            <Checkbox
-              checked={isIllumination1Checked}
-              onChange={handleIllumination1CheckboxChange}
-            />
-          </div>
-          <div style={{ display: "flex", alignItems: "center" }}>
-            <Typography variant="h8" gutterBottom>
-              Laser 635 nm
-            </Typography>
-            <Slider
-              defaultValue={30}
-              min={0}
-              max={1023}
-              onChange={handleIllumination2SliderChange}
-              aria-labelledby="continuous-slider"
-            />
-            <Checkbox
-              checked={isIllumination2Checked}
-              onChange={handleIllumination2CheckboxChange}
-            />
-          </div>
-          <div style={{ display: "flex", alignItems: "center" }}>
-            <Typography variant="h8" gutterBottom>
-              LED
-            </Typography>
-            <Slider
-              defaultValue={30}
-              min={0}
-              max={1023}
-              onChange={handleIllumination3SliderChange}
-              aria-labelledby="continuous-slider"
-            />
-            <Checkbox
-              checked={isIllumination3Checked}
-              onChange={handleIllumination3CheckboxChange}
-            />
-          </div>          
-        </Box>
+            <Box mb={5}>
+              <Typography variant="h6" gutterBottom>
+                Stream Control
+              </Typography>
+              <Button onClick={startStream}>
+                <PlayArrow />
+              </Button>
+              <Button onClick={pauseStream}>
+                <Stop />
+              </Button>
+              <TextField
+                id="exposure-time"
+                label="Exposure Time"
+                type="number"
+                value={exposureTime}
+                onChange={handleExposureChange}
+              />
+              <TextField
+                id="gain"
+                label="Gain"
+                type="number"
+                value={gain}
+                onChange={handleGainChange}
+              />
+            </Box>
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <Box mb={5}>
+              <Typography variant="h6" gutterBottom>
+                XYZ Controls
+              </Typography>
+            </Box>
+            <Box mb={5}>
+              <XYZControls
+                onButtonPress={handleButtonPress}
+                hostIP={hostIP}
+                hostPort={hostPort}
+              />
+            </Box>
+            <Box mb={5}>
+              <Typography variant="h6" gutterBottom>
+                Illumination
+              </Typography>
+              <div style={{ display: "flex", alignItems: "center" }}>
+                <Typography variant="h8" gutterBottom>
+                  Laser 488 nm
+                </Typography>
+                <Slider
+                  defaultValue={30}
+                  min={0}
+                  max={1023}
+                  onChange={handleIllumination1SliderChange}
+                  aria-labelledby="continuous-slider"
+                />
+                <Checkbox
+                  checked={isIllumination1Checked}
+                  onChange={handleIllumination1CheckboxChange}
+                />
+              </div>
+              <div style={{ display: "flex", alignItems: "center" }}>
+                <Typography variant="h8" gutterBottom>
+                  Laser 635 nm
+                </Typography>
+                <Slider
+                  defaultValue={30}
+                  min={0}
+                  max={1023}
+                  onChange={handleIllumination2SliderChange}
+                  aria-labelledby="continuous-slider"
+                />
+                <Checkbox
+                  checked={isIllumination2Checked}
+                  onChange={handleIllumination2CheckboxChange}
+                />
+              </div>
+              <div style={{ display: "flex", alignItems: "center" }}>
+                <Typography variant="h8" gutterBottom>
+                  LED
+                </Typography>
+                <Slider
+                  defaultValue={30}
+                  min={0}
+                  max={1023}
+                  onChange={handleIllumination3SliderChange}
+                  aria-labelledby="continuous-slider"
+                />
+                <Checkbox
+                  checked={isIllumination3Checked}
+                  onChange={handleIllumination3CheckboxChange}
+                />
+              </div>
+            </Box>
+          </Grid>
+        </Grid>
       </Container>
 
       <Box component="footer" p={2} mt={5} bgcolor="background.paper">

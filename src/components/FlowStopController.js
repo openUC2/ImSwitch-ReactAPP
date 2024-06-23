@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
-import { Paper, Tabs, Tab, Box, Typography, TextField, Button, Slider, Switch } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Paper, Tabs, Tab, Box, Typography, TextField, Button, Slider, Grid } from '@mui/material';
+import { green, red } from '@mui/material/colors';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CancelIcon from '@mui/icons-material/Cancel';
 
 const TabPanel = (props) => {
   const { children, value, index, ...other } = props;
@@ -21,38 +24,79 @@ const TabPanel = (props) => {
   );
 }
 
-const FlowStopController = ({hostIP, hostPort, WindowTitle}) => {
+const FlowStopController = ({ hostIP, hostPort, WindowTitle }) => {
   const [tabIndex, setTabIndex] = useState(0);
   const [timeStamp, setTimeStamp] = useState('0');
   const [experimentName, setExperimentName] = useState('Test');
   const [experimentDescription, setExperimentDescription] = useState('Some description');
-  const [uniqueId, setUniqueId] = useState('1'); // Assuming you have a way to set this
+  const [uniqueId, setUniqueId] = useState('1');
   const [numImages, setNumImages] = useState('10');
   const [volumePerImage, setVolumePerImage] = useState('1000');
   const [timeToStabilize, setTimeToStabilize] = useState('0.5');
+  const [isRunning, setIsRunning] = useState(false);
+  const [currentImageCount, setCurrentImageCount] = useState(0);
 
+  useEffect(() => {
+    const fetchStatus = async () => {
+      try {
+        const response = await fetch(`${hostIP}:${hostPort}/FlowStopController/getStatus`);
+        const data = await response.json();
+        setIsRunning(data[0]);
+        setCurrentImageCount(data[1]);
+      } catch (error) {
+        console.error('Error fetching status:', error);
+      }
+    };
+
+    const fetchExperimentParameters = async () => {
+      try {
+        const response = await fetch(`${hostIP}:${hostPort}/FlowStopController/getExperimentParameters`);
+        const data = await response.json();
+        setTimeStamp(data.timeStamp);
+        setExperimentName(data.experimentName);
+        setExperimentDescription(data.experimentDescription);
+        setUniqueId(data.uniqueId);
+        setNumImages(parseInt(data.numImages, 10));
+        setVolumePerImage(parseFloat(data.volumePerImage));
+        setTimeToStabilize(parseFloat(data.timeToStabilize));
+      } catch (error) {
+        console.error('Error fetching experiment parameters:', error);
+      }
+    };
+
+    fetchStatus();
+    fetchExperimentParameters();
+
+    const interval = setInterval(() => {
+      fetchStatus();
+    }, 1000); // fetch status every second
+
+    return () => clearInterval(interval); // clean up the interval on component unmount
+  }, [hostIP, hostPort]);
 
   const startExperiment = () => {
     const url = `${hostIP}:${hostPort}/FlowStopController/startFlowStopExperiment?timeStamp=${timeStamp}&experimentName=${experimentName}&experimentDescription=${experimentDescription}&uniqueId=${uniqueId}&numImages=${numImages}&volumePerImage=${volumePerImage}&timeToStabilize=${timeToStabilize}`;
 
-    // Sending the HTTP request
-    fetch(url, { method: 'GET' }) // Add more configurations if needed
+    fetch(url, { method: 'GET' })
       .then(response => response.json())
-      .then(data => console.log(data))
+      .then(data => {
+        console.log(data);
+        setIsRunning(true);
+      })
       .catch(error => console.error('Error:', error));
   };
 
   const stopExperiment = () => {
     const url = `${hostIP}:${hostPort}/FlowStopController/stopFlowStopExperiment`;
 
-    // Sending the HTTP request
-    fetch(url, { method: 'GET' }) // Add more configurations if needed
+    fetch(url, { method: 'GET' })
       .then(response => response.json())
-      .then(data => console.log(data))
+      .then(data => {
+        console.log(data);
+        setIsRunning(false);
+      })
       .catch(error => console.error('Error:', error));
   };
-
-
 
   const handleTabChange = (event, newValue) => {
     setTabIndex(newValue);
@@ -61,12 +105,11 @@ const FlowStopController = ({hostIP, hostPort, WindowTitle}) => {
   return (
     <Paper>
       <Tabs value={tabIndex} onChange={handleTabChange} aria-label="acquisition settings tabs">
-      <Tab label="Automatic Settings" />
-      <Tab label="Manual Acquisition Settings" />  
+        <Tab label="Automatic Settings" />
+        <Tab label="Manual Acquisition Settings" />
       </Tabs>
 
       <TabPanel value={tabIndex} index={1}>
-        {/* Manual Acquisition Settings */}
         <Typography>Focus</Typography>
         <Slider defaultValue={30} />
         <Typography>Pump Speed</Typography>
@@ -74,22 +117,100 @@ const FlowStopController = ({hostIP, hostPort, WindowTitle}) => {
         <Button variant="contained">Snap</Button>
         <TextField label="Exposure Time" defaultValue="0.1" />
         <TextField label="Gain" defaultValue="0" />
-        {/* Add more fields and layout as per your design */}
       </TabPanel>
 
       <TabPanel value={tabIndex} index={0}>
-      <TextField style={{ marginBottom: '20px' }} label="Time Stamp Name" defaultValue="0" onChange={(e) => setTimeStamp(e.target.value)} />
-      <TextField style={{ marginBottom: '20px' }} label="Experiment Name" defaultValue="Test" onChange={(e) => setExperimentName(e.target.value)} />
-      <TextField style={{ marginBottom: '20px' }} label="Experiment Description" defaultValue="Some description" onChange={(e) => setExperimentDescription(e.target.value)} />
-      <TextField style={{ marginBottom: '20px' }} label="Volume Per Image" defaultValue="1000" onChange={(e) => setVolumePerImage(e.target.value)} />
-      <TextField style={{ marginBottom: '20px' }} label="Time to stabilize" defaultValue="0.5" onChange={(e) => setTimeToStabilize(e.target.value)} />
-      <TextField style={{ marginBottom: '20px' }} label="Number of Images" defaultValue="10" onChange={(e) => setNumImages(e.target.value)} />
-      <div>
-        <Button style={{ marginBottom: '20px' }} variant="contained" onClick={startExperiment}>Start</Button>
-        <Button style={{ marginBottom: '20px' }} variant="contained" onClick={stopExperiment}>Stop</Button>
-      </div>
-    </TabPanel>
-        </Paper>
+        <Grid container spacing={2}>
+          <Grid item xs={12}>
+            <TextField
+              style={{ marginBottom: '20px' }}
+              label="Time Stamp Name"
+              value={timeStamp}
+              onChange={(e) => setTimeStamp(e.target.value)}
+              fullWidth
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <TextField
+              style={{ marginBottom: '20px' }}
+              label="Experiment Name"
+              value={experimentName}
+              onChange={(e) => setExperimentName(e.target.value)}
+              fullWidth
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <TextField
+              style={{ marginBottom: '20px' }}
+              label="Experiment Description"
+              value={experimentDescription}
+              onChange={(e) => setExperimentDescription(e.target.value)}
+              fullWidth
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <TextField
+              style={{ marginBottom: '20px' }}
+              label="Volume Per Image"
+              value={volumePerImage}
+              onChange={(e) => setVolumePerImage(e.target.value)}
+              fullWidth
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <TextField
+              style={{ marginBottom: '20px' }}
+              label="Time to stabilize"
+              value={timeToStabilize}
+              onChange={(e) => setTimeToStabilize(e.target.value)}
+              fullWidth
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <TextField
+              style={{ marginBottom: '20px' }}
+              label="Number of Images"
+              value={numImages}
+              onChange={(e) => setNumImages(e.target.value)}
+              fullWidth
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <div>
+              <Button
+                style={{ marginBottom: '20px', marginRight: '10px' }}
+                variant="contained"
+                onClick={startExperiment}
+                disabled={isRunning}
+              >
+                Start
+              </Button>
+              <Button
+                style={{ marginBottom: '20px' }}
+                variant="contained"
+                onClick={stopExperiment}
+                disabled={!isRunning}
+              >
+                Stop
+              </Button>
+            </div>
+          </Grid>
+          <Grid item xs={6}>
+            <Box display="flex" alignItems="center">
+              <Typography variant="h6">Status: </Typography>
+              {isRunning ? (
+                <CheckCircleIcon style={{ color: green[500], marginLeft: '10px' }} />
+              ) : (
+                <CancelIcon style={{ color: red[500], marginLeft: '10px' }} />
+              )}
+            </Box>
+          </Grid>
+          <Grid item xs={6}>
+            <Typography variant="h6">Images Taken: {currentImageCount}</Typography>
+          </Grid>
+        </Grid>
+      </TabPanel>
+    </Paper>
   );
 };
 

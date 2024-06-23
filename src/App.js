@@ -1,6 +1,7 @@
 import React, { useRef, useState } from "react";
-import ControlPanel_1 from "./components/ControlPanel_1";
-import ControlPanel_2 from "./components/ControlPanel_2";
+import Tab_LiveView from "./components/Tab_LiveView";
+import Tab_Widgets from "./components/Tab_Widgets";
+import FlowStopWidget from "./components/FlowStopWidget";
 import { Menu as MenuIcon } from "@mui/icons-material";
 import {
   Button,
@@ -52,6 +53,12 @@ function App() {
     { i: 'widget3', x: 4, y: 0, w: 2, h: 2 },
     { i: 'FlowStop', x: 6, y: 0, w: 5, h: 5 },
   ]);
+
+  // state variables for the control panels 
+  const [isStreamRunning, setStreamRunning] = useState(false);
+  const [illuminationSliderValue1, setIlluminationSliderValue1] = useState(0);
+  const [illuminationSliderValue2, setIlluminationSliderValue2] = useState(0);
+  const [illuminationSliderValue3, setIlluminationSliderValue3] = useState(0);
 
   
   const handleTabChange = (event, newValue) => {
@@ -180,20 +187,24 @@ function App() {
         textColor="inherit"
         style={{ marginTop: 64 }} // Adjusts the margin to align below the AppBar
       >
-        <Tab label="Control Panel 1" />
-        <Tab label="Control Panel 2" />
+        <Tab label="Live Parameters" />
+        <Tab label="Settings" />
         {/* Add more tabs as needed */}
       </Tabs>
 
       {/* Render different components based on the selected tab */}
       {selectedTab === 0 && <div>{
-            <ControlPanel_1 
+            <Tab_LiveView 
             hostIP={hostIP}
             hostPort={hostPort}
+            isStreamRunning={isStreamRunning}
+            setStreamRunning={setStreamRunning}
+            illuminationSliderValue1={illuminationSliderValue1}
+            setIlluminationSliderValue1={setIlluminationSliderValue1}  
           />
         }</div>}
       {selectedTab === 1 && <div>{
-       <ControlPanel_2 hostIP={hostIP} layout={layout} onLayoutChange={(newLayout) => setLayout(newLayout)} />
+       <Tab_Widgets hostIP={hostIP} hostPort={hostPort} layout={layout} onLayoutChange={(newLayout) => setLayout(newLayout)} />
        /* Components for Control Panel 2 */}</div>}
       {/* Add more conditional rendering for additional tabs */}
     </ThemeProvider>
