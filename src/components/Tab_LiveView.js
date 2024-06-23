@@ -211,6 +211,7 @@ const ControlPanel_1 = ({ hostIP, hostPort, isStreamRunning, setStreamRunning })
               autoPlay
               src={streamUrl}
               ref={videoRef}
+              alt={}
             ></img>
 
             <Box mb={5}>
