@@ -24,8 +24,9 @@ jobs:
         API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB_YOUSEETOO }}
       with:
         source-directory: 'build'
-        destination-github-username: 'beniroquai'
-        destination-repository-name: 'youseetoo/youseetoo.github.io'
+        destination-github-username: 'youseetoo'
+        destination-repository-name: 'youseetoo.github.io'
+        target-directory: 'imswitch'
         user-email: 'bene.d@gmx.de'
         target-branch: 'main'
         commit-message: 'Deploy React app build'
