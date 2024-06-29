@@ -6,7 +6,8 @@ FROM arm32v7/node:14
 
 
 # Clone the app
-RUN git clone https://github.com/beniroquai/imswitch-aiortc-react /appMicroscope
+# RUN git clone https://github.com/beniroquai/imswitch-aiortc-react /appMicroscope
+RUN ["/bin/sh", "-c", "git clone https://github.com/beniroquai/imswitch-aiortc-react /appMicroscope"]
 
 # Set the working directory to the cloned repository
 WORKDIR /appMicroscope
