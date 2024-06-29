@@ -37,5 +37,5 @@ jobs:
         context: .
         platforms: linux/arm/v7
         push: true
-        tags: ghcr.io/openc2/imswitch-aiortc-react/microscope-app:latest 
-        
+        tags: ghcr.io/openc2/imswitch-aiortc-react:latest 
+        labels: ${{ steps.meta.outputs.labels }}
