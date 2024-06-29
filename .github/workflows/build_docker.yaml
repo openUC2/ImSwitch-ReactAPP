@@ -37,4 +37,5 @@ jobs:
         context: .
         platforms: linux/arm/v7
         push: true
-        tags: ghcr.io/${{ github.repository }}/microscope-app:latest
+        tags: ghcr.io/openc2/imswitch-aiortc-react/microscope-app:latest 
+        
