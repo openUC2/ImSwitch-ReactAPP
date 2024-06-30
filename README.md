@@ -8,7 +8,18 @@ This is a first attempt to control an ImSwitch-controlled microscope using the b
 
 ![](./IMAGES/screencast.gif)
 
+# Docker
 
+You can use this inside docker using the following commands:
+```bash
+sudo docker build -t microscope-app .
+sudo docker run -p 5000:5000 8001:8001 microscope-app
+```
+or pull the herin compiled docker image and run it
+```bash
+sudo docker pull ghcr.io/openuc2/imswitch-aiortc-react:48332dcb133e7648fe860023dd7657c1323feca8
+sudo docker run -p 5000:5000 8001:8001 microscope-app
+```
 
 ## Available Scripts
 
