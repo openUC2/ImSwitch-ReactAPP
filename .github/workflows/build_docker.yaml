@@ -15,37 +15,29 @@ jobs:
     permissions:
       contents: read
       packages: write    
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4.1.0
-        with:
-          fetch-depth: 2
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v3
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v1
 
-      - name: Log in to the Container registry
-        uses: docker/login-action@v2.2.0
+      - name: Log in to GitHub container registry
+        uses: docker/login-action@v1.10.0
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ github.token }}
 
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v5.0.0
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.SHORT_SHA }}
+      - name: Lowercase the repo name and username
+        run: echo "REPO=${GITHUB_REPOSITORY,,}" >>${GITHUB_ENV}
 
-      - name: Build and push Docker image (latest tag)
-        uses: docker/build-push-action@v5.0.0
+      - name: Build and push container image to registry
+        uses: docker/build-push-action@v2
         with:
-          context: .
-          file: dockerfile
           push: true
-          platforms: linux/arm/v7
-          tags: ghcr.io/openuc2/imswitch:latest
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ghcr.io/${{ env.REPO }}:${{ github.sha }}
+          file: ./dockerfile
+
