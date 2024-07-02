@@ -43,4 +43,5 @@ jobs:
           push: true
           tags: ghcr.io/${{ env.REPO }}:latest
           file: ./dockerfile
+          platforms: linux/arm64
 
