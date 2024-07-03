@@ -6,7 +6,8 @@ This is a first attempt to control an ImSwitch-controlled microscope using the b
 
 # Showcase
 
-![](./IMAGES/screencast.gif)
+![](./IMAGES/screencast_2.gif)
+
 
 # Docker
 
