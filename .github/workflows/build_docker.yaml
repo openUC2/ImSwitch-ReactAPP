@@ -43,5 +43,9 @@ jobs:
           push: true
           tags: ghcr.io/${{ env.REPO }}:latest
           file: ./dockerfile
-          platforms: linux/arm64
+          platforms: linux/amd64,linux/arm32v7
+          build-args: |
+            BASE_IMAGE=arm32v7/node:14
+            BASE_IMAGE=node:14
+          labels: ${{ steps.meta.outputs.labels }}
 
