@@ -1,13 +1,13 @@
-# docker build -t microscope-app .
-# docker run -p 5000:5000 microscope-app
 # Use an official Node.js runtime as a parent image
-FROM arm32v7/node:14 
+# This will be specified during the build process to use the correct architecture
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
+#FROM arm32v7/node:14 
 #FROM node:14
 
 
 # Clone the app
-# RUN git clone https://github.com/beniroquai/imswitch-aiortc-react /appMicroscope
-RUN ["/bin/sh", "-c", "git clone https://github.com/beniroquai/imswitch-aiortc-react /appMicroscope"]
+RUN git clone https://github.com/beniroquai/imswitch-aiortc-react /appMicroscope
 
 # Set the working directory to the cloned repository
 WORKDIR /appMicroscope
@@ -29,4 +29,4 @@ RUN npm install -g serve
 CMD ["serve", "-s", "build"]
 
 # Expose the port the app runs on
-EXPOSE 5000
+EXPOSE 3000
