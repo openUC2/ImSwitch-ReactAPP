@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useState, useEffect } from 'react';
 import Tab_LiveView from "./components/Tab_LiveView";
 import Tab_Widgets from "./components/Tab_Widgets";
 import FlowStopWidget from "./components/FlowStopWidget";
@@ -43,7 +43,7 @@ const darkTheme = createTheme({
 
 function App() {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [hostIP, sethostIP] = useState("https://localhost");
+  const [hostIP, setHostIP] = useState("https://localhost");
   const [hostPort, sethostPort] = useState(8001);
   const [selectedTab, setSelectedTab] = useState(0);
   const [isDialogOpen, setDialogOpen] = useState(false);
@@ -53,6 +53,15 @@ function App() {
     { i: 'widget3', x: 4, y: 0, w: 2, h: 2 },
     { i: 'FlowStop', x: 6, y: 0, w: 5, h: 5 },
   ]);
+
+
+  useEffect(() => {
+    const currentHostname = window.location.hostname;
+    if (!currentHostname.startsWith("youseetoo.github.io")) {
+      setHostIP(`https://${currentHostname}`);
+    }
+  }, []);
+
 
   // state variables for the control panels 
   const [isStreamRunning, setStreamRunning] = useState(false);
@@ -70,7 +79,7 @@ function App() {
   };
 
   const handleOpenDialog = () => {
-    hostIP === "" ? sethostIP(hostIP) : sethostIP(hostIP);
+    hostIP === "" ? setHostIP(hostIP) : setHostIP(hostIP);
     hostPort === "" ? sethostPort(hostPort) : sethostPort(hostPort);
     setDialogOpen(true);
   };
@@ -93,14 +102,14 @@ function App() {
       ip = ip.replace('http://', 'https://');
     }
   
-    sethostIP(ip);
+    setHostIP(ip);
     
   };
 
   const handleSavehostIP = () => {
     console.log("IP Address saved:", hostIP, hostPort);
     
-    sethostIP(hostIP);
+    setHostIP(hostIP);
     sethostPort(hostPort);
     handleCloseDialog();
     // Here you can add the logic to use the IP address in your application
