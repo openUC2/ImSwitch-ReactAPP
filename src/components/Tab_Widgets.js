@@ -5,6 +5,7 @@ import DraggableWidget from './DraggableWidget';
 import FlowStopWidget from './FlowStopWidget';
 import Widget from './Widget';
 import FlowStopController from './FlowStopController';
+import ReconnectController from './ReconnectController';
 import './Tab_Widgets.css'; // Import the CSS file
 
 const Tab_Widgets = ({ hostIP, hostPort }) => {
@@ -15,6 +16,9 @@ const Tab_Widgets = ({ hostIP, hostPort }) => {
       </Grid>
       <Grid item xs={12} sm={6} md={4} className="grid-item">
         <FlowStopController hostIP={hostIP} hostPort={hostPort} title="Flow Stop" />
+      </Grid>
+      <Grid item xs={12} sm={6} md={4} className="grid-item">
+        <ReconnectController hostIP={hostIP} hostPort={hostPort} title="Reconnect" />
       </Grid>
     </Grid>
   );
