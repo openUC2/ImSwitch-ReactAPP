@@ -18,7 +18,7 @@ jobs:
     - name: Build React App
       run: npm run build
 
-    - name: Push to Another Repository
+    - name: Push to the youseetoo Repository for displaying at https://youseetoo.github.io/imswitch/index.html
       uses: cpina/github-action-push-to-another-repository@main
       env:
         API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB_YOUSEETOO }}
@@ -31,3 +31,17 @@ jobs:
         target-branch: 'main'
         commit-message: 'Deploy React app build'
         destination-directory: 'imswitch'
+    - name: Push to the imswitch repo for later use via fastapi
+      uses: cpina/github-action-push-to-another-repository@main
+      env:
+        API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB_YOUSEETOO }}
+      with:
+        source-directory: 'build'
+        destination-github-username: 'openuc2'
+        destination-repository-name: 'imswitch'
+        target-directory: 'imswitch/_data/static/imswitch'
+        user-email: 'bene.d@gmx.de'
+        target-branch: 'main'
+        commit-message: 'Deploy React app build'
+        destination-directory: 'imswitch'
+                
