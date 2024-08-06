@@ -41,7 +41,7 @@ jobs:
         destination-repository-name: 'ImSwitch'
         target-directory: 'imswitch/_data/static/imswitch'
         user-email: 'bene.d@gmx.de'
-        target-branch: 'main'
+        target-branch: 'master'
         commit-message: 'Deploy React app build'
         destination-directory: 'imswitch'
                 
