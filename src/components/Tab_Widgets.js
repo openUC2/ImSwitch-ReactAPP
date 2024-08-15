@@ -2,7 +2,6 @@
 import React from 'react';
 import { Grid, Paper, Typography, Slider, TextField, Switch } from '@mui/material';
 import DraggableWidget from './DraggableWidget';
-import FlowStopWidget from './FlowStopWidget';
 import Widget from './Widget';
 import FlowStopController from './FlowStopController';
 import ReconnectController from './ReconnectController';

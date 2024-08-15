@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect} from "react";
-import { Menu as MenuIcon, PlayArrow, Stop } from "@mui/icons-material";
+import { Menu as MenuIcon, PlayArrow, Stop, CameraAlt, FiberManualRecord, Stop as StopIcon } from "@mui/icons-material";
+import { makeStyles } from '@mui/styles';
 import {
   Box,
   Container,
@@ -14,12 +15,26 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  FormControlLabel,
   Slider,
+  Switch,
   Checkbox,
   Grid,
   // ... any other imports you need
 } from "@mui/material";
 import XYZControls from "./XYZControls"; // If needed
+
+
+const useStyles = makeStyles((theme) => ({
+  blinking: {
+    animation: `$blinkingEffect 1s infinite`,
+  },
+  '@keyframes blinkingEffect': {
+    '0%': { opacity: 1 },
+    '50%': { opacity: 0 },
+    '100%': { opacity: 1 },
+  },
+}));
 
 const ControlPanel_1 = ({ hostIP, hostPort, isStreamRunning, setStreamRunning }) => {
   // Effekt, der auf Änderungen von isStreamRunning reagiert
@@ -31,6 +46,7 @@ const ControlPanel_1 = ({ hostIP, hostPort, isStreamRunning, setStreamRunning })
     }
   }, [isStreamRunning]);
   const videoRef = useRef(null);
+  const classes = useStyles();
   const [isIllumination1Checked, setisIllumination1Checked] = useState(false);
   const [isIllumination2Checked, setisIllumination2Checked] = useState(false);
   const [isIllumination3Checked, setisIllumination3Checked] = useState(false);
@@ -38,8 +54,10 @@ const ControlPanel_1 = ({ hostIP, hostPort, isStreamRunning, setStreamRunning })
   const [sliderIllu2Value, setSlider2Value] = useState(0);
   const [sliderIllu3Value, setSlider3Value] = useState(0);
   const [exposureTime, setExposureTime] = useState("");
+  const [isCamSettingsAuto, setCamSettingsIsAuto] = useState(true);
   const [gain, setGain] = useState("");
   const [streamUrl, setStreamUrl] = useState("");
+  const [isRecording, setIsRecording] = useState(false);
 
   function startStream() {
     // Replace with the IP address of the host system
@@ -50,9 +68,65 @@ const ControlPanel_1 = ({ hostIP, hostPort, isStreamRunning, setStreamRunning })
     setStreamUrl("");
   }
 
+  const snapPhoto = async (event) => {
+    // https://localhost:8001/RecordingController/snapImage?output=false&toList=true
+    const url = `${hostIP}:${hostPort}/RecordingController/snapImage?output=false&toList=true`;
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+    } catch (error) {
+      console.error(
+        "There has been a problem with your fetch operation: ",
+        error
+      );
+    }
+    console.log('Photo snapped');
+  };
+
+  const startRecording = () => {
+    console.log('Recording started');
+    setIsRecording(true);
+    // https://localhost:8001/RecordingController/startRecording?mSaveFormat=4
+    const url = `${hostIP}:${hostPort}/RecordingController/startRecording?mSaveFormat=4`;
+    try {
+      const response = fetch(url);
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+    } catch (error) {
+      console.error(
+        "There has been a problem with your fetch operation: ",
+        error
+      );
+    }
+  };
+
+  const stopRecording = () => {
+    // https://localhost:8001/RecordingController/stopRecording
+    console.log('Recording stopped');
+    setIsRecording(false);
+    const url = `${hostIP}:${hostPort}/RecordingController/stopRecording`;
+    try {
+      const response = fetch(url);
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+    } catch (error) {
+      console.error(
+        "There has been a problem with your fetch operation: ",
+        error
+      );
+    }
+  };
+
+  const handleCamSettingsSwitchChange = (event) => {
+    setCamSettingsIsAuto(event.target.checked);
+  };
+
   const handleExposureChange = async (event) => {
     setExposureTime(event.target.value);
-    // Additional logic to handle exposure time change
     const url = `${hostIP}:${hostPort}/SettingsController/setDetectorExposureTime?exposureTime=${event.target.value}`;
     try {
       const response = await fetch(url);
@@ -224,6 +298,26 @@ const ControlPanel_1 = ({ hostIP, hostPort, isStreamRunning, setStreamRunning })
               <Button onClick={pauseStream}>
                 <Stop />
               </Button>
+              <Button onClick={snapPhoto}>
+        <CameraAlt />
+      </Button>
+      <Button onClick={startRecording} className={isRecording ? classes.blinking : ''}>
+        <FiberManualRecord />
+      </Button>
+      <Button onClick={stopRecording}>
+        <StopIcon />
+      </Button>              
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={isCamSettingsAuto}
+                    onChange={handleCamSettingsSwitchChange}
+                    name="cameraSettings"
+                    color="primary"
+                  />
+                }
+                label={isCamSettingsAuto ? "Automatic Camera Settings" : "Manual Camera Settings"}
+              />
               <TextField
                 id="exposure-time"
                 label="Exposure Time"
@@ -312,7 +406,7 @@ const ControlPanel_1 = ({ hostIP, hostPort, isStreamRunning, setStreamRunning })
 
       <Box component="footer" p={2} mt={5} bgcolor="background.paper">
         <Typography variant="h6" align="center" fontWeight="bold">
-          Your Footer Text Here
+          (C) CopyRight openUC2 GmbH (openUC2.com)
         </Typography>
       </Box>
 

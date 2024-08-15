@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Tab_LiveView from "./components/Tab_LiveView";
 import Tab_Widgets from "./components/Tab_Widgets";
-import FlowStopWidget from "./components/FlowStopWidget";
 import { Menu as MenuIcon } from "@mui/icons-material";
 import {
   Button,
@@ -23,6 +22,7 @@ import {
   TextField,
   Avatar,
   Tab,
+  Switch,
   Tabs,
   FormControl,
   InputLabel,
@@ -143,15 +143,10 @@ function App() {
             "Devices",
             "Workflows",
             "Remote Demo",
-            "Notifications",
+            "About",
           ].map((text) => (
-            <ListItem
-              button
-              onClick={() => text === "Connections" && handleOpenDialog()}
-            >
-              <Typography variant="h6" fontWeight="bold">
-                {text}
-              </Typography>
+            <ListItem button onClick={() => text === "Connections" && handleOpenDialog()}>
+              <Typography variant="h6" fontWeight="bold"> {text} </Typography>
             </ListItem>
           ))}
         </List>

@@ -4,9 +4,11 @@
   "private": true,
   "homepage": "https://youseetoo.github.io/imswitch",
   "dependencies": {
-    "@emotion/react": "^11.11.1",
-    "@emotion/styled": "^11.11.0",
+    "@emotion/react": "^11.13.0",
+    "@emotion/styled": "^11.13.0",
     "@mui/icons-material": "^5.15.6",
+    "@mui/material": "^5.16.7",
+    "@mui/styles": "^5.16.7",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
@@ -15,7 +17,9 @@
     "react-dom": "^18.2.0",
     "react-draggable": "^4.4.6",
     "react-grid-layout": "^1.4.4",
+    "react-mobile-datepicker": "^4.0.2",
     "react-scripts": "5.0.1",
+    "react-simple-picker": "^1.1.4",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
