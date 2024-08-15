@@ -34,14 +34,14 @@ jobs:
     - name: Push to the imswitch repo for later use via fastapi
       uses: cpina/github-action-push-to-another-repository@main
       env:
-        API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB_YOUSEETOO }}
+        API_TOKEN_GITHUB: ${{ secrets.OPENUC2_IMSWITCH }}
       with:
         source-directory: 'build'
-        destination-github-username: 'openuc2'
-        destination-repository-name: 'imswitch'
+        destination-github-username: 'openUC2'
+        destination-repository-name: 'ImSwitch'
         target-directory: 'imswitch/_data/static/imswitch'
         user-email: 'bene.d@gmx.de'
-        target-branch: 'main'
+        target-branch: 'master'
         commit-message: 'Deploy React app build'
         destination-directory: 'imswitch'
                 
