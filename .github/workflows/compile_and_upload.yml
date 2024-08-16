@@ -12,8 +12,8 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v2
 
-    - name: Install Dependencies
-      run: npm install
+    - name: Install dependencies
+      run: npm install --legacy-peer-deps
 
     - name: Build React App
       run: npm run build
