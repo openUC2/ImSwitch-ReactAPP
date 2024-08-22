@@ -9,10 +9,10 @@ const AxisControl = ({ axisLabel, onButtonPress, hostIP, hostPort }) => {
   const [isStepsOpen, setStepsOpen] = useState(false);
   const [isSpeedOpen, setSpeedOpen] = useState(false);
 
-  const dialValues = [-100000, -10000, -1000, -500, -100, -50, -10, -5, 5, 10, 50, 100, 500, 1000, 10000, 100000];
+  const dialValues = [1, 5, 10, 50, 100, 500, 1000, 10000, 100000];
 
   const handleIncrement = () => {
-    const url = `${hostIP}:${hostPort}/PositionerController/movePositioner?axis=${axisLabel}&dist=${steps}&isAbsolute=false&isBlocking=false&speed=${speedValue}`;
+    const url = `${hostIP}:${hostPort}/PositionerController/movePositioner?axis=${axisLabel}&dist=${Math.abs(steps)}&isAbsolute=false&isBlocking=false&speed=${speedValue}`;
     onButtonPress(url);
   };
 
@@ -47,9 +47,16 @@ const AxisControl = ({ axisLabel, onButtonPress, hostIP, hostPort }) => {
   };
 
   const handleStop = () => {
-    const url = `${hostIP}:${hostPort}/PositionerController/movePositioner?axis=${axisLabel}&dist=0&isAbsolute=false&isBlocking=false&speed=0`;
+    ///PositionerController/stopAxis?positionerName=x&axis=X 
+    const url = `${hostIP}:${hostPort}/PositionerController/stopAxis?axis=${axisLabel}`;
     onButtonPress(url);
   };
+
+  const handleForever = () => {
+    // https://localhost:8001/PositionerController/movePositionerForever?axis=X&speed=0&is_stop=false
+    const url = `${hostIP}:${hostPort}/PositionerController/movePositionerForever?axis=${axisLabel}&speed=${speedValue}&is_stop=false`;
+    onButtonPress(url);
+  }
 
   return (
     <Grid container spacing={1} direction="column" alignItems="center">
@@ -77,15 +84,9 @@ const AxisControl = ({ axisLabel, onButtonPress, hostIP, hostPort }) => {
         <Grid item>
           <Button onClick={handleStop} variant="contained" color="secondary">Stop</Button>
         </Grid>
-      </Grid>
-      <Grid item xs={12} sx={{ maxWidth: 300, width: '100%' }}>
-        <Slider
-          value={sliderValue}
-          onChange={handleSliderChange}
-          onChangeCommitted={handleSliderCommit}
-          min={0}
-          max={100} 
-        />
+        <Grid item>
+          <Button onClick={handleForever} variant="contained" color="secondary">Forever</Button>
+        </Grid>        
       </Grid>
 
       {/* Dialog for Steps */}

@@ -33,6 +33,7 @@ const FlowStopController = ({ hostIP, hostPort, WindowTitle }) => {
   const [numImages, setNumImages] = useState('10');
   const [volumePerImage, setVolumePerImage] = useState('1000');
   const [timeToStabilize, setTimeToStabilize] = useState('0.5');
+  const [pumpSpeed, setPumpSpeed] = useState('10000');
   const [isRunning, setIsRunning] = useState(false);
   const [currentImageCount, setCurrentImageCount] = useState(0);
 
@@ -59,6 +60,7 @@ const FlowStopController = ({ hostIP, hostPort, WindowTitle }) => {
         setNumImages(parseInt(data.numImages, 10));
         setVolumePerImage(parseFloat(data.volumePerImage));
         setTimeToStabilize(parseFloat(data.timeToStabilize));
+        setPumpSpeed(parseInt(data.pumpSpeed, 10));
       } catch (error) {
         console.error('Error fetching experiment parameters:', error);
       }
@@ -75,7 +77,9 @@ const FlowStopController = ({ hostIP, hostPort, WindowTitle }) => {
   }, [hostIP, hostPort]);
 
   const startExperiment = () => {
-    const url = `${hostIP}:${hostPort}/FlowStopController/startFlowStopExperiment?timeStamp=${timeStamp}&experimentName=${experimentName}&experimentDescription=${experimentDescription}&uniqueId=${uniqueId}&numImages=${numImages}&volumePerImage=${volumePerImage}&timeToStabilize=${timeToStabilize}`;
+    // https://localhost:8001/FlowStopController/startFlowStopExperiment?timeStamp=asdf&experimentName=adf&experimentDescription=asdf&uniqueId=asdf&numImages=19&volumePerImage=199&timeToStabilize=1&delayToStart=1&frameRate=1&filePath=.%2F&fileFormat=TIF&isRecordVideo=true&pumpSpeed=10000
+
+    const url = `${hostIP}:${hostPort}/FlowStopController/startFlowStopExperiment?timeStamp=${timeStamp}&experimentName=${experimentName}&experimentDescription=${experimentDescription}&uniqueId=${uniqueId}&numImages=${numImages}&volumePerImage=${volumePerImage}&timeToStabilize=${timeToStabilize}&isRecordVideo=true&pumpSpeed=${pumpSpeed}`;
 
     fetch(url, { method: 'GET' })
       .then(response => response.json())
@@ -166,6 +170,15 @@ const FlowStopController = ({ hostIP, hostPort, WindowTitle }) => {
               fullWidth
             />
           </Grid>
+          <Grid item xs={12}>
+            <TextField
+              style={{ marginBottom: '20px' }}
+              label="Pump Speed"
+              value={pumpSpeed}
+              onChange={(e) => setUniqueId(e.target.value)}
+              fullWidth
+            />
+            </Grid>
           <Grid item xs={12}>
             <TextField
               style={{ marginBottom: '20px' }}
