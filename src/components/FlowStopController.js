@@ -32,8 +32,8 @@ const FlowStopController = ({ hostIP, hostPort, WindowTitle }) => {
   const [uniqueId, setUniqueId] = useState('1');
   const [numImages, setNumImages] = useState('10');
   const [volumePerImage, setVolumePerImage] = useState('1000');
-  const [timeToStabilize, setTimeToStabilize] = useState('0.5');
-  const [pumpSpeed, setPumpSpeed] = useState('10000');
+  const [timeToStabilize, setTimeToStabilize] = useState(0.5);
+  const [pumpSpeed, setPumpSpeed] = useState(10000);
   const [isRunning, setIsRunning] = useState(false);
   const [currentImageCount, setCurrentImageCount] = useState(0);
 
