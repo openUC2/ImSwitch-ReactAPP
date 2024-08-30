@@ -6,6 +6,8 @@ const HistoScanController = ({ hostIP, hostPort }) => {
   const [illuminationValue, setIlluminationValue] = useState(128);
   const [stepSizeX, setStepSizeX] = useState('300');
   const [stepSizeY, setStepSizeY] = useState('300');
+  const [stepsX, setStepsX] = useState('2');
+  const [stepsY, setStepsY] = useState('2');
   const [path, setPath] = useState('Default Path');
   const [timeInterval, setTimeInterval] = useState('');
   const [numberOfScans, setNumberOfScans] = useState('');
@@ -28,7 +30,7 @@ const HistoScanController = ({ hostIP, hostPort }) => {
     const mInitPosY = initPosY || 0;
 
     const url = `${hostIP}:${hostPort}/HistoScanController/startHistoScanTileBasedByParameters?` +
-      `numberTilesX=2&numberTilesY=2&stepSizeX=${stepSizeX}&stepSizeY=${stepSizeY}&` +
+      `numberTilesX=${stepsX}&numberTilesY=${stepsY}&stepSizeX=${stepSizeX}&stepSizeY=${stepSizeY}&` +
       `nTimes=${nTimesValue}&tPeriod=${tPeriodValue}&` +
       `initPosX=${mInitPosX}&initPosY=${mInitPosY}&isStitchAshlar=${isStitchAshlar}&` +
       `isStitchAshlarFlipX=${isStitchAshlarFlipX}&isStitchAshlarFlipY=${isStitchAshlarFlipY}&resizeFactor=${resizeFactor}`;
@@ -117,6 +119,22 @@ const HistoScanController = ({ hostIP, hostPort }) => {
             fullWidth
           />
         </Grid>
+        <Grid item xs={6}>
+          <TextField
+            label="N-Steps X"
+            value={stepsX}
+            onChange={(e) => setStepsX(e.target.value)}
+            fullWidth
+          />
+        </Grid>
+        <Grid item xs={6}>
+          <TextField
+            label="N-Steps Y"
+            value={stepsY}
+            onChange={(e) => setStepsY(e.target.value)}
+            fullWidth
+          />
+        </Grid>        
         <Grid item xs={12}>
           <TextField
             label="Path"
@@ -186,7 +204,7 @@ const HistoScanController = ({ hostIP, hostPort }) => {
             fullWidth
           />
         </Grid>
-        
+
 
 
 

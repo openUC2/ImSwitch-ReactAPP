@@ -192,7 +192,7 @@ function App() {
         style={{ marginTop: 64 }} // Adjusts the margin to align below the AppBar
       >
         <Tab label="Live Parameters" />
-        <Tab label="Settings" />
+        <Tab label="Plugins" />
         {/* Add more tabs as needed */}
       </Tabs>
 

@@ -20,7 +20,14 @@ const MCTController = ({ hostIP, hostPort }) => {
   const [isRunning, setIsRunning] = useState(false);
 
   const handleStart = () => {
-    const url = `${hostIP}:${hostPort}/start`;
+    // https://localhost:8001/MCTController/startTimelapseImaging?tperiod=5&nImagesToCapture=52&MCTFilename=arsfadf&MCTDate=asdf&zStackEnabled=false&zStackMin=0&zStackMax=0&zStackStep=0&xyScanEnabled=false&xScanMin=0&xScanMax=0&xScanStep=0&yScanMin=0&yScanMax=0&yScanStep=0&IlluValue1=1000&IlluValue2=1000&IlluValue3=1000
+    const url = `${hostIP}:${hostPort}/MCTController/startTimelapseImaging?` +
+      `tperiod=${timePeriod}&nImagesToCapture=${numMeasurements}&MCTFilename=${fileName}&` +
+      `zStackEnabled=true&zStackMin=${zMin}&zStackMax=${zMax}&zStackStep=${zSteps}&` +
+      `xyScanEnabled=true&xScanMin=${xMin}&xScanMax=${xMax}&xScanStep=${xSteps}&` +
+      `yScanMin=${yMin}&yScanMax=${yMax}&yScanStep=${ySteps}&` +
+      `IlluValue1=${intensityLaser1}&IlluValue2=${intensityLaser2}&IlluValue3=${intensityLED}`;
+          
     fetch(url, { method: 'GET' })
       .then(response => response.json())
       .then(data => {
@@ -31,7 +38,8 @@ const MCTController = ({ hostIP, hostPort }) => {
   };
 
   const handleStop = () => {
-    const url = `${hostIP}:${hostPort}/stop`;
+    //https://localhost:8001/MCTController/stopTimelapseImaging
+    const url = `${hostIP}:${hostPort}/MCTController/stopTimelapseImaging`;
     fetch(url, { method: 'GET' })
       .then(response => response.json())
       .then(data => {
