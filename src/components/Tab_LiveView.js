@@ -1,6 +1,14 @@
-import React, { useRef, useState, useEffect} from "react";
-import { Menu as MenuIcon, PlayArrow, Stop, CameraAlt, FiberManualRecord, Stop as StopIcon } from "@mui/icons-material";
-import { makeStyles } from '@mui/styles';
+import React, { useRef, useContext, useState, useEffect } from "react";
+import {
+  Menu as MenuIcon,
+  PlayArrow,
+  Stop,
+  CameraAlt,
+  FiberManualRecord,
+  Stop as StopIcon,
+} from "@mui/icons-material";
+import { LiveWidgetContext } from "../context/LiveWidgetContext";
+import { makeStyles } from "@mui/styles";
 import {
   Box,
   Container,
@@ -24,20 +32,37 @@ import {
 } from "@mui/material";
 import XYZControls from "./XYZControls"; // If needed
 
-
 const useStyles = makeStyles((theme) => ({
   blinking: {
     animation: `$blinkingEffect 1s infinite`,
   },
-  '@keyframes blinkingEffect': {
-    '0%': { opacity: 1 },
-    '50%': { opacity: 0 },
-    '100%': { opacity: 1 },
+  "@keyframes blinkingEffect": {
+    "0%": { opacity: 1 },
+    "50%": { opacity: 0 },
+    "100%": { opacity: 1 },
   },
 }));
 
-const ControlPanel_1 = ({ hostIP, hostPort, isStreamRunning, setStreamRunning }) => {
-  // Effekt, der auf Änderungen von isStreamRunning reagiert
+const ControlPanel_1 = ({ hostIP, hostPort }) => {
+  // Access the context using useContext
+  const {
+    isStreamRunning,
+    setStreamRunning,
+    sliderIllu1Value,
+    setIllu1Slider,
+    sliderIllu2Value,
+    setIllu2Slider,
+    sliderIllu3Value,
+    setIllu3Slider,
+    isIllumination1Checked,
+    setisIllumination1Checked,
+    isIllumination2Checked,
+    setisIllumination2Checked,
+    isIllumination3Checked,
+    setisIllumination3Checked,
+  } = useContext(LiveWidgetContext);
+
+  // Effect that reacts on changes in the isStreamRunning state
   useEffect(() => {
     if (isStreamRunning) {
       startStream();
@@ -45,14 +70,9 @@ const ControlPanel_1 = ({ hostIP, hostPort, isStreamRunning, setStreamRunning })
       pauseStream();
     }
   }, [isStreamRunning]);
+
   const videoRef = useRef(null);
   const classes = useStyles();
-  const [isIllumination1Checked, setisIllumination1Checked] = useState(false);
-  const [isIllumination2Checked, setisIllumination2Checked] = useState(false);
-  const [isIllumination3Checked, setisIllumination3Checked] = useState(false);
-  const [sliderIllu1Value, setIllu1Slider] = useState(0);
-  const [sliderIllu2Value, setSlider2Value] = useState(0);
-  const [sliderIllu3Value, setSlider3Value] = useState(0);
   const [exposureTime, setExposureTime] = useState("");
   const [isCamSettingsAuto, setCamSettingsIsAuto] = useState(true);
   const [gain, setGain] = useState("");
@@ -82,11 +102,11 @@ const ControlPanel_1 = ({ hostIP, hostPort, isStreamRunning, setStreamRunning })
         error
       );
     }
-    console.log('Photo snapped');
+    console.log("Photo snapped");
   };
 
   const startRecording = () => {
-    console.log('Recording started');
+    console.log("Recording started");
     setIsRecording(true);
     // https://localhost:8001/RecordingController/startRecording?mSaveFormat=4
     const url = `${hostIP}:${hostPort}/RecordingController/startRecording?mSaveFormat=4`;
@@ -105,7 +125,7 @@ const ControlPanel_1 = ({ hostIP, hostPort, isStreamRunning, setStreamRunning })
 
   const stopRecording = () => {
     // https://localhost:8001/RecordingController/stopRecording
-    console.log('Recording stopped');
+    console.log("Recording stopped");
     setIsRecording(false);
     const url = `${hostIP}:${hostPort}/RecordingController/stopRecording`;
     try {
@@ -170,7 +190,6 @@ const ControlPanel_1 = ({ hostIP, hostPort, isStreamRunning, setStreamRunning })
 
   const handleIllumination1SliderChange = async (event) => {
     setIllu1Slider(event.target.value);
-
     const url = `${hostIP}:${hostPort}/LaserController/setLaserValue?laserName=488%20Laser&value=${event.target.value}`;
 
     try {
@@ -187,7 +206,7 @@ const ControlPanel_1 = ({ hostIP, hostPort, isStreamRunning, setStreamRunning })
   };
 
   const handleIllumination2SliderChange = async (event) => {
-    setSlider2Value(event.target.value);
+    setIllu2Slider(event.target.value);
     const url = `${hostIP}:${hostPort}/LaserController/setLaserValue?laserName=635 Laser&value=${event.target.value}`;
     try {
       const response = await fetch(url);
@@ -203,7 +222,7 @@ const ControlPanel_1 = ({ hostIP, hostPort, isStreamRunning, setStreamRunning })
   };
 
   const handleIllumination3SliderChange = async (event) => {
-    setSlider3Value(event.target.value);
+    setIllu3Slider(event.target.value);
     const url = `${hostIP}:${hostPort}/LaserController/setLaserValue?laserName=LED&value=${event.target.value}`;
     try {
       const response = await fetch(url);
@@ -271,7 +290,7 @@ const ControlPanel_1 = ({ hostIP, hostPort, isStreamRunning, setStreamRunning })
         error
       );
     }
-  }
+  };
   return (
     <div>
       <Container component="main" sx={{ flexGrow: 1, p: 3, pt: 10 }}>
@@ -299,14 +318,17 @@ const ControlPanel_1 = ({ hostIP, hostPort, isStreamRunning, setStreamRunning })
                 <Stop />
               </Button>
               <Button onClick={snapPhoto}>
-        <CameraAlt />
-      </Button>
-      <Button onClick={startRecording} className={isRecording ? classes.blinking : ''}>
-        <FiberManualRecord />
-      </Button>
-      <Button onClick={stopRecording}>
-        <StopIcon />
-      </Button>              
+                <CameraAlt />
+              </Button>
+              <Button
+                onClick={startRecording}
+                className={isRecording ? classes.blinking : ""}
+              >
+                <FiberManualRecord />
+              </Button>
+              <Button onClick={stopRecording}>
+                <StopIcon />
+              </Button>
               <FormControlLabel
                 control={
                   <Switch
@@ -316,7 +338,11 @@ const ControlPanel_1 = ({ hostIP, hostPort, isStreamRunning, setStreamRunning })
                     color="primary"
                   />
                 }
-                label={isCamSettingsAuto ? "Automatic Camera Settings" : "Manual Camera Settings"}
+                label={
+                  isCamSettingsAuto
+                    ? "Automatic Camera Settings"
+                    : "Manual Camera Settings"
+                }
               />
               <TextField
                 id="exposure-time"
@@ -353,10 +379,10 @@ const ControlPanel_1 = ({ hostIP, hostPort, isStreamRunning, setStreamRunning })
               </Typography>
               <div style={{ display: "flex", alignItems: "center" }}>
                 <Typography variant="h8" gutterBottom>
-                  Laser 488 nm
+                  Illu 1: {sliderIllu1Value}
                 </Typography>
                 <Slider
-                  defaultValue={30}
+                  value={sliderIllu1Value}
                   min={0}
                   max={1023}
                   onChange={handleIllumination1SliderChange}
@@ -369,10 +395,10 @@ const ControlPanel_1 = ({ hostIP, hostPort, isStreamRunning, setStreamRunning })
               </div>
               <div style={{ display: "flex", alignItems: "center" }}>
                 <Typography variant="h8" gutterBottom>
-                  Laser 635 nm
+                Illu 2: {sliderIllu2Value}
                 </Typography>
                 <Slider
-                  defaultValue={30}
+                  value={sliderIllu2Value}
                   min={0}
                   max={1023}
                   onChange={handleIllumination2SliderChange}
@@ -385,10 +411,10 @@ const ControlPanel_1 = ({ hostIP, hostPort, isStreamRunning, setStreamRunning })
               </div>
               <div style={{ display: "flex", alignItems: "center" }}>
                 <Typography variant="h8" gutterBottom>
-                  LED
+                  Illu 3: {sliderIllu3Value}
                 </Typography>
                 <Slider
-                  defaultValue={30}
+                  value={sliderIllu3Value}
                   min={0}
                   max={1023}
                   onChange={handleIllumination3SliderChange}

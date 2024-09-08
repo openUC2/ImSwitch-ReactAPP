@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Tab_LiveView from "./components/Tab_LiveView";
+import { LiveWidgetProvider } from './context/LiveWidgetContext'; // Import the context provider
 import Tab_Widgets from "./components/Tab_Widgets";
 import { Menu as MenuIcon } from "@mui/icons-material";
 import {
@@ -63,13 +64,7 @@ function App() {
   }, []);
 
 
-  // state variables for the control panels 
-  const [isStreamRunning, setStreamRunning] = useState(false);
-  const [illuminationSliderValue1, setIlluminationSliderValue1] = useState(0);
-  const [illuminationSliderValue2, setIlluminationSliderValue2] = useState(0);
-  const [illuminationSliderValue3, setIlluminationSliderValue3] = useState(0);
 
-  
   const handleTabChange = (event, newValue) => {
     setSelectedTab(newValue);
   };
@@ -196,21 +191,20 @@ function App() {
         {/* Add more tabs as needed */}
       </Tabs>
 
+      {/* Wrap your app with LiveWidgetProvider */}
+      <LiveWidgetProvider>
       {/* Render different components based on the selected tab */}
       {selectedTab === 0 && <div>{
             <Tab_LiveView 
             hostIP={hostIP}
             hostPort={hostPort}
-            isStreamRunning={isStreamRunning}
-            setStreamRunning={setStreamRunning}
-            illuminationSliderValue1={illuminationSliderValue1}
-            setIlluminationSliderValue1={setIlluminationSliderValue1}  
           />
         }</div>}
       {selectedTab === 1 && <div>{
        <Tab_Widgets hostIP={hostIP} hostPort={hostPort} layout={layout} onLayoutChange={(newLayout) => setLayout(newLayout)} />
        /* Components for Control Panel 2 */}</div>}
       {/* Add more conditional rendering for additional tabs */}
+      </LiveWidgetProvider>
     </ThemeProvider>
   );
 }
