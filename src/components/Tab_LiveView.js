@@ -65,9 +65,9 @@ const ControlPanel_1 = ({ hostIP, hostPort }) => {
   // Effect that reacts on changes in the isStreamRunning state
   useEffect(() => {
     if (isStreamRunning) {
-      startStream();
+      setStreamUrl(`${hostIP}:${hostPort}/RecordingController/video_feeder`);
     } else {
-      pauseStream();
+      setStreamUrl("");
     }
   }, [isStreamRunning]);
 
@@ -78,15 +78,6 @@ const ControlPanel_1 = ({ hostIP, hostPort }) => {
   const [gain, setGain] = useState("");
   const [streamUrl, setStreamUrl] = useState("");
   const [isRecording, setIsRecording] = useState(false);
-
-  function startStream() {
-    // Replace with the IP address of the host system
-    setStreamUrl(`${hostIP}:${hostPort}/RecordingController/video_feeder`);
-  }
-
-  function pauseStream() {
-    setStreamUrl("");
-  }
 
   const snapPhoto = async (event) => {
     // https://localhost:8001/RecordingController/snapImage?output=false&toList=true
@@ -255,6 +246,11 @@ const ControlPanel_1 = ({ hostIP, hostPort }) => {
       );
     }
   };
+
+  const handleStreamToggle = () => {
+    setStreamRunning(!isStreamRunning);
+  };
+
   const handleIllumination2CheckboxChange = async (event) => {
     setisIllumination2Checked(event.target.checked);
 
@@ -299,23 +295,27 @@ const ControlPanel_1 = ({ hostIP, hostPort }) => {
             <Typography variant="h6" gutterBottom>
               Video Display
             </Typography>
-            <img
-              style={{ width: "100%", height: "auto" }}
-              autoPlay
-              src={streamUrl}
-              ref={videoRef}
-              alt={"Live Stream"}
-            ></img>
+            {streamUrl ? (
+              <img
+                style={{ width: "100%", height: "auto" }}
+                autoPlay
+                src={streamUrl}
+                ref={videoRef}
+                alt={"Live Stream"}
+              ></img>
+            ) : null}
 
             <Box mb={5}>
               <Typography variant="h6" gutterBottom>
                 Stream Control
               </Typography>
-              <Button onClick={startStream}>
-                <PlayArrow />
-              </Button>
-              <Button onClick={pauseStream}>
-                <Stop />
+              <Button
+                onClick={handleStreamToggle}
+                variant="contained"
+                color={isStreamRunning ? "secondary" : "primary"}
+              >
+                {isStreamRunning ? <Stop /> : <PlayArrow />}
+                {isStreamRunning ? "Stop Stream" : "Start Stream"}
               </Button>
               <Button onClick={snapPhoto}>
                 <CameraAlt />
@@ -395,7 +395,7 @@ const ControlPanel_1 = ({ hostIP, hostPort }) => {
               </div>
               <div style={{ display: "flex", alignItems: "center" }}>
                 <Typography variant="h8" gutterBottom>
-                Illu 2: {sliderIllu2Value}
+                  Illu 2: {sliderIllu2Value}
                 </Typography>
                 <Slider
                   value={sliderIllu2Value}
