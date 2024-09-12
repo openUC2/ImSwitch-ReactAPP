@@ -6,6 +6,7 @@ import Widget from './Widget';
 import FlowStopController from './FlowStopController';
 import HistoScanController from './HistoScanController';
 import MCTController from './MCTController';
+import { MCTProvider } from '../context/MCTContext'; // Import the context provider
 import ReconnectController from './ReconnectController';
 import './Tab_Widgets.css'; // Import the CSS file
 
@@ -20,7 +21,9 @@ const Tab_Widgets = ({ hostIP, hostPort }) => {
         <ReconnectController hostIP={hostIP} hostPort={hostPort} title="Reconnect" />
       </Grid>
       <Grid item xs={12} sm={6} md={4} className="grid-item">
-        <MCTController hostIP={hostIP} hostPort={hostPort} title="MCT" />
+        <MCTProvider>
+          <MCTController hostIP={hostIP} hostPort={hostPort} title="MCT" />
+        </MCTProvider>
       </Grid>
       <Grid item xs={12} sm={6} md={4} className="grid-item">
         <HistoScanController hostIP={hostIP} hostPort={hostPort} title="HistoScan" />

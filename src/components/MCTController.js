@@ -1,56 +1,91 @@
-import React, { useState } from 'react';
-import { Paper, Grid, TextField, Checkbox, FormControlLabel, Slider, Button, Typography } from '@mui/material';
+// src/components/MCTController.js
+import React, { useContext } from "react";
+import { MCTContext } from "../context/MCTContext";
+import {
+  Paper,
+  Grid,
+  TextField,
+  Checkbox,
+  FormControlLabel,
+  Slider,
+  Button,
+  Typography,
+} from "@mui/material";
 
 const MCTController = ({ hostIP, hostPort }) => {
-  const [timePeriod, setTimePeriod] = useState('5');
-  const [numMeasurements, setNumMeasurements] = useState('1');
-  const [zMin, setZMin] = useState('-100');
-  const [zMax, setZMax] = useState('100');
-  const [zSteps, setZSteps] = useState('0');
-  const [xMin, setXMin] = useState('-1000');
-  const [xMax, setXMax] = useState('1000');
-  const [xSteps, setXSteps] = useState('0');
-  const [yMin, setYMin] = useState('-1000');
-  const [yMax, setYMax] = useState('1000');
-  const [ySteps, setYSteps] = useState('0');
-  const [intensityLaser1, setIntensityLaser1] = useState(0);
-  const [intensityLaser2, setIntensityLaser2] = useState(0);
-  const [intensityLED, setIntensityLED] = useState(0);
-  const [fileName, setFileName] = useState('MCT');
-  const [isRunning, setIsRunning] = useState(false);
+  // Access the context using useContext
+  const {
+    timePeriod,
+    setTimePeriod,
+    numMeasurements,
+    setNumMeasurements,
+    zMin,
+    setZMin,
+    zMax,
+    setZMax,
+    zSteps,
+    setZSteps,
+    zStackEnabled,
+    setZStackEnabled,
+    xMin,
+    setXMin,
+    xMax,
+    setXMax,
+    xSteps,
+    setXSteps,
+    xStackEnabled,
+    setXStackEnabled,
+    yMin,
+    setYMin,
+    yMax,
+    setYMax,
+    ySteps,
+    setYSteps,
+    yStackEnabled,
+    setYStackEnabled,
+    intensityLaser1,
+    setIntensityLaser1,
+    intensityLaser2,
+    setIntensityLaser2,
+    intensityLED,
+    setIntensityLED,
+    fileName,
+    setFileName,
+    isRunning,
+    setIsRunning,
+  } = useContext(MCTContext);
 
   const handleStart = () => {
-    // https://localhost:8001/MCTController/startTimelapseImaging?tperiod=5&nImagesToCapture=52&MCTFilename=arsfadf&MCTDate=asdf&zStackEnabled=false&zStackMin=0&zStackMax=0&zStackStep=0&xyScanEnabled=false&xScanMin=0&xScanMax=0&xScanStep=0&yScanMin=0&yScanMax=0&yScanStep=0&IlluValue1=1000&IlluValue2=1000&IlluValue3=1000
-    const url = `${hostIP}:${hostPort}/MCTController/startTimelapseImaging?` +
+    const url =
+      `${hostIP}:${hostPort}/MCTController/startTimelapseImaging?` +
       `tperiod=${timePeriod}&nImagesToCapture=${numMeasurements}&MCTFilename=${fileName}&` +
-      `zStackEnabled=true&zStackMin=${zMin}&zStackMax=${zMax}&zStackStep=${zSteps}&` +
-      `xyScanEnabled=true&xScanMin=${xMin}&xScanMax=${xMax}&xScanStep=${xSteps}&` +
+      `zStackEnabled=${zStackEnabled}&zStackMin=${zMin}&zStackMax=${zMax}&zStackStep=${zSteps}&` +
+      `xyScanEnabled=${xStackEnabled}&xScanMin=${xMin}&xScanMax=${xMax}&xScanStep=${xSteps}&` +
       `yScanMin=${yMin}&yScanMax=${yMax}&yScanStep=${ySteps}&` +
       `IlluValue1=${intensityLaser1}&IlluValue2=${intensityLaser2}&IlluValue3=${intensityLED}`;
-          
-    fetch(url, { method: 'GET' })
-      .then(response => response.json())
-      .then(data => {
+
+    fetch(url, { method: "GET" })
+      .then((response) => response.json())
+      .then((data) => {
         console.log(data);
         setIsRunning(true);
       })
-      .catch(error => console.error('Error:', error));
+      .catch((error) => console.error("Error:", error));
   };
 
   const handleStop = () => {
-    //https://localhost:8001/MCTController/stopTimelapseImaging
     const url = `${hostIP}:${hostPort}/MCTController/stopTimelapseImaging`;
-    fetch(url, { method: 'GET' })
-      .then(response => response.json())
-      .then(data => {
+    fetch(url, { method: "GET" })
+      .then((response) => response.json())
+      .then((data) => {
         console.log(data);
         setIsRunning(false);
       })
-      .catch(error => console.error('Error:', error));
+      .catch((error) => console.error("Error:", error));
   };
 
   return (
-    <Paper style={{ padding: '20px' }}>
+    <Paper style={{ padding: "20px" }}>
       <Grid container spacing={2}>
         <Grid item xs={6}>
           <TextField
@@ -68,7 +103,7 @@ const MCTController = ({ hostIP, hostPort }) => {
             fullWidth
           />
         </Grid>
-        <Grid item xs={4}>
+        <Grid item xs={3}>
           <TextField
             label="Z-Stack Min"
             value={zMin}
@@ -76,7 +111,7 @@ const MCTController = ({ hostIP, hostPort }) => {
             fullWidth
           />
         </Grid>
-        <Grid item xs={4}>
+        <Grid item xs={3}>
           <TextField
             label="Z-Stack Max"
             value={zMax}
@@ -84,7 +119,7 @@ const MCTController = ({ hostIP, hostPort }) => {
             fullWidth
           />
         </Grid>
-        <Grid item xs={4}>
+        <Grid item xs={3}>
           <TextField
             label="Z-Stack Steps"
             value={zSteps}
@@ -92,7 +127,15 @@ const MCTController = ({ hostIP, hostPort }) => {
             fullWidth
           />
         </Grid>
-        <Grid item xs={4}>
+        <Grid item xs={3}>
+          <FormControlLabel
+            control={<Checkbox />}
+            checked={zStackEnabled}
+            onChange={(e) => setZStackEnabled(e.target.checked)}
+            label="Z-Stack Enabled"
+          />
+        </Grid>
+        <Grid item xs={3}>
           <TextField
             label="X Scan Min"
             value={xMin}
@@ -100,7 +143,7 @@ const MCTController = ({ hostIP, hostPort }) => {
             fullWidth
           />
         </Grid>
-        <Grid item xs={4}>
+        <Grid item xs={3}>
           <TextField
             label="X Scan Max"
             value={xMax}
@@ -108,7 +151,7 @@ const MCTController = ({ hostIP, hostPort }) => {
             fullWidth
           />
         </Grid>
-        <Grid item xs={4}>
+        <Grid item xs={3}>
           <TextField
             label="X Scan Steps"
             value={xSteps}
@@ -116,7 +159,16 @@ const MCTController = ({ hostIP, hostPort }) => {
             fullWidth
           />
         </Grid>
-        <Grid item xs={4}>
+        <Grid item xs={3}>
+          <FormControlLabel
+            control={<Checkbox />}
+            checked={xStackEnabled}
+            onChange={(e) => setXStackEnabled(e.target.checked)}
+            label="XY Scan Enabled"
+          />
+        </Grid>
+
+        <Grid item xs={3}>
           <TextField
             label="Y Scan Min"
             value={yMin}
@@ -124,7 +176,7 @@ const MCTController = ({ hostIP, hostPort }) => {
             fullWidth
           />
         </Grid>
-        <Grid item xs={4}>
+        <Grid item xs={3}>
           <TextField
             label="Y Scan Max"
             value={yMax}
@@ -132,7 +184,7 @@ const MCTController = ({ hostIP, hostPort }) => {
             fullWidth
           />
         </Grid>
-        <Grid item xs={4}>
+        <Grid item xs={3}>
           <TextField
             label="Y Scan Steps"
             value={ySteps}
@@ -140,6 +192,15 @@ const MCTController = ({ hostIP, hostPort }) => {
             fullWidth
           />
         </Grid>
+        <Grid item xs={3}>
+          <FormControlLabel
+            control={<Checkbox />}
+            checked={yStackEnabled}
+            onChange={(e) => setYStackEnabled(e.target.checked)}
+            label="Y-Stack Enabled"
+          />
+        </Grid>
+
         <Grid item xs={12}>
           <Typography>Intensity (Laser 1): {intensityLaser1}</Typography>
           <Slider
@@ -167,6 +228,7 @@ const MCTController = ({ hostIP, hostPort }) => {
             step={1}
           />
         </Grid>
+
         <Grid item xs={6}>
           <TextField
             label="File Name"
@@ -175,11 +237,23 @@ const MCTController = ({ hostIP, hostPort }) => {
             fullWidth
           />
         </Grid>
+
         <Grid item xs={12}>
-          <Button variant="contained" color="primary" onClick={handleStart} disabled={isRunning}>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleStart}
+            disabled={isRunning}
+          >
             Start
           </Button>
-          <Button variant="contained" color="secondary" onClick={handleStop} disabled={!isRunning} style={{ marginLeft: '10px' }}>
+          <Button
+            variant="contained"
+            color="secondary"
+            onClick={handleStop}
+            disabled={!isRunning}
+            style={{ marginLeft: "10px" }}
+          >
             Stop
           </Button>
         </Grid>
