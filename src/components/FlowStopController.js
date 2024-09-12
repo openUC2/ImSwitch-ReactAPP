@@ -54,13 +54,13 @@ const FlowStopController = ({ hostIP, hostPort, WindowTitle }) => {
         const response = await fetch(`${hostIP}:${hostPort}/FlowStopController/getExperimentParameters`);
         const data = await response.json();
         setTimeStamp(data.timeStamp);
-        setExperimentName(data.experimentName);
-        setExperimentDescription(data.experimentDescription);
+        setExperimentName(data.defaultExperimentName);
+        setExperimentDescription("Add some description here");
         setUniqueId(data.uniqueId);
-        setNumImages(parseInt(data.numImages, 10));
-        setVolumePerImage(parseFloat(data.volumePerImage));
-        setTimeToStabilize(parseFloat(data.timeToStabilize));
-        setPumpSpeed(parseInt(data.pumpSpeed, 10));
+        setNumImages(parseInt(data.defaultNumberOfFrames, 10));
+        setVolumePerImage(parseFloat(data.defaultFlowRate));
+        setTimeToStabilize(parseFloat(data.defaultFrameRate));
+        setPumpSpeed(parseInt(10000, 10));
       } catch (error) {
         console.error('Error fetching experiment parameters:', error);
       }
