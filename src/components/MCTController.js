@@ -1,5 +1,4 @@
-// src/components/MCTController.js
-import React, { useContext } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import { MCTContext } from "../context/MCTContext";
 import {
   Paper,
@@ -13,7 +12,8 @@ import {
 } from "@mui/material";
 
 const MCTController = ({ hostIP, hostPort }) => {
-  // Access the context using useContext
+  const [numImagesTaken, setNumImagesTaken] = useState(0);
+  const [folderPath, setFolderPath] = useState("");
   const {
     timePeriod,
     setTimePeriod,
@@ -54,6 +54,72 @@ const MCTController = ({ hostIP, hostPort }) => {
     isRunning,
     setIsRunning,
   } = useContext(MCTContext);
+
+  useEffect(() => {
+    const fetchMCTStatus = () => {
+      const url = `${hostIP}:${hostPort}/MCTController/getMCTStatus`;
+
+      fetch(url)
+        .then((response) => response.json())
+        .then((data) => {
+          console.log(data);
+          // Set default values from the response
+          /* // TODO: Should we fetch this on the first render?          
+          
+          setTimePeriod(data.timePeriod);
+          setZStackEnabled(data.zStackEnabled);
+          setZMin(data.zStackMin);
+          setZMax(data.zStackMax);
+          setZSteps(data.zStackStep);
+          setXStackEnabled(data.xyScanEnabled);
+          setXMin(data.xScanMin);
+          setXMax(data.xScanMax);
+          setXSteps(data.xScanStep);
+          setYMin(data.yScanMin);
+          setYMax(data.yScanMax);
+          setYSteps(data.yScanStep);
+          setIntensityLaser1(data.Illu1Value);
+          #setIntensityLaser2(data.Illu2Value);
+          setIntensityLED(data.Illu3Value);
+          */
+          // enable/disable start/stop
+          setNumImagesTaken(data.nImagesTaken);          
+          setIsRunning(data.isMCTrunning);
+          setFolderPath(data.MCTFilename);
+        })
+        .catch((error) => {
+          //console.error("Error fetching MCT status:", error);
+        });
+    };
+
+    fetchMCTStatus();
+
+    // Set an interval to fetch the number of images taken every second
+    const intervalId = setInterval(() => {
+      fetchMCTStatus();
+    }, 1000);
+
+    return () => clearInterval(intervalId); // Clean up interval on unmount
+  }, [
+    hostIP,
+    hostPort,
+    setNumMeasurements,
+    setTimePeriod,
+    setZStackEnabled,
+    setZMin,
+    setZMax,
+    setZSteps,
+    setXStackEnabled,
+    setXMin,
+    setXMax,
+    setXSteps,
+    setYMin,
+    setYMax,
+    setYSteps,
+    setIntensityLaser1,
+    setIntensityLaser2,
+    setIntensityLED,
+  ]);
 
   const handleStart = () => {
     const url =
@@ -103,6 +169,7 @@ const MCTController = ({ hostIP, hostPort }) => {
             fullWidth
           />
         </Grid>
+        {/* Z-Stack, X-Stack, Y-Stack UI */}
         <Grid item xs={3}>
           <TextField
             label="Z-Stack Min"
@@ -135,6 +202,7 @@ const MCTController = ({ hostIP, hostPort }) => {
             label="Z-Stack Enabled"
           />
         </Grid>
+        {/* XY Scan and Y Scan */}
         <Grid item xs={3}>
           <TextField
             label="X Scan Min"
@@ -167,7 +235,6 @@ const MCTController = ({ hostIP, hostPort }) => {
             label="XY Scan Enabled"
           />
         </Grid>
-
         <Grid item xs={3}>
           <TextField
             label="Y Scan Min"
@@ -200,7 +267,7 @@ const MCTController = ({ hostIP, hostPort }) => {
             label="Y-Stack Enabled"
           />
         </Grid>
-
+        {/* Intensity Controls */}
         <Grid item xs={12}>
           <Typography>Intensity (Laser 1): {intensityLaser1}</Typography>
           <Slider
@@ -228,7 +295,6 @@ const MCTController = ({ hostIP, hostPort }) => {
             step={1}
           />
         </Grid>
-
         <Grid item xs={6}>
           <TextField
             label="File Name"
@@ -237,7 +303,16 @@ const MCTController = ({ hostIP, hostPort }) => {
             fullWidth
           />
         </Grid>
-
+        <Grid item xs={3}>
+          <Typography variant="body1" color="textSecondary">
+            {`Images taken: ${numImagesTaken}`}
+          </Typography>
+        </Grid>
+        <Grid item xs={3}>
+          <Typography variant="body1" color="textSecondary">
+            {`Folder: ${folderPath}`}
+          </Typography>
+        </Grid>
         <Grid item xs={12}>
           <Button
             variant="contained"

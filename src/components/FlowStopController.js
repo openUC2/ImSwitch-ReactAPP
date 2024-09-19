@@ -45,7 +45,7 @@ const FlowStopController = ({ hostIP, hostPort, WindowTitle }) => {
         setIsRunning(data[0]);
         setCurrentImageCount(data[1]);
       } catch (error) {
-        console.error('Error fetching status:', error);
+        //console.error('Error fetching status:', error);
       }
     };
 

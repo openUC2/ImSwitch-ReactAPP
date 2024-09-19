@@ -8,12 +8,15 @@ import HistoScanController from './HistoScanController';
 import MCTController from './MCTController';
 import { MCTProvider } from '../context/MCTContext'; // Import the context provider
 import ReconnectController from './ReconnectController';
+import LiveViewController from './LiveViewController';
 import './Tab_Widgets.css'; // Import the CSS file
 
 const Tab_Widgets = ({ hostIP, hostPort }) => {
   return (
     <Grid container spacing={3} className="control-panel-grid">
-      
+      <Grid item xs={12} sm={6} md={4} className="grid-item">
+        <LiveViewController hostIP={hostIP} hostPort={hostPort} title="Flow Stop" />
+      </Grid>
       <Grid item xs={12} sm={6} md={4} className="grid-item">
         <FlowStopController hostIP={hostIP} hostPort={hostPort} title="Flow Stop" />
       </Grid>
