@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Paper, Tabs, Tab, Box, Typography, Button, Grid } from "@mui/material";
+import { LiveWidgetContext } from "../context/LiveWidgetContext";
+
+
 
 const TabPanel = (props) => {
   const { children, value, index, ...other } = props;
@@ -21,6 +24,8 @@ const LiveViewController = ({ hostIP, hostPort, WindowTitle }) => {
   const [tabIndex, setTabIndex] = useState(0);
   const [streamUrl, setStreamUrl] = useState(""); // State for live stream URL
   const videoRef = useRef(null);
+
+  const mProvider = LiveWidgetContext
 
   useEffect(() => {
     // Simulate setting the stream URL (replace with actual logic to fetch stream URL)

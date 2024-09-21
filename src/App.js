@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Tab_LiveView from "./components/Tab_LiveView";
-import { LiveWidgetProvider } from './context/LiveWidgetContext'; // Import the context provider
+import { LiveWidgetProvider } from './context/LiveWidgetContext';
 import Tab_Widgets from "./components/Tab_Widgets";
 import { Menu as MenuIcon } from "@mui/icons-material";
 import {
@@ -20,7 +20,6 @@ import {
   List,
   ListItem,
   CssBaseline,
-  TextField,
   Avatar,
   Tab,
   Switch,
@@ -29,8 +28,20 @@ import {
   InputLabel,
   Input,
   FormHelperText,
+  TextField
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
+
+// Define both light and dark themes
+const lightTheme = createTheme({
+  palette: {
+    mode: "light",
+  },
+  typography: {
+    fontFamily: "Roboto",
+    fontWeightBold: 700,
+  },
+});
 
 const darkTheme = createTheme({
   palette: {
@@ -48,6 +59,7 @@ function App() {
   const [hostPort, sethostPort] = useState(8001);
   const [selectedTab, setSelectedTab] = useState(0);
   const [isDialogOpen, setDialogOpen] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false); // State to toggle between light and dark themes
   const [layout, setLayout] = useState([
     { i: 'widget1', x: 0, y: 0, w: 2, h: 2 },
     { i: 'widget2', x: 2, y: 0, w: 2, h: 2 },
@@ -55,15 +67,12 @@ function App() {
     { i: 'FlowStop', x: 6, y: 0, w: 5, h: 5 },
   ]);
 
-
   useEffect(() => {
     const currentHostname = window.location.hostname;
     if (!currentHostname.startsWith("youseetoo.github.io")) {
       setHostIP(`https://${currentHostname}`);
     }
   }, []);
-
-
 
   const handleTabChange = (event, newValue) => {
     setSelectedTab(newValue);
@@ -81,37 +90,36 @@ function App() {
 
   const handlehostPortChange = (event) => {
     let port = event.target.value.trim();
-    console.log(port);
     sethostPort(port);
-  }
+  };
+
   const handlehostIPChange = (event) => {
     let ip = event.target.value.trim();
-  
-    // Check if it starts with 'http://' or 'https://', if not, prepend 'https://'
+
     if (!ip.startsWith('http://') && !ip.startsWith('https://')) {
       ip = 'https://' + ip;
     }
-  
-    // Replace 'http://' with 'https://' if present
+
     if (ip.startsWith('http://')) {
       ip = ip.replace('http://', 'https://');
     }
-  
+
     setHostIP(ip);
-    
   };
 
   const handleSavehostIP = () => {
-    console.log("IP Address saved:", hostIP, hostPort);
-    
     setHostIP(hostIP);
     sethostPort(hostPort);
     handleCloseDialog();
-    // Here you can add the logic to use the IP address in your application
+  };
+
+  // Toggle theme function
+  const toggleTheme = () => {
+    setIsDarkMode((prevMode) => !prevMode);
   };
 
   return (
-    <ThemeProvider theme={darkTheme}>
+    <ThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
       <CssBaseline />
       <AppBar position="fixed">
         <Toolbar>
@@ -126,7 +134,13 @@ function App() {
           <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: "bold" }}>
             Microscope Control
           </Typography>
-          <Avatar alt="UC2" src="/path_to_your_logo.png" />
+          <Switch
+            checked={isDarkMode}
+            onChange={toggleTheme}
+            color="default"
+            inputProps={{ 'aria-label': 'toggle theme' }}
+          />
+          <Avatar src="/logo192.png" />
         </Toolbar>
       </AppBar>
 
@@ -147,7 +161,6 @@ function App() {
         </List>
       </Drawer>
 
-      {/* IP Address Dialog */}
       <Dialog open={isDialogOpen} onClose={handleCloseDialog}>
         <DialogTitle>Enter IP Address</DialogTitle>
         <DialogContent>
@@ -177,33 +190,30 @@ function App() {
         </DialogActions>
       </Dialog>
 
-
       <Tabs
         value={selectedTab}
         onChange={handleTabChange}
         variant="fullWidth"
         indicatorColor="secondary"
         textColor="inherit"
-        style={{ marginTop: 64 }} // Adjusts the margin to align below the AppBar
+        style={{ marginTop: 64 }}
       >
         <Tab label="Live Parameters" />
         <Tab label="Plugins" />
-        {/* Add more tabs as needed */}
       </Tabs>
 
-      {/* Wrap your app with LiveWidgetProvider */}
       <LiveWidgetProvider>
-      {/* Render different components based on the selected tab */}
-      {selectedTab === 0 && <div>{
-            <Tab_LiveView 
+        {selectedTab === 0 && (
+          <Tab_LiveView hostIP={hostIP} hostPort={hostPort} />
+        )}
+        {selectedTab === 1 && (
+          <Tab_Widgets
             hostIP={hostIP}
             hostPort={hostPort}
+            layout={layout}
+            onLayoutChange={(newLayout) => setLayout(newLayout)}
           />
-        }</div>}
-      {selectedTab === 1 && <div>{
-       <Tab_Widgets hostIP={hostIP} hostPort={hostPort} layout={layout} onLayoutChange={(newLayout) => setLayout(newLayout)} />
-       /* Components for Control Panel 2 */}</div>}
-      {/* Add more conditional rendering for additional tabs */}
+        )}
       </LiveWidgetProvider>
     </ThemeProvider>
   );
