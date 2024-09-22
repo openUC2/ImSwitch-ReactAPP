@@ -1,15 +1,15 @@
-import { Button, Grid, Dialog, DialogTitle, List, ListItem, ListItemText, Slider } from '@mui/material';
+import { Button, Grid, Dialog, DialogTitle, List, ListItem, ListItemText, TextField } from '@mui/material';
 import React, { useState } from "react";
 
 const AxisControl = ({ axisLabel, onButtonPress, hostIP, hostPort }) => {
   const [sliderValue, setSliderValue] = useState(0);
   const [steps, setSteps] = useState('1000');
-  const [speedValue, setSpeed] = useState('1000');
-
+  const [speedValue, setSpeed] = useState('10000');
+  const [mPosition, setPosition] = useState(0);
   const [isStepsOpen, setStepsOpen] = useState(false);
   const [isSpeedOpen, setSpeedOpen] = useState(false);
 
-  const dialValues = [1, 5, 10, 50, 100, 500, 1000, 10000, 100000];
+  const dialValues = [1, 5, 10, 50, 100, 500, 1000, 10000, 20000, 100000];
 
   const handleIncrement = () => {
     const url = `${hostIP}:${hostPort}/PositionerController/movePositioner?axis=${axisLabel}&dist=${Math.abs(steps)}&isAbsolute=false&isBlocking=false&speed=${speedValue}`;
@@ -32,17 +32,8 @@ const AxisControl = ({ axisLabel, onButtonPress, hostIP, hostPort }) => {
     }
   };
 
-  const handleSliderChange = (event, newValue) => {
-    setSliderValue(newValue);
-  };
-
-  const handleSliderCommit = () => {
-    const url = `${hostIP}:${hostPort}/PositionerController/movePositioner?axis=${axisLabel}&dist=${sliderValue}&isAbsolute=true&isBlocking=false&speed=${sliderValue}`;
-    onButtonPress(url);
-  };
-
   const handleGoTo = () => {
-    const url = `${hostIP}:${hostPort}/PositionerController/movePositioner?axis=${axisLabel}&dist=${steps}&isAbsolute=true&isBlocking=false&speed=${speedValue}`;
+    const url = `${hostIP}:${hostPort}/PositionerController/movePositioner?axis=${axisLabel}&dist=${mPosition}&isAbsolute=true&isBlocking=false&speed=${speedValue}`;
     onButtonPress(url);
   };
 
@@ -76,6 +67,12 @@ const AxisControl = ({ axisLabel, onButtonPress, hostIP, hostPort }) => {
       </Grid>
       <Grid container item spacing={1} alignItems="center" xs={12}>
         <Grid item>
+          <TextField
+            label="Position"
+            variant="outlined"
+            value={mPosition}
+            onChange={(e) => setPosition(e.target.value)}
+          />
           <Button onClick={handleGoTo} variant="contained" color="primary">Go To</Button>
         </Grid>
         <Grid item>

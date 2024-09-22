@@ -61,8 +61,8 @@ const HistoScanController = ({ hostIP, hostPort }) => {
   const handleStart = () => {
     const nTimesValue = numberOfScans || 1;
     const tPeriodValue = timeInterval || 1;
-    const mInitPosX = initPosX || 0;
-    const mInitPosY = initPosY || 0;
+    const mInitPosX = initPosX;
+    const mInitPosY = initPosY;
 
     const url =
       `${hostIP}:${hostPort}/HistoScanController/startHistoScanTileBasedByParameters?` +

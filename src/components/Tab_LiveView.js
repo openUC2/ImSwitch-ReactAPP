@@ -71,6 +71,83 @@ const ControlPanel_1 = ({ hostIP, hostPort }) => {
     }
   }, [isStreamRunning]);
 
+
+  const [imjoyAPI, setImjoyAPI] = useState(null);
+
+  useEffect(() => {
+    // Function to initialize ImJoy when the script loads
+    const loadImJoy = async () => {
+      const app = await window.loadImJoyBasicApp({
+        process_url_query: true,
+        show_window_title: false,
+        show_progress_bar: true,
+        show_empty_window: true,
+        menu_style: { position: "absolute", right: 0, top: "2px" },
+        window_style: { width: "100%", height: "100%" },
+        main_container: null,
+        menu_container: "menu-container",
+        window_manager_container: "window-container",
+        imjoy_api: {}, // override some imjoy API functions here
+      });
+
+      // Store the API in state or a ref so it can be accessed later
+      setImjoyAPI(app.imjoy.api);
+
+      // Add menu item for loading new plugins
+      app.addMenuItem({
+        label: "➕ Load Plugin",
+        callback() {
+          const uri = prompt(
+            `Please type an ImJoy plugin URL`,
+            "https://github.com/imjoy-team/imjoy-plugins/blob/master/repository/ImageAnnotator.imjoy.html"
+          );
+          if (uri) app.loadPlugin(uri);
+        },
+      });
+    };
+
+    // Dynamically load ImJoy script and initialize the app
+    const script = document.createElement("script");
+    script.src = "https://lib.imjoy.io/imjoy-loader.js";
+    script.async = true;
+    script.onload = loadImJoy; // Call loadImJoy once the script is loaded
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script); // Clean up script on component unmount
+    };
+  }, []);
+
+  const imageToImJoy = async () => {
+    if (!imjoyAPI) {
+      console.error("ImJoy API is not loaded yet");
+      return;
+    }
+
+    try {
+      const imageURL = `${hostIP}:${hostPort}/RecordingController/snapNumpyToFastAPI?resizeFactor=1` //capture?_cb=ImJoy`;  // https://localhost:8001/
+      const response = await fetch(imageURL);
+      const bytes = await response.arrayBuffer();
+
+      // Load ImageJ.JS in a window
+      let ij = await imjoyAPI.getWindow("ImageJ.JS");
+      if (!ij) {
+        ij = await imjoyAPI.createWindow({
+          src: "https://ij.imjoy.io",
+          name: "ImageJ.JS",
+          fullscreen: true,
+        });
+      } else {
+        await ij.show();
+      }
+
+      // Display the captured image in ImageJ
+      await ij.viewImage(bytes, { name: "image.jpeg" });
+    } catch (error) {
+      console.error("Error sending to ImJoy:", error);
+    }
+  };
+
   const videoRef = useRef(null);
   const classes = useStyles();
   const [exposureTime, setExposureTime] = useState("");
@@ -287,6 +364,7 @@ const ControlPanel_1 = ({ hostIP, hostPort }) => {
       );
     }
   };
+
   return (
     <div>
       <Container component="main" sx={{ flexGrow: 1, p: 3, pt: 10 }}>
@@ -319,6 +397,21 @@ const ControlPanel_1 = ({ hostIP, hostPort }) => {
               </Button>
               <Button onClick={snapPhoto}>
                 <CameraAlt />
+              </Button>
+              <Button
+                variant="contained"
+                onClick={imageToImJoy}
+                color="primary"
+                startIcon={
+                  <img
+                    alt="ImJoy"
+                    src="https://biii.eu/sites/default/files/2019-08/imjoy-icon.png"
+                    style={{ width: 24, height: 24 }}
+                  />
+                }
+                style={{ marginLeft: 8 }}
+              >
+                To ImJoy
               </Button>
               <Button
                 onClick={startRecording}
@@ -435,8 +528,28 @@ const ControlPanel_1 = ({ hostIP, hostPort }) => {
           (C) CopyRight openUC2 GmbH (openUC2.com)
         </Typography>
       </Box>
+      <div
+        style={{
+          width: "800px", // Set a width for the container
+          height: "600px", // Set a height for the container
+          border: "1px solid #ccc",
+          overflow: "hidden",
+          position: "relative",
+        }}
+      >
+        <div id="menu-container" style={{ height: "50px", overflow: "hidden" }}></div>
+        <div
+          id="window-container"
+          style={{
+            width: "100%",
+            height: "calc(100% - 50px)", // Remaining space after the menu
+            overflow: "auto", // Allow scroll if content overflows
+          }}
+        ></div>
+      </div>
 
-      {/* Components for Control Panel 1 */}
+
+
     </div>
   );
 };
