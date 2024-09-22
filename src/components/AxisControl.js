@@ -1,5 +1,5 @@
 import { Button, Grid, Dialog, DialogTitle, List, ListItem, ListItemText, TextField } from '@mui/material';
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 const AxisControl = ({ axisLabel, onButtonPress, hostIP, hostPort }) => {
   const [sliderValue, setSliderValue] = useState(0);
@@ -11,15 +11,53 @@ const AxisControl = ({ axisLabel, onButtonPress, hostIP, hostPort }) => {
 
   const dialValues = [1, 5, 10, 50, 100, 500, 1000, 10000, 20000, 100000];
 
-  const handleIncrement = () => {
-    const url = `${hostIP}:${hostPort}/PositionerController/movePositioner?axis=${axisLabel}&dist=${Math.abs(steps)}&isAbsolute=false&isBlocking=false&speed=${speedValue}`;
-    onButtonPress(url);
+  // Fetch positions from the server
+  const fetchPositions = async () => {
+    try {
+      const response = await fetch(`${hostIP}:${hostPort}/PositionerController/getPositionerPositions`);
+      const data = await response.json();
+      
+      // Update position for the specific axis
+      setPosition(data.VirtualStage[axisLabel]);
+    } catch (error) {
+      console.error("Error fetching positioner positions:", error);
+    }
   };
 
-  const handleDecrement = () => {
+  // Fetch the position on load
+  useEffect(() => {
+    fetchPositions();
+  }, []);
+
+  const handleIncrement = async () => {
+    const url = `${hostIP}:${hostPort}/PositionerController/movePositioner?axis=${axisLabel}&dist=${Math.abs(steps)}&isAbsolute=false&isBlocking=false&speed=${speedValue}`;
+    await onButtonPress(url);
+    fetchPositions(); // Update position after button press
+  };
+
+  const handleDecrement = async () => {
     const negativeSteps = -Math.abs(steps);
     const url = `${hostIP}:${hostPort}/PositionerController/movePositioner?axis=${axisLabel}&dist=${negativeSteps}&isAbsolute=false&isBlocking=false&speed=${speedValue}`;
-    onButtonPress(url);
+    await onButtonPress(url);
+    fetchPositions(); // Update position after button press
+  };
+
+  const handleGoTo = async () => {
+    const url = `${hostIP}:${hostPort}/PositionerController/movePositioner?axis=${axisLabel}&dist=${mPosition}&isAbsolute=true&isBlocking=false&speed=${speedValue}`;
+    await onButtonPress(url);
+    fetchPositions(); // Update position after button press
+  };
+
+  const handleStop = async () => {
+    const url = `${hostIP}:${hostPort}/PositionerController/stopAxis?axis=${axisLabel}`;
+    await onButtonPress(url);
+    fetchPositions(); // Update position after button press
+  };
+
+  const handleForever = async () => {
+    const url = `${hostIP}:${hostPort}/PositionerController/movePositionerForever?axis=${axisLabel}&speed=${speedValue}&is_stop=false`;
+    await onButtonPress(url);
+    fetchPositions(); // Update position after button press
   };
 
   const handleDialSelect = (value, type) => {
@@ -32,28 +70,12 @@ const AxisControl = ({ axisLabel, onButtonPress, hostIP, hostPort }) => {
     }
   };
 
-  const handleGoTo = () => {
-    const url = `${hostIP}:${hostPort}/PositionerController/movePositioner?axis=${axisLabel}&dist=${mPosition}&isAbsolute=true&isBlocking=false&speed=${speedValue}`;
-    onButtonPress(url);
-  };
-
-  const handleStop = () => {
-    ///PositionerController/stopAxis?positionerName=x&axis=X 
-    const url = `${hostIP}:${hostPort}/PositionerController/stopAxis?axis=${axisLabel}`;
-    onButtonPress(url);
-  };
-
-  const handleForever = () => {
-    // https://localhost:8001/PositionerController/movePositionerForever?axis=X&speed=0&is_stop=false
-    const url = `${hostIP}:${hostPort}/PositionerController/movePositionerForever?axis=${axisLabel}&speed=${speedValue}&is_stop=false`;
-    onButtonPress(url);
-  }
-
   return (
     <Grid container spacing={1} direction="column" alignItems="center">
       <Grid item xs={12}>
         <h2>{axisLabel} Axis</h2>
       </Grid>
+      
       <Grid container item spacing={1} alignItems="center" xs={12}>
         <Grid item>
           <Button onClick={handleIncrement} variant="contained" color="primary">+</Button>

@@ -43,6 +43,18 @@ const ReconnectController = ({ hostIP, hostPort, WindowTitle }) => {
       .catch(error => console.error('Error:', error));
   };
 
+  const btConnect = () => {
+    const url = `${hostIP}:${hostPort}/UC2ConfigController/btpairing`;
+    
+    fetch(url, { method: 'GET' })
+      .then(response => response.json())
+      .then(data => {
+        console.log(data);
+        // Handle response data if needed
+      })
+      .catch(error => console.error('Error:', error));
+  };
+
   return (
     <Paper>
       <Tabs value={tabIndex} onChange={handleTabChange} aria-label="settings tabs">
@@ -52,7 +64,8 @@ const ReconnectController = ({ hostIP, hostPort, WindowTitle }) => {
       <TabPanel value={tabIndex} index={0}>
         <Grid container spacing={2}>
           <Grid item xs={12}>
-            <div>
+            <Typography variant="h6">Reconnect to UC2 board</Typography>
+          <div>
               <Button
                 style={{ marginBottom: '20px' }}
                 variant="contained"
@@ -61,9 +74,20 @@ const ReconnectController = ({ hostIP, hostPort, WindowTitle }) => {
                 Reconnect
               </Button>
             </div>
+            <Typography variant="h6">Bluetooth Pairing</Typography>
+            <div>
+              <Button
+                style={{ marginBottom: '20px' }}
+                variant="contained"
+                onClick={btConnect}
+              >
+                BT Pairing
+              </Button>
+            </div>
           </Grid>
         </Grid>
       </TabPanel>
+
     </Paper>
   );
 };
