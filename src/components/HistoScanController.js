@@ -29,7 +29,7 @@ const HistoScanController = ({ hostIP, hostPort }) => {
   const [scanCount, setScanCount] = useState(0);
   const [scanIndex, setScanIndex] = useState(0);
   const [scanResultAvailable, setScanResultAvailable] = useState(false);
-  const [currentPosition, setCurrentPosition] = useState("");
+  const [currentPosition, setCurrentPosition] = useState([0, 0]);
   const [isStitchAshlar, setIsStitchAshlar] = useState(false);
   const [isStitchAshlarFlipX, setIsStitchAshlarFlipX] = useState(false);
   const [isStitchAshlarFlipY, setIsStitchAshlarFlipY] = useState(false);
