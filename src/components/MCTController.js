@@ -281,19 +281,25 @@ const MCTController = ({ hostIP, hostPort }) => {
           />
         </Grid>
         <Grid item xs={12}>
-          <Typography>Intensity (Laser 2): {intensityLaser2}</Typography>
+          <Typography>
+            Intensity (Laser 2): {widgetCtx.generic["slider2"]}
+          </Typography>
           <Slider
-            value={intensityLaser2}
-            onChange={(e, value) => setIntensityLaser2(value)}
+            value={widgetCtx.generic["slider2"]}
+            onChange={(e, value) => widgetCtx.handleGeneric(["slider2", value])}
             max={32767}
             step={1}
           />
         </Grid>
         <Grid item xs={12}>
-          <Typography>Intensity (LED): {intensityLED}</Typography>
+          <Typography>
+            Intensity (LED): {widgetCtx.generic["intensity"]}
+          </Typography>
           <Slider
-            value={intensityLED}
-            onChange={(e, value) => setIntensityLED(value)}
+            value={widgetCtx.generic["intensity"]}
+            onChange={(e, value) =>
+              widgetCtx.handleGeneric(["intensity", value])
+            }
             max={255}
             step={1}
           />
