@@ -10,6 +10,7 @@ import {
   Button,
   Typography,
 } from "@mui/material";
+import { useWidgetContext } from "../context/WidgetContext";
 
 const MCTController = ({ hostIP, hostPort }) => {
   const [numImagesTaken, setNumImagesTaken] = useState(0);
@@ -55,6 +56,8 @@ const MCTController = ({ hostIP, hostPort }) => {
     setIsRunning,
   } = useContext(MCTContext);
 
+  const widgetCtx = useWidgetContext();
+
   useEffect(() => {
     const fetchMCTStatus = () => {
       const url = `${hostIP}:${hostPort}/MCTController/getMCTStatus`;
@@ -83,7 +86,7 @@ const MCTController = ({ hostIP, hostPort }) => {
           setIntensityLED(data.Illu3Value);
           */
           // enable/disable start/stop
-          setNumImagesTaken(data.nImagesTaken);          
+          setNumImagesTaken(data.nImagesTaken);
           setIsRunning(data.isMCTrunning);
           setFolderPath(data.MCTFilename);
         })
@@ -271,8 +274,8 @@ const MCTController = ({ hostIP, hostPort }) => {
         <Grid item xs={12}>
           <Typography>Intensity (Laser 1): {intensityLaser1}</Typography>
           <Slider
-            value={intensityLaser1}
-            onChange={(e, value) => setIntensityLaser1(value)}
+            value={widgetCtx.sliderValue}
+            onChange={(e, value) => widgetCtx.setSliderValue(value)}
             max={32767}
             step={1}
           />
