@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import Tab_LiveView from "./components/Tab_LiveView";
-import { LiveWidgetProvider } from './context/LiveWidgetContext';
+import { LiveWidgetProvider } from "./context/LiveWidgetContext"; // Import the context provider
 import Tab_Widgets from "./components/Tab_Widgets";
 import { Menu as MenuIcon } from "@mui/icons-material";
 import {
@@ -28,9 +28,10 @@ import {
   InputLabel,
   Input,
   FormHelperText,
-  TextField
+  TextField,
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
+import { WidgetContextProvider } from "./context/WidgetContext";
 
 // Define both light and dark themes
 const lightTheme = createTheme({
@@ -61,10 +62,10 @@ function App() {
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false); // State to toggle between light and dark themes
   const [layout, setLayout] = useState([
-    { i: 'widget1', x: 0, y: 0, w: 2, h: 2 },
-    { i: 'widget2', x: 2, y: 0, w: 2, h: 2 },
-    { i: 'widget3', x: 4, y: 0, w: 2, h: 2 },
-    { i: 'FlowStop', x: 6, y: 0, w: 5, h: 5 },
+    { i: "widget1", x: 0, y: 0, w: 2, h: 2 },
+    { i: "widget2", x: 2, y: 0, w: 2, h: 2 },
+    { i: "widget3", x: 4, y: 0, w: 2, h: 2 },
+    { i: "FlowStop", x: 6, y: 0, w: 5, h: 5 },
   ]);
 
   useEffect(() => {
@@ -92,22 +93,25 @@ function App() {
     let port = event.target.value.trim();
     sethostPort(port);
   };
-
   const handlehostIPChange = (event) => {
     let ip = event.target.value.trim();
 
-    if (!ip.startsWith('http://') && !ip.startsWith('https://')) {
-      ip = 'https://' + ip;
+    // Check if it starts with 'http://' or 'https://', if not, prepend 'https://'
+    if (!ip.startsWith("http://") && !ip.startsWith("https://")) {
+      ip = "https://" + ip;
     }
 
-    if (ip.startsWith('http://')) {
-      ip = ip.replace('http://', 'https://');
+    // Replace 'http://' with 'https://' if present
+    if (ip.startsWith("http://")) {
+      ip = ip.replace("http://", "https://");
     }
 
     setHostIP(ip);
   };
 
   const handleSavehostIP = () => {
+    console.log("IP Address saved:", hostIP, hostPort);
+
     setHostIP(hostIP);
     sethostPort(hostPort);
     handleCloseDialog();
@@ -121,7 +125,7 @@ function App() {
   return (
     <ThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
       <CssBaseline />
-      <AppBar position="fixed">
+      {/* <AppBar position="fixed">
         <Toolbar>
           <IconButton
             edge="start"
@@ -142,9 +146,9 @@ function App() {
           />
           <Avatar src="/logo192.png" />
         </Toolbar>
-      </AppBar>
+      </AppBar> */}
 
-      <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
+      {/* <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
         <List>
           {[
             "My Collection",
@@ -154,13 +158,20 @@ function App() {
             "Remote Demo",
             "About",
           ].map((text) => (
-            <ListItem button onClick={() => text === "Connections" && handleOpenDialog()}>
-              <Typography variant="h6" fontWeight="bold"> {text} </Typography>
+            <ListItem
+              button
+              onClick={() => text === "Connections" && handleOpenDialog()}
+            >
+              <Typography variant="h6" fontWeight="bold">
+                {" "}
+                {text}{" "}
+              </Typography>
             </ListItem>
           ))}
         </List>
-      </Drawer>
+      </Drawer> */}
 
+      {/* IP Address Dialog */}
       <Dialog open={isDialogOpen} onClose={handleCloseDialog}>
         <DialogTitle>Enter IP Address</DialogTitle>
         <DialogContent>
@@ -201,20 +212,28 @@ function App() {
         <Tab label="Live Parameters" />
         <Tab label="Plugins" />
       </Tabs>
-
-      <LiveWidgetProvider>
-        {selectedTab === 0 && (
-          <Tab_LiveView hostIP={hostIP} hostPort={hostPort} />
-        )}
-        {selectedTab === 1 && (
-          <Tab_Widgets
-            hostIP={hostIP}
-            hostPort={hostPort}
-            layout={layout}
-            onLayoutChange={(newLayout) => setLayout(newLayout)}
-          />
-        )}
-      </LiveWidgetProvider>
+      <WidgetContextProvider>
+        <LiveWidgetProvider>
+          {/* Render different components based on the selected tab */}
+          {selectedTab === 0 && (
+            <div>{<Tab_LiveView hostIP={hostIP} hostPort={hostPort} />}</div>
+          )}
+          {selectedTab === 1 && (
+            <div>
+              {
+                <Tab_Widgets
+                  hostIP={hostIP}
+                  hostPort={hostPort}
+                  layout={layout}
+                  onLayoutChange={(newLayout) => setLayout(newLayout)}
+                />
+                /* Components for Control Panel 2 */
+              }
+            </div>
+          )}
+          {/* Add more conditional rendering for additional tabs */}
+        </LiveWidgetProvider>
+      </WidgetContextProvider>
     </ThemeProvider>
   );
 }
