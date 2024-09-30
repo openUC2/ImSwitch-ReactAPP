@@ -60,7 +60,7 @@ function App() {
   const [hostPort, sethostPort] = useState(8001);
   const [selectedTab, setSelectedTab] = useState(0);
   const [isDialogOpen, setDialogOpen] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false); // State to toggle between light and dark themes
+  const [isDarkMode, setIsDarkMode] = useState(true); // State to toggle between light and dark themes
   const [layout, setLayout] = useState([
     { i: "widget1", x: 0, y: 0, w: 2, h: 2 },
     { i: "widget2", x: 2, y: 0, w: 2, h: 2 },
@@ -125,7 +125,7 @@ function App() {
   return (
     <ThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
       <CssBaseline />
-      {/* <AppBar position="fixed">
+      {<AppBar position="fixed">
         <Toolbar>
           <IconButton
             edge="start"
@@ -138,6 +138,9 @@ function App() {
           <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: "bold" }}>
             Microscope Control
           </Typography>
+          <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+            Light/dark
+          </Typography>
           <Switch
             checked={isDarkMode}
             onChange={toggleTheme}
@@ -146,7 +149,7 @@ function App() {
           />
           <Avatar src="/logo192.png" />
         </Toolbar>
-      </AppBar> */}
+      </AppBar> }
 
       {/* <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
         <List>
