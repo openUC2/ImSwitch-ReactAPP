@@ -70,6 +70,13 @@ const AxisControl = ({ axisLabel, onButtonPress, hostIP, hostPort }) => {
     }
   };
 
+  const handleHomeAxis = async () => {
+    //https://localhost:8001/PositionerController/homeAxis?axis=X&isBlocking=false
+    const url = `${hostIP}:${hostPort}/PositionerController/homeAxis?axis=${axisLabel}&isBlocking=false`;
+    await onButtonPress(url);
+    fetchPositions(); // Update position after button press
+  }
+
   return (
     <Grid container spacing={1} direction="column" alignItems="center">
       <Grid item xs={12}>
@@ -131,6 +138,10 @@ const AxisControl = ({ axisLabel, onButtonPress, hostIP, hostPort }) => {
           ))}
         </List>
       </Dialog>
+      {/* Home Axis Button */}
+      <Grid item>
+        <Button onClick={handleHomeAxis} variant="contained" color="primary">Home Axis</Button>
+      </Grid>
     </Grid>
   );
 };

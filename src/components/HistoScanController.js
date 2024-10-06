@@ -44,7 +44,7 @@ const HistoScanController = ({ hostIP, hostPort }) => {
   };
 
   const handleFetchImage = () => {
-    fetch("https://localhost:8001/HistoScanController/getLastStitchedImage")
+    fetch(`${hostIP}:${hostPort}/HistoScanController/getLastStitchedImage`)
       .then((response) => {
         if (!response.ok) {
           throw new Error("Network response was not ok");
