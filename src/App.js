@@ -151,7 +151,7 @@ function App() {
         </Toolbar>
       </AppBar> }
 
-      {/* <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
+      <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
         <List>
           {[
             "My Collection",
@@ -172,7 +172,7 @@ function App() {
             </ListItem>
           ))}
         </List>
-      </Drawer> */}
+      </Drawer> 
 
       {/* IP Address Dialog */}
       <Dialog open={isDialogOpen} onClose={handleCloseDialog}>

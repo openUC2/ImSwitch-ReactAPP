@@ -288,10 +288,9 @@ const HistoScanController = ({ hostIP, hostPort }) => {
                 />
               </>
             )}
-
-            <Typography variant="body2">
+          <Typography variant="body2">
               Result Available: {scanResultAvailable ? "Yes" : "No"}, Current
-              Position: {currentPosition[0]}, {currentPosition[1]}
+              Position: {currentPosition && currentPosition.length > 1 ? `${currentPosition[0]}, ${currentPosition[1]}` : 'Loading...'}
             </Typography>
           </Grid>
         </Grid>

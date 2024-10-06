@@ -49,18 +49,14 @@ const ControlPanel_1 = ({ hostIP, hostPort }) => {
     isStreamRunning,
     setStreamRunning,
     sliderIllu1Value,
-    setIllu1Slider,
     sliderIllu2Value,
-    setIllu2Slider,
-    sliderIllu3Value,
-    setIllu3Slider,
-    isIllumination1Checked,
-    setisIllumination1Checked,
-    isIllumination2Checked,
-    setisIllumination2Checked,
-    isIllumination3Checked,
-    setisIllumination3Checked,
+    sliderIllu3Value, 
   } = useContext(LiveWidgetContext);
+  const [laserNames, setLaserNames] = useState([]);
+  const [isIllumination1Checked, setisIllumination1Checked] = useState(false);
+  const [isIllumination2Checked, setisIllumination2Checked] = useState(false);
+  const [isIllumination3Checked, setisIllumination3Checked] = useState(false);
+
 
   // Effect that reacts on changes in the isStreamRunning state
   useEffect(() => {
@@ -70,6 +66,22 @@ const ControlPanel_1 = ({ hostIP, hostPort }) => {
       setStreamUrl("");
     }
   }, [isStreamRunning]);
+
+
+  // Fetch laser names dynamically
+  useEffect(() => {
+    const fetchLaserNames = async () => {
+      try {
+        const response = await fetch(`${hostIP}:${hostPort}/LaserController/getLaserNames`);
+        const data = await response.json();
+        setLaserNames(data); // Update state with laser names
+      } catch (error) {
+        console.error("Failed to fetch laser names:", error);
+      }
+    };
+
+    fetchLaserNames();
+  }, [hostIP, hostPort]);
 
 
   const [imjoyAPI, setImjoyAPI] = useState(null);
@@ -256,113 +268,41 @@ const ControlPanel_1 = ({ hostIP, hostPort }) => {
     }
   };
 
-  const handleIllumination1SliderChange = async (event) => {
-    setIllu1Slider(event.target.value);
-    const url = `${hostIP}:${hostPort}/LaserController/setLaserValue?laserName=488%20Laser&value=${event.target.value}`;
-
-    try {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
+  const handleIlluminationSliderChange = async (event, laserIndex) => {
+    const value = event.target.value;
+    if (laserNames[laserIndex]) {
+      const laserName = encodeURIComponent(laserNames[laserIndex]); // Use the laser name dynamically
+      const url = `${hostIP}:${hostPort}/LaserController/setLaserValue?laserName=${laserName}&value=${value}`;
+      try {
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+      } catch (error) {
+        console.error("There has been a problem with your fetch operation: ", error);
       }
-    } catch (error) {
-      console.error(
-        "There has been a problem with your fetch operation: ",
-        error
-      );
     }
   };
 
-  const handleIllumination2SliderChange = async (event) => {
-    setIllu2Slider(event.target.value);
-    const url = `${hostIP}:${hostPort}/LaserController/setLaserValue?laserName=635 Laser&value=${event.target.value}`;
-    try {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
-    } catch (error) {
-      console.error(
-        "There has been a problem with your fetch operation: ",
-        error
-      );
-    }
-  };
-
-  const handleIllumination3SliderChange = async (event) => {
-    setIllu3Slider(event.target.value);
-    const url = `${hostIP}:${hostPort}/LaserController/setLaserValue?laserName=LED&value=${event.target.value}`;
-    try {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
-    } catch (error) {
-      console.error(
-        "There has been a problem with your fetch operation: ",
-        error
-      );
-    }
-  };
-
-  const handleIllumination1CheckboxChange = async (event) => {
-    setisIllumination1Checked(event.target.checked);
-
+  const handleIlluminationCheckboxChange = async (event, laserIndex) => {
     const activeStatus = event.target.checked ? "true" : "false";
-    const url = `${hostIP}:${hostPort}/LaserController/setLaserActive?laserName=488%20Laser&active=${activeStatus}`;
-
-    try {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
+    if (laserNames[laserIndex]) {
+      const laserName = encodeURIComponent(laserNames[laserIndex]);
+      const url = `${hostIP}:${hostPort}/LaserController/setLaserActive?laserName=${laserName}&active=${activeStatus}`;
+      try {
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+      } catch (error) {
+        console.error("There has been a problem with your fetch operation: ", error);
       }
-    } catch (error) {
-      console.error(
-        "There has been a problem with your fetch operation: ",
-        error
-      );
     }
   };
 
+  
   const handleStreamToggle = () => {
     setStreamRunning(!isStreamRunning);
-  };
-
-  const handleIllumination2CheckboxChange = async (event) => {
-    setisIllumination2Checked(event.target.checked);
-
-    const activeStatus = event.target.checked ? "true" : "false";
-    const url = `${hostIP}:${hostPort}/LaserController/setLaserActive?laserName=635%20Laser&active=${activeStatus}`;
-
-    try {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
-    } catch (error) {
-      console.error(
-        "There has been a problem with your fetch operation: ",
-        error
-      );
-    }
-  };
-  const handleIllumination3CheckboxChange = async (event) => {
-    setisIllumination3Checked(event.target.checked);
-
-    const activeStatus = event.target.checked ? "true" : "false";
-    const url = `${hostIP}:${hostPort}/LaserController/setLaserActive?laserName=LED&active=${activeStatus}`;
-
-    try {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
-    } catch (error) {
-      console.error(
-        "There has been a problem with your fetch operation: ",
-        error
-      );
-    }
   };
 
   return (
@@ -467,58 +407,35 @@ const ControlPanel_1 = ({ hostIP, hostPort }) => {
               />
             </Box>
             <Box mb={5}>
-              <Typography variant="h6" gutterBottom>
+            <Typography variant="h6" gutterBottom>
                 Illumination
               </Typography>
-              <div style={{ display: "flex", alignItems: "center" }}>
-                <Typography variant="h8" gutterBottom>
-                  Illu 1: {sliderIllu1Value}
-                </Typography>
-                <Slider
-                  value={sliderIllu1Value}
-                  min={0}
-                  max={1023}
-                  onChange={handleIllumination1SliderChange}
-                  aria-labelledby="continuous-slider"
-                />
-                <Checkbox
-                  checked={isIllumination1Checked}
-                  onChange={handleIllumination1CheckboxChange}
-                />
-              </div>
-              <div style={{ display: "flex", alignItems: "center" }}>
-                <Typography variant="h8" gutterBottom>
-                  Illu 2: {sliderIllu2Value}
-                </Typography>
-                <Slider
-                  value={sliderIllu2Value}
-                  min={0}
-                  max={1023}
-                  onChange={handleIllumination2SliderChange}
-                  aria-labelledby="continuous-slider"
-                />
-                <Checkbox
-                  checked={isIllumination2Checked}
-                  onChange={handleIllumination2CheckboxChange}
-                />
-              </div>
-              <div style={{ display: "flex", alignItems: "center" }}>
-                <Typography variant="h8" gutterBottom>
-                  Illu 3: {sliderIllu3Value}
-                </Typography>
-                <Slider
-                  value={sliderIllu3Value}
-                  min={0}
-                  max={1023}
-                  onChange={handleIllumination3SliderChange}
-                  aria-labelledby="continuous-slider"
-                />
-                <Checkbox
-                  checked={isIllumination3Checked}
-                  onChange={handleIllumination3CheckboxChange}
-                />
-              </div>
-            </Box>
+              {laserNames && laserNames.length > 0 ? (
+                <>
+                  {laserNames.map((laserName, index) => (
+                    <div key={index} style={{ display: "flex", alignItems: "center" }}>
+                      <Typography variant="h8" gutterBottom>
+                        {laserName}: {index === 0 ? sliderIllu1Value : index === 1 ? sliderIllu2Value : sliderIllu3Value}
+                      </Typography>
+                      <Slider
+                        value={index === 0 ? sliderIllu1Value : index === 1 ? sliderIllu2Value : sliderIllu3Value}
+                        min={0}
+                        max={1023}
+                        onChange={(event) => handleIlluminationSliderChange(event, index)}
+                        aria-labelledby="continuous-slider"
+                      />
+                      <Checkbox
+                        checked={index === 0 ? isIllumination1Checked : index === 1 ? isIllumination2Checked : isIllumination3Checked}
+                        onChange={(event) =>
+                          handleIlluminationCheckboxChange(event, index)
+                        }
+                      />
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <Typography>Loading laser names...</Typography>
+              )}            </Box>
           </Grid>
         </Grid>
       </Container>
