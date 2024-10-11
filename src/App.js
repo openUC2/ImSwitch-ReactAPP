@@ -3,6 +3,8 @@ import Tab_LiveView from "./components/Tab_LiveView";
 import { LiveWidgetProvider } from "./context/LiveWidgetContext"; // Import the context provider
 import Tab_Widgets from "./components/Tab_Widgets";
 import { Menu as MenuIcon } from "@mui/icons-material";
+import axios from "axios";
+
 import {
   Button,
   Dialog,
@@ -70,10 +72,41 @@ function App() {
 
   useEffect(() => {
     const currentHostname = window.location.hostname;
+    const portsToCheck = [8001, 8002, 443];
+  
+    const findValidPort = async () => {
+      try {
+        const validPort = await checkPortsForApi(currentHostname, portsToCheck);
+        console.log(`API available on port: ${validPort}`);
+        setHostIP(`https://${currentHostname}`);
+        sethostPort(validPort);
+      } catch (error) {
+        console.error("No valid API port found.");
+      }
+    };
+  
     if (!currentHostname.startsWith("youseetoo.github.io")) {
-      setHostIP(`https://${currentHostname}`);
+      findValidPort();
     }
   }, []);
+
+
+  const checkPortsForApi = async (hostname, ports) => {
+    for (const port of ports) {
+      try {
+        const url = `https://${hostname}:${port}/openapi.json`;
+        const response = await axios.get(url, { timeout: 3000 });
+        if (response.status === 200) {
+          return port; // Return the port that successfully retrieves the API description
+        }
+      } catch (error) {
+        // Continue to the next port if there's an error
+        console.error(`Failed to retrieve API from ${hostname}:${port}`);
+      }
+    }
+    throw new Error("No valid port found for API.");
+  };
+  
 
   const handleTabChange = (event, newValue) => {
     setSelectedTab(newValue);

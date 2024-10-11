@@ -2,14 +2,25 @@ import { Button, Grid, Dialog, DialogTitle, List, ListItem, ListItemText, TextFi
 import React, { useState, useEffect } from "react";
 
 const AxisControl = ({ axisLabel, onButtonPress, hostIP, hostPort }) => {
-  const [sliderValue, setSliderValue] = useState(0);
   const [steps, setSteps] = useState('1000');
   const [speedValue, setSpeed] = useState('10000');
   const [mPosition, setPosition] = useState(0);
   const [isStepsOpen, setStepsOpen] = useState(false);
   const [isSpeedOpen, setSpeedOpen] = useState(false);
+  const [positionerNames, setPositionerNames] = useState([]);
 
   const dialValues = [1, 5, 10, 50, 100, 500, 1000, 10000, 20000, 100000];
+
+  const getPositionerNames = async () => {
+    try {
+      const response = await fetch(`${hostIP}:${hostPort}/PositionerController/getPositionerNames`);
+      const data = await response.json();
+      console.log(data);
+      setPositionerNames(data[0]);
+    } catch (error) {
+      console.error("Error fetching positioner names:", error);
+    }
+  };
 
   // Fetch positions from the server
   const fetchPositions = async () => {
@@ -18,16 +29,24 @@ const AxisControl = ({ axisLabel, onButtonPress, hostIP, hostPort }) => {
       const data = await response.json();
       
       // Update position for the specific axis
-      setPosition(data.VirtualStage[axisLabel]);
+      const stageKeys = Object.keys(data);
+      setPosition(data[stageKeys[0]][axisLabel]);
     } catch (error) {
       console.error("Error fetching positioner positions:", error);
     }
   };
 
+  // Fetch the positioner names on load
+  useEffect(() => {
+    getPositionerNames();
+  }, []);
+  
   // Fetch the position on load
   useEffect(() => {
     fetchPositions();
   }, []);
+
+
 
   const handleIncrement = async () => {
     const url = `${hostIP}:${hostPort}/PositionerController/movePositioner?axis=${axisLabel}&dist=${Math.abs(steps)}&isAbsolute=false&isBlocking=false&speed=${speedValue}`;
