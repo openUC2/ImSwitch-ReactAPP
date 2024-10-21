@@ -223,6 +223,20 @@ const ControlPanel_1 = ({ hostIP, hostPort }) => {
 
   const handleCamSettingsSwitchChange = (event) => {
     setCamSettingsIsAuto(event.target.checked);
+    // Additional logic to handle camera settings
+    // https://localhost:8001/SettingsController/setDetectorMode?isAuto=true
+    const url = `${hostIP}:${hostPort}/SettingsController/setDetectorMode?isAuto=${event.target.checked}`;
+    try {
+      const response = fetch(url);
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+    } catch (error) {
+      console.error(
+        "There has been a problem with your fetch operation: ",
+        error
+      );
+    }
   };
 
   const handleExposureChange = async (event) => {

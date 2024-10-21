@@ -60,7 +60,6 @@ const FlowStopController = ({ hostIP, hostPort, WindowTitle }) => {
         setNumImages(parseInt(data.defaultNumberOfFrames, 10));
         setVolumePerImage(parseFloat(data.defaultFlowRate));
         setTimeToStabilize(parseFloat(data.defaultFrameRate));
-        setPumpSpeed(parseInt(10000, 10));
       } catch (error) {
         console.error('Error fetching experiment parameters:', error);
       }
@@ -175,7 +174,7 @@ const FlowStopController = ({ hostIP, hostPort, WindowTitle }) => {
               style={{ marginBottom: '20px' }}
               label="Pump Speed"
               value={pumpSpeed}
-              onChange={(e) => setUniqueId(e.target.value)}
+              onChange={(e) => setPumpSpeed(e.target.value)}
               fullWidth
             />
             </Grid>
