@@ -317,6 +317,19 @@ const ControlPanel_1 = ({ hostIP, hostPort }) => {
   
   const handleStreamToggle = () => {
     setStreamRunning(!isStreamRunning);
+    // send https://localhost:8001/ViewController/setLiveViewActive?active=true
+    const url = `${hostIP}:${hostPort}/ViewController/setLiveViewActive?active=${!isStreamRunning}`;
+    try {
+      const response = fetch(url);
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+    } catch (error) {
+      console.error(
+        "There has been a problem with your fetch operation: ",
+        error
+      );
+    }
   };
 
   return (

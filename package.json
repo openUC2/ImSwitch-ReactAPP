@@ -19,6 +19,8 @@
     "react-draggable": "^4.4.6",
     "react-grid-layout": "^1.4.4",
     "react-mobile-datepicker": "^4.0.2",
+    "react-pro-sidebar": "^1.1.0",
+    "react-rnd": "^10.4.13",
     "react-scripts": "5.0.1",
     "react-simple-picker": "^1.1.4",
     "react-zoom-pan-pinch": "^3.6.1",

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
+import { Rnd } from "react-rnd";
 import {
   Tabs,
   Tab,
@@ -13,6 +14,11 @@ import {
   Select,
   MenuItem,
   LinearProgress,
+  Menu,
+  Box,
+  MenuItem as MenuEntry,
+  List,
+  ListItem,
 } from "@mui/material";
 
 const HistoScanController = ({ hostIP, hostPort }) => {
@@ -22,6 +28,10 @@ const HistoScanController = ({ hostIP, hostPort }) => {
   const [stepSizeY, setStepSizeY] = useState("300");
   const [stepsX, setStepsX] = useState("2");
   const [stepsY, setStepsY] = useState("2");
+  const [menuPosition, setMenuPosition] = useState({
+    mouseX: null,
+    mouseY: null,
+  });
   const [path, setPath] = useState("Default Path");
   const [timeInterval, setTimeInterval] = useState("");
   const [numberOfScans, setNumberOfScans] = useState("");
@@ -36,8 +46,20 @@ const HistoScanController = ({ hostIP, hostPort }) => {
   const [resizeFactor, setResizeFactor] = useState(1);
   const [initPosX, setInitPosX] = useState("");
   const [initPosY, setInitPosY] = useState("");
-  const [selectedTab, setSelectedTab] = useState(0);
   const [imageUrl, setImageUrl] = useState("");
+  const [mapUrl, setMapUrl] = useState("");
+  const [anchorEl, setAnchorEl] = useState(null); // For right-click menu
+  const [clickedPosition, setClickedPosition] = useState({ x: 0, y: 0 }); // Position clicked on the image
+  const [savedPositions, setSavedPositions] = useState([]); // Store saved positions
+  const [selectedTab, setSelectedTab] = useState(0);
+  const [isPanningEnabled, setIsPanningEnabled] = useState(true); // Control panning state
+  const [currentXY, setCurrentXY] = useState({ x: 0, y: 0 }); // Current XY position of the microscope
+  const [lastPosition, setLastPosition] = useState(null); // Store last saved position for red dot overlay
+  const [streamUrl, setStreamUrl] = useState(
+    `${hostIP}:${hostPort}/RecordingController/video_feeder`
+  );
+  const [videoSize, setVideoSize] = useState({ width: 320, height: 180 });
+  const [videoPosition, setVideoPosition] = useState({ x: 50, y: 50 });
 
   const handleTabChange = (event, newValue) => {
     setSelectedTab(newValue);
@@ -90,6 +112,7 @@ const HistoScanController = ({ hostIP, hostPort }) => {
   };
 
   useEffect(() => {
+    setMapUrl(`${hostIP}:${hostPort}/HistoScanController/fetchStageMap`);
     const interval = setInterval(() => {
       const url = `${hostIP}:${hostPort}/HistoScanController/getHistoStatus`;
       fetch(url, { method: "GET" })
@@ -107,11 +130,74 @@ const HistoScanController = ({ hostIP, hostPort }) => {
     return () => clearInterval(interval);
   }, [hostIP, hostPort]);
 
+  // Handle right-click and open context menu at the clicked position
+  const handleImageRightClick = (event) => {
+    event.preventDefault(); // Prevent the default browser context menu
+    const rect = event.target.getBoundingClientRect();
+    const x = event.clientX - rect.left; // x position within the image
+    const y = event.clientY - rect.top; // y position within the image
+    setClickedPosition({ x, y });
+
+    // Store the mouse coordinates to position the menu
+    setMenuPosition({ mouseX: event.clientX, mouseY: event.clientY });
+    setAnchorEl(event.currentTarget);
+    setIsPanningEnabled(false); // Disable panning when right-clicking
+  };
+
+  const handleCloseMenu = () => {
+    setAnchorEl(null);
+    setMenuPosition({ mouseX: null, mouseY: null });
+    setIsPanningEnabled(true); // Re-enable panning after closing the menu
+  };
+
+  // Function to send position to controller
+  const goToPosition = (axis, dist) => {
+    const url = `${hostIP}:${hostPort}/PositionerController/movePositioner?axis=${axis}&dist=${dist}&isAbsolute=true&isBlocking=false`;
+    fetch(url, { method: "GET" })
+      .then((response) => response.json())
+      .then((data) => console.log("Positioner moved:", data))
+      .catch((error) => console.error("Error:", error));
+    handleCloseMenu();
+  };
+
+  // Save position in the list
+  const savePosition = () => {
+    setSavedPositions([...savedPositions, clickedPosition]);
+    setLastPosition(clickedPosition); // Store the last saved position for red dot
+    handleCloseMenu();
+  };
+
+  // Fetch current XY position from the microscope every second
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const url = `${hostIP}:${hostPort}/PositionerController/getPositionerPositions`;
+      fetch(url)
+        .then((response) => response.json())
+        .then((data) => {
+          const xPos = data.VirtualStage.X;
+          const yPos = data.VirtualStage.Y;
+          setCurrentXY({ x: xPos, y: yPos });
+        })
+        .catch((error) => console.error("Error fetching XY positions:", error));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [hostIP, hostPort]);
+
+  // Send both X and Y coordinates
+  const goToXYPosition = () => {
+    setLastPosition(clickedPosition);
+    goToPosition("X", clickedPosition.x);
+    goToPosition("Y", clickedPosition.y);
+    handleCloseMenu();
+  };
+
   return (
     <Paper style={{ padding: "20px" }}>
       <Tabs value={selectedTab} onChange={handleTabChange}>
         <Tab label="Control" />
         <Tab label="Result" />
+        <Tab label="Map" />
       </Tabs>
 
       {selectedTab === 0 && (
@@ -288,9 +374,12 @@ const HistoScanController = ({ hostIP, hostPort }) => {
                 />
               </>
             )}
-          <Typography variant="body2">
+            <Typography variant="body2">
               Result Available: {scanResultAvailable ? "Yes" : "No"}, Current
-              Position: {currentPosition && currentPosition.length > 1 ? `${currentPosition[0]}, ${currentPosition[1]}` : 'Loading...'}
+              Position:{" "}
+              {currentPosition && currentPosition.length > 1
+                ? `${currentPosition[0]}, ${currentPosition[1]}`
+                : "Loading..."}
             </Typography>
           </Grid>
         </Grid>
@@ -322,12 +411,14 @@ const HistoScanController = ({ hostIP, hostPort }) => {
                 Download Image
               </Button>
               <div style={{ marginTop: "20px" }}>
-                <TransformWrapper>
+                <TransformWrapper
+                  panning={{ disabled: !isPanningEnabled }} // Control panning state
+                >
                   <TransformComponent>
                     <img
                       src={imageUrl}
-                      alt="Last Stitched"
-                      style={{ maxWidth: "100%", marginTop: "20px" }}
+                      alt="Map"
+                      style={{ maxWidth: "100%" }}
                     />
                   </TransformComponent>
                 </TransformWrapper>
@@ -336,6 +427,143 @@ const HistoScanController = ({ hostIP, hostPort }) => {
           )}
         </Grid>
       )}
+
+      {selectedTab === 2 && (
+        <Grid container spacing={2}>
+          {mapUrl && (
+            <Grid item xs={12}>
+              <div style={{ marginTop: "20px", position: "relative" }}>
+                <img
+                  src={mapUrl}
+                  alt="Map"
+                  style={{ maxWidth: "100%" }}
+                  onContextMenu={handleImageRightClick} // Handle right-click
+                />
+                {lastPosition && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: `${lastPosition.y}px`,
+                      left: `${lastPosition.x}px`,
+                      width: "10px",
+                      height: "10px",
+                      backgroundColor: "red",
+                      borderRadius: "50%",
+                      transform: "translate(-50%, -50%)", // Center the dot
+                    }}
+                  />
+                )}
+                {currentXY && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: `${currentXY.y}px`,
+                      left: `${currentXY.x}px`,
+                      width: "10px",
+                      height: "10px",
+                      backgroundColor: "blue",
+                      borderRadius: "50%",
+                      transform: "translate(-50%, -50%)", // Center the dot
+                    }}
+                  />
+                )}
+                <TransformWrapper
+                  onPanningStart={(e) => e.preventDefault()} // Disable panning on right-click
+                  onPinchingStart={(e) => e.preventDefault()} // Disable pinching on right-click
+                  panning={{ disabled: !isPanningEnabled }} // Control panning state
+                >
+                  <TransformComponent></TransformComponent>
+                </TransformWrapper>
+
+                {/* Context menu for right-click */}
+                <Menu
+                  anchorReference="anchorPosition"
+                  anchorPosition={
+                    menuPosition.mouseY !== null && menuPosition.mouseX !== null
+                      ? { top: menuPosition.mouseY, left: menuPosition.mouseX }
+                      : undefined
+                  }
+                  open={Boolean(anchorEl)}
+                  onClose={handleCloseMenu}
+                >
+                  <MenuEntry
+                    onClick={() => goToPosition("X", clickedPosition.x)}
+                  >
+                    Go to X Position
+                  </MenuEntry>
+                  <MenuEntry
+                    onClick={() => goToPosition("Y", clickedPosition.y)}
+                  >
+                    Go to Y Position
+                  </MenuEntry>
+                  <MenuEntry onClick={goToXYPosition}>
+                    Go to X & Y Position
+                  </MenuEntry>
+                  <MenuEntry onClick={savePosition}>Save Position</MenuEntry>
+                </Menu>
+                {/* Display current XY position */}
+                <Box mt={2}>
+                  <Typography variant="h6">
+                    Current XY Position: X = {currentXY.x.toFixed(2)}, Y ={" "}
+                    {currentXY.y.toFixed(2)}
+                  </Typography>
+                </Box>
+              </div>
+            </Grid>
+          )}
+
+          {/* Display saved positions */}
+          <Grid item xs={12}>
+            <Typography variant="h6">Saved Positions</Typography>
+            <List>
+              {savedPositions.map((pos, index) => (
+                <ListItem key={index}>
+                  Position {index + 1}: X = {pos.x}, Y = {pos.y}
+                </ListItem>
+              ))}
+            </List>
+          </Grid>
+        </Grid>
+      )}
+      <Rnd
+        bounds="parent" // Restricts dragging within the parent container
+        size={{ width: videoSize.width, height: videoSize.height }}
+        position={{ x: videoPosition.x, y: videoPosition.y }}
+        onDragStop={(e, d) => {
+          setVideoPosition({ x: d.x, y: d.y });
+        }}
+        disableResizing={true} // Disable resizing
+        dragHandleClassName="drag-handle" // Specify drag handle
+        style={{
+          zIndex: 10, // Ensure the video stays on top
+          border: "1px solid #ccc",
+          background: "#000", // Placeholder background color
+          position: "relative",
+        }}
+      >
+        <iframe
+          src={streamUrl}
+          style={{
+            width: "100%",
+            height: "100%",
+            border: "none", // Remove default iframe borders
+          }}
+          allow="autoplay"
+        />
+        {/* Add a drag handle overlay */}
+        <div
+          className="drag-handle"
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0, 0, 0, 0.2)", // Semi-transparent overlay for drag handle
+            cursor: "move", // Change cursor to indicate draggable area
+          }}
+        />
+      </Rnd>
     </Paper>
   );
 };

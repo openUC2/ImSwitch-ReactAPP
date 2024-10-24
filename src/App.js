@@ -1,8 +1,18 @@
 import React, { useState, useEffect } from "react";
-import Tab_LiveView from "./components/Tab_LiveView";
+import LiveView from "./components/LiveView";
+import HistoScanController from "./components/HistoScanController";
 import { LiveWidgetProvider } from "./context/LiveWidgetContext"; // Import the context provider
 import Tab_Widgets from "./components/Tab_Widgets";
-import { Menu as MenuIcon } from "@mui/icons-material";
+import {
+  Menu as MenuIcon,
+  Dashboard as DashboardIcon,
+  Devices as DevicesIcon,
+  Build as BuildIcon,
+  Info as InfoIcon,
+  Settings as SettingsIcon,
+  SettingsOverscanSharp as SettingsOverscanSharpIcon,
+} from "@mui/icons-material";
+import WifiSharpIcon from '@mui/icons-material/WifiSharp';
 import axios from "axios";
 
 import {
@@ -11,7 +21,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Slider,
   Container,
   Box,
   Typography,
@@ -21,15 +30,11 @@ import {
   Drawer,
   List,
   ListItem,
+  ListItemIcon,
+  ListItemText,
   CssBaseline,
   Avatar,
-  Tab,
   Switch,
-  Tabs,
-  FormControl,
-  InputLabel,
-  Input,
-  FormHelperText,
   TextField,
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
@@ -57,10 +62,11 @@ const darkTheme = createTheme({
 });
 
 function App() {
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [sidebarVisible, setSidebarVisible] = useState(true); // Sidebar visibility state
+  const drawerWidth = sidebarVisible ? 240 : 60; // Full width when open, minimized when hidden
   const [hostIP, setHostIP] = useState("https://localhost");
   const [hostPort, sethostPort] = useState(8001);
-  const [selectedTab, setSelectedTab] = useState(0);
+  const [selectedPlugin, setSelectedPlugin] = useState("LiveView"); // Control which plugin to show
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true); // State to toggle between light and dark themes
   const [layout, setLayout] = useState([
@@ -73,23 +79,21 @@ function App() {
   useEffect(() => {
     const currentHostname = window.location.hostname;
     const portsToCheck = [8001, 8002, 443];
-  
+
     const findValidPort = async () => {
       try {
         const validPort = await checkPortsForApi(currentHostname, portsToCheck);
-        console.log(`API available on port: ${validPort}`);
         setHostIP(`https://${currentHostname}`);
         sethostPort(validPort);
       } catch (error) {
         console.error("No valid API port found.");
       }
     };
-  
+
     if (!currentHostname.startsWith("youseetoo.github.io")) {
       findValidPort();
     }
   }, []);
-
 
   const checkPortsForApi = async (hostname, ports) => {
     for (const port of ports) {
@@ -97,19 +101,13 @@ function App() {
         const url = `https://${hostname}:${port}/openapi.json`;
         const response = await axios.get(url, { timeout: 3000 });
         if (response.status === 200) {
-          return port; // Return the port that successfully retrieves the API description
+          return port;
         }
       } catch (error) {
-        // Continue to the next port if there's an error
         console.error(`Failed to retrieve API from ${hostname}:${port}`);
       }
     }
     throw new Error("No valid port found for API.");
-  };
-  
-
-  const handleTabChange = (event, newValue) => {
-    setSelectedTab(newValue);
   };
 
   const handleCloseDialog = () => {
@@ -117,8 +115,6 @@ function App() {
   };
 
   const handleOpenDialog = () => {
-    hostIP === "" ? setHostIP(hostIP) : setHostIP(hostIP);
-    hostPort === "" ? sethostPort(hostPort) : sethostPort(hostPort);
     setDialogOpen(true);
   };
 
@@ -126,150 +122,176 @@ function App() {
     let port = event.target.value.trim();
     sethostPort(port);
   };
+
   const handlehostIPChange = (event) => {
     let ip = event.target.value.trim();
-
-    // Check if it starts with 'http://' or 'https://', if not, prepend 'https://'
     if (!ip.startsWith("http://") && !ip.startsWith("https://")) {
       ip = "https://" + ip;
     }
-
-    // Replace 'http://' with 'https://' if present
     if (ip.startsWith("http://")) {
       ip = ip.replace("http://", "https://");
     }
-
     setHostIP(ip);
   };
 
   const handleSavehostIP = () => {
-    console.log("IP Address saved:", hostIP, hostPort);
-
     setHostIP(hostIP);
     sethostPort(hostPort);
     handleCloseDialog();
   };
 
-  // Toggle theme function
   const toggleTheme = () => {
     setIsDarkMode((prevMode) => !prevMode);
+  };
+
+  const handlePluginChange = (plugin) => {
+    setSelectedPlugin(plugin);
   };
 
   return (
     <ThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
       <CssBaseline />
-      {<AppBar position="fixed">
-        <Toolbar>
-          <IconButton
-            edge="start"
-            color="inherit"
-            aria-label="menu"
-            onClick={() => setDrawerOpen(!drawerOpen)}
-          >
-            <MenuIcon />
-          </IconButton>
-          <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: "bold" }}>
-            Microscope Control
-          </Typography>
-          <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-            Light/dark
-          </Typography>
-          <Switch
-            checked={isDarkMode}
-            onChange={toggleTheme}
-            color="default"
-            inputProps={{ 'aria-label': 'toggle theme' }}
-          />
-          <Avatar src="/logo192.png" />
-        </Toolbar>
-      </AppBar> }
-
-      <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
-        <List>
-          {[
-            "My Collection",
-            "Connections",
-            "Devices",
-            "Workflows",
-            "Remote Demo",
-            "About",
-          ].map((text) => (
-            <ListItem
-              button
-              onClick={() => text === "Connections" && handleOpenDialog()}
+      <Box sx={{ display: "flex" }}>
+        <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+          <Toolbar>
+            <IconButton
+              edge="start"
+              color="inherit"
+              aria-label="menu"
+              onClick={() => setSidebarVisible(true)}
             >
-              <Typography variant="h6" fontWeight="bold">
-                {" "}
-                {text}{" "}
-              </Typography>
+              <MenuIcon />
+            </IconButton>
+            <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: "bold" }}>
+              Microscope Control
+            </Typography>
+            <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+              Light/dark
+            </Typography>
+            <Switch
+              checked={isDarkMode}
+              onChange={toggleTheme}
+              color="default"
+              inputProps={{ "aria-label": "toggle theme" }}
+            />
+            <Avatar src="/logo192.png" />
+          </Toolbar>
+        </AppBar>
+
+        {/* Sidebar Drawer with minimized mode */}
+        <Drawer
+          variant="permanent"
+          open={sidebarVisible}
+          sx={{
+            width: drawerWidth,
+            flexShrink: 0,
+            '& .MuiDrawer-paper': {
+              width: drawerWidth,
+              boxSizing: 'border-box',
+              top: 64, // Position below the AppBar
+            },
+          }}
+        >
+          <List>
+            <ListItem button onClick={() => handlePluginChange("LiveView")}>
+              <ListItemIcon>
+                <DashboardIcon />
+              </ListItemIcon>
+              <ListItemText primary={sidebarVisible ? "Live View" : ""} />
             </ListItem>
-          ))}
-        </List>
-      </Drawer> 
+            <ListItem button onClick={() => handlePluginChange("HistoScan")}>
+              <ListItemIcon>
+                <SettingsOverscanSharpIcon />
+              </ListItemIcon>
+              <ListItemText primary={sidebarVisible ? "HistoScan" : ""} />
+            </ListItem>
+            <ListItem button onClick={() => handlePluginChange("Widgets")}>
+              <ListItemIcon>
+                <DevicesIcon />
+              </ListItemIcon>
+              <ListItemText primary={sidebarVisible ? "Widgets" : ""} />
+            </ListItem>
+            <ListItem button onClick={handleOpenDialog}>
+              <ListItemIcon>
+                <WifiSharpIcon />
+              </ListItemIcon>
+              <ListItemText primary={sidebarVisible ? "Connections" : ""} />
+            </ListItem>
+            <ListItem button onClick={() => handlePluginChange("About")}>
+              <ListItemIcon>
+                <InfoIcon />
+              </ListItemIcon>
+              <ListItemText primary={sidebarVisible ? "About" : ""} />
+            </ListItem>
 
-      {/* IP Address Dialog */}
-      <Dialog open={isDialogOpen} onClose={handleCloseDialog}>
-        <DialogTitle>Enter IP Address</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            id="ip-address"
-            label="IP Address"
-            type="text"
-            fullWidth
-            value={hostIP}
-            onChange={handlehostIPChange}
-          />
-          <TextField
-            margin="dense"
-            id="port"
-            label="Port"
-            type="text"
-            fullWidth
-            value={hostPort}
-            onChange={handlehostPortChange}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button onClick={handleSavehostIP}>Save</Button>
-        </DialogActions>
-      </Dialog>
+            {/* Add a minimize/maximize button */}
+            <ListItem button onClick={() => setSidebarVisible(!sidebarVisible)}>
+              <ListItemIcon>
+                <MenuIcon />
+              </ListItemIcon>
+              <ListItemText primary={sidebarVisible ? "Minimize" : ""} />
+            </ListItem>
+          </List>
+        </Drawer>
 
-      <Tabs
-        value={selectedTab}
-        onChange={handleTabChange}
-        variant="fullWidth"
-        indicatorColor="secondary"
-        textColor="inherit"
-        style={{ marginTop: 64 }}
-      >
-        <Tab label="Live Parameters" />
-        <Tab label="Plugins" />
-      </Tabs>
-      <WidgetContextProvider>
-        <LiveWidgetProvider>
-          {/* Render different components based on the selected tab */}
-          {selectedTab === 0 && (
-            <div>{<Tab_LiveView hostIP={hostIP} hostPort={hostPort} />}</div>
+        {/* Main content area */}
+        <Box
+          component="main"
+          sx={{ flexGrow: 1, p: 3, marginTop: '64px' }} // Push content below AppBar
+        >
+          {selectedPlugin === "LiveView" && (
+            <LiveWidgetProvider>            
+            <LiveView hostIP={hostIP} hostPort={hostPort} />
+          </LiveWidgetProvider>
           )}
-          {selectedTab === 1 && (
-            <div>
-              {
-                <Tab_Widgets
-                  hostIP={hostIP}
-                  hostPort={hostPort}
-                  layout={layout}
-                  onLayoutChange={(newLayout) => setLayout(newLayout)}
-                />
-                /* Components for Control Panel 2 */
-              }
-            </div>
+          {selectedPlugin === "HistoScan" && (
+            <WidgetContextProvider> 
+            <HistoScanController hostIP={hostIP} hostPort={hostPort} />
+            </WidgetContextProvider>
           )}
-          {/* Add more conditional rendering for additional tabs */}
-        </LiveWidgetProvider>
-      </WidgetContextProvider>
+          {selectedPlugin === "Widgets" && (
+            <WidgetContextProvider>
+            <Tab_Widgets
+              hostIP={hostIP}
+              hostPort={hostPort}
+              layout={layout}
+              onLayoutChange={(newLayout) => setLayout(newLayout)}
+            />
+          </WidgetContextProvider>
+          )}
+          {/* Add more conditional rendering for additional plugins */}
+        </Box>
+
+        {/* IP Address Dialog */}
+        <Dialog open={isDialogOpen} onClose={handleCloseDialog}>
+          <DialogTitle>Enter IP Address</DialogTitle>
+          <DialogContent>
+            <TextField
+              autoFocus
+              margin="dense"
+              id="ip-address"
+              label="IP Address"
+              type="text"
+              fullWidth
+              value={hostIP}
+              onChange={handlehostIPChange}
+            />
+            <TextField
+              margin="dense"
+              id="port"
+              label="Port"
+              type="text"
+              fullWidth
+              value={hostPort}
+              onChange={handlehostPortChange}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseDialog}>Cancel</Button>
+            <Button onClick={handleSavehostIP}>Save</Button>
+          </DialogActions>
+        </Dialog>
+      </Box>
     </ThemeProvider>
   );
 }
