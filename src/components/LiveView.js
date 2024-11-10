@@ -46,12 +46,13 @@ const useStyles = makeStyles((theme) => ({
 const ControlPanel_1 = ({ hostIP, hostPort }) => {
   // Access the context using useContext
   const {
-    isStreamRunning,
     setStreamRunning,
     sliderIllu1Value,
     sliderIllu2Value,
     sliderIllu3Value, 
   } = useContext(LiveWidgetContext);
+  const [isStreamRunning, setIsStreamRunning] = useState(false);
+
   const [laserNames, setLaserNames] = useState([]);
   const [isIllumination1Checked, setisIllumination1Checked] = useState(false);
   const [isIllumination2Checked, setisIllumination2Checked] = useState(false);
@@ -67,6 +68,20 @@ const ControlPanel_1 = ({ hostIP, hostPort }) => {
     }
   }, [isStreamRunning]);
 
+  useEffect(() => {
+    // Überprüfen des Zustands der URL beim Laden der Komponente
+    const checkStreamStatus = async () => {
+      try {
+        const response = await fetch(`${hostIP}:${hostPort}/ViewController/getLiveViewActive`);
+        const data = await response.json();
+        setIsStreamRunning(data);
+      } catch (error) {
+        console.error('Error fetching stream status:', error);
+      }
+    };
+
+    checkStreamStatus();
+  }, []);
 
   // Fetch laser names dynamically
   useEffect(() => {
@@ -272,16 +287,6 @@ const ControlPanel_1 = ({ hostIP, hostPort }) => {
     }
   };
 
-  const handleButtonPress = async (url) => {
-    try {
-      const response = await fetch(url);
-      const data = await response.json();
-      console.log(data);
-    } catch (error) {
-      console.error("Error:", error);
-    }
-  };
-
   const handleIlluminationSliderChange = async (event, laserIndex) => {
     const value = event.target.value;
     if (laserNames[laserIndex]) {
@@ -314,23 +319,29 @@ const ControlPanel_1 = ({ hostIP, hostPort }) => {
     }
   };
 
-  
-  const handleStreamToggle = () => {
-    setStreamRunning(!isStreamRunning);
-    // send https://localhost:8001/ViewController/setLiveViewActive?active=true
-    const url = `${hostIP}:${hostPort}/ViewController/setLiveViewActive?active=${!isStreamRunning}`;
+  const handleStreamToggle = async () => {
     try {
-      const response = fetch(url);
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
+      const newStatus = !isStreamRunning;
+      // Hier können Sie den Code hinzufügen, um den Stream zu starten oder zu stoppen
+      // abhängig vom neuen Status
+      const url = `${hostIP}:${hostPort}/ViewController/setLiveViewActive?active=${newStatus}`;
+      try {
+        const response = fetch(url);
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+      } catch (error) {
+        console.error(
+          "There has been a problem with your fetch operation: ",
+          error
+        );
+      }      
+      setIsStreamRunning(newStatus);
     } catch (error) {
-      console.error(
-        "There has been a problem with your fetch operation: ",
-        error
-      );
+      console.error('Error toggling stream status:', error);
     }
   };
+
 
   return (
     <div>
@@ -343,7 +354,7 @@ const ControlPanel_1 = ({ hostIP, hostPort }) => {
             {streamUrl ? (
               <img
                 style={{ width: "100%", height: "auto" }}
-                autoPlay
+                allow="autoplay"
                 src={streamUrl}
                 ref={videoRef}
                 alt={"Live Stream"}
@@ -428,7 +439,6 @@ const ControlPanel_1 = ({ hostIP, hostPort }) => {
             </Box>
             <Box mb={5}>
               <XYZControls
-                onButtonPress={handleButtonPress}
                 hostIP={hostIP}
                 hostPort={hostPort}
               />

@@ -68,11 +68,6 @@ const FlowStopController = ({ hostIP, hostPort, WindowTitle }) => {
     fetchStatus();
     fetchExperimentParameters();
 
-    const interval = setInterval(() => {
-      fetchStatus();
-    }, 1000); // fetch status every second
-
-    return () => clearInterval(interval); // clean up the interval on component unmount
   }, [hostIP, hostPort]);
 
   const startExperiment = () => {

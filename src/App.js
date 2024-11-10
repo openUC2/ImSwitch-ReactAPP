@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import LiveView from "./components/LiveView";
+import SocketView from "./components/SocketView";
 import HistoScanController from "./components/HistoScanController";
 import { LiveWidgetProvider } from "./context/LiveWidgetContext"; // Import the context provider
 import Tab_Widgets from "./components/Tab_Widgets";
@@ -12,8 +13,9 @@ import {
   Settings as SettingsIcon,
   SettingsOverscanSharp as SettingsOverscanSharpIcon,
 } from "@mui/icons-material";
-import WifiSharpIcon from '@mui/icons-material/WifiSharp';
+import WifiSharpIcon from "@mui/icons-material/WifiSharp";
 import axios from "axios";
+import { WebSocketProvider } from "./context/WebSocketContext";
 
 import {
   Button,
@@ -39,6 +41,7 @@ import {
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { WidgetContextProvider } from "./context/WidgetContext";
+import CommentIcon from "@mui/icons-material/Comment";
 
 // Define both light and dark themes
 const lightTheme = createTheme({
@@ -150,15 +153,19 @@ function App() {
 
   return (
     <ThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
+      <WebSocketProvider hostIP={hostIP} hostPort={hostPort}>
       <CssBaseline />
       <Box sx={{ display: "flex" }}>
-        <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+        <AppBar
+          position="fixed"
+          sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
+        >
           <Toolbar>
             <IconButton
               edge="start"
               color="inherit"
               aria-label="menu"
-              onClick={() => setSidebarVisible(true)}
+              onClick={() => setSidebarVisible(!sidebarVisible)}
             >
               <MenuIcon />
             </IconButton>
@@ -185,9 +192,9 @@ function App() {
           sx={{
             width: drawerWidth,
             flexShrink: 0,
-            '& .MuiDrawer-paper': {
+            "& .MuiDrawer-paper": {
               width: drawerWidth,
-              boxSizing: 'border-box',
+              boxSizing: "border-box",
               top: 64, // Position below the AppBar
             },
           }}
@@ -204,6 +211,12 @@ function App() {
                 <SettingsOverscanSharpIcon />
               </ListItemIcon>
               <ListItemText primary={sidebarVisible ? "HistoScan" : ""} />
+            </ListItem>
+            <ListItem button onClick={() => handlePluginChange("SocketView")}>
+              <ListItemIcon>
+                <CommentIcon />
+              </ListItemIcon>
+              <ListItemText primary={sidebarVisible ? "SocketView" : ""} />
             </ListItem>
             <ListItem button onClick={() => handlePluginChange("Widgets")}>
               <ListItemIcon>
@@ -237,29 +250,31 @@ function App() {
         {/* Main content area */}
         <Box
           component="main"
-          sx={{ flexGrow: 1, p: 3, marginTop: '64px' }} // Push content below AppBar
+          sx={{ flexGrow: 1, p: 3, marginTop: "64px" }} // Push content below AppBar
         >
           {selectedPlugin === "LiveView" && (
-            <LiveWidgetProvider>            
-            <LiveView hostIP={hostIP} hostPort={hostPort} />
-          </LiveWidgetProvider>
+            <LiveWidgetProvider>
+              <LiveView hostIP={hostIP} hostPort={hostPort} />
+            </LiveWidgetProvider>
           )}
           {selectedPlugin === "HistoScan" && (
-            <WidgetContextProvider> 
-            <HistoScanController hostIP={hostIP} hostPort={hostPort} />
+            <WidgetContextProvider>
+              <HistoScanController hostIP={hostIP} hostPort={hostPort} />
             </WidgetContextProvider>
+          )}
+          {selectedPlugin === "SocketView" && (
+              <SocketView hostIP={hostIP} hostPort={hostPort} />
           )}
           {selectedPlugin === "Widgets" && (
             <WidgetContextProvider>
-            <Tab_Widgets
-              hostIP={hostIP}
-              hostPort={hostPort}
-              layout={layout}
-              onLayoutChange={(newLayout) => setLayout(newLayout)}
-            />
-          </WidgetContextProvider>
+              <Tab_Widgets
+                hostIP={hostIP}
+                hostPort={hostPort}
+                layout={layout}
+                onLayoutChange={(newLayout) => setLayout(newLayout)}
+              />
+            </WidgetContextProvider>
           )}
-          {/* Add more conditional rendering for additional plugins */}
         </Box>
 
         {/* IP Address Dialog */}
@@ -292,6 +307,7 @@ function App() {
           </DialogActions>
         </Dialog>
       </Box>
+      </WebSocketProvider>
     </ThemeProvider>
   );
 }

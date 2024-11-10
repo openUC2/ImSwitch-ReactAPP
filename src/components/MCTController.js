@@ -11,10 +11,13 @@ import {
   Typography,
 } from "@mui/material";
 import { useWidgetContext } from "../context/WidgetContext";
+import { useWebSocket } from "../context/WebSocketContext";
+
 
 const MCTController = ({ hostIP, hostPort }) => {
   const [numImagesTaken, setNumImagesTaken] = useState(0);
   const [folderPath, setFolderPath] = useState("");
+  const socket = useWebSocket();
   const {
     timePeriod,
     setTimePeriod,
@@ -59,15 +62,31 @@ const MCTController = ({ hostIP, hostPort }) => {
   const widgetCtx = useWidgetContext();
 
   useEffect(() => {
+    if (socket) {
+      socket.onmessage = (event) => {
+        console.log("Message received:", event.data);
+        
+      };
+    }
+    return () => {
+      if (socket) {
+        socket.onmessage = null;
+      }
+    };
+  }, [socket]);
+
+  
+  useEffect(() => {
     const fetchMCTStatus = () => {
       const url = `${hostIP}:${hostPort}/MCTController/getMCTStatus`;
 
+  
       fetch(url)
         .then((response) => response.json())
         .then((data) => {
           console.log(data);
           // Set default values from the response
-          /* // TODO: Should we fetch this on the first render?          
+         // TODO: Should we fetch this on the first render?          
           
           setTimePeriod(data.timePeriod);
           setZStackEnabled(data.zStackEnabled);
@@ -82,9 +101,9 @@ const MCTController = ({ hostIP, hostPort }) => {
           setYMax(data.yScanMax);
           setYSteps(data.yScanStep);
           setIntensityLaser1(data.Illu1Value);
-          #setIntensityLaser2(data.Illu2Value);
+          setIntensityLaser2(data.Illu2Value);
           setIntensityLED(data.Illu3Value);
-          */
+          
           // enable/disable start/stop
           setNumImagesTaken(data.nImagesTaken);
           setIsRunning(data.isMCTrunning);
@@ -93,37 +112,14 @@ const MCTController = ({ hostIP, hostPort }) => {
         .catch((error) => {
           //console.error("Error fetching MCT status:", error);
         });
-    };
-
+      };
+      
     fetchMCTStatus();
 
-    // Set an interval to fetch the number of images taken every second
-    const intervalId = setInterval(() => {
-      fetchMCTStatus();
-    }, 1000);
+  }, [hostIP, hostPort]);
+  
 
-    return () => clearInterval(intervalId); // Clean up interval on unmount
-  }, [
-    hostIP,
-    hostPort,
-    setNumMeasurements,
-    setTimePeriod,
-    setZStackEnabled,
-    setZMin,
-    setZMax,
-    setZSteps,
-    setXStackEnabled,
-    setXMin,
-    setXMax,
-    setXSteps,
-    setYMin,
-    setYMax,
-    setYSteps,
-    setIntensityLaser1,
-    setIntensityLaser2,
-    setIntensityLED,
-  ]);
-
+  
   const handleStart = () => {
     const url =
       `${hostIP}:${hostPort}/MCTController/startTimelapseImaging?` +
