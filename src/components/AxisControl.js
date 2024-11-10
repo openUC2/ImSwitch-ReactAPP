@@ -12,7 +12,6 @@ import React, { useState } from "react";
 
 const AxisControl = ({
   axisLabel,
-  onButtonPress,
   hostIP,
   hostPort,
   positionerName,
@@ -27,6 +26,16 @@ const AxisControl = ({
   const buttonWidth = { width: "100px" };
 
   const dialValues = [1, 5, 10, 50, 100, 500, 1000, 10000, 20000, 100000];
+
+
+  const onButtonPress = async (url) => {
+    try {
+      const response = await fetch(url);
+      const data = await response.json();
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
 
   const handleIncrement = async () => {
     const url = `${hostIP}:${hostPort}/PositionerController/movePositioner?positionerName=${positionerName}&axis=${axisLabel}&dist=${Math.abs(

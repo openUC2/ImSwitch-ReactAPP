@@ -287,6 +287,7 @@ const ControlPanel_1 = ({ hostIP, hostPort }) => {
     }
   };
 
+
   const handleIlluminationSliderChange = async (event, laserIndex) => {
     const value = event.target.value;
     if (laserNames[laserIndex]) {

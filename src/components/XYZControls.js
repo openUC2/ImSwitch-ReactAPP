@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import AxisControl from "./AxisControl";
 import { useWebSocket } from "../context/WebSocketContext";
 
-function XYZControls({ onButtonPress, hostIP, hostPort }) {
+function XYZControls({ hostIP, hostPort }) {
   const socket = useWebSocket();
   const [positionerName, setPositionerName] = useState("VirtualStage"); // Assume a default or initial value
   const [positions, setPositions] = useState({A:0, X: 0, Y: 0, Z: 0 });
@@ -79,7 +79,6 @@ function XYZControls({ onButtonPress, hostIP, hostPort }) {
         <Grid item xs={4} key={axisLabel}>
           <AxisControl
             axisLabel={axisLabel}
-            onButtonPress={onButtonPress}
             hostIP={hostIP}
             hostPort={hostPort}
             positionerName={positionerName}
