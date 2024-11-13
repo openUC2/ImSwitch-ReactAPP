@@ -82,7 +82,7 @@ const AxisControl = ({
   return (
     <Grid container spacing={2} direction="column" alignItems="center">
       <Grid item xs={12}>
-        <h2>{axisLabel} Axis</h2>
+        <h3>{axisLabel} Axis</h3>
       </Grid>
 
       <Grid container item spacing={2} justifyContent="center" xs={12}>

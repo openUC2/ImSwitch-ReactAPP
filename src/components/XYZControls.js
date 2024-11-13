@@ -74,9 +74,9 @@ function XYZControls({ hostIP, hostPort }) {
   }, [socket]);
 
   return (
-    <Grid container spacing={2}>
-      {["X", "Y", "Z"].map((axisLabel) => (
-        <Grid item xs={4} key={axisLabel}>
+    <Grid container spacing={5}>
+      {["X", "Y", "Z", "A"].map((axisLabel) => (
+        <Grid item xs={3} key={axisLabel}>
           <AxisControl
             axisLabel={axisLabel}
             hostIP={hostIP}

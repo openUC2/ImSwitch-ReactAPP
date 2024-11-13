@@ -7,8 +7,23 @@ import {
   FiberManualRecord,
   Stop as StopIcon,
 } from "@mui/icons-material";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  PointElement,
+  Title,
+  Tooltip,
+  Legend,
+  LineElement,
+} from "chart.js";
+import { Bar } from "react-chartjs-2";
+
+import { Line } from "react-chartjs-2"; // or any other library for charts
 import { LiveWidgetContext } from "../context/LiveWidgetContext";
 import { makeStyles } from "@mui/styles";
+import { useWebSocket } from "../context/WebSocketContext";
 import {
   Box,
   Container,
@@ -32,6 +47,18 @@ import {
 } from "@mui/material";
 import XYZControls from "./XYZControls"; // If needed
 
+// Register scales and components explicitly
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
+
 const useStyles = makeStyles((theme) => ({
   blinking: {
     animation: `$blinkingEffect 1s infinite`,
@@ -43,21 +70,101 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const ControlPanel_1 = ({ hostIP, hostPort }) => {
+const LiveView = ({ hostIP, hostPort }) => {
   // Access the context using useContext
   const {
     setStreamRunning,
     sliderIllu1Value,
     sliderIllu2Value,
-    sliderIllu3Value, 
+    sliderIllu3Value,
   } = useContext(LiveWidgetContext);
   const [isStreamRunning, setIsStreamRunning] = useState(false);
-
   const [laserNames, setLaserNames] = useState([]);
   const [isIllumination1Checked, setisIllumination1Checked] = useState(false);
   const [isIllumination2Checked, setisIllumination2Checked] = useState(false);
   const [isIllumination3Checked, setisIllumination3Checked] = useState(false);
+  const [histogrammY, setHistogrammY] = useState([]);
+  const [histogrammX, setHistogrammX] = useState([]);
+  const chartContainer = useRef(null); // Ref for the chart container
+  const socket = useWebSocket();
 
+  // connect to the websocket
+  useEffect(() => {
+    if (socket) {
+      socket.onmessage = (event) => {
+        const message = JSON.parse(event.data);
+        if (message.name === "sigHistogramComputed") {
+          setHistogrammX(message.args.p0);
+          setHistogrammY(message.args.p1);
+        }
+      };
+    }
+
+    // Clean up the chart on component unmount
+    return () => {
+      if (ChartJS.getChart("histogramChart")) {
+        ChartJS.getChart("histogramChart").destroy();
+      }
+    };
+  }, [socket]);
+
+  const histogramData = {
+    labels: histogrammX,
+    datasets: [
+      {
+        label: "Histogram",
+        data: histogrammY,
+        borderWidth: 1,
+        backgroundColor: "rgba(63, 81, 181, 0.7)", // Material Design color for bars
+        borderColor: "rgba(63, 81, 181, 1)", // Material Design color for border
+      },
+    ],
+  };
+
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false,
+      },
+      title: {
+        display: true,
+        text: "Histogram",
+        font: {
+          size: 18,
+          family: "'Roboto', 'Helvetica', 'Arial', sans-serif",
+        },
+        color: "#333",
+      },
+    },
+    scales: {
+      x: {
+        max: 1024,
+        title: {
+          display: true,
+          text: "Intensity",
+          font: {
+            size: 14,
+            family: "'Roboto', 'Helvetica', 'Arial', sans-serif",
+          },
+          color: "#333",
+        },
+      },
+      y: {
+        beginAtZero: true,
+        title: {
+          display: true,
+          text: "Counts",
+          font: {
+            size: 14,
+            family: "'Roboto', 'Helvetica', 'Arial', sans-serif",
+          },
+          color: "#333",
+        },
+      },
+    },
+  };
 
   // Effect that reacts on changes in the isStreamRunning state
   useEffect(() => {
@@ -72,11 +179,13 @@ const ControlPanel_1 = ({ hostIP, hostPort }) => {
     // Überprüfen des Zustands der URL beim Laden der Komponente
     const checkStreamStatus = async () => {
       try {
-        const response = await fetch(`${hostIP}:${hostPort}/ViewController/getLiveViewActive`);
+        const response = await fetch(
+          `${hostIP}:${hostPort}/ViewController/getLiveViewActive`
+        );
         const data = await response.json();
         setIsStreamRunning(data);
       } catch (error) {
-        console.error('Error fetching stream status:', error);
+        console.error("Error fetching stream status:", error);
       }
     };
 
@@ -87,7 +196,9 @@ const ControlPanel_1 = ({ hostIP, hostPort }) => {
   useEffect(() => {
     const fetchLaserNames = async () => {
       try {
-        const response = await fetch(`${hostIP}:${hostPort}/LaserController/getLaserNames`);
+        const response = await fetch(
+          `${hostIP}:${hostPort}/LaserController/getLaserNames`
+        );
         const data = await response.json();
         setLaserNames(data); // Update state with laser names
       } catch (error) {
@@ -97,7 +208,6 @@ const ControlPanel_1 = ({ hostIP, hostPort }) => {
 
     fetchLaserNames();
   }, [hostIP, hostPort]);
-
 
   const [imjoyAPI, setImjoyAPI] = useState(null);
 
@@ -152,7 +262,7 @@ const ControlPanel_1 = ({ hostIP, hostPort }) => {
     }
 
     try {
-      const imageURL = `${hostIP}:${hostPort}/RecordingController/snapNumpyToFastAPI?resizeFactor=1` //capture?_cb=ImJoy`;  // https://localhost:8001/
+      const imageURL = `${hostIP}:${hostPort}/RecordingController/snapNumpyToFastAPI?resizeFactor=1`; //capture?_cb=ImJoy`;  // https://localhost:8001/
       const response = await fetch(imageURL);
       const bytes = await response.arrayBuffer();
 
@@ -287,7 +397,6 @@ const ControlPanel_1 = ({ hostIP, hostPort }) => {
     }
   };
 
-
   const handleIlluminationSliderChange = async (event, laserIndex) => {
     const value = event.target.value;
     if (laserNames[laserIndex]) {
@@ -299,7 +408,10 @@ const ControlPanel_1 = ({ hostIP, hostPort }) => {
           throw new Error("Network response was not ok");
         }
       } catch (error) {
-        console.error("There has been a problem with your fetch operation: ", error);
+        console.error(
+          "There has been a problem with your fetch operation: ",
+          error
+        );
       }
     }
   };
@@ -315,7 +427,10 @@ const ControlPanel_1 = ({ hostIP, hostPort }) => {
           throw new Error("Network response was not ok");
         }
       } catch (error) {
-        console.error("There has been a problem with your fetch operation: ", error);
+        console.error(
+          "There has been a problem with your fetch operation: ",
+          error
+        );
       }
     }
   };
@@ -336,13 +451,12 @@ const ControlPanel_1 = ({ hostIP, hostPort }) => {
           "There has been a problem with your fetch operation: ",
           error
         );
-      }      
+      }
       setIsStreamRunning(newStatus);
     } catch (error) {
-      console.error('Error toggling stream status:', error);
+      console.error("Error toggling stream status:", error);
     }
   };
-
 
   return (
     <div>
@@ -416,6 +530,41 @@ const ControlPanel_1 = ({ hostIP, hostPort }) => {
                     : "Manual Camera Settings"
                 }
               />
+
+              <Grid item xs={12}>
+                <Box
+                  sx={{
+                    width: "100%",
+                    maxWidth: 600,
+                    margin: "auto",
+                    padding: 2,
+                    backgroundColor: "#fafafa",
+                    boxShadow: "0px 3px 6px rgba(0, 0, 0, 0.1)",
+                    borderRadius: 2,
+                  }}
+                  ref={chartContainer} // Attach the ref here
+                >
+                  <Typography
+                    variant="h6"
+                    align="center"
+                    sx={{ mb: 2, fontWeight: "bold" }}
+                  >
+                    Histogram
+                  </Typography>
+                  <Box sx={{ height: 400 }}>
+                    {histogrammX.length && histogrammY.length ? ( // Render only if data is available
+                      <Bar
+                        id="histogramChart"
+                        data={histogramData}
+                        options={options}
+                      />
+                    ) : (
+                      <Typography align="center">Loading data...</Typography>
+                    )}
+                  </Box>
+                </Box>
+              </Grid>
+
               <TextField
                 id="exposure-time"
                 label="Exposure Time"
@@ -435,35 +584,54 @@ const ControlPanel_1 = ({ hostIP, hostPort }) => {
           <Grid item xs={12} sm={4}>
             <Box mb={5}>
               <Typography variant="h6" gutterBottom>
-                XYZ Controls
+                Stage Control
               </Typography>
             </Box>
             <Box mb={5}>
-              <XYZControls
-                hostIP={hostIP}
-                hostPort={hostPort}
-              />
+              <XYZControls hostIP={hostIP} hostPort={hostPort} />
             </Box>
             <Box mb={5}>
-            <Typography variant="h6" gutterBottom>
+              <Typography variant="h6" gutterBottom>
                 Illumination
               </Typography>
               {laserNames && laserNames.length > 0 ? (
                 <>
                   {laserNames.map((laserName, index) => (
-                    <div key={index} style={{ display: "flex", alignItems: "center" }}>
+                    <div
+                      key={index}
+                      style={{ display: "flex", alignItems: "center" }}
+                    >
                       <Typography variant="h8" gutterBottom>
-                        {laserName}: {index === 0 ? sliderIllu1Value : index === 1 ? sliderIllu2Value : sliderIllu3Value}
+                        {laserName}:{" "}
+                        {index === 0
+                          ? sliderIllu1Value
+                          : index === 1
+                          ? sliderIllu2Value
+                          : sliderIllu3Value}
                       </Typography>
                       <Slider
-                        value={index === 0 ? sliderIllu1Value : index === 1 ? sliderIllu2Value : sliderIllu3Value}
+                        value={
+                          index === 0
+                            ? sliderIllu1Value
+                            : index === 1
+                            ? sliderIllu2Value
+                            : sliderIllu3Value
+                        }
                         min={0}
                         max={1023}
-                        onChange={(event) => handleIlluminationSliderChange(event, index)}
+                        onChange={(event) =>
+                          handleIlluminationSliderChange(event, index)
+                        }
                         aria-labelledby="continuous-slider"
                       />
                       <Checkbox
-                        checked={index === 0 ? isIllumination1Checked : index === 1 ? isIllumination2Checked : isIllumination3Checked}
+                        checked={
+                          index === 0
+                            ? isIllumination1Checked
+                            : index === 1
+                            ? isIllumination2Checked
+                            : isIllumination3Checked
+                        }
                         onChange={(event) =>
                           handleIlluminationCheckboxChange(event, index)
                         }
@@ -473,7 +641,8 @@ const ControlPanel_1 = ({ hostIP, hostPort }) => {
                 </>
               ) : (
                 <Typography>Loading laser names...</Typography>
-              )}            </Box>
+              )}{" "}
+            </Box>
           </Grid>
         </Grid>
       </Container>
@@ -492,7 +661,10 @@ const ControlPanel_1 = ({ hostIP, hostPort }) => {
           position: "relative",
         }}
       >
-        <div id="menu-container" style={{ height: "50px", overflow: "hidden" }}></div>
+        <div
+          id="menu-container"
+          style={{ height: "50px", overflow: "hidden" }}
+        ></div>
         <div
           id="window-container"
           style={{
@@ -502,11 +674,8 @@ const ControlPanel_1 = ({ hostIP, hostPort }) => {
           }}
         ></div>
       </div>
-
-
-
     </div>
   );
 };
 
-export default ControlPanel_1;
+export default LiveView;
