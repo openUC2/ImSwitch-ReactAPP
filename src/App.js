@@ -4,6 +4,7 @@ import SocketView from "./components/SocketView";
 import HistoScanController from "./components/HistoScanController";
 import { LiveWidgetProvider } from "./context/LiveWidgetContext"; // Import the context provider
 import Tab_Widgets from "./components/Tab_Widgets";
+import LightsheetController from "./components/LightsheetController";
 import {
   Menu as MenuIcon,
   Dashboard as DashboardIcon,
@@ -14,6 +15,8 @@ import {
   SettingsOverscanSharp as SettingsOverscanSharpIcon,
 } from "@mui/icons-material";
 import WifiSharpIcon from "@mui/icons-material/WifiSharp";
+import ThreeDRotationIcon from '@mui/icons-material/ThreeDRotation';
+import AirIcon from '@mui/icons-material/Air';
 import axios from "axios";
 import { WebSocketProvider } from "./context/WebSocketContext";
 
@@ -42,6 +45,7 @@ import {
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { WidgetContextProvider } from "./context/WidgetContext";
 import CommentIcon from "@mui/icons-material/Comment";
+import FlowStopController from "./components/FlowStopController";
 
 // Define both light and dark themes
 const lightTheme = createTheme({
@@ -77,6 +81,7 @@ function App() {
     { i: "widget2", x: 2, y: 0, w: 2, h: 2 },
     { i: "widget3", x: 4, y: 0, w: 2, h: 2 },
     { i: "FlowStop", x: 6, y: 0, w: 5, h: 5 },
+    { i: "Lightsheet", x: 0, y: 2, w: 5, h: 5 },
   ]);
 
   useEffect(() => {
@@ -218,6 +223,18 @@ function App() {
               </ListItemIcon>
               <ListItemText primary={sidebarVisible ? "SocketView" : ""} />
             </ListItem>
+            <ListItem button onClick={() => handlePluginChange("Lightsheet")}>
+              <ListItemIcon>
+                <ThreeDRotationIcon />
+              </ListItemIcon>
+              <ListItemText primary={sidebarVisible ? "Lightsheet" : ""} />
+            </ListItem>
+            <ListItem button onClick={() => handlePluginChange("FlowStop")}>
+              <ListItemIcon>
+                <AirIcon />
+              </ListItemIcon>
+              <ListItemText primary={sidebarVisible ? "FlowStop" : ""} />
+            </ListItem>            
             <ListItem button onClick={() => handlePluginChange("Widgets")}>
               <ListItemIcon>
                 <DevicesIcon />
@@ -260,6 +277,16 @@ function App() {
           {selectedPlugin === "HistoScan" && (
             <WidgetContextProvider>
               <HistoScanController hostIP={hostIP} hostPort={hostPort} />
+            </WidgetContextProvider>
+          )}
+          {selectedPlugin === "Lightsheet" && (
+             <WidgetContextProvider>
+             <LightsheetController hostIP={hostIP} hostPort={hostPort} />
+            </WidgetContextProvider>
+          )}
+          {selectedPlugin === "FlowStop" && (
+            <WidgetContextProvider>
+              <FlowStopController hostIP={hostIP} hostPort={hostPort} />
             </WidgetContextProvider>
           )}
           {selectedPlugin === "SocketView" && (
