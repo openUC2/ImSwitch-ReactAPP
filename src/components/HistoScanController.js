@@ -111,24 +111,7 @@ const HistoScanController = ({ hostIP, hostPort }) => {
       .catch((error) => console.error("Error:", error));
   };
 
-  useEffect(() => {
-    setMapUrl(`${hostIP}:${hostPort}/HistoScanController/fetchStageMap`);
-    const interval = setInterval(() => {
-      const url = `${hostIP}:${hostPort}/HistoScanController/getHistoStatus`;
-      fetch(url, { method: "GET" })
-        .then((response) => response.json())
-        .then((data) => {
-          setScanStatus(data.ishistoscanRunning);
-          setScanCount(data.mScanCount);
-          setScanIndex(data.mScanIndex);
-          setScanResultAvailable(data.stitchResultAvailable);
-          setCurrentPosition(data.currentPosition);
-        })
-        .catch((error) => console.error("Error:", error));
-    }, 1000);
 
-    return () => clearInterval(interval);
-  }, [hostIP, hostPort]);
 
   // Handle right-click and open context menu at the clicked position
   const handleImageRightClick = (event) => {
@@ -167,22 +150,7 @@ const HistoScanController = ({ hostIP, hostPort }) => {
     handleCloseMenu();
   };
 
-  // Fetch current XY position from the microscope every second
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const url = `${hostIP}:${hostPort}/PositionerController/getPositionerPositions`;
-      fetch(url)
-        .then((response) => response.json())
-        .then((data) => {
-          const xPos = data.VirtualStage.X;
-          const yPos = data.VirtualStage.Y;
-          setCurrentXY({ x: xPos, y: yPos });
-        })
-        .catch((error) => console.error("Error fetching XY positions:", error));
-    }, 1000);
 
-    return () => clearInterval(interval);
-  }, [hostIP, hostPort]);
 
   // Send both X and Y coordinates
   const goToXYPosition = () => {
@@ -524,7 +492,7 @@ const HistoScanController = ({ hostIP, hostPort }) => {
             </List>
           </Grid>
         </Grid>
-      )}
+      )}{/*
       <Rnd
         bounds="parent" // Restricts dragging within the parent container
         size={{ width: videoSize.width, height: videoSize.height }}
@@ -541,6 +509,7 @@ const HistoScanController = ({ hostIP, hostPort }) => {
           position: "relative",
         }}
       >
+        
         <iframe
           src={streamUrl}
           style={{
@@ -550,7 +519,6 @@ const HistoScanController = ({ hostIP, hostPort }) => {
           }}
           allow="autoplay"
         />
-        {/* Add a drag handle overlay */}
         <div
           className="drag-handle"
           style={{
@@ -564,6 +532,7 @@ const HistoScanController = ({ hostIP, hostPort }) => {
           }}
         />
       </Rnd>
+        */}
     </Paper>
   );
 };

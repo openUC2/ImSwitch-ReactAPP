@@ -7,7 +7,7 @@ import FlowStopController from './FlowStopController';
 import HistoScanController from './HistoScanController';
 import MCTController from './MCTController';
 import { MCTProvider } from '../context/MCTContext'; // Import the context provider
-import ReconnectController from './ReconnectController';
+import UC2Controller from './UC2Controller';
 import AutofocusController from './AutofocusController';
 import LiveViewController from './LiveViewController';
 import './Tab_Widgets.css'; // Import the CSS file
@@ -22,7 +22,7 @@ const Tab_Widgets = ({ hostIP, hostPort }) => {
         <FlowStopController hostIP={hostIP} hostPort={hostPort} title="Flow Stop" />
       </Grid>
       <Grid item xs={12} sm={6} md={4} className="grid-item">
-        <ReconnectController hostIP={hostIP} hostPort={hostPort} title="Reconnect" />
+        <UC2Controller hostIP={hostIP} hostPort={hostPort} title="Reconnect" />
       </Grid>
       <Grid item xs={12} sm={6} md={4} className="grid-item">
         <AutofocusController hostIP={hostIP} hostPort={hostPort} title="Autofocus" />

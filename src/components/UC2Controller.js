@@ -5,14 +5,13 @@ import {
   Tab,
   Box,
   Typography,
-  TextField,
   Button,
-  Slider,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
   Grid,
 } from "@mui/material";
-import { green, red } from "@mui/material/colors";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import CancelIcon from "@mui/icons-material/Cancel";
 
 const TabPanel = (props) => {
   const { children, value, index, ...other } = props;
@@ -31,14 +30,31 @@ const TabPanel = (props) => {
 };
 
 const goToWebsite = () => {
-  window.open('https://youseetoo.github.io', '_blank');
+  window.open("https://youseetoo.github.io", "_blank");
 };
 
-const ReconnectController = ({ hostIP, hostPort, WindowTitle }) => {
+const UC2Controller = ({ hostIP, hostPort, WindowTitle }) => {
   const [tabIndex, setTabIndex] = useState(0);
+  const [availableSetups, setAvailableSetups] = useState([]);
+  const [selectedSetup, setSelectedSetup] = useState("");
 
   const handleTabChange = (event, newValue) => {
     setTabIndex(newValue);
+  };
+
+  const fetchAvailableSetups = () => {
+    const url = `${hostIP}:${hostPort}/UC2ConfigController/returnAvailableSetups`;
+
+    fetch(url)
+      .then((response) => response.json())
+      .then((data) => {
+        setAvailableSetups(data.available_setups || []);
+      })
+      .catch((error) => console.error("Error fetching setups:", error));
+  };
+
+  const handleSetupChange = (event) => {
+    setSelectedSetup(event.target.value);
   };
 
   const reconnect = () => {
@@ -65,6 +81,30 @@ const ReconnectController = ({ hostIP, hostPort, WindowTitle }) => {
       .catch((error) => console.error("Error:", error));
   };
 
+
+  const handleSetSetup = () => {
+    if (!selectedSetup) {
+      alert("Please select a setup before proceeding.");
+      return;
+    }
+
+    const url = `${hostIP}:${hostPort}/UC2ConfigController/setSetupFileName?setupFileName=${encodeURIComponent(
+      selectedSetup
+    )}`;
+
+    fetch(url, { method: "get" })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log("Setup selected:", data);
+        // Handle response if needed
+      })
+      .catch((error) => console.error("Error setting setup:", error));
+  };
+
+  useEffect(() => {
+    fetchAvailableSetups();
+  }, []);
+
   return (
     <Paper>
       <Tabs
@@ -73,6 +113,7 @@ const ReconnectController = ({ hostIP, hostPort, WindowTitle }) => {
         aria-label="settings tabs"
       >
         <Tab label="Reconnect to UC2 board" />
+        <Tab label="Select Setup" />
       </Tabs>
 
       <TabPanel value={tabIndex} index={0}>
@@ -111,8 +152,37 @@ const ReconnectController = ({ hostIP, hostPort, WindowTitle }) => {
           </Grid>
         </Grid>
       </TabPanel>
+
+      <TabPanel value={tabIndex} index={1}>
+        <Grid container spacing={2}>
+          <Grid item xs={12}>
+            <Typography variant="h6">Select Available Setup</Typography>
+            <FormControl fullWidth style={{ marginBottom: "20px" }}>
+              <InputLabel id="setup-select-label">Available Setups</InputLabel>
+              <Select
+                labelId="setup-select-label"
+                value={selectedSetup}
+                onChange={handleSetupChange}
+              >
+                {availableSetups.map((setup, index) => (
+                  <MenuItem key={index} value={setup}>
+                    {setup}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <Button
+              style={{ marginBottom: "20px" }}
+              variant="contained"
+              onClick={handleSetSetup}
+            >
+              OK
+            </Button>
+          </Grid>
+        </Grid>
+      </TabPanel>
     </Paper>
   );
 };
 
-export default ReconnectController;
+export default UC2Controller;

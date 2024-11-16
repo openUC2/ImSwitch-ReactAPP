@@ -85,6 +85,7 @@ const LiveView = ({ hostIP, hostPort }) => {
   const [isIllumination3Checked, setisIllumination3Checked] = useState(false);
   const [histogrammY, setHistogrammY] = useState([]);
   const [histogrammX, setHistogrammX] = useState([]);
+  const [histogramActive, setHistogramActive] = useState(false);
   const chartContainer = useRef(null); // Ref for the chart container
   const socket = useWebSocket();
 
@@ -107,6 +108,27 @@ const LiveView = ({ hostIP, hostPort }) => {
       }
     };
   }, [socket]);
+
+  useEffect(() => {
+    const checkHistogramStatus = async () => {
+      try {
+        const response = await fetch(
+          `${hostIP}:${hostPort}/HistogrammController/histogrammActive`
+        );
+        if (response.status !== 404) {
+          setHistogramActive(true);
+          // Fetch histogram data here if needed
+        } else {
+          setHistogramActive(false);
+        }
+      } catch (error) {
+        console.error("Error checking histogram status:", error);
+        setHistogramActive(false);
+      }
+    };
+
+    checkHistogramStatus();
+  }, []);
 
   const histogramData = {
     labels: histogrammX,
@@ -463,19 +485,6 @@ const LiveView = ({ hostIP, hostPort }) => {
       <Container component="main" sx={{ flexGrow: 1, p: 3, pt: 10 }}>
         <Grid container spacing={3}>
           <Grid item xs={12} sm={8}>
-            <Typography variant="h6" gutterBottom>
-              Video Display
-            </Typography>
-            {streamUrl ? (
-              <img
-                style={{ width: "100%", height: "auto" }}
-                allow="autoplay"
-                src={streamUrl}
-                ref={videoRef}
-                alt={"Live Stream"}
-              ></img>
-            ) : null}
-
             <Box mb={5}>
               <Typography variant="h6" gutterBottom>
                 Stream Control
@@ -530,8 +539,21 @@ const LiveView = ({ hostIP, hostPort }) => {
                     : "Manual Camera Settings"
                 }
               />
+            <Typography variant="h6" gutterBottom>
+              Video Display
+            </Typography>
+            {streamUrl ? (
+              <img
+                style={{ width: "100%", height: "auto" }}
+                allow="autoplay"
+                src={streamUrl}
+                ref={videoRef}
+                alt={"Live Stream"}
+              ></img>
+            ) : null}
 
               <Grid item xs={12}>
+              {histogramActive && (
                 <Box
                   sx={{
                     width: "100%",
@@ -552,17 +574,19 @@ const LiveView = ({ hostIP, hostPort }) => {
                     Histogram
                   </Typography>
                   <Box sx={{ height: 400 }}>
-                    {histogrammX.length && histogrammY.length ? ( // Render only if data is available
-                      <Bar
-                        id="histogramChart"
-                        data={histogramData}
-                        options={options}
-                      />
-                    ) : (
-                      <Typography align="center">Loading data...</Typography>
-                    )}
+                    
+                      histogrammX.length && histogrammY.length ? ( // Render only if data is available
+                        <Bar
+                          id="histogramChart"
+                          data={histogramData}
+                          options={options}
+                        />
+                      ) : (
+                        <Typography align="center">Loading data...</Typography>
+                      )
                   </Box>
                 </Box>
+              )}
               </Grid>
 
               <TextField
