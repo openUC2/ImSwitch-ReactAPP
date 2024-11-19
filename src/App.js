@@ -71,7 +71,7 @@ const darkTheme = createTheme({
 function App() {
   const [sidebarVisible, setSidebarVisible] = useState(true); // Sidebar visibility state
   const drawerWidth = sidebarVisible ? 240 : 60; // Full width when open, minimized when hidden
-  const [hostIP, setHostIP] = useState("https://localhost");
+  const [hostIP, setHostIP] = useState(`https://${window.location.hostname}`);
   const [hostPort, sethostPort] = useState(8001);
   const [selectedPlugin, setSelectedPlugin] = useState("LiveView"); // Control which plugin to show
   const [isDialogOpen, setDialogOpen] = useState(false);
