@@ -440,6 +440,16 @@ const LiveView = ({ hostIP, hostPort }) => {
 
   const handleIlluminationCheckboxChange = async (event, laserIndex) => {
     const activeStatus = event.target.checked ? "true" : "false";
+
+    // Update the state locally
+    if (laserIndex === 0) {
+      setisIllumination1Checked(event.target.checked);
+    } else if (laserIndex === 1) {
+      setisIllumination2Checked(event.target.checked);
+    } else if (laserIndex === 2) {
+      setisIllumination3Checked(event.target.checked);
+    }
+
     if (laserNames[laserIndex]) {
       const laserName = encodeURIComponent(laserNames[laserIndex]);
       const url = `${hostIP}:${hostPort}/LaserController/setLaserActive?laserName=${laserName}&active=${activeStatus}`;
@@ -539,54 +549,53 @@ const LiveView = ({ hostIP, hostPort }) => {
                     : "Manual Camera Settings"
                 }
               />
-            <Typography variant="h6" gutterBottom>
-              Video Display
-            </Typography>
-            {streamUrl ? (
-              <img
-                style={{ width: "100%", height: "auto" }}
-                allow="autoplay"
-                src={streamUrl}
-                ref={videoRef}
-                alt={"Live Stream"}
-              ></img>
-            ) : null}
+              <Typography variant="h6" gutterBottom>
+                Video Display
+              </Typography>
+              {streamUrl ? (
+                <img
+                  style={{ width: "100%", height: "auto" }}
+                  allow="autoplay"
+                  src={streamUrl}
+                  ref={videoRef}
+                  alt={"Live Stream"}
+                ></img>
+              ) : null}
 
               <Grid item xs={12}>
-              {histogramActive && (
-                <Box
-                  sx={{
-                    width: "100%",
-                    maxWidth: 600,
-                    margin: "auto",
-                    padding: 2,
-                    backgroundColor: "#fafafa",
-                    boxShadow: "0px 3px 6px rgba(0, 0, 0, 0.1)",
-                    borderRadius: 2,
-                  }}
-                  ref={chartContainer} // Attach the ref here
-                >
-                  <Typography
-                    variant="h6"
-                    align="center"
-                    sx={{ mb: 2, fontWeight: "bold" }}
+                {histogramActive && (
+                  <Box
+                    sx={{
+                      width: "100%",
+                      maxWidth: 600,
+                      margin: "auto",
+                      padding: 2,
+                      backgroundColor: "#fafafa",
+                      boxShadow: "0px 3px 6px rgba(0, 0, 0, 0.1)",
+                      borderRadius: 2,
+                    }}
+                    ref={chartContainer} // Attach the ref here
                   >
-                    Histogram
-                  </Typography>
-                  <Box sx={{ height: 400 }}>
-                    
-                      histogrammX.length && histogrammY.length ? ( // Render only if data is available
-                        <Bar
-                          id="histogramChart"
-                          data={histogramData}
-                          options={options}
-                        />
+                    <Typography
+                      variant="h6"
+                      align="center"
+                      sx={{ mb: 2, fontWeight: "bold" }}
+                    >
+                      Histogram
+                    </Typography>
+                    <Box sx={{ height: 400 }}>
+                      histogrammX.length && histogrammY.length ? ( // Render
+                      only if data is available
+                      <Bar
+                        id="histogramChart"
+                        data={histogramData}
+                        options={options}
+                      />
                       ) : (
-                        <Typography align="center">Loading data...</Typography>
-                      )
+                      <Typography align="center">Loading data...</Typography>)
+                    </Box>
                   </Box>
-                </Box>
-              )}
+                )}
               </Grid>
 
               <TextField
