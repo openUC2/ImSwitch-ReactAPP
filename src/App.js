@@ -20,6 +20,7 @@ import AirIcon from '@mui/icons-material/Air';
 import axios from "axios";
 import { WebSocketProvider } from "./context/WebSocketContext";
 
+
 import {
   Button,
   Dialog,
@@ -158,7 +159,7 @@ function App() {
 
   return (
     <ThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
-      <WebSocketProvider hostIP={hostIP} hostPort={hostPort}>
+      <WebSocketProvider hostIP={hostIP}>
       <CssBaseline />
       <Box sx={{ display: "flex" }}>
         <AppBar

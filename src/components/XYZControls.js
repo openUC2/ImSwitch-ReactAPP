@@ -4,14 +4,28 @@ import AxisControl from "./AxisControl";
 import { useWebSocket } from "../context/WebSocketContext";
 
 function XYZControls({ hostIP, hostPort }) {
-  const socket = useWebSocket();
   const [positionerName, setPositionerName] = useState("VirtualStage"); // Assume a default or initial value
   const [positions, setPositions] = useState({A:0, X: 0, Y: 0, Z: 0 });
+  const socket = useWebSocket();
 
   useEffect(() => {
-    getPositionerName();
-    fetchPositions();
-  }, []);
+    if (!socket) return;
+    socket.on("signal", (data) => {
+      //console.log("Signal received in XYZControls:", data);
+      // cast position from json 
+      const jdata = JSON.parse(data);
+      if (jdata.name === "sigUpdateMotorPosition") {
+        const correctedPositions = JSON.parse(jdata.args.p0.replace(/'/g, '"'))[positionerName];
+        setPositions((prevPositions) => ({
+          ...prevPositions,
+          ...correctedPositions,
+        }));
+      }
+    });
+    return () => {
+      if (socket) socket.onmessage = null;
+    };
+  }, [socket]);
 
   const getPositionerName = async () => {
     try {
@@ -24,7 +38,7 @@ function XYZControls({ hostIP, hostPort }) {
       console.error("Error fetching positioner name:", error);
     }
   };
-
+  
   const fetchPositions = async () => {
     /*
     * The fetch() function is used to make a request to the server to get the current positions of the positioner.
@@ -33,12 +47,12 @@ function XYZControls({ hostIP, hostPort }) {
     * The positionerName variable is used to specify the positioner for which the positions are being fetched.
     * The hostIP and hostPort variables are used to construct the URL for the fetch request.
     */
-    try {
-      const response = await fetch(
-        `${hostIP}:${hostPort}/PositionerController/getPositionerPositions`
+   try {
+     const response = await fetch(
+       `${hostIP}:${hostPort}/PositionerController/getPositionerPositions`
       );
       const data = await response.json();
-
+      
       setPositions({
         A: data[positionerName].A || 0,
         X: data[positionerName].X || 0,
@@ -49,29 +63,15 @@ function XYZControls({ hostIP, hostPort }) {
       console.error("Error fetching positioner positions:", error);
     }
   };
-
+  
+  // useEffect() hook to fetch the positioner name and positions when the component mounts
   useEffect(() => {
-    if (socket) {
-      socket.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.name === "sigUpdateMotorPosition") {
-            const correctedPositions = JSON.parse(data.args.p0.replace(/'/g, '"'))[positionerName];
-            setPositions((prevPositions) => ({
-              ...prevPositions,
-              ...correctedPositions,
-            }));
-          }
-        } catch (error) {
-          console.error("Error parsing the socket message:", error);
-        }
-      };
-    }
+    console.log("Fetching positioner name and positions...");
+    getPositionerName();
+    fetchPositions();
+  }, [hostIP, hostPort]);
+  
 
-    return () => {
-      if (socket) socket.onmessage = null;
-    };
-  }, [socket]);
 
   return (
     <Grid container spacing={5}>

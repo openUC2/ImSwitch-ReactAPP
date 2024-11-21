@@ -1,92 +1,38 @@
-import React, { useState, useEffect } from "react";
-import {
-  Paper,
-  Tabs,
-  Tab,
-  Box,
-  Typography,
-  Button,
-  Grid,
-} from "@mui/material";
+import React, { useEffect, useState } from "react";
 import { useWebSocket } from "../context/WebSocketContext";
 
-const TabPanel = ({ children, value, index, ...other }) => {
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`simple-tabpanel-${index}`}
-      aria-labelledby={`simple-tab-${index}`}
-      {...other}
-    >
-      {value === index && <Box p={3}>{children}</Box>}
-    </div>
-  );
-};
-
 const SocketView = () => {
-  const [tabIndex, setTabIndex] = useState(0);
   const [messages, setMessages] = useState([]);
   const socket = useWebSocket();
 
-  const handleTabChange = (event, newValue) => {
-    setTabIndex(newValue);
-  };
-
   useEffect(() => {
-    if (socket) {
-      socket.onmessage = (event) => {
-        setMessages((prevMessages) => [...prevMessages, event.data]);
-      };
-    }
+    if (!socket) return;
+
+    // Listen for server messages
+    socket.on("signal", (data) => {
+      setMessages((prev) => [...prev, data]);
+      console.log("Signal received in MyComponent:", data);
+    });
+    
+    // Listen for broadcast messages
+    socket.on("broadcast", (data) => {
+      setMessages((prev) => [...prev, data.message]);
+    });
 
     return () => {
-      if (socket) {
-        socket.onmessage = null;
-      }
+      // Clean up listeners
+      socket.off("server_message");
+      socket.off("broadcast");
     };
   }, [socket]);
 
-  const clearMessages = () => {
-    setMessages([]);
-  };
-
   return (
-    <Paper>
-      <Tabs value={tabIndex} onChange={handleTabChange} aria-label="socket view tabs">
-        <Tab label="Socket Messages" />
-      </Tabs>
-
-      <TabPanel value={tabIndex} index={0}>
-        <Grid container spacing={2}>
-          <Grid item xs={12}>
-            <Typography variant="h6">WebSocket Messages</Typography>
-            <div>
-              {messages.length > 0 ? (
-                messages.map((message, index) => (
-                  <Typography key={index} variant="body2" color="textSecondary">
-                    {message}
-                  </Typography>
-                ))
-              ) : (
-                <Typography variant="body2" color="textSecondary">
-                  No messages received yet.
-                </Typography>
-              )}
-            </div>
-            <div style={{ marginTop: "20px" }}>
-              <Button
-                variant="contained"
-                color="secondary"
-                onClick={clearMessages}
-              >
-                Clear Messages
-              </Button>
-            </div>
-          </Grid>
-        </Grid>
-      </TabPanel>
-    </Paper>
+    <div>
+      <h1>Socket.IO Messages</h1>
+      {messages.map((msg, idx) => (
+        <p key={idx}>{msg}</p>
+      ))}
+    </div>
   );
 };
 

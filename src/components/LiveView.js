@@ -19,11 +19,10 @@ import {
   LineElement,
 } from "chart.js";
 import { Bar } from "react-chartjs-2";
-
+import { useWebSocket } from "../context/WebSocketContext";
 import { Line } from "react-chartjs-2"; // or any other library for charts
 import { LiveWidgetContext } from "../context/LiveWidgetContext";
 import { makeStyles } from "@mui/styles";
-import { useWebSocket } from "../context/WebSocketContext";
 import {
   Box,
   Container,
@@ -88,18 +87,20 @@ const LiveView = ({ hostIP, hostPort }) => {
   const [histogramActive, setHistogramActive] = useState(false);
   const chartContainer = useRef(null); // Ref for the chart container
   const socket = useWebSocket();
+  const chartRef = useRef(null);
 
+  
   // connect to the websocket
   useEffect(() => {
-    if (socket) {
-      socket.onmessage = (event) => {
-        const message = JSON.parse(event.data);
-        if (message.name === "sigHistogramComputed") {
-          setHistogrammX(message.args.p0);
-          setHistogrammY(message.args.p1);
+    if (!socket) return;
+    socket.on("signal", (data) => {
+        const jdata = JSON.parse(data);
+        if (jdata.name === "sigHistogramComputed") {
+          setHistogrammX(jdata.args.p0);
+          setHistogrammY(jdata.args.p1);
         }
-      };
-    }
+      });
+    
 
     // Clean up the chart on component unmount
     return () => {
@@ -109,6 +110,7 @@ const LiveView = ({ hostIP, hostPort }) => {
     };
   }, [socket]);
 
+  
   useEffect(() => {
     const checkHistogramStatus = async () => {
       try {
@@ -117,7 +119,6 @@ const LiveView = ({ hostIP, hostPort }) => {
         );
         if (response.status !== 404) {
           setHistogramActive(true);
-          // Fetch histogram data here if needed
         } else {
           setHistogramActive(false);
         }
@@ -126,7 +127,6 @@ const LiveView = ({ hostIP, hostPort }) => {
         setHistogramActive(false);
       }
     };
-
     checkHistogramStatus();
   }, []);
 
@@ -218,6 +218,7 @@ const LiveView = ({ hostIP, hostPort }) => {
   useEffect(() => {
     const fetchLaserNames = async () => {
       try {
+        console.log("Fetching laser names..."+`${hostIP}:${hostPort}/LaserController/getLaserNames`);
         const response = await fetch(
           `${hostIP}:${hostPort}/LaserController/getLaserNames`
         );
@@ -584,15 +585,17 @@ const LiveView = ({ hostIP, hostPort }) => {
                       Histogram
                     </Typography>
                     <Box sx={{ height: 400 }}>
-                      histogrammX.length && histogrammY.length ? ( // Render
-                      only if data is available
+                      {histogramActive ? histogrammX.length && histogrammY.length ? ( // Render only if data is available
                       <Bar
                         id="histogramChart"
                         data={histogramData}
                         options={options}
+                        ref={chartRef} // Attach the ref here
                       />
                       ) : (
-                      <Typography align="center">Loading data...</Typography>)
+                      <Typography align="center">Loading data...</Typography>) : (
+                      <Typography align="center">Histogram not available</Typography>
+                      )}
                     </Box>
                   </Box>
                 )}

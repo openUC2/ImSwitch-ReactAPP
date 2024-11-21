@@ -11,13 +11,13 @@ import {
   Typography,
 } from "@mui/material";
 import { useWidgetContext } from "../context/WidgetContext";
-import { useWebSocket } from "../context/WebSocketContext";
+//import { useWebSocket } from "../context/useWebSocket";
 
 
 const MCTController = ({ hostIP, hostPort }) => {
   const [numImagesTaken, setNumImagesTaken] = useState(0);
   const [folderPath, setFolderPath] = useState("");
-  const socket = useWebSocket();
+  //const socket = useWebSocket();
   const {
     timePeriod,
     setTimePeriod,
@@ -61,6 +61,7 @@ const MCTController = ({ hostIP, hostPort }) => {
 
   const widgetCtx = useWidgetContext();
 
+  /*
   useEffect(() => {
     if (socket) {
       socket.onmessage = (event) => {
@@ -75,7 +76,7 @@ const MCTController = ({ hostIP, hostPort }) => {
     };
   }, [socket]);
 
-  
+  */
   useEffect(() => {
     const fetchMCTStatus = () => {
       const url = `${hostIP}:${hostPort}/MCTController/getMCTStatus`;

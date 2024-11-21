@@ -1,35 +1,46 @@
-// WebSocketContext.js
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef } from "react";
+import { io } from "socket.io-client";
 
-const WebSocketContext = createContext(null);
-const wsport = 8002;
+// Create a context for Socket.IO
+const SocketContext = createContext(null);
+const wsPort = 8002;
 
-export const WebSocketProvider = ({ hostIP, hostPort, children }) => {
-
-  const [serverUrl, setServerUrl] = useState(`${hostIP}:${wsport}/ws`);
-  const [socket, setSocket] = useState(null);
+export const WebSocketProvider = ({ hostIP, children }) => {
+  const socketRef = useRef(null);
 
   useEffect(() => {
-    console.log("Connecting to WebSocket at", serverUrl);
-    const ws = new WebSocket(serverUrl);
+    // Initialize the Socket.IO connection
+    const socket = io(`${hostIP}:${wsPort}`, {
+      transports: ["websocket"], // Use WebSocket transport
+    });
 
-    ws.onopen = () => console.log("WebSocket connected to", serverUrl);
-    ws.onmessage = (event) => console.log("Message received:", event.data);
-    ws.onclose = () => console.log("WebSocket disconnected.");
-    ws.onerror = (error) => console.error("WebSocket error:", error);
+    socketRef.current = socket;
 
-    setSocket(ws);
+    // Handle connection events
+    socket.on("connect", () => {
+      console.log("Socket.IO connected:", socket.id);
+    });
 
+    socket.on("disconnect", () => {
+      console.log("Socket.IO disconnected");
+    });
+
+    socket.on("connect_error", (error) => {
+      console.error("Socket.IO connection error:", error);
+    });
+
+    // Cleanup on unmount
     return () => {
-      ws.close();
+      socket.disconnect();
     };
-  }, []); // Dependency array left empty to avoid reconnection loops
+  }, []);
 
   return (
-    <WebSocketContext.Provider value={socket}>
+    <SocketContext.Provider value={socketRef.current}>
       {children}
-    </WebSocketContext.Provider>
+    </SocketContext.Provider>
   );
 };
 
-export const useWebSocket = () => useContext(WebSocketContext);
+// Hook to use the Socket.IO instance
+export const useWebSocket = () => useContext(SocketContext);

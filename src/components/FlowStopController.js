@@ -83,17 +83,16 @@ const FlowStopController = ({ hostIP, hostPort, WindowTitle }) => {
     fetchExperimentParameters();
   }, [hostIP, hostPort]);
 
-  // connect to the websocket
+  // connect to the web
   useEffect(() => {
-    if (socket) {
-      socket.onmessage = (event) => {
-        const message = JSON.parse(event.data);
-        if (message.name === "sigImagesTaken") {
-          setCurrentImageCount(message.args.p0);
-        }
-      };
-    }
+    if (!socket) return;
 
+    socket.on("signal", (data) => {
+      const jdata = JSON.parse(data);
+      if (jdata.name === "sigImagesTaken") {
+          setCurrentImageCount(jdata.args.p0);
+        }
+      });
     // Clean up the chart on component unmount
     return () => {
       if (socket) {
@@ -101,6 +100,7 @@ const FlowStopController = ({ hostIP, hostPort, WindowTitle }) => {
       }
     };
   }, [socket]);
+  
 
   const startExperiment = () => {
     // https://localhost:8001/FlowStopController/startFlowStopExperimentFastAPI?timeStamp=asdf&experimentName=adf&experimentDescription=asdf&uniqueId=asdf&numImages=19&volumePerImage=199&timeToStabilize=1&delayToStart=1&frameRate=1&filePath=.%2F&fileFormat=TIF&isRecordVideo=true&pumpSpeed=10000
