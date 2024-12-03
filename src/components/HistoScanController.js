@@ -65,6 +65,46 @@ const HistoScanController = ({ hostIP, hostPort }) => {
     setSelectedTab(newValue);
   };
 
+
+  useEffect(() => {
+    const fetchHistoStatus = async () => {
+      try {
+        const response = await fetch("https://100.112.99.76:8001/HistoScanController/getHistoStatus");
+        if (!response.ok) {
+          throw new Error(`Error: ${response.statusText}`);
+        }
+        const data = await response.json();
+  
+        // Update the state variables based on the extended response
+        setCurrentPosition(data.currentPosition);
+        setScanStatus(data.ishistoscanRunning);
+        setScanResultAvailable(data.stitchResultAvailable);
+        setScanIndex(data.mScanIndex);
+        setScanCount(data.mScanCount);
+        setStepSizeX(parseInt(data.currentStepSizeX));
+        setStepSizeY(parseInt(data.currentStepSizeY));
+        setStepsX(data.currentNX.toString());
+        setStepsY(data.currentNY.toString());
+        setIsStitchAshlar(data.currentAshlarStitching);
+        setIsStitchAshlarFlipX(data.currentAshlarFlipX);
+        setIsStitchAshlarFlipY(data.currentAshlarFlipY);
+        setResizeFactor(data.currentResizeFactor.toString());
+        setInitPosX(parseInt(data.currentIinitialPosX).toString());
+        setInitPosY(parseInt(data.currentIinitialPosY).toString());
+        setTimeInterval(data.currentTimeInterval.toString());
+        setNumberOfScans(data.currentNtimes.toString());
+        // If pixel size needs to be displayed or used
+        console.log(`Pixel Size: ${data.pixelSize}`);
+      } catch (error) {
+        console.error("Error fetching HistoScan status:", error);
+      }
+    };
+  
+    fetchHistoStatus();
+  }, []);
+  
+  
+
   const handleFetchImage = () => {
     fetch(`${hostIP}:${hostPort}/HistoScanController/getLastStitchedImage`)
       .then((response) => {
@@ -91,7 +131,8 @@ const HistoScanController = ({ hostIP, hostPort }) => {
       `numberTilesX=${stepsX}&numberTilesY=${stepsY}&stepSizeX=${stepSizeX}&stepSizeY=${stepSizeY}&` +
       `nTimes=${nTimesValue}&tPeriod=${tPeriodValue}&` +
       `initPosX=${mInitPosX}&initPosY=${mInitPosY}&isStitchAshlar=${isStitchAshlar}&` +
-      `isStitchAshlarFlipX=${isStitchAshlarFlipX}&isStitchAshlarFlipY=${isStitchAshlarFlipY}&resizeFactor=${resizeFactor}`;
+      `isStitchAshlarFlipX=${isStitchAshlarFlipX}&isStitchAshlarFlipY=${isStitchAshlarFlipY}&resizeFactor=${resizeFactor}&`+
+      `overlap=0.75`;
 
     fetch(url, { method: "GET" })
       .then((response) => response.json())

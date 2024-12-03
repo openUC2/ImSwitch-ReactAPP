@@ -212,7 +212,7 @@ const LiveView = ({ hostIP, hostPort }) => {
     };
 
     checkStreamStatus();
-  }, []);
+  }, [hostIP, hostPort]);
 
   // Fetch laser names dynamically
   useEffect(() => {
@@ -471,8 +471,6 @@ const LiveView = ({ hostIP, hostPort }) => {
   const handleStreamToggle = async () => {
     try {
       const newStatus = !isStreamRunning;
-      // Hier können Sie den Code hinzufügen, um den Stream zu starten oder zu stoppen
-      // abhängig vom neuen Status
       const url = `${hostIP}:${hostPort}/ViewController/setLiveViewActive?active=${newStatus}`;
       try {
         const response = fetch(url);

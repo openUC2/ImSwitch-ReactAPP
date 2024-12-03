@@ -8,22 +8,45 @@ function XYZControls({ hostIP, hostPort }) {
   const [positions, setPositions] = useState({A:0, X: 0, Y: 0, Z: 0 });
   const socket = useWebSocket();
 
+
   useEffect(() => {
     if (!socket) return;
-    socket.on("signal", (data) => {
-      //console.log("Signal received in XYZControls:", data);
-      // cast position from json 
-      const jdata = JSON.parse(data);
-      if (jdata.name === "sigUpdateMotorPosition") {
-        const correctedPositions = JSON.parse(jdata.args.p0.replace(/'/g, '"'))[positionerName];
-        setPositions((prevPositions) => ({
-          ...prevPositions,
-          ...correctedPositions,
-        }));
+
+    const handleSignal = (data) => {
+      console.log("Signal received in XYZControls:", data);
+      
+      try {
+        const jdata = JSON.parse(data);
+        if (jdata.name === "sigUpdateMotorPosition") {
+          // Parse args.p0 und ersetze einfache Anführungszeichen durch doppelte
+          const parsedArgs = JSON.parse(jdata.args.p0.replace(/'/g, '"'));
+          
+          // Extrahiere alle Positioner-Namen (z.B. ESP32Stage)
+          const positionerKeys = Object.keys(parsedArgs);
+          
+          if (positionerKeys.length > 0) {
+            const key = positionerKeys[0]; // Nimm den ersten Schlüssel
+            const correctedPositions = parsedArgs[key];
+            
+            console.log(`Corrected positions for ${key}:`, correctedPositions);
+            
+            setPositions((prevPositions) => ({
+              ...prevPositions,
+              ...correctedPositions,
+            }));
+          } else {
+            console.warn("No positioner data found in the signal.");
+          }
+        }
+      } catch (error) {
+        console.error("Error parsing signal data:", error);
       }
-    });
+    };
+
+    socket.on("signal", handleSignal);
+
     return () => {
-      if (socket) socket.onmessage = null;
+      socket.off("signal", handleSignal);
     };
   }, [socket]);
 

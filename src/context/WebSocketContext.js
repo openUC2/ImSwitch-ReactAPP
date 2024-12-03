@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useEffect, useRef } from "react";
 import { io } from "socket.io-client";
 
-// Create a context for Socket.IO
 const SocketContext = createContext(null);
 const wsPort = 8002;
 
@@ -9,14 +8,14 @@ export const WebSocketProvider = ({ hostIP, children }) => {
   const socketRef = useRef(null);
 
   useEffect(() => {
-    // Initialize the Socket.IO connection
+    // Initialisiere die Socket.IO-Verbindung
     const socket = io(`${hostIP}:${wsPort}`, {
-      transports: ["websocket"], // Use WebSocket transport
+      transports: ["websocket"],
     });
 
     socketRef.current = socket;
 
-    // Handle connection events
+    // Verbindungsereignisse handhaben
     socket.on("connect", () => {
       console.log("Socket.IO connected:", socket.id);
     });
@@ -29,11 +28,11 @@ export const WebSocketProvider = ({ hostIP, children }) => {
       console.error("Socket.IO connection error:", error);
     });
 
-    // Cleanup on unmount
+    // Aufräumen bei Unmount
     return () => {
       socket.disconnect();
     };
-  }, []);
+  }, [hostIP]);
 
   return (
     <SocketContext.Provider value={socketRef.current}>
@@ -42,5 +41,6 @@ export const WebSocketProvider = ({ hostIP, children }) => {
   );
 };
 
-// Hook to use the Socket.IO instance
-export const useWebSocket = () => useContext(SocketContext);
+export const useWebSocket = () => {
+  return useContext(SocketContext);
+};
