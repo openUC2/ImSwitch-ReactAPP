@@ -89,18 +89,48 @@ const LiveView = ({ hostIP, hostPort }) => {
   const socket = useWebSocket();
   const chartRef = useRef(null);
 
-  
+  // connect to websocket - can we merge this with the second useEffect?
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on("signal", (data) => {
+      const jdata = JSON.parse(data);
+      if (jdata.name === "sigUpdateImage" || jdata.name === "sigImageUpdated") {
+        // Assuming image is sent as base64 string
+        const imgSrc = `data:image/jpeg;base64,${jdata.image}`;
+        setStreamUrl(imgSrc);
+      }
+    });
+
+    // On reload, check backend state and resume the stream
+    const checkStreamStatus = async () => {
+      try {
+        const response = await fetch(
+          `https://100.71.92.70:8001/ViewController/getLiveViewActive`
+        );
+        const data = await response.json();
+        if (data) setIsStreamRunning(true);
+      } catch (error) {
+        console.error("Error checking stream status:", error);
+      }
+    };
+    checkStreamStatus();
+
+    return () => {
+      socket.off("signal");
+    };
+  }, [socket]);
+
   // connect to the websocket
   useEffect(() => {
     if (!socket) return;
     socket.on("signal", (data) => {
-        const jdata = JSON.parse(data);
-        if (jdata.name === "sigHistogramComputed") {
-          setHistogrammX(jdata.args.p0);
-          setHistogrammY(jdata.args.p1);
-        }
-      });
-    
+      const jdata = JSON.parse(data);
+      if (jdata.name === "sigHistogramComputed") {
+        setHistogrammX(jdata.args.p0);
+        setHistogrammY(jdata.args.p1);
+      }
+    });
 
     // Clean up the chart on component unmount
     return () => {
@@ -110,7 +140,6 @@ const LiveView = ({ hostIP, hostPort }) => {
     };
   }, [socket]);
 
-  
   useEffect(() => {
     const checkHistogramStatus = async () => {
       try {
@@ -189,6 +218,7 @@ const LiveView = ({ hostIP, hostPort }) => {
   };
 
   // Effect that reacts on changes in the isStreamRunning state
+  /*
   useEffect(() => {
     if (isStreamRunning) {
       setStreamUrl(`${hostIP}:${hostPort}/RecordingController/video_feeder`);
@@ -196,7 +226,7 @@ const LiveView = ({ hostIP, hostPort }) => {
       setStreamUrl("");
     }
   }, [isStreamRunning]);
-
+  */
   useEffect(() => {
     // Überprüfen des Zustands der URL beim Laden der Komponente
     const checkStreamStatus = async () => {
@@ -218,7 +248,10 @@ const LiveView = ({ hostIP, hostPort }) => {
   useEffect(() => {
     const fetchLaserNames = async () => {
       try {
-        console.log("Fetching laser names..."+`${hostIP}:${hostPort}/LaserController/getLaserNames`);
+        console.log(
+          "Fetching laser names..." +
+            `${hostIP}:${hostPort}/LaserController/getLaserNames`
+        );
         const response = await fetch(
           `${hostIP}:${hostPort}/LaserController/getLaserNames`
         );
@@ -468,6 +501,7 @@ const LiveView = ({ hostIP, hostPort }) => {
     }
   };
 
+  /* // REST MJPEG
   const handleStreamToggle = async () => {
     try {
       const newStatus = !isStreamRunning;
@@ -487,6 +521,26 @@ const LiveView = ({ hostIP, hostPort }) => {
     } catch (error) {
       console.error("Error toggling stream status:", error);
     }
+  };
+  */
+
+  const toggleStream = async (isActive) => {
+    const actionUrl = `${hostIP}:${hostPort}/ViewController/setLiveViewActive?active=${isActive}`;
+    try {
+      const response = await fetch(actionUrl, { method: "GET" });
+      if (!response.ok) {
+        throw new Error(`Failed to set stream active state to ${isActive}`);
+      }
+      console.log(`Stream ${isActive ? "started" : "stopped"}`);
+    } catch (error) {
+      console.error("Error toggling stream:", error);
+    }
+  };
+
+  const handleStreamToggle = async () => {
+    const newStatus = !isStreamRunning;
+    await toggleStream(newStatus);
+    setIsStreamRunning(newStatus);
   };
 
   return (
@@ -551,6 +605,7 @@ const LiveView = ({ hostIP, hostPort }) => {
               <Typography variant="h6" gutterBottom>
                 Video Display
               </Typography>
+              {/*
               {streamUrl ? (
                 <img
                   style={{ width: "100%", height: "auto" }}
@@ -560,7 +615,14 @@ const LiveView = ({ hostIP, hostPort }) => {
                   alt={"Live Stream"}
                 ></img>
               ) : null}
-
+                */}
+              {streamUrl && (
+                <img
+                  style={{ width: "100%", height: "auto" }}
+                  src={streamUrl}
+                  alt="Live Stream"
+                />
+              )}
               <Grid item xs={12}>
                 {histogramActive && (
                   <Box
@@ -583,16 +645,23 @@ const LiveView = ({ hostIP, hostPort }) => {
                       Histogram
                     </Typography>
                     <Box sx={{ height: 400 }}>
-                      {histogramActive ? histogrammX.length && histogrammY.length ? ( // Render only if data is available
-                      <Bar
-                        id="histogramChart"
-                        data={histogramData}
-                        options={options}
-                        ref={chartRef} // Attach the ref here
-                      />
+                      {histogramActive ? (
+                        histogrammX.length && histogrammY.length ? ( // Render only if data is available
+                          <Bar
+                            id="histogramChart"
+                            data={histogramData}
+                            options={options}
+                            ref={chartRef} // Attach the ref here
+                          />
+                        ) : (
+                          <Typography align="center">
+                            Loading data...
+                          </Typography>
+                        )
                       ) : (
-                      <Typography align="center">Loading data...</Typography>) : (
-                      <Typography align="center">Histogram not available</Typography>
+                        <Typography align="center">
+                          Histogram not available
+                        </Typography>
                       )}
                     </Box>
                   </Box>
