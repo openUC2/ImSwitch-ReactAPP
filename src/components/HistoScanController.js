@@ -55,6 +55,11 @@ const HistoScanController = ({ hostIP, hostPort }) => {
   const [isPanningEnabled, setIsPanningEnabled] = useState(true); // Control panning state
   const [currentXY, setCurrentXY] = useState({ x: 0, y: 0 }); // Current XY position of the microscope
   const [lastPosition, setLastPosition] = useState(null); // Store last saved position for red dot overlay
+  const [layoutFiles, setLayoutFiles] = useState([]);
+  const [selectedFile, setSelectedFile] = useState("");
+  const [layoutData, setLayoutData] = useState(null);
+  const [scaledWells, setScaledWells] = useState([]);
+
   const [streamUrl, setStreamUrl] = useState(
     `${hostIP}:${hostPort}/RecordingController/video_feeder`
   );
@@ -65,16 +70,17 @@ const HistoScanController = ({ hostIP, hostPort }) => {
     setSelectedTab(newValue);
   };
 
-
   useEffect(() => {
     const fetchHistoStatus = async () => {
       try {
-        const response = await fetch("https://100.112.99.76:8001/HistoScanController/getHistoStatus");
+        const response = await fetch(
+          `${hostIP}:${hostPort}/HistoScanController/getHistoStatus`
+        );
         if (!response.ok) {
           throw new Error(`Error: ${response.statusText}`);
         }
         const data = await response.json();
-  
+
         // Update the state variables based on the extended response
         setCurrentPosition(data.currentPosition);
         setScanStatus(data.ishistoscanRunning);
@@ -99,11 +105,9 @@ const HistoScanController = ({ hostIP, hostPort }) => {
         console.error("Error fetching HistoScan status:", error);
       }
     };
-  
+
     fetchHistoStatus();
   }, []);
-  
-  
 
   const handleFetchImage = () => {
     fetch(`${hostIP}:${hostPort}/HistoScanController/getLastStitchedImage`)
@@ -131,7 +135,7 @@ const HistoScanController = ({ hostIP, hostPort }) => {
       `numberTilesX=${stepsX}&numberTilesY=${stepsY}&stepSizeX=${stepSizeX}&stepSizeY=${stepSizeY}&` +
       `nTimes=${nTimesValue}&tPeriod=${tPeriodValue}&` +
       `initPosX=${mInitPosX}&initPosY=${mInitPosY}&isStitchAshlar=${isStitchAshlar}&` +
-      `isStitchAshlarFlipX=${isStitchAshlarFlipX}&isStitchAshlarFlipY=${isStitchAshlarFlipY}&resizeFactor=${resizeFactor}&`+
+      `isStitchAshlarFlipX=${isStitchAshlarFlipX}&isStitchAshlarFlipY=${isStitchAshlarFlipY}&resizeFactor=${resizeFactor}&` +
       `overlap=0.75`;
 
     fetch(url, { method: "GET" })
@@ -140,6 +144,55 @@ const HistoScanController = ({ hostIP, hostPort }) => {
         console.log(data);
       })
       .catch((error) => console.error("Error:", error));
+  };
+
+  // Fetch available layout files on mount
+  useEffect(() => {
+    const fetchLayoutFiles = async () => {
+      try {
+        const response = await fetch(
+          `${hostIP}:${hostPort}/HistoScanController/getSampleLayoutFilePaths`
+        );
+        const files = await response.json();
+        setLayoutFiles(files);
+        setSelectedFile(files[0]); // Default to the first file
+      } catch (error) {
+        console.error("Error fetching layout files:", error);
+      }
+    };
+    fetchLayoutFiles();
+  }, [hostIP, hostPort]);
+
+  // Fetch and load selected layout file
+  const handleLayoutChange = async (file) => {
+    setSelectedFile(file);
+    try {
+      const response = await fetch(`${hostIP}:${hostPort}/${file}`);
+      const layout = await response.json();
+      setLayoutData(layout);
+      setMapUrl(`${hostIP}:${hostPort}/${layout.ScanParameters.imagePath}`); // Set the image URL dynamically
+      setScaledWells([]); // Reset scaled wells
+    } catch (error) {
+      console.error("Error loading layout:", error);
+    }
+  };
+
+  const calculateScaledPositions = (img) => {
+    if (!img || !layoutData) return;
+
+    const renderedWidth = img.offsetWidth;
+    const renderedHeight = img.offsetHeight;
+
+    const scaleX = renderedWidth / layoutData.ScanParameters.pixelImageX;
+    const scaleY = renderedHeight / layoutData.ScanParameters.pixelImageY;
+
+    const scaledPositions = layoutData.ScanParameters.wells.map((well) => ({
+      ...well,
+      scaledX: well.positionXpx * scaleX,
+      scaledY: well.positionYpx * scaleY,
+    }));
+
+    setScaledWells(scaledPositions);
   };
 
   const handleStop = () => {
@@ -151,8 +204,6 @@ const HistoScanController = ({ hostIP, hostPort }) => {
       })
       .catch((error) => console.error("Error:", error));
   };
-
-
 
   // Handle right-click and open context menu at the clicked position
   const handleImageRightClick = (event) => {
@@ -191,14 +242,34 @@ const HistoScanController = ({ hostIP, hostPort }) => {
     handleCloseMenu();
   };
 
-
-
   // Send both X and Y coordinates
   const goToXYPosition = () => {
     setLastPosition(clickedPosition);
     goToPosition("X", clickedPosition.x);
     goToPosition("Y", clickedPosition.y);
     handleCloseMenu();
+  };
+
+  useEffect(() => {
+    const handleResize = () => {
+      const img = document.querySelector("img[alt='Map']");
+      if (img) calculateScaledPositions(img);
+    };
+
+    const debouncedResize = debounce(handleResize, 100);
+
+    window.addEventListener("resize", debouncedResize);
+    return () => {
+      window.removeEventListener("resize", debouncedResize);
+    };
+  }, [layoutData]);
+
+  const debounce = (func, delay) => {
+    let timeout;
+    return (...args) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func(...args), delay);
+    };
   };
 
   return (
@@ -436,8 +507,64 @@ const HistoScanController = ({ hostIP, hostPort }) => {
           )}
         </Grid>
       )}
-
       {selectedTab === 2 && (
+        <Grid container spacing={2}>
+          <Grid item xs={12}>
+            <Typography variant="h6">Select Layout</Typography>
+            <Select
+              value={selectedFile}
+              onChange={(e) => handleLayoutChange(e.target.value)}
+              fullWidth
+            >
+              {layoutFiles.map((file, index) => (
+                <MenuItem key={index} value={file}>
+                  {file.split("/").pop()}
+                </MenuItem>
+              ))}
+            </Select>
+          </Grid>
+          <div>
+            {layoutData && (
+              <div style={{ position: "relative", padding: 0, margin: 0 }}>
+                <img
+                  src={mapUrl}
+                  alt="Map"
+                  style={{
+                    maxWidth: "100%",
+                    display: "block",
+                    margin: 0,
+                    padding: 0,
+                  }}
+                  onLoad={(e) => calculateScaledPositions(e.target)}
+                />
+                {scaledWells.map((well) => {
+                  console.log(
+                    `Well ID: ${well.wellID}, scaledX: ${well.scaledX}px, scaledY: ${well.scaledY}px`
+                  );
+
+                  return (
+                    <div
+                      key={well.wellID}
+                      style={{
+                        position: "absolute",
+                        top: `${well.scaledY}px`,
+                        left: `${well.scaledX}px`,
+                        width: "10px",
+                        height: "10px",
+                        backgroundColor: "blue",
+                        borderRadius: "50%",
+                        transform: "translate(-50%, -50%)",
+                      }}
+                      title={well.wellID}
+                    />
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </Grid>
+      )}
+      {selectedTab === 3 && (
         <Grid container spacing={2}>
           {mapUrl && (
             <Grid item xs={12}>
@@ -533,7 +660,8 @@ const HistoScanController = ({ hostIP, hostPort }) => {
             </List>
           </Grid>
         </Grid>
-      )}{/*
+      )}
+      {/*
       <Rnd
         bounds="parent" // Restricts dragging within the parent container
         size={{ width: videoSize.width, height: videoSize.height }}
