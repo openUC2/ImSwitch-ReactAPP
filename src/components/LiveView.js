@@ -73,10 +73,10 @@ const LiveView = ({ hostIP, hostPort }) => {
   // Access the context using useContext
   const {
     setStreamRunning,
-    sliderIllu1Value,
     sliderIllu2Value,
     sliderIllu3Value,
   } = useContext(LiveWidgetContext);
+  const [sliderIllu1Value, setSliderIllu1Value] = useState(0);
   const [isStreamRunning, setIsStreamRunning] = useState(false);
   const [laserNames, setLaserNames] = useState([]);
   const [isIllumination1Checked, setisIllumination1Checked] = useState(false);
@@ -264,6 +264,25 @@ const LiveView = ({ hostIP, hostPort }) => {
 
     fetchLaserNames();
   }, [hostIP, hostPort]);
+
+  // if the laser name changes, we want to load the value and set it to the slider
+  useEffect(() => {
+    const fetchLaserValues = async () => {
+      try {
+        const response = await fetch(
+          `${hostIP}:${hostPort}/LaserController/getLaserValue?laserName=${laserNames[0]}`
+        );
+        const data = await response.json();
+        setSliderIllu1Value(data);
+      } catch (error) {
+        console.error("Error fetching laser value:", error);
+      }
+    };
+    if (laserNames.length > 0) fetchLaserValues();
+
+  }, [laserNames]);
+    
+
 
   const [imjoyAPI, setImjoyAPI] = useState(null);
 

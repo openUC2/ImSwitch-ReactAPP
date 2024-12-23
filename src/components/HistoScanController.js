@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import { Rnd } from "react-rnd";
+import { useWebSocket } from "../context/WebSocketContext";
+
 import {
   Tabs,
   Tab,
@@ -39,7 +41,6 @@ const HistoScanController = ({ hostIP, hostPort }) => {
   const [scanCount, setScanCount] = useState(0);
   const [scanIndex, setScanIndex] = useState(0);
   const [scanResultAvailable, setScanResultAvailable] = useState(false);
-  const [currentPosition, setCurrentPosition] = useState([0, 0]);
   const [isStitchAshlar, setIsStitchAshlar] = useState(false);
   const [isStitchAshlarFlipX, setIsStitchAshlarFlipX] = useState(false);
   const [isStitchAshlarFlipY, setIsStitchAshlarFlipY] = useState(false);
@@ -59,7 +60,15 @@ const HistoScanController = ({ hostIP, hostPort }) => {
   const [selectedFile, setSelectedFile] = useState("");
   const [layoutData, setLayoutData] = useState(null);
   const [scaledWells, setScaledWells] = useState([]);
-
+  const [scanPoints, setScanPoints] = useState([]);
+  const [scaleX, setScaleX] = useState(1);
+  const [scaleY, setScaleY] = useState(1);
+  const socket = useWebSocket();
+  const [positions, setPositions] = useState({ A: 0, X: 0, Y: 0, Z: 0 });
+  const [positionerName, setPositionerName] = useState(""); // TODO: We should put most states in the contextmanager
+  const [pixelToMMFactor, setPixelToMMFactor] = useState(1);
+  const [MMToPixelScaledFactorX, setMMToPixelScaledFactorX] = useState(1);
+  const [MMToPixelScaledFactorY, setMMToPixelScaledFactorY] = useState(1);
   const [streamUrl, setStreamUrl] = useState(
     `${hostIP}:${hostPort}/RecordingController/video_feeder`
   );
@@ -68,6 +77,170 @@ const HistoScanController = ({ hostIP, hostPort }) => {
 
   const handleTabChange = (event, newValue) => {
     setSelectedTab(newValue);
+  };
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleSignal = (data) => {
+      try {
+        const jdata = JSON.parse(data);
+        if (jdata.name === "sigUpdateScanCoordinatesLayout") {
+          console.log("Signal received in HistoScanController", jdata);
+          calculateScaledScanPoints(jdata);
+        } else if (jdata.name === "sigUpdateMotorPosition") {
+          // Parse args.p0 und ersetze einfache Anführungszeichen durch doppelte
+          const parsedArgs = JSON.parse(jdata.args.p0.replace(/'/g, '"'));
+
+          // Extrahiere alle Positioner-Namen (z.B. ESP32Stage)
+          const positionerKeys = Object.keys(parsedArgs);
+
+          if (positionerKeys.length > 0) {
+            const key = positionerKeys[0]; // Nimm den ersten Schlüssel
+            const correctedPositions = parsedArgs[key];
+
+            console.log(`Corrected positions for ${key}:`, correctedPositions);
+
+            setPositions((prevPositions) => ({
+              ...prevPositions,
+              ...correctedPositions,
+            }));
+          } else {
+            console.warn("No positioner data found in the signal.");
+          }
+        }
+      } catch (error) {
+        console.error("Error parsing signal data:", error);
+      }
+    };
+
+    // Listen for signals
+    socket.on("signal", handleSignal);
+    return () => {
+      socket.off("signal", handleSignal);
+    };
+  }, [socket]);
+
+  const calculateScaledScanPoints = (jdata) => {
+    try {
+      // {"name": "sigUpdateScanCoordinatesLayout", "args": {"p0": "{'shape': (96, 2, 5), 'data': [[[15000.0, 11000.0,
+      // we have to parse the 3d array and propagate these positions in the Wellplate
+      // 1. get the shape of the array
+      // 2. get the data of the array
+      // 3. iterate over the data and set the positions in the wellplate
+      // 4. update the wellplate
+      // get img as wellplate
+      const img = document.getElementById("map");
+      if (!img || !layoutData) return;
+
+      const renderedWidth = img.offsetWidth;
+      const renderedHeight = img.offsetHeight;
+      const parsedArgs = JSON.parse(jdata.args.p0.replace(/'/g, '"'));
+      const shape = parsedArgs.shape;
+      const data = parsedArgs.data;
+
+      // Initialise all scan points
+      const allScanPoints = [];
+      for (let wellIndex = 0; wellIndex < data.length; wellIndex++) {
+        const wellData = data[wellIndex];
+        const [xCoords, yCoords] = wellData; // all x/y coordinates for the current well in
+        for (let pointIndex = 0; pointIndex < xCoords.length; pointIndex++) {
+          const rawX = parseFloat(xCoords[pointIndex]);
+          const rawY = parseFloat(yCoords[pointIndex]);
+
+          // rawX/Y are in mm so we have to bring them to the pixel world and scale them
+          setMMToPixelScaledFactorX(
+            parsedArgs.pixelToMMFactor *
+              (renderedWidth / parsedArgs.pixelImageX)
+          );
+          setMMToPixelScaledFactorY(
+            parsedArgs.pixelToMMFactor *
+              (renderedHeight / parsedArgs.pixelImageY)
+          );
+          const scaledX =
+            rawX *
+            parsedArgs.pixelToMMFactor *
+            (renderedWidth / parsedArgs.pixelImageX); // Convert to pixelated-mm
+          const scaledY =
+            rawY *
+            parsedArgs.pixelToMMFactor *
+            (renderedHeight / parsedArgs.pixelImageY); // Convert to pixelated-mm
+
+          allScanPoints.push({
+            wellID: wellIndex + 1,
+            scaledX: scaledX,
+            scaledY: scaledY,
+          });
+        }
+      }
+
+      // Update the state variable
+      setScanPoints(allScanPoints);
+      //console.log("Alle Scan-Punkte aktualisiert:", allScanPoints);
+    } catch (error) {
+      console.error("Error parsing signal data:", error);
+    }
+  };
+  const fetchPositions = async () => {
+    /*
+     * The fetch() function is used to make a request to the server to get the current positions of the positioner.
+     * The response is then converted to JSON format and the positions are set in the state using the setPositions() function.
+     * The positions are stored in an object with keys 'A', 'X', 'Y', and 'Z' representing the different axes of the positioner.
+     * The positionerName variable is used to specify the positioner for which the positions are being fetched.
+     * The hostIP and hostPort variables are used to construct the URL for the fetch request.
+     */
+    try {
+      const response = await fetch(
+        `${hostIP}:${hostPort}/PositionerController/getPositionerPositions`
+      );
+      const data = await response.json();
+
+      console.log(
+        "Fetched Positions from positionerName ",
+        positionerName,
+        ":",
+        data[positionerName]
+      );
+      setPositions({
+        A: data[positionerName].A || 0,
+        X: data[positionerName].X || 0,
+        Y: data[positionerName].Y || 0,
+        Z: data[positionerName].Z || 0,
+      });
+    } catch (error) {
+      console.error("Error fetching positioner positions:", error);
+    }
+  };
+
+  // useEffect() hook to fetch the positioner name and positions when the component mounts
+  useEffect(() => {
+    console.log("Fetching positioner name and positions...");
+    getPositionerName();
+  }, [hostIP, hostPort]);
+
+  // useEffect() hook to fetch the positions when the positionerName changes
+  useEffect(() => {
+    if (positionerName) {
+      fetchPositions(positionerName);
+    }
+  }, [positionerName]);
+
+  // useEffect() hook to fetch the positioner name and positions when the component mounts
+  useEffect(() => {
+    console.log("Fetching positioner name and positions...");
+    getPositionerName();
+  }, [hostIP, hostPort]);
+
+  const getPositionerName = async () => {
+    try {
+      const response = await fetch(
+        `${hostIP}:${hostPort}/PositionerController/getPositionerNames`
+      );
+      const data = await response.json();
+      setPositionerName(data[0]); // Assume first element if multiple names are returned
+    } catch (error) {
+      console.error("Error fetching positioner name:", error);
+    }
   };
 
   useEffect(() => {
@@ -82,7 +255,6 @@ const HistoScanController = ({ hostIP, hostPort }) => {
         const data = await response.json();
 
         // Update the state variables based on the extended response
-        setCurrentPosition(data.currentPosition);
         setScanStatus(data.ishistoscanRunning);
         setScanResultAvailable(data.stitchResultAvailable);
         setScanIndex(data.mScanIndex);
@@ -169,6 +341,10 @@ const HistoScanController = ({ hostIP, hostPort }) => {
     try {
       const response = await fetch(`${hostIP}:${hostPort}/${file}`);
       const layout = await response.json();
+      // update the server state
+      await fetch(
+        `${hostIP}:${hostPort}/HistoScanController/setActiveSampleLayoutFilePath?filePath=${file}`
+      );
       setLayoutData(layout);
       setMapUrl(`${hostIP}:${hostPort}/${layout.ScanParameters.imagePath}`); // Set the image URL dynamically
       setScaledWells([]); // Reset scaled wells
@@ -183,15 +359,19 @@ const HistoScanController = ({ hostIP, hostPort }) => {
     const renderedWidth = img.offsetWidth;
     const renderedHeight = img.offsetHeight;
 
-    const scaleX = renderedWidth / layoutData.ScanParameters.pixelImageX;
+    const scaleX = renderedWidth / layoutData.ScanParameters.pixelImageX; // (pixels_on_screen) / (pixels_in_image) = scaling factor
     const scaleY = renderedHeight / layoutData.ScanParameters.pixelImageY;
 
+    // scale the center positions on the image
+    // well-position is give in pixel, we have to convert it to scaled pixel coordinates in the displayed image (e.g. shrink it)
     const scaledPositions = layoutData.ScanParameters.wells.map((well) => ({
       ...well,
       scaledX: well.positionXpx * scaleX,
       scaledY: well.positionYpx * scaleY,
     }));
-
+    // update the states
+    setScaleX(scaleX);
+    setScaleY(scaleY);
     setScaledWells(scaledPositions);
   };
 
@@ -208,6 +388,7 @@ const HistoScanController = ({ hostIP, hostPort }) => {
   // Handle right-click and open context menu at the clicked position
   const handleImageRightClick = (event) => {
     event.preventDefault(); // Prevent the default browser context menu
+    console.log("Right-clicked on the image");
     const rect = event.target.getBoundingClientRect();
     const x = event.clientX - rect.left; // x position within the image
     const y = event.clientY - rect.top; // y position within the image
@@ -227,12 +408,27 @@ const HistoScanController = ({ hostIP, hostPort }) => {
 
   // Function to send position to controller
   const goToPosition = (axis, dist) => {
-    const url = `${hostIP}:${hostPort}/PositionerController/movePositioner?axis=${axis}&dist=${dist}&isAbsolute=true&isBlocking=false`;
+    // first scale the distance as this is scaled pixel coorindates in the image
+    // MMToPixelScaledFactorX
+    // MMToPixelScaledFactorY
+    if (axis === "X") {
+      dist = (dist / MMToPixelScaledFactorX) * 1000;
+    } else if (axis === "Y") {
+      dist = (dist / MMToPixelScaledFactorY) * 1000;
+    } else if (axis === "XY") {
+      dist = {
+        x: (dist[0] / MMToPixelScaledFactorX) * 1000,
+        y: (dist[1] / MMToPixelScaledFactorY) * 1000,
+      };
+    }
+    let url = `${hostIP}:${hostPort}/PositionerController/movePositioner?axis=${axis}&dist=${dist}&isAbsolute=true&isBlocking=false`;
+    if (axis === "XY") {
+      url = `${hostIP}:${hostPort}/PositionerController/movePositioner?axis=XY&dist=${dist.x},${dist.y}&isAbsolute=true&isBlocking=false`;
+    }
     fetch(url, { method: "GET" })
       .then((response) => response.json())
       .then((data) => console.log("Positioner moved:", data))
       .catch((error) => console.error("Error:", error));
-    handleCloseMenu();
   };
 
   // Save position in the list
@@ -245,7 +441,10 @@ const HistoScanController = ({ hostIP, hostPort }) => {
   // Send both X and Y coordinates
   const goToXYPosition = () => {
     setLastPosition(clickedPosition);
-    goToPosition("X", clickedPosition.x);
+    // Add a delay of 500 ms to await the X movement
+    setTimeout(() => {
+      goToPosition("X", clickedPosition.x);
+    }, 500);
     goToPosition("Y", clickedPosition.y);
     handleCloseMenu();
   };
@@ -457,8 +656,8 @@ const HistoScanController = ({ hostIP, hostPort }) => {
             <Typography variant="body2">
               Result Available: {scanResultAvailable ? "Yes" : "No"}, Current
               Position:{" "}
-              {currentPosition && currentPosition.length > 1
-                ? `${currentPosition[0]}, ${currentPosition[1]}`
+              {positions && positions.length > 1
+                ? `${positions[0]}, ${positions[1]}`
                 : "Loading..."}
             </Typography>
           </Grid>
@@ -529,6 +728,7 @@ const HistoScanController = ({ hostIP, hostPort }) => {
                 <img
                   src={mapUrl}
                   alt="Map"
+                  id="map"
                   style={{
                     maxWidth: "100%",
                     display: "block",
@@ -537,28 +737,90 @@ const HistoScanController = ({ hostIP, hostPort }) => {
                   }}
                   onLoad={(e) => calculateScaledPositions(e.target)}
                 />
-                {scaledWells.map((well) => {
-                  console.log(
-                    `Well ID: ${well.wellID}, scaledX: ${well.scaledX}px, scaledY: ${well.scaledY}px`
-                  );
-
-                  return (
-                    <div
+                <svg
+                  onContextMenu={handleImageRightClick} // Handle right-click
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    height: "100%",
+                  }}
+                >
+                  {/* Blue circles */}
+                  {scaledWells.map((well) => (
+                    <circle
                       key={well.wellID}
-                      style={{
-                        position: "absolute",
-                        top: `${well.scaledY}px`,
-                        left: `${well.scaledX}px`,
-                        width: "10px",
-                        height: "10px",
-                        backgroundColor: "blue",
-                        borderRadius: "50%",
-                        transform: "translate(-50%, -50%)",
-                      }}
+                      cx={well.scaledX}
+                      cy={well.scaledY}
+                      r={5}
+                      fill="blue"
                       title={well.wellID}
                     />
-                  );
-                })}
+                  ))}
+                  {/* Referenz zu x, y aus dem aktuellen Zustand oder Props */}
+                  {positions && (
+                    <circle
+                      cx={(positions.X * MMToPixelScaledFactorX) / 1000} // convert mm to scaled pixel coordinates
+                      cy={(positions.Y * MMToPixelScaledFactorY) / 1000} // convert mm to scaled pixel coordinates
+                      r={10}
+                      fill="green"
+                      title={`Pos: (${
+                        (positions.X * MMToPixelScaledFactorX) / 1000
+                      }, ${(positions.Y * MMToPixelScaledFactorY) / 1000})`}
+                    />
+                  )}
+                  {/* red rectangular TODO: We should scale the width based on the FOV*/}
+                  {scanPoints.map((point, index) => (
+                    <rect
+                      key={index}
+                      x={point.scaledX - 2.5}
+                      y={point.scaledY - 2.5}
+                      width={5}
+                      height={5}
+                      fill="red"
+                      title={`Scan Point ${index + 1}`}
+                    />
+                  ))}
+
+                  {/* Context menu for right-click */}
+                  <Menu
+                    anchorReference="anchorPosition"
+                    anchorPosition={
+                      menuPosition.mouseY !== null &&
+                      menuPosition.mouseX !== null
+                        ? {
+                            top: menuPosition.mouseY,
+                            left: menuPosition.mouseX,
+                          }
+                        : undefined
+                    }
+                    open={Boolean(anchorEl)}
+                    onClose={handleCloseMenu}
+                  >
+                    <MenuEntry
+                      onClick={() => goToPosition("X", clickedPosition.x)}
+                    >
+                      Go to X Position
+                    </MenuEntry>
+                    <MenuEntry
+                      onClick={() => goToPosition("Y", clickedPosition.y)}
+                    >
+                      Go to Y Position
+                    </MenuEntry>
+                    <MenuEntry onClick={goToXYPosition}>
+                      Go to X & Y Position
+                    </MenuEntry>
+                    <MenuEntry onClick={savePosition}>Save Position</MenuEntry>
+                  </Menu>
+                  {/* Display current XY position */}
+                  <Box mt={2}>
+                    <Typography variant="h6">
+                      Current XY Position: X = {currentXY.x.toFixed(2)}, Y ={" "}
+                      {currentXY.y.toFixed(2)}
+                    </Typography>
+                  </Box>
+                </svg>
               </div>
             )}
           </div>

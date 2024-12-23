@@ -4,7 +4,7 @@ import AxisControl from "./AxisControl";
 import { useWebSocket } from "../context/WebSocketContext";
 
 function XYZControls({ hostIP, hostPort }) {
-  const [positionerName, setPositionerName] = useState("VirtualStage"); // Assume a default or initial value
+  const [positionerName, setPositionerName] = useState(""); // TODO: We should put most states in the contextmanager
   const [positions, setPositions] = useState({A:0, X: 0, Y: 0, Z: 0 });
   const socket = useWebSocket();
 
@@ -76,6 +76,7 @@ function XYZControls({ hostIP, hostPort }) {
       );
       const data = await response.json();
       
+      console.log("Fetched Positions from positionerName ", positionerName, ":", data[positionerName]);
       setPositions({
         A: data[positionerName].A || 0,
         X: data[positionerName].X || 0,
@@ -91,9 +92,14 @@ function XYZControls({ hostIP, hostPort }) {
   useEffect(() => {
     console.log("Fetching positioner name and positions...");
     getPositionerName();
-    fetchPositions();
   }, [hostIP, hostPort]);
   
+  // useEffect() hook to fetch the positions when the positionerName changes
+  useEffect(() => {
+    if (positionerName) {
+      fetchPositions(positionerName);
+    }
+  }, [positionerName]);
 
 
   return (

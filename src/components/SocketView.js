@@ -11,7 +11,6 @@ const SocketView = () => {
     // Listen for server messages
     socket.on("signal", (data) => {
       setMessages((prev) => [...prev, data]);
-      console.log("Signal received in MyComponent:", data);
     });
     
     // Listen for broadcast messages
