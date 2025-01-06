@@ -478,7 +478,7 @@ const HistoScanController = ({ hostIP, hostPort }) => {
         <Tab label="Result" />
         <Tab label="Map" />
       </Tabs>
-
+    
       {selectedTab === 0 && (
         <Grid container spacing={2}>
           <Grid item xs={12}>

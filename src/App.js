@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from "react";
 import LiveView from "./components/LiveView";
 import SocketView from "./components/SocketView";
 import HistoScanController from "./components/HistoScanController";
+import TimelapseController from "./components/TimelapseController";
 import { LiveWidgetProvider } from "./context/LiveWidgetContext"; // Import the context provider
 import Tab_Widgets from "./components/Tab_Widgets";
 import LightsheetController from "./components/LightsheetController";
@@ -13,12 +14,14 @@ import {
   Info as InfoIcon,
   Settings as SettingsIcon,
   SettingsOverscanSharp as SettingsOverscanSharpIcon,
+  AccessTime as AccessTimeIcon,
 } from "@mui/icons-material";
 import WifiSharpIcon from "@mui/icons-material/WifiSharp";
 import ThreeDRotationIcon from "@mui/icons-material/ThreeDRotation";
 import AirIcon from "@mui/icons-material/Air";
 import axios from "axios";
 import { WebSocketProvider } from "./context/WebSocketContext";
+import { MCTProvider } from "./context/MCTContext";
 
 // Filemanager
 import FileManager from "./FileManager/FileManager/FileManager";
@@ -315,6 +318,12 @@ function App() {
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "HistoScan" : ""} />
               </ListItem>
+              <ListItem button onClick={() => handlePluginChange("Timelapse")}>
+                <ListItemIcon>
+                  <AccessTimeIcon />
+                </ListItemIcon>
+                <ListItemText primary={sidebarVisible ? "Timelapse" : ""} />
+              </ListItem>
               <ListItem button onClick={() => handlePluginChange("SocketView")}>
                 <ListItemIcon>
                   <CommentIcon />
@@ -378,6 +387,17 @@ function App() {
             {selectedPlugin === "HistoScan" && (
               <WidgetContextProvider>
                 <HistoScanController hostIP={hostIP} hostPort={hostPort} />
+              </WidgetContextProvider>
+            )}
+            {selectedPlugin === "Timelapse" && (
+              <WidgetContextProvider>
+                <MCTProvider>
+                  <TimelapseController
+                    hostIP={hostIP}
+                    hostPort={hostPort}
+                    title="Timelapse"
+                  />
+                </MCTProvider>
               </WidgetContextProvider>
             )}
             {selectedPlugin === "FileManager" && (
