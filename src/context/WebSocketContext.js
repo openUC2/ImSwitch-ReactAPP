@@ -8,10 +8,11 @@ export const WebSocketProvider = ({ hostIP, children }) => {
   const socketRef = useRef(null);
 
   useEffect(() => {
-    // Initialisiere die Socket.IO-Verbindung
-    const socket = io(`${hostIP}:${wsPort}`, {
+    console.log("Connecting to WebSocket server:", hostIP, wsPort);
+    const socket = io(`${hostIP}:8002`, {
       transports: ["websocket"],
     });
+
 
     socketRef.current = socket;
 

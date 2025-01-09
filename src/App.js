@@ -31,6 +31,8 @@ import { deleteAPI } from "./FileManager/api/deleteAPI";
 import { copyItemAPI, moveItemAPI } from "./FileManager/api/fileTransferAPI";
 import { getAllFilesAPI } from "./FileManager/api/getAllFilesAPI";
 import { downloadFile } from "./FileManager/api/downloadFileAPI";
+import { api } from "./FileManager/api/api";
+import "./FileManager/App.scss";
 
 import {
   Button,
@@ -106,7 +108,7 @@ function App() {
   FileManager
   */
   const fileUploadConfig = {
-    url: "http://localhost:4000/upload", // Change this as per your API URL
+    url: `https://${hostIP}:${hostPort}/upload`, // Change this as per your API URL
   };
 
   // Fetch Files
@@ -167,7 +169,7 @@ function App() {
   };
 
   const handleDownload = async (files) => {
-    await downloadFile(files);
+    await downloadFile(files, hostIP, hostPort);
   };
 
   const handleRefresh = () => getFiles();
@@ -210,19 +212,28 @@ function App() {
     throw new Error("No valid port found for API.");
   };
 
+  // change API url/port
+  useEffect(() => {
+    api.defaults.baseURL = `${hostIP}:${hostPort}`;
+  }, [hostIP, hostPort]);
+
+  // Dialog handlers for the URL / Port settings
   const handleCloseDialog = () => {
     setDialogOpen(false);
   };
 
+  // Open the dialog
   const handleOpenDialog = () => {
     setDialogOpen(true);
   };
 
+  // Handle changes to the IP address
   const handlehostPortChange = (event) => {
     let port = event.target.value.trim();
     sethostPort(port);
   };
 
+  // Handle changes to the port
   const handlehostIPChange = (event) => {
     let ip = event.target.value.trim();
     if (!ip.startsWith("http://") && !ip.startsWith("https://")) {
@@ -234,6 +245,7 @@ function App() {
     setHostIP(ip);
   };
 
+  // Save the IP address and port
   const handleSavehostIP = () => {
     setHostIP(hostIP);
     sethostPort(hostPort);
@@ -401,26 +413,31 @@ function App() {
               </WidgetContextProvider>
             )}
             {selectedPlugin === "FileManager" && (
-              <FileManager
-                files={files}
-                fileUploadConfig={fileUploadConfig}
-                isLoading={isLoading}
-                onCreateFolder={handleCreateFolder}
-                onFileUploading={handleFileUploading}
-                onFileUploaded={handleFileUploaded}
-                onPaste={handlePaste}
-                onRename={handleRename}
-                onDownload={handleDownload}
-                onDelete={handleDelete}
-                onRefresh={handleRefresh}
-                layout="grid"
-                enableFilePreview
-                maxFileSize={10485760}
-                filePreviewPath={"http://localhost:4000"}
-                acceptedFileTypes=".txt, .png, .jpg, .jpeg, .pdf, .doc, .docx, .exe, .js, .csv"
-                height="100%"
-                width="100%"
-              />
+              <div className="app">
+              <div className="file-manager-container">
+                <FileManager
+                  baseUrl={`${hostIP}:${hostPort}`}
+                  files={files}
+                  fileUploadConfig={fileUploadConfig}
+                  isLoading={isLoading}
+                  onCreateFolder={handleCreateFolder}
+                  onFileUploading={handleFileUploading}
+                  onFileUploaded={handleFileUploaded}
+                  onPaste={handlePaste}
+                  onRename={handleRename}
+                  onDownload={handleDownload}
+                  onDelete={handleDelete}
+                  onRefresh={handleRefresh}
+                  layout="grid"
+                  enableFilePreview
+                  maxFileSize={10485760}
+                  filePreviewPath={`${hostIP}:${hostPort}/`}
+                  acceptedFileTypes=".txt, .png, .jpg, .jpeg, .pdf, .doc, .docx, .exe, .js, .csv"
+                  height="100%"
+                  width="100%"
+                />
+              </div>
+              </div>
             )}
             {selectedPlugin === "Lightsheet" && (
               <WidgetContextProvider>

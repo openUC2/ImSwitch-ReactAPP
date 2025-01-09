@@ -1,5 +1,9 @@
 import axios from "axios";
 
+const hostIP = window.location.hostname;
+const hostPort = window.location.port || 4000;
+const protocol = window.location.protocol;
+
 export const api = axios.create({
-  baseURL: "http://localhost:4000",//import.meta.env.VITE_API_BASE_URL,
+  baseURL: `${protocol}//${hostIP}:${hostPort}`,
 });

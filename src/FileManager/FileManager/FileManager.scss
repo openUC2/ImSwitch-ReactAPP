@@ -6,7 +6,7 @@
 }
 
 .text-white {
-  color: white;
+  color: rgb(0, 0, 0);
 }
 
 .text-truncate {
@@ -26,7 +26,7 @@ svg {
   width: fit-content;
   overflow-x: hidden;
   padding: 0;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.253);
+  box-shadow: 0 2px 10px rgba(197, 18, 18, 0.253);
 }
 
 .w-25 {
@@ -43,10 +43,10 @@ svg {
     font-family: "Nunito Sans", sans-serif;
   }
 
-  border: 1px solid #dddddd;
+  border: 1px solid #c00a0a;
   border-radius: 8px;
   position: relative;
-  background-color: white;
+  background-color: rgb(201, 7, 7);
   cursor: default;
   // Disable Text Selection on Double Click
   -webkit-user-select: none;
@@ -85,7 +85,7 @@ svg {
 
     .folders-preview {
       z-index: 2;
-      background-color: white;
+      background-color: rgb(111, 27, 27);
       padding-right: 0px;
       padding-left: 0px;
       border-bottom-right-radius: 8px;

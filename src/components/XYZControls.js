@@ -13,7 +13,7 @@ function XYZControls({ hostIP, hostPort }) {
     if (!socket) return;
 
     const handleSignal = (data) => {
-      console.log("Signal received in XYZControls:", data);
+      //console.log("Signal received in XYZControls:", data);
       
       try {
         const jdata = JSON.parse(data);

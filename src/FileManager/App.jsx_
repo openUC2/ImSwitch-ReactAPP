@@ -6,6 +6,7 @@ import { deleteAPI } from "./api/deleteAPI";
 import { copyItemAPI, moveItemAPI } from "./api/fileTransferAPI";
 import { getAllFilesAPI } from "./api/getAllFilesAPI";
 import { downloadFile } from "./api/downloadFileAPI";
+// import css
 import "./App.scss";
 
 function App() {

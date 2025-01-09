@@ -106,7 +106,7 @@ const LiveView = ({ hostIP, hostPort }) => {
     const checkStreamStatus = async () => {
       try {
         const response = await fetch(
-          `https://100.71.92.70:8001/ViewController/getLiveViewActive`
+          `{hostIP}:{hostPort}/ViewController/getLiveViewActive`
         );
         const data = await response.json();
         if (data) setIsStreamRunning(true);
