@@ -132,11 +132,14 @@ const LiveView = ({ hostIP, hostPort, onImageUpdate }) => {
   const handleRangeChangeCommitted = async (event, newValue) => {
     try {
       // Send updated minVal/maxVal to the backend
-      const url = `${hostIP}:${hostPort}/HistogrammController/setMinMaxValues?minVal=${newValue[0]}&maxVal=${newValue[1]}`;
-      const response = await fetch(url, { method: "POST" });
-      if (!response.ok) {
-        throw new Error("Failed to update min/max values on the server");
-      }
+      // https://localhost:8001/SettingsController/setDetectorPreviewMinValue?minValue=0
+      //   'https://localhost:8001/SettingsController/setDetectorPreviewMaxValue?maxValue=50' \
+      // https://localhost:8001/SettingsController/setDetectorPreviewMinValue?minValue=1267 405 (
+        const url = `${hostIP}:${hostPort}/SettingsController/setDetectorPreviewMinMaxValue?minValue=${newValue[0]}&maxValue=${newValue[1]}`;
+        const response = await fetch(url, { method: "GET" });
+        if (!response.ok) {
+          throw new Error("Failed to update min/max values on the server");
+        }
       console.log("Updated min/max values on backend");
     } catch (error) {
       console.error("Error updating min/max values:", error);
@@ -498,7 +501,7 @@ const LiveView = ({ hostIP, hostPort, onImageUpdate }) => {
               onChange={handleRangeChange}
               onChangeCommitted={handleRangeChangeCommitted}
               min={0}
-              max={65535} // or your actual image depth
+              max={1024} // or your actual image depth
               sx={{ height: "90%" }} // slightly smaller or "100%"
               // Show value labels always:
               valueLabelDisplay="on"
