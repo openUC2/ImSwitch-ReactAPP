@@ -92,7 +92,10 @@ const FlowStopController = ({ hostIP, hostPort, WindowTitle }) => {
       if (jdata.name === "sigImagesTaken") {
           setCurrentImageCount(jdata.args.p0);
         }
-      });
+      if (jdata.name === "sigIsRunning") {
+        setIsRunning(jdata.args.p0);
+      }
+    });
     // Clean up the chart on component unmount
     return () => {
       if (socket) {
@@ -106,7 +109,6 @@ const FlowStopController = ({ hostIP, hostPort, WindowTitle }) => {
     // https://localhost:8001/FlowStopController/startFlowStopExperimentFastAPI?timeStamp=asdf&experimentName=adf&experimentDescription=asdf&uniqueId=asdf&numImages=19&volumePerImage=199&timeToStabilize=1&delayToStart=1&frameRate=1&filePath=.%2F&fileFormat=TIF&isRecordVideo=true&pumpSpeed=10000
 
     const url = `${hostIP}:${hostPort}/FlowStopController/startFlowStopExperimentFastAPI?timeStamp=${timeStamp}&experimentName=${experimentName}&experimentDescription=${experimentDescription}&uniqueId=${uniqueId}&numImages=${numImages}&volumePerImage=${volumePerImage}&timeToStabilize=${timeToStabilize}&isRecordVideo=true&pumpSpeed=${pumpSpeed}`;
-
     fetch(url, { method: "GET" })
       .then((response) => response.json())
       .then((data) => {
