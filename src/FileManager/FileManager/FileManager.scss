@@ -1,12 +1,20 @@
 @import url("https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,200..1000;1,6..12,200..1000&display=swap");
-@import "../styles/variables";
+
+// MUI Dark Theme Variables
+$primary-color: #90caf9;
+$secondary-color: #f48fb1;
+$background-color: #121212;
+$surface-color: #1e1e1e;
+$border-color: #424242;
+$text-white: #ffffff;
+$text-secondary: #aaaaaa;
 
 .background-secondary {
-  background-color: $secondary-color !important;
+  background-color: $background-color !important;
 }
 
 .text-white {
-  color: rgb(0, 0, 0);
+  color: $text-white !important;
 }
 
 .text-truncate {
@@ -21,12 +29,12 @@ svg {
 }
 
 .fm-modal {
-  border: 1px solid #c6c6c6;
+  border: 1px solid $border-color;
   border-radius: 5px;
   width: fit-content;
   overflow-x: hidden;
   padding: 0;
-  box-shadow: 0 2px 10px rgba(197, 18, 18, 0.253);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
 }
 
 .w-25 {
@@ -38,56 +46,56 @@ svg {
   height: 100%;
   width: 100%;
   font-family: "Nunito Sans", sans-serif;
-
-  button {
-    font-family: "Nunito Sans", sans-serif;
-  }
-
-  border: 1px solid #c00a0a;
+  border: 1px solid $border-color;
   border-radius: 8px;
   position: relative;
-  background-color: rgb(201, 7, 7);
+  background-color: $background-color;
+  color: $text-white;
   cursor: default;
-  // Disable Text Selection on Double Click
   -webkit-user-select: none;
   -ms-user-select: none;
   user-select: none;
 
+  button {
+    font-family: "Nunito Sans", sans-serif;
+    background-color: $surface-color;
+    color: $text-white;
+  }
+
   .files-container {
     display: flex;
-    height: calc(100% - 46px); // Toolbar total height = baseHeight: 35px, padding top + bottom: 10px, border: 1px.
+    height: calc(100% - 46px);
 
     .navigation-pane {
       z-index: 1;
       padding-top: 8px;
-
       position: relative;
 
       .sidebar-resize {
         position: absolute;
-        right: 0px;
-        top: 0px;
-        bottom: 0px;
+        right: 0;
+        top: 0;
+        bottom: 0;
         width: 5px;
         cursor: col-resize;
         z-index: 10;
         border-right: 1px solid $border-color;
 
         &:hover {
-          border-right: 1px solid #1e3a8a;
+          border-right: 1px solid $primary-color;
         }
       }
 
       .sidebar-dragging {
-        border-right: 1px solid #1e3a8a;
+        border-right: 1px solid $primary-color;
       }
     }
 
     .folders-preview {
       z-index: 2;
-      background-color: rgb(111, 27, 27);
-      padding-right: 0px;
-      padding-left: 0px;
+      background-color: $surface-color;
+      padding-right: 0;
+      padding-left: 0;
       border-bottom-right-radius: 8px;
     }
   }
@@ -99,7 +107,7 @@ svg {
 
   &:hover {
     cursor: pointer;
-    background-color: rgb(0, 0, 0, 0.07);
+    background-color: rgba($text-white, 0.07);
   }
 }
 
@@ -109,7 +117,7 @@ svg {
   border-top-left-radius: 5px;
   border-top-right-radius: 5px;
   transition: box-shadow 0.3s;
-  background-color: #f5f5f5;
+  background-color: lighten($background-color, 5%);
   padding: 6px 9px;
   margin-right: 8px;
   width: calc(100% - 18px);
@@ -125,7 +133,7 @@ svg {
   padding: 8px 0;
 
   .fm-rename-folder-input {
-    border-bottom: 1px solid #c6c6c6;
+    border-bottom: 1px solid $border-color;
     padding: 8px 12px 12px;
 
     .fm-rename-warning {

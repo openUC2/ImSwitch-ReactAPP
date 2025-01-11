@@ -1,6 +1,5 @@
 import React, { useRef, useContext, useState, useEffect } from "react";
 import {
-  Menu as MenuIcon,
   PlayArrow,
   Stop,
   CameraAlt,
@@ -8,55 +7,24 @@ import {
   Stop as StopIcon,
 } from "@mui/icons-material";
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  PointElement,
-  Title,
-  Tooltip,
-  Legend,
-  LineElement,
-} from "chart.js";
-import { Bar } from "react-chartjs-2";
-import { useWebSocket } from "../context/WebSocketContext";
-import { Line } from "react-chartjs-2"; // or any other library for charts
-import { LiveWidgetContext } from "../context/LiveWidgetContext";
-import { makeStyles } from "@mui/styles";
-import {
   Box,
   Container,
   Typography,
   Button,
-  Drawer,
-  List,
-  ListItem,
-  FormControl,
-  TextField,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   FormControlLabel,
-  Slider,
   Switch,
+  TextField,
+  Slider,
   Checkbox,
   Grid,
-  // ... any other imports you need
 } from "@mui/material";
-import XYZControls from "./XYZControls"; // If needed
+import { makeStyles } from "@mui/styles";
+import { Bar } from "react-chartjs-2";
+import XYZControls from "./XYZControls";
+import { useWebSocket } from "../context/WebSocketContext";
+import { LiveWidgetContext } from "../context/LiveWidgetContext";
 
-// Register scales and components explicitly
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-);
+// ... other imports for chart configuration, etc.
 
 const useStyles = makeStyles((theme) => ({
   blinking: {
@@ -69,61 +37,65 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const LiveView = ({ hostIP, hostPort }) => {
-  // Access the context using useContext
-  const {
-    setStreamRunning,
-    sliderIllu2Value,
-    sliderIllu3Value,
-  } = useContext(LiveWidgetContext);
-  const [sliderIllu1Value, setSliderIllu1Value] = useState(0);
+const LiveView = ({ hostIP, hostPort, onImageUpdate }) => {
+  const classes = useStyles();
+  const socket = useWebSocket();
+
+  // LiveWidgetContext
+  const { sliderIllu2Value, sliderIllu3Value } = useContext(LiveWidgetContext);
+
+  // Local States
   const [isStreamRunning, setIsStreamRunning] = useState(false);
+  const [streamUrl, setStreamUrl] = useState("");
+  const [minVal, setMinVal] = useState(0);
+  const [maxVal, setMaxVal] = useState(1023);
+  const [isRecording, setIsRecording] = useState(false);
+  const [exposureTime, setExposureTime] = useState("");
+  const [gain, setGain] = useState("");
+  const [isCamSettingsAuto, setCamSettingsIsAuto] = useState(true);
+
   const [laserNames, setLaserNames] = useState([]);
+  const [sliderIllu1Value, setSliderIllu1Value] = useState(0);
   const [isIllumination1Checked, setisIllumination1Checked] = useState(false);
   const [isIllumination2Checked, setisIllumination2Checked] = useState(false);
   const [isIllumination3Checked, setisIllumination3Checked] = useState(false);
-  const [histogrammY, setHistogrammY] = useState([]);
+
+  // For histogram
   const [histogrammX, setHistogrammX] = useState([]);
+  const [histogrammY, setHistogrammY] = useState([]);
   const [histogramActive, setHistogramActive] = useState(false);
-  const chartContainer = useRef(null); // Ref for the chart container
-  const socket = useWebSocket();
+  const chartContainer = useRef(null);
   const chartRef = useRef(null);
 
-  // connect to websocket - can we merge this with the second useEffect?
+  // ImJoy
+  const [imjoyAPI, setImjoyAPI] = useState(null);
+
+  /****************************************************
+   * Example:  WebSocket and side-effects
+   ****************************************************/
   useEffect(() => {
     if (!socket) return;
 
+    // Listen for image updates
     socket.on("signal", (data) => {
       const jdata = JSON.parse(data);
       if (jdata.name === "sigUpdateImage" || jdata.name === "sigImageUpdated") {
-        // Assuming image is sent as base64 string
         const imgSrc = `data:image/jpeg;base64,${jdata.image}`;
         setStreamUrl(imgSrc);
+        // <-- CALL THE PROP so that App.js can store the image in sharedImage
+        if (onImageUpdate) onImageUpdate(imgSrc);
       }
     });
-
-    // On reload, check backend state and resume the stream
-    const checkStreamStatus = async () => {
-      try {
-        const response = await fetch(
-          `{hostIP}:{hostPort}/ViewController/getLiveViewActive`
-        );
-        const data = await response.json();
-        if (data) setIsStreamRunning(true);
-      } catch (error) {
-        console.error("Error checking stream status:", error);
-      }
-    };
-    checkStreamStatus();
 
     return () => {
       socket.off("signal");
     };
   }, [socket]);
 
-  // connect to the websocket
   useEffect(() => {
     if (!socket) return;
+
+    // Listen for histogram
     socket.on("signal", (data) => {
       const jdata = JSON.parse(data);
       if (jdata.name === "sigHistogramComputed") {
@@ -132,131 +104,83 @@ const LiveView = ({ hostIP, hostPort }) => {
       }
     });
 
-    // Clean up the chart on component unmount
+    // Clean up the chart on unmount
     return () => {
-      if (ChartJS.getChart("histogramChart")) {
-        ChartJS.getChart("histogramChart").destroy();
+      if (chartRef.current && chartRef.current.destroy) {
+        chartRef.current.destroy();
       }
     };
   }, [socket]);
 
+  // Check if histogram is active
   useEffect(() => {
     const checkHistogramStatus = async () => {
       try {
         const response = await fetch(
           `${hostIP}:${hostPort}/HistogrammController/histogrammActive`
         );
-        if (response.status !== 404) {
-          setHistogramActive(true);
-        } else {
-          setHistogramActive(false);
-        }
+        if (response.status !== 404) setHistogramActive(true);
+        else setHistogramActive(false);
       } catch (error) {
-        console.error("Error checking histogram status:", error);
         setHistogramActive(false);
       }
     };
     checkHistogramStatus();
-  }, []);
+  }, [hostIP, hostPort]);
 
-  const histogramData = {
-    labels: histogrammX,
-    datasets: [
-      {
-        label: "Histogram",
-        data: histogrammY,
-        borderWidth: 1,
-        backgroundColor: "rgba(63, 81, 181, 0.7)", // Material Design color for bars
-        borderColor: "rgba(63, 81, 181, 1)", // Material Design color for border
-      },
-    ],
-  };
-
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: false,
-      },
-      title: {
-        display: true,
-        text: "Histogram",
-        font: {
-          size: 18,
-          family: "'Roboto', 'Helvetica', 'Arial', sans-serif",
-        },
-        color: "#333",
-      },
-    },
-    scales: {
-      x: {
-        max: 1024,
-        title: {
-          display: true,
-          text: "Intensity",
-          font: {
-            size: 14,
-            family: "'Roboto', 'Helvetica', 'Arial', sans-serif",
-          },
-          color: "#333",
-        },
-      },
-      y: {
-        beginAtZero: true,
-        title: {
-          display: true,
-          text: "Counts",
-          font: {
-            size: 14,
-            family: "'Roboto', 'Helvetica', 'Arial', sans-serif",
-          },
-          color: "#333",
-        },
-      },
-    },
-  };
-
-  // Effect that reacts on changes in the isStreamRunning state
-  /*
-  useEffect(() => {
-    if (isStreamRunning) {
-      setStreamUrl(`${hostIP}:${hostPort}/RecordingController/video_feeder`);
-    } else {
-      setStreamUrl("");
+  // 3) Handler for slider changes (when the user stops dragging)
+  const handleRangeChangeCommitted = async (event, newValue) => {
+    try {
+      // Send updated minVal/maxVal to the backend
+      const url = `${hostIP}:${hostPort}/HistogrammController/setMinMaxValues?minVal=${newValue[0]}&maxVal=${newValue[1]}`;
+      const response = await fetch(url, { method: "POST" });
+      if (!response.ok) {
+        throw new Error("Failed to update min/max values on the server");
+      }
+      console.log("Updated min/max values on backend");
+    } catch (error) {
+      console.error("Error updating min/max values:", error);
     }
-  }, [isStreamRunning]);
-  */
+  };
+
+  // 2) Handler for slider changes (while the user is dragging)
+  const handleRangeChange = (event, newValue) => {
+    // newValue is an array [newMin, newMax]
+    setMinVal(newValue[0]);
+    setMaxVal(newValue[1]);
+  };
+
   useEffect(() => {
-    // Überprüfen des Zustands der URL beim Laden der Komponente
-    const checkStreamStatus = async () => {
+    // 1) Fetch the min/max gray values on load
+    const fetchMinMaxValues = async () => {
       try {
         const response = await fetch(
-          `${hostIP}:${hostPort}/ViewController/getLiveViewActive`
+          `${hostIP}:${hostPort}/HistogrammController/minmaxvalues`
         );
+        if (!response.ok) {
+          throw new Error("Failed to fetch min/max values");
+        }
         const data = await response.json();
-        setIsStreamRunning(data);
+        // Expecting data structure: { "minVal": <number>, "maxVal": <number> }
+        setMinVal(data.minVal);
+        setMaxVal(data.maxVal);
       } catch (error) {
-        console.error("Error fetching stream status:", error);
+        console.error("Error fetching min/max values:", error);
       }
     };
 
-    checkStreamStatus();
+    fetchMinMaxValues();
   }, [hostIP, hostPort]);
 
-  // Fetch laser names dynamically
+  // Get laser names
   useEffect(() => {
     const fetchLaserNames = async () => {
       try {
-        console.log(
-          "Fetching laser names..." +
-            `${hostIP}:${hostPort}/LaserController/getLaserNames`
-        );
         const response = await fetch(
           `${hostIP}:${hostPort}/LaserController/getLaserNames`
         );
         const data = await response.json();
-        setLaserNames(data); // Update state with laser names
+        setLaserNames(data);
       } catch (error) {
         console.error("Failed to fetch laser names:", error);
       }
@@ -265,7 +189,7 @@ const LiveView = ({ hostIP, hostPort }) => {
     fetchLaserNames();
   }, [hostIP, hostPort]);
 
-  // if the laser name changes, we want to load the value and set it to the slider
+  // If the first laser name is available, fetch its value
   useEffect(() => {
     const fetchLaserValues = async () => {
       try {
@@ -279,69 +203,21 @@ const LiveView = ({ hostIP, hostPort }) => {
       }
     };
     if (laserNames.length > 0) fetchLaserValues();
+  }, [laserNames, hostIP, hostPort]);
 
-  }, [laserNames]);
-    
-
-
-  const [imjoyAPI, setImjoyAPI] = useState(null);
-
-  useEffect(() => {
-    // Function to initialize ImJoy when the script loads
-    const loadImJoy = async () => {
-      const app = await window.loadImJoyBasicApp({
-        process_url_query: true,
-        show_window_title: false,
-        show_progress_bar: true,
-        show_empty_window: true,
-        menu_style: { position: "absolute", right: 0, top: "2px" },
-        window_style: { width: "100%", height: "100%" },
-        main_container: null,
-        menu_container: "menu-container",
-        window_manager_container: "window-container",
-        imjoy_api: {}, // override some imjoy API functions here
-      });
-
-      // Store the API in state or a ref so it can be accessed later
-      setImjoyAPI(app.imjoy.api);
-
-      // Add menu item for loading new plugins
-      app.addMenuItem({
-        label: "➕ Load Plugin",
-        callback() {
-          const uri = prompt(
-            `Please type an ImJoy plugin URL`,
-            "https://github.com/imjoy-team/imjoy-plugins/blob/master/repository/ImageAnnotator.imjoy.html"
-          );
-          if (uri) app.loadPlugin(uri);
-        },
-      });
-    };
-
-    // Dynamically load ImJoy script and initialize the app
-    const script = document.createElement("script");
-    script.src = "https://lib.imjoy.io/imjoy-loader.js";
-    script.async = true;
-    script.onload = loadImJoy; // Call loadImJoy once the script is loaded
-    document.body.appendChild(script);
-
-    return () => {
-      document.body.removeChild(script); // Clean up script on component unmount
-    };
-  }, []);
-
+  /****************************************************
+   * Example:  ImJoy Loader
+   ****************************************************/
   const imageToImJoy = async () => {
     if (!imjoyAPI) {
       console.error("ImJoy API is not loaded yet");
       return;
     }
-
     try {
-      const imageURL = `${hostIP}:${hostPort}/RecordingController/snapNumpyToFastAPI?resizeFactor=1`; //capture?_cb=ImJoy`;  // https://localhost:8001/
+      const imageURL = `${hostIP}:${hostPort}/RecordingController/snapNumpyToFastAPI?resizeFactor=1`;
       const response = await fetch(imageURL);
       const bytes = await response.arrayBuffer();
 
-      // Load ImageJ.JS in a window
       let ij = await imjoyAPI.getWindow("ImageJ.JS");
       if (!ij) {
         ij = await imjoyAPI.createWindow({
@@ -352,208 +228,88 @@ const LiveView = ({ hostIP, hostPort }) => {
       } else {
         await ij.show();
       }
-
-      // Display the captured image in ImageJ
       await ij.viewImage(bytes, { name: "image.jpeg" });
     } catch (error) {
       console.error("Error sending to ImJoy:", error);
     }
   };
 
-  const videoRef = useRef(null);
-  const classes = useStyles();
-  const [exposureTime, setExposureTime] = useState("");
-  const [isCamSettingsAuto, setCamSettingsIsAuto] = useState(true);
-  const [gain, setGain] = useState("");
-  const [streamUrl, setStreamUrl] = useState("");
-  const [isRecording, setIsRecording] = useState(false);
-
-  const snapPhoto = async (event) => {
-    // https://localhost:8001/RecordingController/snapImage?output=false&toList=true
+  /****************************************************
+   * Handler Functions
+   ****************************************************/
+  const snapPhoto = async () => {
     const url = `${hostIP}:${hostPort}/RecordingController/snapImage?output=false&toList=true`;
     try {
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error("Network response was not ok");
       }
+      console.log("Photo snapped");
     } catch (error) {
-      console.error(
-        "There has been a problem with your fetch operation: ",
-        error
-      );
+      console.error("Snap photo error:", error);
     }
-    console.log("Photo snapped");
   };
 
   const startRecording = () => {
-    console.log("Recording started");
     setIsRecording(true);
-    // https://localhost:8001/RecordingController/startRecording?mSaveFormat=4
     const url = `${hostIP}:${hostPort}/RecordingController/startRecording?mSaveFormat=4`;
-    try {
-      const response = fetch(url);
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
-    } catch (error) {
-      console.error(
-        "There has been a problem with your fetch operation: ",
-        error
-      );
-    }
+    fetch(url).catch((error) => console.error("Start recording error:", error));
   };
 
   const stopRecording = () => {
-    // https://localhost:8001/RecordingController/stopRecording
-    console.log("Recording stopped");
     setIsRecording(false);
     const url = `${hostIP}:${hostPort}/RecordingController/stopRecording`;
-    try {
-      const response = fetch(url);
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
-    } catch (error) {
-      console.error(
-        "There has been a problem with your fetch operation: ",
-        error
-      );
-    }
+    fetch(url).catch((error) => console.error("Stop recording error:", error));
   };
 
   const handleCamSettingsSwitchChange = (event) => {
     setCamSettingsIsAuto(event.target.checked);
-    // Additional logic to handle camera settings
-    // https://localhost:8001/SettingsController/setDetectorMode?isAuto=true
     const url = `${hostIP}:${hostPort}/SettingsController/setDetectorMode?isAuto=${event.target.checked}`;
-    try {
-      const response = fetch(url);
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
-    } catch (error) {
-      console.error(
-        "There has been a problem with your fetch operation: ",
-        error
-      );
-    }
+    fetch(url).catch((error) => console.error("Cam mode error:", error));
   };
 
   const handleExposureChange = async (event) => {
     setExposureTime(event.target.value);
     const url = `${hostIP}:${hostPort}/SettingsController/setDetectorExposureTime?exposureTime=${event.target.value}`;
-    try {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
-    } catch (error) {
-      console.error(
-        "There has been a problem with your fetch operation: ",
-        error
-      );
-    }
+    fetch(url).catch((error) => console.error("Exposure error:", error));
   };
 
   const handleGainChange = async (event) => {
     setGain(event.target.value);
-    // Additional logic to handle gain change
     const url = `${hostIP}:${hostPort}/SettingsController/setDetectorGain?gain=${event.target.value}`;
-    try {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
-    } catch (error) {
-      console.error(
-        "There has been a problem with your fetch operation: ",
-        error
-      );
-    }
+    fetch(url).catch((error) => console.error("Gain error:", error));
   };
 
   const handleIlluminationSliderChange = async (event, laserIndex) => {
     const value = event.target.value;
-    if (laserNames[laserIndex]) {
-      const laserName = encodeURIComponent(laserNames[laserIndex]); // Use the laser name dynamically
-      const url = `${hostIP}:${hostPort}/LaserController/setLaserValue?laserName=${laserName}&value=${value}`;
-      try {
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error("Network response was not ok");
-        }
-      } catch (error) {
-        console.error(
-          "There has been a problem with your fetch operation: ",
-          error
-        );
-      }
-    }
+    if (!laserNames[laserIndex]) return;
+    const laserName = encodeURIComponent(laserNames[laserIndex]);
+    const url = `${hostIP}:${hostPort}/LaserController/setLaserValue?laserName=${laserName}&value=${value}`;
+    fetch(url).catch((error) => console.error("Laser value error:", error));
+
+    // Update local state if needed
+    if (laserIndex === 0) setSliderIllu1Value(value);
   };
 
   const handleIlluminationCheckboxChange = async (event, laserIndex) => {
     const activeStatus = event.target.checked ? "true" : "false";
+    if (!laserNames[laserIndex]) return;
+    const laserName = encodeURIComponent(laserNames[laserIndex]);
+    const url = `${hostIP}:${hostPort}/LaserController/setLaserActive?laserName=${laserName}&active=${activeStatus}`;
+    fetch(url).catch((error) => console.error("Laser active error:", error));
 
-    // Update the state locally
-    if (laserIndex === 0) {
-      setisIllumination1Checked(event.target.checked);
-    } else if (laserIndex === 1) {
-      setisIllumination2Checked(event.target.checked);
-    } else if (laserIndex === 2) {
-      setisIllumination3Checked(event.target.checked);
-    }
-
-    if (laserNames[laserIndex]) {
-      const laserName = encodeURIComponent(laserNames[laserIndex]);
-      const url = `${hostIP}:${hostPort}/LaserController/setLaserActive?laserName=${laserName}&active=${activeStatus}`;
-      try {
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error("Network response was not ok");
-        }
-      } catch (error) {
-        console.error(
-          "There has been a problem with your fetch operation: ",
-          error
-        );
-      }
-    }
+    // Update local state
+    if (laserIndex === 0) setisIllumination1Checked(event.target.checked);
+    else if (laserIndex === 1) setisIllumination2Checked(event.target.checked);
+    else if (laserIndex === 2) setisIllumination3Checked(event.target.checked);
   };
 
-  /* // REST MJPEG
-  const handleStreamToggle = async () => {
-    try {
-      const newStatus = !isStreamRunning;
-      const url = `${hostIP}:${hostPort}/ViewController/setLiveViewActive?active=${newStatus}`;
-      try {
-        const response = fetch(url);
-        if (!response.ok) {
-          throw new Error("Network response was not ok");
-        }
-      } catch (error) {
-        console.error(
-          "There has been a problem with your fetch operation: ",
-          error
-        );
-      }
-      setIsStreamRunning(newStatus);
-    } catch (error) {
-      console.error("Error toggling stream status:", error);
-    }
-  };
-  */
-
+  // Toggle the live stream via the API
   const toggleStream = async (isActive) => {
-    const actionUrl = `${hostIP}:${hostPort}/ViewController/setLiveViewActive?active=${isActive}`;
-    try {
-      const response = await fetch(actionUrl, { method: "GET" });
-      if (!response.ok) {
-        throw new Error(`Failed to set stream active state to ${isActive}`);
-      }
-      console.log(`Stream ${isActive ? "started" : "stopped"}`);
-    } catch (error) {
-      console.error("Error toggling stream:", error);
-    }
+    const url = `${hostIP}:${hostPort}/ViewController/setLiveViewActive?active=${isActive}`;
+    await fetch(url).catch((error) =>
+      console.error("Error toggling stream:", error)
+    );
   };
 
   const handleStreamToggle = async () => {
@@ -562,241 +318,302 @@ const LiveView = ({ hostIP, hostPort }) => {
     setIsStreamRunning(newStatus);
   };
 
+  /****************************************************
+   * Histogram chart config
+   ****************************************************/
+  const histogramData = {
+    labels: histogrammX,
+    datasets: [
+      {
+        label: "Histogram",
+        data: histogrammY,
+        borderWidth: 1,
+        backgroundColor: "rgba(63, 81, 181, 0.7)",
+        borderColor: "rgba(63, 81, 181, 1)",
+      },
+    ],
+  };
+
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      title: {
+        display: true,
+        text: "Histogram",
+        font: { size: 18 },
+        color: "#333",
+      },
+    },
+    scales: {
+      x: {
+        max: 1024,
+        title: {
+          display: true,
+          text: "Intensity",
+          font: { size: 14 },
+          color: "#333",
+        },
+      },
+      y: {
+        beginAtZero: true,
+        title: {
+          display: true,
+          text: "Counts",
+          font: { size: 14 },
+          color: "#333",
+        },
+      },
+    },
+  };
+
   return (
-    <div>
-      <Container component="main" sx={{ flexGrow: 1, p: 3, pt: 10 }}>
-        <Grid container spacing={3}>
-          <Grid item xs={12} sm={8}>
-            <Box mb={5}>
-              <Typography variant="h6" gutterBottom>
-                Stream Control
-              </Typography>
-              <Button
-                onClick={handleStreamToggle}
-                variant="contained"
-                color={isStreamRunning ? "secondary" : "primary"}
-              >
-                {isStreamRunning ? <Stop /> : <PlayArrow />}
-                {isStreamRunning ? "Stop Stream" : "Start Stream"}
-              </Button>
-              <Button onClick={snapPhoto}>
-                <CameraAlt />
-              </Button>
-              <Button
-                variant="contained"
-                onClick={imageToImJoy}
-                color="primary"
-                startIcon={
-                  <img
-                    alt="ImJoy"
-                    src="https://biii.eu/sites/default/files/2019-08/imjoy-icon.png"
-                    style={{ width: 24, height: 24 }}
-                  />
-                }
-                style={{ marginLeft: 8 }}
-              >
-                To ImJoy
-              </Button>
-              <Button
-                onClick={startRecording}
-                className={isRecording ? classes.blinking : ""}
-              >
-                <FiberManualRecord />
-              </Button>
-              <Button onClick={stopRecording}>
-                <StopIcon />
-              </Button>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={isCamSettingsAuto}
-                    onChange={handleCamSettingsSwitchChange}
-                    name="cameraSettings"
-                    color="primary"
-                  />
-                }
-                label={
-                  isCamSettingsAuto
-                    ? "Automatic Camera Settings"
-                    : "Manual Camera Settings"
-                }
-              />
-              <Typography variant="h6" gutterBottom>
-                Video Display
-              </Typography>
-              {/*
-              {streamUrl ? (
-                <img
-                  style={{ width: "100%", height: "auto" }}
-                  allow="autoplay"
-                  src={streamUrl}
-                  ref={videoRef}
-                  alt={"Live Stream"}
-                ></img>
-              ) : null}
-                */}
-              {streamUrl && (
-                <img
-                  style={{ width: "100%", height: "auto" }}
-                  src={streamUrl}
-                  alt="Live Stream"
-                />
-              )}
-              <Grid item xs={12}>
-                {histogramActive && (
-                  <Box
-                    sx={{
-                      width: "100%",
-                      maxWidth: 600,
-                      margin: "auto",
-                      padding: 2,
-                      backgroundColor: "#fafafa",
-                      boxShadow: "0px 3px 6px rgba(0, 0, 0, 0.1)",
-                      borderRadius: 2,
-                    }}
-                    ref={chartContainer} // Attach the ref here
-                  >
-                    <Typography
-                      variant="h6"
-                      align="center"
-                      sx={{ mb: 2, fontWeight: "bold" }}
-                    >
-                      Histogram
-                    </Typography>
-                    <Box sx={{ height: 400 }}>
-                      {histogramActive ? (
-                        histogrammX.length && histogrammY.length ? ( // Render only if data is available
-                          <Bar
-                            id="histogramChart"
-                            data={histogramData}
-                            options={options}
-                            ref={chartRef} // Attach the ref here
-                          />
-                        ) : (
-                          <Typography align="center">
-                            Loading data...
-                          </Typography>
-                        )
-                      ) : (
-                        <Typography align="center">
-                          Histogram not available
-                        </Typography>
-                      )}
-                    </Box>
-                  </Box>
-                )}
-              </Grid>
-
-              <TextField
-                id="exposure-time"
-                label="Exposure Time"
-                type="number"
-                value={exposureTime}
-                onChange={handleExposureChange}
-              />
-              <TextField
-                id="gain"
-                label="Gain"
-                type="number"
-                value={gain}
-                onChange={handleGainChange}
-              />
-            </Box>
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <Box mb={5}>
-              <Typography variant="h6" gutterBottom>
-                Stage Control
-              </Typography>
-            </Box>
-            <Box mb={5}>
-              <XYZControls hostIP={hostIP} hostPort={hostPort} />
-            </Box>
-            <Box mb={5}>
-              <Typography variant="h6" gutterBottom>
-                Illumination
-              </Typography>
-              {laserNames && laserNames.length > 0 ? (
-                <>
-                  {laserNames.map((laserName, index) => (
-                    <div
-                      key={index}
-                      style={{ display: "flex", alignItems: "center" }}
-                    >
-                      <Typography variant="h8" gutterBottom>
-                        {laserName}:{" "}
-                        {index === 0
-                          ? sliderIllu1Value
-                          : index === 1
-                          ? sliderIllu2Value
-                          : sliderIllu3Value}
-                      </Typography>
-                      <Slider
-                        value={
-                          index === 0
-                            ? sliderIllu1Value
-                            : index === 1
-                            ? sliderIllu2Value
-                            : sliderIllu3Value
-                        }
-                        min={0}
-                        max={1023}
-                        onChange={(event) =>
-                          handleIlluminationSliderChange(event, index)
-                        }
-                        aria-labelledby="continuous-slider"
-                      />
-                      <Checkbox
-                        checked={
-                          index === 0
-                            ? isIllumination1Checked
-                            : index === 1
-                            ? isIllumination2Checked
-                            : isIllumination3Checked
-                        }
-                        onChange={(event) =>
-                          handleIlluminationCheckboxChange(event, index)
-                        }
-                      />
-                    </div>
-                  ))}
-                </>
-              ) : (
-                <Typography>Loading laser names...</Typography>
-              )}{" "}
-            </Box>
-          </Grid>
-        </Grid>
-      </Container>
-
-      <Box component="footer" p={2} mt={5} bgcolor="background.paper">
-        <Typography variant="h6" align="center" fontWeight="bold">
-          (C) CopyRight openUC2 GmbH (openUC2.com)
-        </Typography>
-      </Box>
-      <div
-        style={{
-          width: "800px", // Set a width for the container
-          height: "600px", // Set a height for the container
-          border: "1px solid #ccc",
+    <Box sx={{ height: "100vh", display: "flex", flexDirection: "row" }}>
+      {/****************************************************************
+       *  LEFT COLUMN (LiveView + Camera Settings) - STICKY
+       *  We make this column position: 'sticky', so it stays put.
+       ****************************************************************/}
+      <Box
+        sx={{
+          width: "60%",
+          position: "sticky",
+          top: 0,
+          alignSelf: "flex-start",
           overflow: "hidden",
-          position: "relative",
+          borderRight: "1px solid #eee",
+          p: 2,
+          zIndex: 10, // keep it above the scrolled area if necessary
         }}
       >
-        <div
-          id="menu-container"
-          style={{ height: "50px", overflow: "hidden" }}
-        ></div>
-        <div
-          id="window-container"
-          style={{
-            width: "100%",
-            height: "calc(100% - 50px)", // Remaining space after the menu
-            overflow: "auto", // Allow scroll if content overflows
-          }}
-        ></div>
-      </div>
-    </div>
+        <Typography variant="h6" gutterBottom>
+          Microscope Stream
+        </Typography>
+        <Button
+          onClick={handleStreamToggle}
+          variant="contained"
+          color={isStreamRunning ? "secondary" : "primary"}
+        >
+          {isStreamRunning ? <Stop /> : <PlayArrow />}
+          {isStreamRunning ? "Stop Stream" : "Start Stream"}
+        </Button>
+        <Button onClick={snapPhoto}>
+          <CameraAlt />
+        </Button>
+        <Button
+          variant="contained"
+          onClick={imageToImJoy}
+          color="primary"
+          startIcon={
+            <img
+              alt="ImJoy"
+              src="https://biii.eu/sites/default/files/2019-08/imjoy-icon.png"
+              style={{ width: 24, height: 24 }}
+            />
+          }
+          sx={{ ml: 1 }}
+        >
+          To ImJoy
+        </Button>
+        <Button
+          onClick={startRecording}
+          className={isRecording ? classes.blinking : ""}
+        >
+          <FiberManualRecord />
+        </Button>
+        <Button onClick={stopRecording}>
+          <StopIcon />
+        </Button>
+
+        <Box sx={{ mt: 2 }}>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={isCamSettingsAuto}
+                onChange={handleCamSettingsSwitchChange}
+                name="cameraSettings"
+                color="primary"
+              />
+            }
+            label={
+              isCamSettingsAuto
+                ? "Automatic Camera Settings"
+                : "Manual Camera Settings"
+            }
+          />
+        </Box>
+
+        <Box sx={{ mt: 2 }}>
+          <TextField
+            label="Exposure Time"
+            type="number"
+            value={exposureTime}
+            onChange={handleExposureChange}
+            sx={{ mr: 2 }}
+          />
+          <TextField
+            label="Gain"
+            type="number"
+            value={gain}
+            onChange={handleGainChange}
+          />
+        </Box>
+
+        {/*****************************************************************
+         * Container with image (left) + slider (right)
+         * We fix a height for the container so the slider can match it.
+         *****************************************************************/}
+        <Grid container sx={{ height: 500 }}>
+          {/* Left side: the image */}
+          <Grid item xs={11} sx={{ height: "100%" }}>
+            {streamUrl ? (
+              <img
+                src={streamUrl}
+                alt="Live Stream"
+                style={{
+                  width: "auto",
+                  height: "100%", // fill vertical space
+                  display: "block",
+                }}
+              />
+            ) : (
+              <Typography>No stream URL loaded</Typography>
+            )}
+          </Grid>
+
+          {/* Right side: vertical slider */}
+          <Grid
+            item
+            xs={1}
+            sx={{
+              height: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Slider
+              orientation="vertical"
+              value={[minVal, maxVal]}
+              onChange={handleRangeChange}
+              onChangeCommitted={handleRangeChangeCommitted}
+              min={0}
+              max={65535} // or your actual image depth
+              sx={{ height: "90%" }} // slightly smaller or "100%"
+              // Show value labels always:
+              valueLabelDisplay="on"
+              // Format them as “Min: ###” and “Max: ###”
+              valueLabelFormat={(val, index) =>
+                index === 0 ? `Min: ${val}` : `Max: ${val}`
+              }
+              aria-labelledby="range-slider"
+            />
+          </Grid>
+        </Grid>
+
+        <Box sx={{ mt: 2 }}>
+          {histogramActive && (
+            <Box
+              sx={{
+                width: "100%",
+                maxWidth: 600,
+                margin: "auto",
+                p: 2,
+                backgroundColor: "#fafafa",
+                boxShadow: "0px 3px 6px rgba(0, 0, 0, 0.1)",
+                borderRadius: 2,
+              }}
+              ref={chartContainer}
+            >
+              <Typography variant="h6" align="center" sx={{ mb: 2 }}>
+                Histogram
+              </Typography>
+              <Box sx={{ height: 300 }}>
+                {histogrammX.length && histogrammY.length ? (
+                  <Bar
+                    id="histogramChart"
+                    data={histogramData}
+                    options={options}
+                    ref={chartRef}
+                  />
+                ) : (
+                  <Typography align="center">Loading data...</Typography>
+                )}
+              </Box>
+            </Box>
+          )}
+        </Box>
+      </Box>
+
+      {/****************************************************************
+       *  RIGHT COLUMN (Stage + Illumination) - SCROLLABLE
+       ****************************************************************/}
+      <Box
+        sx={{
+          width: "40%",
+          height: "100%",
+          overflowY: "auto",
+          p: 2,
+          m: 2,
+          boxSizing: "border-box", // So padding is included in total width
+        }}
+      >
+        <Box mb={3} sx={{ width: "90%" }}>
+          <Typography variant="h6" gutterBottom>
+            Stage Control
+          </Typography>
+          <XYZControls hostIP={hostIP} hostPort={hostPort} />
+        </Box>
+
+        <Box mb={3} sx={{ width: "90%" }}>
+          <Typography variant="h6" gutterBottom>
+            Illumination
+          </Typography>
+          {laserNames && laserNames.length > 0 ? (
+            laserNames.map((laserName, index) => {
+              const sliderVal =
+                index === 0
+                  ? sliderIllu1Value
+                  : index === 1
+                  ? sliderIllu2Value
+                  : sliderIllu3Value;
+              const checkedVal =
+                index === 0
+                  ? isIllumination1Checked
+                  : index === 1
+                  ? isIllumination2Checked
+                  : isIllumination3Checked;
+
+              return (
+                <Box
+                  key={laserName}
+                  sx={{ display: "flex", alignItems: "center", mb: 1 }}
+                >
+                  <Typography sx={{ width: 80 }}>{laserName}</Typography>
+                  <Slider
+                    value={sliderVal}
+                    min={0}
+                    max={1023}
+                    onChange={(event) =>
+                      handleIlluminationSliderChange(event, index)
+                    }
+                    sx={{ flex: 1, mx: 2 }}
+                  />
+                  <Checkbox
+                    checked={checkedVal}
+                    onChange={(event) =>
+                      handleIlluminationCheckboxChange(event, index)
+                    }
+                  />
+                </Box>
+              );
+            })
+          ) : (
+            <Typography>Loading laser names...</Typography>
+          )}
+        </Box>
+      </Box>
+    </Box>
   );
 };
 

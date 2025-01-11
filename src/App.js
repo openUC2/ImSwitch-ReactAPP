@@ -3,9 +3,12 @@ import LiveView from "./components/LiveView";
 import SocketView from "./components/SocketView";
 import HistoScanController from "./components/HistoScanController";
 import TimelapseController from "./components/TimelapseController";
+import AboutPage from "./components/AboutPage";
 import { LiveWidgetProvider } from "./context/LiveWidgetContext"; // Import the context provider
 import Tab_Widgets from "./components/Tab_Widgets";
 import LightsheetController from "./components/LightsheetController";
+import ImJoyView from "./components/ImJoyView"; // <-- new file
+
 import {
   Menu as MenuIcon,
   Dashboard as DashboardIcon,
@@ -33,6 +36,8 @@ import { getAllFilesAPI } from "./FileManager/api/getAllFilesAPI";
 import { downloadFile } from "./FileManager/api/downloadFileAPI";
 import { api } from "./FileManager/api/api";
 import "./FileManager/App.scss";
+import uc2Logo from "./assets/ouc2_logo_qaudratic.png";
+
 
 import {
   Button,
@@ -93,6 +98,7 @@ function App() {
   const [selectedPlugin, setSelectedPlugin] = useState("LiveView"); // Control which plugin to show
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true); // State to toggle between light and dark themes
+  const [sharedImage, setSharedImage] = useState(null);
   const [layout, setLayout] = useState([
     { i: "widget1", x: 0, y: 0, w: 2, h: 2 },
     { i: "widget2", x: 2, y: 0, w: 2, h: 2 },
@@ -290,7 +296,7 @@ function App() {
                 color="default"
                 inputProps={{ "aria-label": "toggle theme" }}
               />
-              <Avatar src="/logo192.png" />
+              <Avatar src={uc2Logo} />
             </Toolbar>
           </AppBar>
 
@@ -372,6 +378,12 @@ function App() {
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "About" : ""} />
               </ListItem>
+              <ListItem button onClick={() => handlePluginChange("ImJoy")}>
+                <ListItemIcon>
+                  <BuildIcon />
+                </ListItemIcon>
+                <ListItemText primary={sidebarVisible ? "ImJoy" : ""} />
+              </ListItem>
 
               {/* Add a minimize/maximize button */}
               <ListItem
@@ -393,8 +405,16 @@ function App() {
           >
             {selectedPlugin === "LiveView" && (
               <LiveWidgetProvider>
-                <LiveView hostIP={hostIP} hostPort={hostPort} />
+                <LiveView
+                  hostIP={hostIP}
+                  hostPort={hostPort}
+                  // pass down a setter or context for the image if needed
+                  onImageUpdate={(img) => setSharedImage(img)}
+                />
               </LiveWidgetProvider>
+            )}
+            {selectedPlugin === "ImJoyView" && (
+              <ImJoyView sharedImage={sharedImage} />
             )}
             {selectedPlugin === "HistoScan" && (
               <WidgetContextProvider>
@@ -412,31 +432,30 @@ function App() {
                 </MCTProvider>
               </WidgetContextProvider>
             )}
+            {selectedPlugin === "About" && <AboutPage />}
             {selectedPlugin === "FileManager" && (
               <div className="app">
-              <div className="file-manager-container">
-                <FileManager
-                  baseUrl={`${hostIP}:${hostPort}`}
-                  files={files}
-                  fileUploadConfig={fileUploadConfig}
-                  isLoading={isLoading}
-                  onCreateFolder={handleCreateFolder}
-                  onFileUploading={handleFileUploading}
-                  onFileUploaded={handleFileUploaded}
-                  onPaste={handlePaste}
-                  onRename={handleRename}
-                  onDownload={handleDownload}
-                  onDelete={handleDelete}
-                  onRefresh={handleRefresh}
-                  layout="grid"
-                  enableFilePreview
-                  maxFileSize={10485760}
-                  filePreviewPath={`${hostIP}:${hostPort}/`}
-                  acceptedFileTypes=".txt, .png, .jpg, .jpeg, .pdf, .doc, .docx, .exe, .js, .csv"
-                  height="100%"
-                  width="100%"
-                />
-              </div>
+                <div className="file-manager-container">
+                  <FileManager
+                    baseUrl={`${hostIP}:${hostPort}`}
+                    files={files}
+                    fileUploadConfig={fileUploadConfig}
+                    isLoading={isLoading}
+                    onCreateFolder={handleCreateFolder}
+                    onFileUploading={handleFileUploading}
+                    onFileUploaded={handleFileUploaded}
+                    onPaste={handlePaste}
+                    onRename={handleRename}
+                    onDownload={handleDownload}
+                    onDelete={handleDelete}
+                    onRefresh={handleRefresh}
+                    layout="grid"
+                    enableFilePreview
+                    maxFileSize={10485760}
+                    filePreviewPath={`${hostIP}:${hostPort}/`}
+                    acceptedFileTypes=".txt, .png, .jpg, .jpeg, .pdf, .doc, .docx, .exe, .js, .csv"
+                  />
+                </div>
               </div>
             )}
             {selectedPlugin === "Lightsheet" && (

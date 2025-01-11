@@ -23,7 +23,7 @@
         cursor: pointer;
         background-color: rgb(0, 0, 0, 0.55) !important;
         border-radius: 3px;
-        color: white;
+        color: black;
         text-shadow: 0px 0px 1px white;
       }
 
@@ -54,7 +54,7 @@
       z-index: 3;
       top: 105%;
       right: 22%;
-      background-color: white;
+      background-color: black;
       margin: 0;
       border: 1px solid #c4c4c4;
       border-radius: 5px;
@@ -87,7 +87,7 @@
   }
 
   .item-action {
-    background-color: white;
+    background-color: rgb(0 0 0 / 100%) !important;
     display: flex;
     align-items: center;
     gap: 7px;
@@ -118,7 +118,7 @@
     padding: 0 8px !important;
 
     &:focus {
-      background-color: rgb(0 0 0 / 12%);
+      background-color: rgb(0 0 0 / 100%);
       border-radius: 3px;
     }
   }
