@@ -7,6 +7,7 @@ import AboutPage from "./components/AboutPage";
 import { LiveWidgetProvider } from "./context/LiveWidgetContext"; // Import the context provider
 import Tab_Widgets from "./components/Tab_Widgets";
 import LightsheetController from "./components/LightsheetController";
+import BlocklyController from "./components/BlocklyController";
 import ImJoyView from "./components/ImJoyView"; // <-- new file
 
 import {
@@ -336,6 +337,12 @@ function App() {
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "HistoScan" : ""} />
               </ListItem>
+              <ListItem button onClick={() => handlePluginChange("Blockly")}>
+                <ListItemIcon>
+                  <SettingsIcon />
+                </ListItemIcon>
+                <ListItemText primary={sidebarVisible ? "Blockly" : ""} />
+              </ListItem>
               <ListItem button onClick={() => handlePluginChange("Timelapse")}>
                 <ListItemIcon>
                   <AccessTimeIcon />
@@ -419,6 +426,11 @@ function App() {
             {selectedPlugin === "HistoScan" && (
               <WidgetContextProvider>
                 <HistoScanController hostIP={hostIP} hostPort={hostPort} />
+              </WidgetContextProvider>
+            )}
+            {selectedPlugin === "Blockly" && (
+              <WidgetContextProvider>
+                <BlocklyController />
               </WidgetContextProvider>
             )}
             {selectedPlugin === "Timelapse" && (
