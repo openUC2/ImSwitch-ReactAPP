@@ -3,7 +3,7 @@ export const downloadFile = async (files, hostname, port) => {
 
   try {
     const fileQuery = files.map((file) => `${file.path}`).join("&");
-    const url = `https://${hostname}:${port}/download/${fileQuery}`; //${import.meta.env.VITE_API_BASE_URL}/download?${fileQuery}`;
+    const url = `${hostname}:${port}/download/${fileQuery}`; //${import.meta.env.VITE_API_BASE_URL}/download?${fileQuery}`;
 
     const link = document.createElement("a");
     link.href = url;

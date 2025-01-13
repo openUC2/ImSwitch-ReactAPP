@@ -825,7 +825,7 @@ class BlocklyController extends PureComponent {
   render() {
     return (
       <div className="container">
-        <h1>Blockly Workflow Example</h1>
+        <h1>Create your Workflow</h1>
         <button onClick={this.handleGenerateJson}>Generate Workflow JSON</button>
         <BlocklyWorkspace
           className="blockly_container"
