@@ -26,6 +26,10 @@ sudo docker run -p 5000:5000 8001:8001 microscope-app
 
 In the project directory, you can run:
 
+### `npm install`
+
+Install the package using `npm install`
+
 ### `npm start`
 
 Runs the app in the development mode.\
