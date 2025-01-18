@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from "react";
 import LiveView from "./components/LiveView";
 import SocketView from "./components/SocketView";
 import HistoScanController from "./components/HistoScanController";
+import LargeFovScanController from "./components/OpenLayers";
 import TimelapseController from "./components/TimelapseController";
 import AboutPage from "./components/AboutPage";
 import { LiveWidgetProvider } from "./context/LiveWidgetContext"; // Import the context provider
@@ -337,6 +338,12 @@ function App() {
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "HistoScan" : ""} />
               </ListItem>
+              <ListItem button onClick={() => handlePluginChange("Infinity Scanning")}>
+                <ListItemIcon>
+                  <SettingsOverscanSharpIcon />
+                </ListItemIcon>
+                <ListItemText primary={sidebarVisible ? "Infinity Scanning" : ""} />
+              </ListItem>
               <ListItem button onClick={() => handlePluginChange("Blockly")}>
                 <ListItemIcon>
                   <SettingsIcon />
@@ -426,6 +433,11 @@ function App() {
             {selectedPlugin === "HistoScan" && (
               <WidgetContextProvider>
                 <HistoScanController hostIP={hostIP} hostPort={hostPort} />
+              </WidgetContextProvider>
+            )}
+            {selectedPlugin === "Infinity Scanning" && (
+              <WidgetContextProvider>
+                <LargeFovScanController hostIP={hostIP} hostPort={hostPort} />
               </WidgetContextProvider>
             )}
             {selectedPlugin === "Blockly" && (
