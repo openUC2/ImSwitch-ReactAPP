@@ -1,39 +1,61 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Paper, Grid, TextField, Button } from "@mui/material";
+import Plot from "react-plotly.js";
+import { useWebSocket } from "../context/WebSocketContext";
+
 
 const AutofocusController = ({ hostIP, hostPort }) => {
-  const [rangeZ, setRangeZ] = useState(10); // Default range for z
-  const [resolutionZ, setResolutionZ] = useState(1); // Default resolution for z
-  const [defocusZ, setDefocusZ] = useState(0); // Default defocus for z
-  const [isRunning, setIsRunning] = useState(false); // Autofocus state
+  const [rangeZ, setRangeZ] = useState(10);
+  const [resolutionZ, setResolutionZ] = useState(1);
+  const [defocusZ, setDefocusZ] = useState(0);
+  const [isRunning, setIsRunning] = useState(false);
+  const [plotData, setPlotData] = useState(null);
+  const [showPlot, setShowPlot] = useState(false);
+  const socket = useWebSocket();
+
+  useEffect(() => {
+    if (!socket) 
+      return;
+    const handleSignal = (data) => {
+      try {
+        const jdata = JSON.parse(data);
+        if (jdata.name === "sigUpdateFocusPlot") {
+          // Store focus positions in p0, contrast values in p1
+          setPlotData({ x: jdata.args.p0, y: jdata.args.p1 });
+        }
+        // ... other signals
+      } catch (error) {
+        console.error("Error parsing signal data:", error);
+      }
+    };
+    socket.on("signal", handleSignal);
+    return () => {
+      socket.off("signal", handleSignal);
+    };
+  }, [socket]);
 
   const handleStart = () => {
-    const url = `${hostIP}:${hostPort}/AufofocusController/autoFocus?` +
-      `rangez=${rangeZ}&resolutionz=${resolutionZ}&defocusz=${defocusZ}`;
-        console.log("Autofocus started:", url);
+    const url = `${hostIP}:${hostPort}/AufofocusController/autoFocus?rangez=${rangeZ}&resolutionz=${resolutionZ}&defocusz=${defocusZ}`;
     fetch(url, { method: "GET" })
       .then((response) => response.json())
-      .then((data) => {
-        console.log("Autofocus started:", data);
+      .then(() => {
         setIsRunning(true);
+        setShowPlot(false); // Hide plot when starting a new run
+        setPlotData(null);  // Clear old data
       })
-      .catch((error) => {
-        console.error("Error starting autofocus:", error);
-      });
+      .catch((error) => console.error("Error starting autofocus:", error));
   };
 
   const handleStop = () => {
-    const url = `http://${hostIP}:${hostPort}/AufofocusController/stopAutoFocus`;
-
+    const url = `${hostIP}:${hostPort}/AufofocusController/stopAutoFocus`;
     fetch(url, { method: "GET" })
       .then((response) => response.json())
-      .then((data) => {
-        console.log("Autofocus stopped:", data);
-        setIsRunning(false);
-      })
-      .catch((error) => {
-        console.error("Error stopping autofocus:", error);
-      });
+      .then(() => setIsRunning(false))
+      .catch((error) => console.error("Error stopping autofocus:", error));
+  };
+
+  const togglePlot = () => {
+    setShowPlot(!showPlot);
   };
 
   return (
@@ -65,11 +87,7 @@ const AutofocusController = ({ hostIP, hostPort }) => {
         </Grid>
 
         <Grid item xs={12}>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleStart}
-          >
+          <Button variant="contained" color="primary" onClick={handleStart}>
             Start Autofocus
           </Button>
           <Button
@@ -80,7 +98,38 @@ const AutofocusController = ({ hostIP, hostPort }) => {
           >
             Stop Autofocus
           </Button>
+          {plotData && (
+            <Button
+              variant="contained"
+              style={{ marginLeft: "10px" }}
+              onClick={togglePlot}
+            >
+              {showPlot ? "Close Plot" : "Show Plot"}
+            </Button>
+          )}
         </Grid>
+
+        {showPlot && plotData && (
+          <Grid item xs={12}>
+            <Plot
+              data={[
+                {
+                  x: plotData.x,
+                  y: plotData.y,
+                  type: "scatter",
+                  mode: "lines+markers",
+                  marker: { color: "red" },
+                },
+              ]}
+              layout={{
+                title: "Focus vs Contrast",
+                xaxis: { title: "Focus Position" },
+                yaxis: { title: "Contrast Value" },
+              }}
+              style={{ width: "100%", height: "400px" }}
+            />
+          </Grid>
+        )}
       </Grid>
     </Paper>
   );

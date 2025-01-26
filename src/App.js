@@ -10,7 +10,9 @@ import Tab_Widgets from "./components/Tab_Widgets";
 import LightsheetController from "./components/LightsheetController";
 import BlocklyController from "./components/BlocklyController";
 import ImJoyView from "./components/ImJoyView"; // <-- new file
-
+import JupyterExecutor from './components/JupyterExecutor';
+import { JupyterProvider } from "./context/JupyterContext";
+import theme from './theme';
 import {
   Menu as MenuIcon,
   Dashboard as DashboardIcon,
@@ -86,6 +88,29 @@ const darkTheme = createTheme({
   typography: {
     fontFamily: "Roboto",
     fontWeightBold: 700,
+  },
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        /*root: {
+          fontSize: '.8rem', // Beispiel: Schriftgröße der Schaltflächen
+          padding: 'px 0px', // Beispiel: Innenabstand der Schaltflächen
+        },
+        */
+      },
+    },
+    MuiSlider: {
+      styleOverrides: {
+        root: {
+          height: 8, // Beispiel: Höhe des Sliders
+        },
+        thumb: {
+          width: 24, // Beispiel: Breite des Slider-Daumen
+          height: 24, // Beispiel: Höhe des Slider-Daumen
+        },
+      },
+    },
+    // Weitere Komponenten können hier hinzugefügt werden
   },
 });
 
@@ -338,6 +363,12 @@ function App() {
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "HistoScan" : ""} />
               </ListItem>
+              <ListItem button onClick={() => handlePluginChange("JupyteNotebook")}>
+                <ListItemIcon>
+                  <SettingsOverscanSharpIcon />
+                </ListItemIcon>
+                <ListItemText primary={sidebarVisible ? "JupyteNotebook" : ""} />
+              </ListItem>
               <ListItem button onClick={() => handlePluginChange("Infinity Scanning")}>
                 <ListItemIcon>
                   <SettingsOverscanSharpIcon />
@@ -434,6 +465,11 @@ function App() {
               <WidgetContextProvider>
                 <HistoScanController hostIP={hostIP} hostPort={hostPort} />
               </WidgetContextProvider>
+            )}
+            {selectedPlugin === "JupyteNotebook" && (
+              <JupyterProvider>
+                <JupyterExecutor hostIP={hostIP} hostPort={hostPort} />
+              </JupyterProvider>
             )}
             {selectedPlugin === "Infinity Scanning" && (
               <WidgetContextProvider>

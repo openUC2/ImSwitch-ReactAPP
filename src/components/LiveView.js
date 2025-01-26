@@ -21,6 +21,7 @@ import {
 import { makeStyles } from "@mui/styles";
 import { Bar } from "react-chartjs-2";
 import XYZControls from "./XYZControls";
+import AutofocusController from "./AutofocusController";
 import { useWebSocket } from "../context/WebSocketContext";
 import { LiveWidgetContext } from "../context/LiveWidgetContext";
 
@@ -567,6 +568,14 @@ const LiveView = ({ hostIP, hostPort, onImageUpdate }) => {
           </Typography>
           <XYZControls hostIP={hostIP} hostPort={hostPort} />
         </Box>
+
+        <Box mb={3} sx={{ width: "90%" }}>
+          <Typography variant="h6" gutterBottom>
+            Autofocus
+          </Typography>
+          <AutofocusController hostIP={hostIP} hostPort={hostPort} />
+        </Box>
+
 
         <Box mb={3} sx={{ width: "90%" }}>
           <Typography variant="h6" gutterBottom>

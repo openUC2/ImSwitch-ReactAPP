@@ -10,26 +10,32 @@ const SocketView = () => {
 
     // Listen for server messages
     socket.on("signal", (data) => {
+      data = JSON.parse(data);
+      if ((data.name === "sigImageUpdated") || (data.name === "sigUpdateImage")){
+        return;
+      }
       setMessages((prev) => [...prev, data]);
     });
     
     // Listen for broadcast messages
     socket.on("broadcast", (data) => {
-      setMessages((prev) => [...prev, data.message]);
+      data = JSON.parse(data);
+      setMessages((prev) => [...prev, data]);
     });
 
     return () => {
-      // Clean up listeners
-      socket.off("server_message");
+      socket.off("signal");
       socket.off("broadcast");
     };
   }, [socket]);
 
   return (
     <div>
-      <h1>Socket.IO Messages</h1>
-      {messages.map((msg, idx) => (
-        <p key={idx}>{msg}</p>
+      {messages.map((message, index) => (
+        <div key={index}>
+          <p>Name: {message.name}</p>
+          <p>Args: {JSON.stringify(message.args)}</p>
+        </div>
       ))}
     </div>
   );

@@ -88,6 +88,10 @@ const HistoScanController = ({ hostIP, hostPort }) => {
         if (jdata.name === "sigUpdateScanCoordinatesLayout") {
           console.log("Signal received in HistoScanController", jdata);
           calculateScaledScanPoints(jdata);
+        }
+        else if (jdata.name === "sigUpdateLoadingBar") {
+          console.log("Signal received in HistoScanController", jdata);
+          setScanIndex(jdata.args.p0);
         } else if (jdata.name === "sigUpdateMotorPosition") {
           // Parse args.p0 und ersetze einfache Anführungszeichen durch doppelte
           const parsedArgs = JSON.parse(jdata.args.p0.replace(/'/g, '"'));
@@ -697,8 +701,8 @@ const HistoScanController = ({ hostIP, hostPort }) => {
                     <img
                       src={imageUrl}
                       alt="Map"
-                      style={{ maxWidth: "100%" }}
-                    />
+                      style={{ width: "1000px"}} 
+                      />
                   </TransformComponent>
                 </TransformWrapper>
               </div>

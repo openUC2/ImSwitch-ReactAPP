@@ -7,8 +7,10 @@ import {
   ListItem,
   ListItemText,
   TextField,
+  Typography,
 } from "@mui/material";
 import React, { useState } from "react";
+import SpeedIcon from '@mui/icons-material/Speed'; // Importieren Sie das gewünschte Symbol
 
 const AxisControl = ({
   axisLabel,
@@ -26,7 +28,6 @@ const AxisControl = ({
   const buttonWidth = { width: "100px" };
 
   const dialValues = [1, 5, 10, 50, 100, 500, 1000, 10000, 20000, 100000];
-
 
   const onButtonPress = async (url) => {
     try {
@@ -117,7 +118,8 @@ const AxisControl = ({
             style={buttonWidth}
             color="primary"
           >
-            Steps: {steps}
+            <Typography variant="body1">Steps:</Typography>
+            <Typography variant="body1">{steps}</Typography>
           </Button>
         </Grid>
         <Grid item>
@@ -162,7 +164,11 @@ const AxisControl = ({
             style={buttonWidth}
             color="primary"
           >
-            Speed: {speedValue}
+                 <Typography variant="body1">
+        <SpeedIcon /> 
+        {speedValue}
+      </Typography>
+
           </Button>
         </Grid>
         <Grid item>
