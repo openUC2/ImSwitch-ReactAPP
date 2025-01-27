@@ -18,7 +18,7 @@ jobs:
     - name: Increase Node.js memory limit and build
       run: |
         export NODE_OPTIONS=--max_old_space_size=4096
-        npm run build
+        CI=false npm run build
       
     - name: Push to the youseetoo Repository for displaying at https://youseetoo.github.io/imswitch/index.html
       uses: cpina/github-action-push-to-another-repository@main
