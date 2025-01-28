@@ -13,11 +13,9 @@ const JupyterExecutor = ({ hostIP, hostPort }) => {
         // 2) Extract the Jupyter Notebook URL
         const notebookUrl = data["url"];
 
-        // Remove protocol from hostIP if present
-        const host = hostIP.replace(/^https?:\/\//, '');
 
         // we need to replace the url between from start to :port provided by the server and match that with the hostIP
-        const notebookUrlUpdated = notebookUrl.replace(/https?:\/\/[^:]+/, `http://${host}`);
+        const notebookUrlUpdated = notebookUrl.replace(/https?:\/\/[^:]+/, `${hostIP}`);
         setJupyterUrl(notebookUrlUpdated);
       } catch (error) {
         console.error("Error fetching Jupyter URL:", error);
