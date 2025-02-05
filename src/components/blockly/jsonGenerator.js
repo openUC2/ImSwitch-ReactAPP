@@ -90,6 +90,31 @@ JSONGenerator["acquire_frame_block"] = function (block) {
   return JSON.stringify(step) + ",";
 };
 
+// for the move_stage_block
+JSONGenerator["move_stage_block"] = function (block) {
+  const x = block.getFieldValue("X");
+  const y = block.getFieldValue("Y");
+  const z = block.getFieldValue("Z");
+  const stepId = block.id;
+
+  const step = {
+    id: stepId,
+    stepName: "Move Stage",
+    mainFuncName: "move_stage",
+    mainParams: {
+      x: parseFloat(x),
+      y: parseFloat(y),
+      z: parseFloat(z),
+    },
+    preFuncs: [],
+    preParams: {},
+    postFuncs: [],
+    postParams: {},
+  };
+
+  return JSON.stringify(step) + ",";
+};
+
 /*
 Loop stuff
 */
@@ -169,6 +194,17 @@ JSONGenerator["acquire_frame_block"] = function (block) {
     postParams: {},
   };
   return JSON.stringify(step) + ",";
+};
+
+JSONGenerator['controls_for'] = function(block) {
+  // Ihren Code-Generator hier hinzufügen
+  return {
+    type: 'controls_for',
+    variable: block.getFieldValue('VAR'),
+    from: block.getFieldValue('FROM'),
+    to: block.getFieldValue('TO'),
+    by: block.getFieldValue('BY')
+  };
 };
 
 /**

@@ -24,8 +24,15 @@ import XYZControls from "./XYZControls";
 import AutofocusController from "./AutofocusController";
 import { useWebSocket } from "../context/WebSocketContext";
 import { LiveWidgetContext } from "../context/LiveWidgetContext";
-
-// ... other imports for chart configuration, etc.
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+} from "chart.js";
 
 const useStyles = makeStyles((theme) => ({
   blinking: {
@@ -37,6 +44,9 @@ const useStyles = makeStyles((theme) => ({
     "100%": { opacity: 1 },
   },
 }));
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+
 
 const LiveView = ({ hostIP, hostPort, onImageUpdate }) => {
   const classes = useStyles();

@@ -789,6 +789,10 @@ const toolbox = {
           {
             kind: "block",
             type: "acquire_frame_block"
+          }, 
+          {
+            kind: "block",
+            type: "move_stage_block"
           }
         ]
       }

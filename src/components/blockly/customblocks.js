@@ -97,6 +97,32 @@ Blockly.defineBlocksWithJsonArray([
     helpUrl: "",
   },
   {
+    type: "move_stage_block",
+    message0: "Move Stage: X %1 Y %2 Z %3",
+    args0: [
+      {
+        type: "field_variable",
+        name: "X",
+        value: 0,
+      },
+      {
+        type: "field_variable",
+        name: "Y",
+        value: 0,        
+      }, 
+      {
+        type: "field_variable",
+        name: "Z",
+        value: 0,
+      }
+    ],
+    previousStatement: null,
+    nextStatement: null,
+    colour: 230,
+    tooltip: "Move the stage to a specific position",
+    helpUrl: "",
+  },
+  {
     type: "controls_repeat_ext",
     message0: "repeat %1 times",
     args0: [

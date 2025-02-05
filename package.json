@@ -15,7 +15,7 @@
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.7.7",
-    "blockly": "^10.4.3",
+    "blockly": "^11.0.0",
     "chart.js": "^4.4.6",
     "ol": "^10.3.1",
     "path-browserify": "^1.0.1",
