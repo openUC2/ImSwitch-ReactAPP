@@ -135,7 +135,7 @@ function App() {
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const [files, setFiles] = useState([]);
-  const isMountRef = useRef(false);
+  
 
   /*
   FileManager
@@ -152,11 +152,7 @@ function App() {
     setIsLoading(false);
   };
 
-  useEffect(() => {
-    if (isMountRef.current) return;
-    isMountRef.current = true;
-    getFiles();
-  }, []);
+
 
   const handleCreateFolder = async (name, parentFolder) => {
     setIsLoading(true);
@@ -244,10 +240,11 @@ function App() {
     }
     throw new Error("No valid port found for API.");
   };
-
-  // change API url/port
+ 
+  // change API url/port and update filelist
   useEffect(() => {
     api.defaults.baseURL = `${hostIP}:${hostPort}`;
+    handleRefresh();
   }, [hostIP, hostPort]);
 
   // Dialog handlers for the URL / Port settings
