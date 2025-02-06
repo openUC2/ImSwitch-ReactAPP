@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "./blockly/customblocks";
-import * as Blockly from "blockly";
+import Blockly from "blockly";
 import { javascriptGenerator } from "blockly/javascript";
 import { BlocklyWorkspace } from "react-blockly";
 import { PureComponent } from "react";
