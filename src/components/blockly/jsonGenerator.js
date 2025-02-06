@@ -1,4 +1,4 @@
-import Blockly from "blockly";
+import * as Blockly from "blockly";
 
 // 1) Create your generator
 //    This ensures it inherits from the base Generator prototype.
