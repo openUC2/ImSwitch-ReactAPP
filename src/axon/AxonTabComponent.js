@@ -20,8 +20,10 @@ const AxonTabComponent = () => {
     <div>
         <p>Basic redux state example</p>
         <div style={{ display: "flex" }}>
-            <StateVisualizerComponent />
-            <StateEditComponent />
+        <StateVisualizerComponent />
+        <StateVisualizerComponent />
+        <StateEditComponent />
+        <StateEditComponent />
         </div>
 
         <p>Websocket integration</p>
