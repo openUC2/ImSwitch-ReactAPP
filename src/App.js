@@ -338,13 +338,23 @@ function App() {
               },
             }}
           >
-            <List>
+            {/* Sidebar content */}
+            <List> 
+              {/* axon */}
+              <ListItem button onClick={() => handlePluginChange("Axon")}>
+                <ListItemIcon>
+                  <SettingsOverscanSharpIcon />
+                </ListItemIcon>
+                <ListItemText primary={sidebarVisible ? "Axon" : ""} />
+              </ListItem>
+              {/* LiveView */}
               <ListItem button onClick={() => handlePluginChange("LiveView")}>
                 <ListItemIcon>
                   <DashboardIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "Live View" : ""} />
               </ListItem>
+              {/* FileManager */}
               <ListItem
                 button
                 onClick={() => handlePluginChange("FileManager")}
@@ -354,72 +364,84 @@ function App() {
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "File Manager" : ""} />
               </ListItem>
+              {/* HistoScan */}
               <ListItem button onClick={() => handlePluginChange("HistoScan")}>
                 <ListItemIcon>
                   <SettingsOverscanSharpIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "HistoScan" : ""} />
               </ListItem>
+              {/* JupyteNotebook */}
               <ListItem button onClick={() => handlePluginChange("JupyteNotebook")}>
                 <ListItemIcon>
                   <SettingsOverscanSharpIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "JupyteNotebook" : ""} />
               </ListItem>
+              {/* Infinity Scanning */}
               <ListItem button onClick={() => handlePluginChange("Infinity Scanning")}>
                 <ListItemIcon>
                   <SettingsOverscanSharpIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "Infinity Scanning" : ""} />
               </ListItem>
+              {/* Blockly */}
               <ListItem button onClick={() => handlePluginChange("Blockly")}>
                 <ListItemIcon>
                   <SettingsIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "Blockly" : ""} />
               </ListItem>
+              {/* Timelapse */}
               <ListItem button onClick={() => handlePluginChange("Timelapse")}>
                 <ListItemIcon>
                   <AccessTimeIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "Timelapse" : ""} />
               </ListItem>
+              {/* SocketView */}
               <ListItem button onClick={() => handlePluginChange("SocketView")}>
                 <ListItemIcon>
                   <CommentIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "SocketView" : ""} />
               </ListItem>
+              {/* Lightsheet */}
               <ListItem button onClick={() => handlePluginChange("Lightsheet")}>
                 <ListItemIcon>
                   <ThreeDRotationIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "Lightsheet" : ""} />
               </ListItem>
+              {/* FlowStop */}
               <ListItem button onClick={() => handlePluginChange("FlowStop")}>
                 <ListItemIcon>
                   <AirIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "FlowStop" : ""} />
               </ListItem>
+              {/* Widgets */}
               <ListItem button onClick={() => handlePluginChange("Widgets")}>
                 <ListItemIcon>
                   <DevicesIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "Widgets" : ""} />
               </ListItem>
+              {/* Connections */}
               <ListItem button onClick={handleOpenDialog}>
                 <ListItemIcon>
                   <WifiSharpIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "Connections" : ""} />
               </ListItem>
+              {/* About */}
               <ListItem button onClick={() => handlePluginChange("About")}>
                 <ListItemIcon>
                   <InfoIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "About" : ""} />
               </ListItem>
+              {/* ImJoy */}
               <ListItem button onClick={() => handlePluginChange("ImJoy")}>
                 <ListItemIcon>
                   <BuildIcon />
@@ -445,6 +467,9 @@ function App() {
             component="main"
             sx={{ flexGrow: 1, p: 3, marginTop: "64px" }} // Push content below AppBar
           >
+          {selectedPlugin === "Axon" && (
+            <p>AXON</p>
+          )}
             {selectedPlugin === "LiveView" && (
               <LiveWidgetProvider>
                 <LiveView
