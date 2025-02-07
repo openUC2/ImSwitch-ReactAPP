@@ -30,6 +30,9 @@ import axios from "axios";
 import { WebSocketProvider } from "./context/WebSocketContext";
 import { MCTProvider } from "./context/MCTContext";
 
+//axon
+import AxonTabComponent from './axon/AxonTabComponent';
+
 // Filemanager
 import FileManager from "./FileManager/FileManager/FileManager";
 import { createFolderAPI } from "./FileManager/api/createFolderAPI";
@@ -468,7 +471,7 @@ function App() {
             sx={{ flexGrow: 1, p: 3, marginTop: "64px" }} // Push content below AppBar
           >
           {selectedPlugin === "Axon" && (
-            <p>AXON</p>
+            <AxonTabComponent/>
           )}
             {selectedPlugin === "LiveView" && (
               <LiveWidgetProvider>
