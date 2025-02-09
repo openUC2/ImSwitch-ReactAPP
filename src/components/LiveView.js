@@ -17,6 +17,8 @@ import {
   Slider,
   Checkbox,
   Grid,
+  Tabs,
+  Tab,
 } from "@mui/material";
 import { makeStyles } from "@mui/styles";
 import { Bar } from "react-chartjs-2";
@@ -31,7 +33,7 @@ import {
   BarElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
 } from "chart.js";
 
 const useStyles = makeStyles((theme) => ({
@@ -45,15 +47,22 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
-
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 const LiveView = ({ hostIP, hostPort, onImageUpdate }) => {
   const classes = useStyles();
   const socket = useWebSocket();
 
-  // LiveWidgetContext
-  const { sliderIllu2Value, sliderIllu3Value } = useContext(LiveWidgetContext);
+  const [detectors, setDetectors] = useState([]);
+  const [activeTab, setActiveTab] = useState(0);
+  const [imageUrls, setImageUrls] = useState({});
 
   // Local States
   const [isStreamRunning, setIsStreamRunning] = useState(false);
@@ -67,6 +76,7 @@ const LiveView = ({ hostIP, hostPort, onImageUpdate }) => {
 
   const [laserNames, setLaserNames] = useState([]);
   const [sliderIllu1Value, setSliderIllu1Value] = useState(0);
+  const { sliderIllu2Value, sliderIllu3Value } = useContext(LiveWidgetContext);
   const [isIllumination1Checked, setisIllumination1Checked] = useState(false);
   const [isIllumination2Checked, setisIllumination2Checked] = useState(false);
   const [isIllumination3Checked, setisIllumination3Checked] = useState(false);
@@ -82,19 +92,17 @@ const LiveView = ({ hostIP, hostPort, onImageUpdate }) => {
   const [imjoyAPI, setImjoyAPI] = useState(null);
 
   /****************************************************
-   * Example:  WebSocket and side-effects
+   Retreive Camera Frames 
    ****************************************************/
   useEffect(() => {
     if (!socket) return;
 
-    // Listen for image updates
     socket.on("signal", (data) => {
       const jdata = JSON.parse(data);
-      if (jdata.name === "sigUpdateImage" || jdata.name === "sigImageUpdated") {
+      if (jdata.name === "sigUpdateImage") {
+        const detectorName = jdata.detectorname;
         const imgSrc = `data:image/jpeg;base64,${jdata.image}`;
-        setStreamUrl(imgSrc);
-        // <-- CALL THE PROP so that App.js can store the image in sharedImage
-        if (onImageUpdate) onImageUpdate(imgSrc);
+        setImageUrls((prev) => ({ ...prev, [detectorName]: imgSrc }));
       }
     });
 
@@ -123,6 +131,22 @@ const LiveView = ({ hostIP, hostPort, onImageUpdate }) => {
     };
   }, [socket]);
 
+  // retreive the detector names
+  useEffect(() => {
+    const fetchDetectors = async () => {
+      try {
+        const response = await fetch(
+          `${hostIP}:${hostPort}/SettingsController/getDetectorNames`
+        );
+        const data = await response.json();
+        setDetectors(data);
+      } catch (error) {
+        console.error("Failed to fetch detector names:", error);
+      }
+    };
+    fetchDetectors();
+  }, [hostIP, hostPort]);
+
   // Check if histogram is active
   useEffect(() => {
     const checkHistogramStatus = async () => {
@@ -146,11 +170,11 @@ const LiveView = ({ hostIP, hostPort, onImageUpdate }) => {
       // https://localhost:8001/SettingsController/setDetectorPreviewMinValue?minValue=0
       //   'https://localhost:8001/SettingsController/setDetectorPreviewMaxValue?maxValue=50' \
       // https://localhost:8001/SettingsController/setDetectorPreviewMinValue?minValue=1267 405 (
-        const url = `${hostIP}:${hostPort}/SettingsController/setDetectorPreviewMinMaxValue?minValue=${newValue[0]}&maxValue=${newValue[1]}`;
-        const response = await fetch(url, { method: "GET" });
-        if (!response.ok) {
-          throw new Error("Failed to update min/max values on the server");
-        }
+      const url = `${hostIP}:${hostPort}/SettingsController/setDetectorPreviewMinMaxValue?minValue=${newValue[0]}&maxValue=${newValue[1]}`;
+      const response = await fetch(url, { method: "GET" });
+      if (!response.ok) {
+        throw new Error("Failed to update min/max values on the server");
+      }
       console.log("Updated min/max values on backend");
     } catch (error) {
       console.error("Error updating min/max values:", error);
@@ -382,6 +406,10 @@ const LiveView = ({ hostIP, hostPort, onImageUpdate }) => {
     },
   };
 
+  const handleTabChange = (event, newValue) => {
+    setActiveTab(newValue);
+  };
+
   return (
     <Box sx={{ height: "100vh", display: "flex", flexDirection: "row" }}>
       {/****************************************************************
@@ -478,52 +506,72 @@ const LiveView = ({ hostIP, hostPort, onImageUpdate }) => {
          * We fix a height for the container so the slider can match it.
          *****************************************************************/}
         <Grid container sx={{ height: 500 }}>
-          {/* Left side: the image */}
-          <Grid item xs={11} sx={{ height: "100%" }}>
-            {streamUrl ? (
-              <img
-                src={streamUrl}
-                alt="Live Stream"
-                style={{
-                  width: "auto",
-                  height: "100%", // fill vertical space
-                  display: "block",
-                }}
-              />
-            ) : (
-              <Typography>No stream URL loaded</Typography>
-            )}
-          </Grid>
+  {/* Left side: the image */}
+  <Grid item xs={12}>
+    <Tabs
+      value={activeTab}
+      onChange={handleTabChange}
+      aria-label="detector tabs"
+    >
+      {detectors.map((detector, index) => (
+        <Tab key={detector} label={detector} />
+      ))}
+    </Tabs>
+  </Grid>
 
-          {/* Right side: vertical slider */}
-          <Grid
-            item
-            xs={1}
-            sx={{
-              height: "100%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+  {/* Display images corresponding to the active tab */}
+  <Grid item xs={12} sx={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+    {detectors.map((detector, index) => (
+      <Box
+        key={detector}
+        sx={{ display: activeTab === index ? "block" : "none", width: "100%" }}
+      >
+        {imageUrls[detector] ? (
+          <img
+            src={imageUrls[detector]}
+            alt={detector}
+            style={{
+              width: "100%",
+              height: "auto",
+              maxHeight: "100%",
             }}
-          >
-            <Slider
-              orientation="vertical"
-              value={[minVal, maxVal]}
-              onChange={handleRangeChange}
-              onChangeCommitted={handleRangeChangeCommitted}
-              min={0}
-              max={1024} // or your actual image depth
-              sx={{ height: "90%" }} // slightly smaller or "100%"
-              // Show value labels always:
-              valueLabelDisplay="on"
-              // Format them as “Min: ###” and “Max: ###”
-              valueLabelFormat={(val, index) =>
-                index === 0 ? `Min: ${val}` : `Max: ${val}`
-              }
-              aria-labelledby="range-slider"
-            />
-          </Grid>
-        </Grid>
+          />
+        ) : (
+          <Typography>No image available</Typography>
+        )}
+      </Box>
+    ))}
+  </Grid>
+
+  {/* Right side: vertical slider */}
+  <Grid
+    item
+    xs={1}
+    sx={{
+      height: "100%",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+    }}
+  >
+    <Slider
+      orientation="vertical"
+      value={[minVal, maxVal]}
+      onChange={handleRangeChange}
+      onChangeCommitted={handleRangeChangeCommitted}
+      min={0}
+      max={1024} // or your actual image depth
+      sx={{ height: "90%" }} // slightly smaller or "100%"
+      // Show value labels always:
+      valueLabelDisplay="on"
+      // Format them as “Min: ###” and “Max: ###”
+      valueLabelFormat={(val, index) =>
+        index === 0 ? `Min: ${val}` : `Max: ${val}`
+      }
+      aria-labelledby="range-slider"
+    />
+  </Grid>
+</Grid>
 
         <Box sx={{ mt: 2 }}>
           {histogramActive && (
@@ -585,7 +633,6 @@ const LiveView = ({ hostIP, hostPort, onImageUpdate }) => {
           </Typography>
           <AutofocusController hostIP={hostIP} hostPort={hostPort} />
         </Box>
-
 
         <Box mb={3} sx={{ width: "90%" }}>
           <Typography variant="h6" gutterBottom>
