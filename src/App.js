@@ -12,6 +12,7 @@ import BlocklyController from "./components/BlocklyController";
 import ImJoyView from "./components/ImJoyView"; // <-- new file
 import JupyterExecutor from './components/JupyterExecutor';
 import { JupyterProvider } from "./context/JupyterContext";
+import UC2Controller from './components/UC2Controller';
 import theme from './theme';
 import {
   Menu as MenuIcon,
@@ -69,6 +70,7 @@ import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { WidgetContextProvider } from "./context/WidgetContext";
 import CommentIcon from "@mui/icons-material/Comment";
 import FlowStopController from "./components/FlowStopController";
+import SepMonController from "./components/SepmonController"; 
 
 // Define both light and dark themes
 const lightTheme = createTheme({
@@ -130,7 +132,6 @@ function App() {
     { i: "widget1", x: 0, y: 0, w: 2, h: 2 },
     { i: "widget2", x: 2, y: 0, w: 2, h: 2 },
     { i: "widget3", x: 4, y: 0, w: 2, h: 2 },
-    { i: "FlowStop", x: 6, y: 0, w: 5, h: 5 },
     { i: "Lightsheet", x: 0, y: 2, w: 5, h: 5 },
   ]);
   const [isLoading, setIsLoading] = useState(false);
@@ -402,6 +403,18 @@ function App() {
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "FlowStop" : ""} />
               </ListItem>
+              <ListItem button onClick={() => handlePluginChange("Sepmon")}>
+                <ListItemIcon>
+                  <AirIcon />
+                </ListItemIcon>
+                <ListItemText primary={sidebarVisible ? "Sepmon" : ""} />
+              </ListItem>
+              <ListItem button onClick={() => handlePluginChange("UC2")}>
+                <ListItemIcon>
+                  <AirIcon />
+                </ListItemIcon>
+                <ListItemText primary={sidebarVisible ? "UC2" : ""} />
+              </ListItem>              
               <ListItem button onClick={() => handlePluginChange("Widgets")}>
                 <ListItemIcon>
                   <DevicesIcon />
@@ -523,6 +536,16 @@ function App() {
             {selectedPlugin === "FlowStop" && (
               <WidgetContextProvider>
                 <FlowStopController hostIP={hostIP} hostPort={hostPort} />
+              </WidgetContextProvider>
+            )}
+            {selectedPlugin === "UC2" && (
+              <WidgetContextProvider>
+                <UC2Controller hostIP={hostIP} hostPort={hostPort} />
+              </WidgetContextProvider>
+            )}
+            {selectedPlugin === "Sepmon" && (
+              <WidgetContextProvider>
+                <SepMonController hostIP={hostIP} hostPort={hostPort} />
               </WidgetContextProvider>
             )}
             {selectedPlugin === "SocketView" && (
