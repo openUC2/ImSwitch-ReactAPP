@@ -1,22 +1,20 @@
-import React from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import React from "react";
+import { useDispatch, useSelector } from "react-redux";
 
 //import { getPosition, setPosition } from './state/slices/positionSlice';
 import * as positionSlice from "../state/slices/PositionSlice";
 
 const StateEditComponent = () => {
-
   // Get the dispatch function
   const dispatch = useDispatch();
 
   // Access global Redux state
   const { x, y, z } = useSelector(positionSlice.getPosition);
 
-    // Round x and y
-    const roundedX = Math.round(x);
-    const roundedY = Math.round(y);
-    const roundedZ = Math.round(z);
-
+  // Round x and y
+  const roundedX = Math.round(x);
+  const roundedY = Math.round(y);
+  const roundedZ = Math.round(z);
 
   // Handle input changes
   const handleChange = (e) => {
@@ -24,9 +22,8 @@ const StateEditComponent = () => {
     dispatch(positionSlice.setPosition({ ...{ x, y, z }, [name]: value }));
   };
 
-
   return (
-    <div style={{ border: '1px solid white', padding: '10px' }}>
+    <div style={{ border: "1px solid white", padding: "10px" }}>
       <form>
         <table>
           <thead>

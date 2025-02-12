@@ -13,14 +13,14 @@ import webSocketReducer from './slices/WebSocketSlice';
 import positionReducer from './slices/PositionSlice';
 import wellSelectorReducer from './slices/WellSelectorSlice';
 import experimentReducer from './slices/ExperimentSlice';
-import hardwareReduzer from './slices/HardwareSlice';
+import hardwareReducer from './slices/HardwareSlice';
 
 
 // Combine reducers
 const rootReducer = combineReducers({
     webSocketState: webSocketReducer,
     experimentState: experimentReducer,
-    hardwareState: hardwareReduzer,
+    hardwareState: hardwareReducer,
     wellSelectorState: wellSelectorReducer,
     position: positionReducer,
   });
