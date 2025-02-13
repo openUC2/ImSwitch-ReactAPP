@@ -295,6 +295,7 @@ export function isLineIntersectingSquare(
 
 //##################################################################################
 export const wellLayoutEmpty = {
+    name: "empty",
     unit: "um",
     width: 120000,  // Standard width for 32-well plate
     height: 80000,  // Standard height for 32-well plate
@@ -302,6 +303,7 @@ export const wellLayoutEmpty = {
   };
 
   export const wellLayoutDevelopment = {
+    name: "development",
     unit: "um",
     width: 1000000,
     height: 600000,
@@ -330,10 +332,11 @@ export const wellLayoutEmpty = {
   };
 
 export const wellLayout32 = {
-    "unit": "um",
-    "width": 128000,
-    "height": 86000,
-    "wells": [
+    name: "layout32",
+    unit: "um",
+    width: 128000,
+    height: 86000,
+    wells: [
         { "x": 15000, "y": 15000, "shape": "circle", "radius": 4500 },
         { "x": 45000, "y": 15000, "shape": "circle", "radius": 4500 },
         { "x": 75000, "y": 15000, "shape": "circle", "radius": 4500 },
@@ -363,10 +366,11 @@ export const wellLayout32 = {
 ;
 
 export const wellLayout96 = {
-    "unit": "um",
-    "width": 128000,
-    "height": 86000,
-    "wells": [
+    name: "layout96",
+    unit: "um",
+    width: 128000,
+    height: 86000,
+    wells: [
         { "x": 10667, "y": 10667, "shape": "circle", "radius": 4500 },
         { "x": 21334, "y": 10667, "shape": "circle", "radius": 4500 },
         { "x": 32001, "y": 10667, "shape": "circle", "radius": 4500 },

@@ -284,12 +284,13 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
     ctx.lineWidth = 8; // Border thickness
 
     // Draw three sides: left, right, and bottom
+    const boffset = 4;
     const triangleSize = ctx.canvas.height * 0.05;
-    ctx.moveTo(0, triangleSize);
-    ctx.lineTo(triangleSize, 0);
-    ctx.lineTo(canvas.width, 0); // Top (not drawn here, so no need for this)
-    ctx.lineTo(canvas.width, canvas.height); // Right
-    ctx.lineTo(0, canvas.height); // Bottom
+    ctx.moveTo(boffset, triangleSize);
+    ctx.lineTo(triangleSize+boffset, boffset);
+    ctx.lineTo(canvas.width-boffset, boffset); // Top (not drawn here, so no need for this)
+    ctx.lineTo(canvas.width-boffset, canvas.height-boffset); // Right
+    ctx.lineTo(boffset, canvas.height-boffset); // Bottom
     ctx.closePath();
 
     ctx.stroke(); // Apply the stroke
@@ -535,13 +536,6 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
       
     }
 
-    //------------ draw global position
-
-    ctx.beginPath();
-    ctx.arc(position.x, position.y, 4, 0, Math.PI * 2);
-    ctx.fillStyle = "red";
-    ctx.fill();
-
     //------------ draw camera position
 
     // Define the square's position and size
@@ -558,24 +552,38 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
     ctx.lineCap = "round"; // Rounded ends for lines
     //ctx.strokeRect(squareX, squareY, cameraWidth, cameraHeight);
 
+    //------------ draw mouse position
+
+    ctx.beginPath();
+    ctx.arc(mouseMovePosition.x, mouseMovePosition.y, 4, 0, Math.PI * 2);
+    ctx.fillStyle = "red";
+    ctx.fill();
+
+    //------------ draw global position
+
+    /*ctx.beginPath();
+    ctx.arc(position.x, position.y, 4, 0, Math.PI * 2);
+    ctx.fillStyle = "red";
+    ctx.fill();*/
+
     //------------  draw mode
 
-    ctx.font = "20px Arial";
+    /*ctx.font = "20px Arial";
     ctx.fillStyle = "black";
-    ctx.fillText(wellSelectorState.mode, 10, 30);
+    ctx.fillText(wellSelectorState.mode, 10, 30);*/
 
     //------------  draw mouse up or down
 
-    const status = mouseDownFlag
+    /*const status = mouseDownFlag
       ? `Mouse Down: ${Math.floor(mouseDownPosition.x)}x${Math.floor(
           mouseDownPosition.y
         )}`
       : "Mouse Up";
-    ctx.fillText(status, 10, 50);
+    ctx.fillText(status, 10, 50);*/
 
     //------------ draw mouse move
 
-    if (mouseDownFlag) {
+    /*if (mouseDownFlag) {
       ctx.fillText(
         `Mouse Move: ${Math.floor(mouseMovePosition.x)}x${Math.floor(
           mouseMovePosition.y
@@ -583,7 +591,7 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
         10,
         70
       );
-    }
+    }*/
 
     //ctx.restore();
   };

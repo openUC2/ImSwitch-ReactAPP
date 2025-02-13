@@ -89,11 +89,11 @@ const WellSelectorComponent = () => {
     //select layout
     let wellLayout = wsUtils.wellLayoutEmpty;
     //check
-    if (event.target.value === "layout1") {
+    if (event.target.value === "development") {
       wellLayout = wsUtils.wellLayoutDevelopment;
-    } else if (event.target.value === "layout2") {
+    } else if (event.target.value === "layout32") {
       wellLayout = wsUtils.wellLayout32;
-    } else if (event.target.value === "layout3") {
+    } else if (event.target.value === "layout96") {
       wellLayout = wsUtils.wellLayout96;
     }
 
@@ -109,11 +109,11 @@ const WellSelectorComponent = () => {
 
         <FormControl>
           <InputLabel>Layout</InputLabel>
-          <Select label="Layout" value="empty" onChange={handleLayoutChange}>
+          <Select label="Layout" value={experimentState.wellLayout.name} onChange={handleLayoutChange}>
             <MenuItem value="empty">--Choose layout--</MenuItem>
-            <MenuItem value="layout1">Development</MenuItem>
-            <MenuItem value="layout2">Wellpalte 32</MenuItem>
-            <MenuItem value="layout3">Wellpalte 96</MenuItem>
+            <MenuItem value="development">Development</MenuItem>
+            <MenuItem value="layout32">Wellpalte 32</MenuItem>
+            <MenuItem value="layout96">Wellpalte 96</MenuItem>
           </Select>
         </FormControl>
 

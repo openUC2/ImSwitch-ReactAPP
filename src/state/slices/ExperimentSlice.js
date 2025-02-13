@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 const initialExperimentState = {
   name: "experiment",
   wellLayout: {
+    name: "test",
     unit: "um",
     width: 1000000,
     height: 600000,
