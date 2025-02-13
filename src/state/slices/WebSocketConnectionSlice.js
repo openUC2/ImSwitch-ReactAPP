@@ -2,25 +2,15 @@ import { createSlice } from '@reduxjs/toolkit';
 
 // Define the initial state  
 const initialState = {
-    ip: "https://imswitch.openuc2.com",//ip: "https://localhost",
-    port: 8002,
     connected: false,
     signalCount: 0
 };
 
-// Create webSocketState slice
-const webSocketStateSlice = createSlice({
-  name: 'webSocketState',
+// Create webSocketConnectionSlice slice
+const webSocketConnectionSlice = createSlice({
+  name: 'webSocketConnectionState',
   initialState: initialState,
   reducers: {
-    setIp: (state, action) => {
-        console.log("setIp", action.payload);
-        state.ip = action.payload;
-    },
-    setPort: (state, action) => {
-        console.log("setPort", action.payload);
-        state.port = action.payload;
-    },
     setConnected: (state, action) => {
         console.log("setConnected", action.payload);
         state.connected = action.payload;
@@ -37,17 +27,17 @@ const webSocketStateSlice = createSlice({
   },
 });
 
-// Export actions from wellSelectorState slice
+// Export actions from  slice
 export const { 
     setIp, 
     setPort,
     setConnected,
     incrementSignalCount,
     resetState,
-} = webSocketStateSlice.actions;
+} = webSocketConnectionSlice.actions;
 
 // Selector helper
-export const getWebSocketState = (state) => state.webSocketState;
+export const getWebSocketConnectionState = (state) => state.webSocketConnectionState;
 
-// Export reducer from wellSelectorState slice
-export default webSocketStateSlice.reducer;
+// Export reducer from slice
+export default webSocketConnectionSlice.reducer;

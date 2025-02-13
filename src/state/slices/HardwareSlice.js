@@ -2,12 +2,21 @@ import { createSlice } from "@reduxjs/toolkit";
 
 // Define the initial state
 const initialHardwareState = {
-  liveViewImage: "",
   position: {
     x: 0,
     y: 0,
     z: 0,
     a: 0,
+  },
+  parameterRange: { 
+    illumination: ["a", "b", "c"],
+    laserWaveLength: [10, 20, 30],
+    timeLapsePeriod: { min: 0, max: 1000 },
+    numberOfImages: { min: 1, max: 1000 },
+    autoFocus: { min: 1, max: 1000 },
+    autoFocusStepSize: { min: 0.1, max: 10 },
+    zStack: { min: -10, max: 20 },
+    zStackStepSize: { min: 0.1, max: 10 },
   },
 };
 
@@ -16,11 +25,6 @@ const hardwareSlice = createSlice({
   name: "hardwareState",
   initialState: initialHardwareState,
   reducers: {
-    setLiveViewImage: (state, action) => {
-      //console.log("setLiveViewImage");
-      //console.log(action.payload);
-      state.liveViewImage = action.payload;
-    },
     setPosition: (state, action) => {
       //console.log("setPosition");
       //console.log(action.payload);
@@ -39,7 +43,6 @@ const hardwareSlice = createSlice({
 
 // Export actions from slice
 export const {
-  setLiveViewImage,
   setPosition, 
   resetState,
 } = hardwareSlice.actions;

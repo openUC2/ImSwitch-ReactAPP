@@ -1,6 +1,7 @@
 import React from 'react'; 
 import { useDispatch, useSelector } from "react-redux";
-import * as webSocketStateSlice from "../state/slices/WebSocketSlice.js";
+import * as webSocketSettingsSlice from "../state/slices/WebSocketSettingsSlice.js";
+import * as webSocketConnectionSlice from "../state/slices/WebSocketConnectionSlice.js";
 
 //##################################################################################
 const WebSocketComponent = () => { 
@@ -8,7 +9,8 @@ const WebSocketComponent = () => {
     const dispatch = useDispatch();
   
     // Access global Redux state
-    const webSocketState = useSelector(webSocketStateSlice.getWebSocketState);
+    const webSocketSettingsState = useSelector(webSocketSettingsSlice.getWebSocketSettingsState);
+    const webSocketConnectionState = useSelector(webSocketConnectionSlice.getWebSocketConnectionState);
 
 //##################################################################################
   return (
@@ -16,26 +18,31 @@ const WebSocketComponent = () => {
       <table style={{ textAlign: 'left' }}>
         <thead>
           <tr>
-            <th>Label</th>
-            <th>Value</th>
+            <th>Settings</th>
           </tr>
         </thead>
         <tbody>
           <tr>
             <td>IP Address</td>
-            <td>{webSocketState.ip}</td>
+            <td>{webSocketSettingsState.ip}</td>
           </tr>
           <tr>
             <td>Port</td>
-            <td>{webSocketState.port}</td>
+            <td>{webSocketSettingsState.port}</td>
           </tr>
-          <tr>
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th><div style={{ width: "16px", height: "16px", borderRadius: "100%", backgroundColor: webSocketConnectionState.connected ? "green" : "red" }}/></th>
+            </tr>
+          </thead>
+            <tr>
             <td>Connection</td>
-            <td>{webSocketState.connected ? 'Connected' : 'Disconnected'}</td>
+            <td>{webSocketConnectionState.connected ? 'Connected' : 'Disconnected'}</td> 
           </tr>
           <tr>
             <td>Signal Count</td>
-            <td>{webSocketState.signalCount}</td>
+            <td>{webSocketConnectionState.signalCount}</td>
           </tr>
         </tbody>
       </table>

@@ -32,6 +32,7 @@ import { MCTProvider } from "./context/MCTContext";
 
 //axon
 import AxonTabComponent from './axon/AxonTabComponent';
+import WebSocketHandler from './axon/WebSocketHandler';
 
 // Filemanager
 import FileManager from "./FileManager/FileManager/FileManager";
@@ -295,6 +296,7 @@ function App() {
 
   return (
     <ThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
+      <WebSocketHandler />{/* headless */}
       <WebSocketProvider hostIP={hostIP}>
         <CssBaseline />
         <Box sx={{ display: "flex" }}>

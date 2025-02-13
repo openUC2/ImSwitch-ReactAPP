@@ -3,11 +3,12 @@ import { createSlice } from '@reduxjs/toolkit';
 // Define the initial state for wellSelectorState
 const initialWellSelectorState = {
   mode: 'single',          // string: could be 'default', 'select', 'edit', etc.
-  rasterWidth: 64.0,          // float: size of the raster grid width
-  rasterHeight: 32.0,          // float: size of the raster grid height
+  rasterWidth: 40000.0,          // float: size of the raster grid width
+  rasterHeight: 20000.0,          // float: size of the raster grid height
   overlapWidth: 0.0,          // float: size of the overlap between the rasters
   overlapHeight: 0.0,          // float: size of the overlap between the rasters
-  pointNeighbors: 1,          // int: size of the surrounding points
+  showOverlap: true,          // bool: show overlap or not 
+  cameraTargetPosition: { x: 0.0, y: 0.0 },          // float: x position of the camera target 
 };
 
 // Create wellSelectorState slice
@@ -35,13 +36,17 @@ const wellSelectorSlice = createSlice({
         console.log("setOverlapHeight");
         state.overlapHeight = action.payload;
     },
-    setPointNeighbors: (state, action) => {
-        console.log("setPointNeighbors");
-        state.pointNeighbors = action.payload;
-    },
     setMouseDownFlag: (state, action) => {
         console.log("setMouseDownFlag");
         state.mouseDownFlag = action.payload;
+    },
+    setShowOverlap: (state, action) => {
+        console.log("setShowOverlap");
+        state.showOverlap = action.payload;	
+    },
+    setCameraTargetPosition: (state, action) => {
+        console.log("setCameraTargetPosition");
+        state.cameraTargetPosition = action.payload;	
     },
     resetState: (state) => {
         console.log("resetState");
@@ -57,7 +62,8 @@ export const {
   setRasterHeight,
   setOverlapWidth,
   setOverlapHeight,
-  setPointNeighbors, 
+  setShowOverlap,
+  setCameraTargetPosition,
   resetState 
 } = wellSelectorSlice.actions;
 

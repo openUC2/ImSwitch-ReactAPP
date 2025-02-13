@@ -1,45 +1,51 @@
-// redux state example components
-import StateEditComponent from "./StateEditComponent";
+import LiveViewControlWrapper from "./LiveViewControlWrapper";
+import GenericTabBar from "./GenericTabBar";
+import WellSelectorComponent from "./WellSelectorComponent";
 import StateVisualizerComponent from "./StateVisualizerComponent";
-
-// redux websocket handler
-import WebSocketHandler from "./WebSocketHandler";
+import StateEditComponent from "./StateEditComponent";
+import PointListEditorComponent from "./PointListEditorComponent";
 import WebSocketComponent from "./WebSocketComponent";
-
-// other redux components
 import LiveViewComponent from "./LiveViewComponent";
 import PositionControllerComponent from "./PositionControllerComponent";
-
-// well selector
-import WellSelectorComponent from "./WellSelectorComponent";
-import PointListEditorComponent from "./PointListEditorComponent";
+import PositionViewComponent from "./PositionViewComponent";
+import ParameterEditorComponent from "./ParameterEditorComponent";
  
  
 const AxonTabComponent = () => {
-  return (
-    <div>
-        <p>Basic redux state example</p>
+  return ( 
+    <div style={{ width: "75%" }}>
+        
         <div style={{ display: "flex" }}>
-        <StateVisualizerComponent />
-        <StateVisualizerComponent />
-        <StateEditComponent />
-        <StateEditComponent />
+          <WebSocketComponent /> 
+          <PositionViewComponent /> 
+          <StateVisualizerComponent />
+          <StateVisualizerComponent />
+          <StateEditComponent />
         </div>
 
-        <p>Websocket integration</p>
+        <div style={{ padding:"8px" }}></div>
+
         <div style={{ display: "flex" }}>
-            <WebSocketHandler />
-            <WebSocketComponent />
-            <LiveViewComponent />
-            <PositionControllerComponent />
+          <div style={{ flex: 3 }}>
+            <GenericTabBar id="1" tabNames={["Well Selector","Live View", "Parameter", "Point List"]}>
+                <WellSelectorComponent />
+                <LiveViewControlWrapper />
+                <ParameterEditorComponent /> 
+                <PointListEditorComponent />
+            </GenericTabBar>
+          </div>
+          <div style={{ flex: 2 }}>
+            <GenericTabBar id="2" tabNames={["Live View", "Point List", "Parameter", "Well Selector"]}>
+                <LiveViewControlWrapper/>
+                <PointListEditorComponent />
+                <ParameterEditorComponent /> 
+                <WellSelectorComponent />
+            </GenericTabBar>
+
+          </div>
         </div>
 
-        <p>Well selector</p>
-        <div style={{ display: "flex" }}>
-            <WellSelectorComponent /> 
-            <PointListEditorComponent /> 
-        </div>
-
+        <div style={{ padding: "50px" }}>/\</div> 
     </div>
   );
 }
