@@ -18,11 +18,12 @@ const WebSocketHandler = () => {
   const webSocketSettingsState = useSelector(
     webSocketSettingsSlice.getWebSocketSettingsState
   );
-  const webSocketConnectionState = useSelector(
+
+  /*const webSocketConnectionState = useSelector(
     webSocketConnectionSlice.getWebSocketConnectionState
-  );
-  const liveStreamState = useSelector(liveStreamSlice.getLiveStreamState);
-  const hardwareState = useSelector(hardwareSlice.getHardwareState);
+  );*/
+  //const liveStreamState = useSelector(liveStreamSlice.getLiveStreamState);
+  //const hardwareState = useSelector(hardwareSlice.getHardwareState);
 
   //##################################################################################
   useEffect(() => {

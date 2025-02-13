@@ -31,6 +31,9 @@ const wellSelectorSlice = createSlice({
     setOverlapWidth: (state, action) => {
         console.log("setOverlapWidth");
         state.overlapWidth = action.payload;
+        if(isNaN(state.overlapWidth)){
+            state.overlapWidth = 0;
+        }
     },
     setOverlapHeight: (state, action) => {
         console.log("setOverlapHeight");

@@ -26,7 +26,7 @@ const StateEditComponent = () => {
 
 
   return (
-    <div style={{ border: '1px solid white', padding: '10px' }}>
+    <div style={{ border: '1px solid #eee', padding: '10px' }}>
       <form>
         <table>
           <thead>

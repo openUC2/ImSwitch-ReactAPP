@@ -8,6 +8,20 @@ import * as wellSelectorSlice from "../state/slices/WellSelectorSlice.js";
 import * as experimentSlice from "../state/slices/ExperimentSlice.js";
 import * as hardwareSlice from "../state/slices/HardwareSlice.js";
 
+import {
+  Button,
+  Typography,
+  Box,
+  Input,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  FormHelperText,
+  ButtonGroup,
+} from "@mui/material";
+
 //##################################################################################
 const WellSelectorComponent = () => {
   //child ref
@@ -81,75 +95,94 @@ const WellSelectorComponent = () => {
       wellLayout = wsUtils.wellLayout32;
     } else if (event.target.value === "layout3") {
       wellLayout = wsUtils.wellLayout96;
-    } 
+    }
 
     dispatch(experimentSlice.setWellLayout(wellLayout));
   };
 
   //##################################################################################
   return (
-    <div style={{ border: "1px solid white", padding: "10px" }}>
-      {/* Buttons to change base options*/}
+    <div style={{ border: "1px solid #eee", padding: "10px" }}>
+      {/* PARAMETER */}
       <div style={{ marginBottom: "10px" }}>
-        {/* Buttons to change other */}
+        {/* LAYOUT */}
 
-        <label style={{ fontSize: "16px" }}>Layout:</label>
+        <FormControl>
+          <InputLabel>Layout</InputLabel>
+          <Select label="Layout" value="empty" onChange={handleLayoutChange}>
+            <MenuItem value="empty">--Choose layout--</MenuItem>
+            <MenuItem value="layout1">Development</MenuItem>
+            <MenuItem value="layout2">Wellpalte 32</MenuItem>
+            <MenuItem value="layout3">Wellpalte 96</MenuItem>
+          </Select>
+        </FormControl>
 
-        <select
-          //value={}
-          onChange={handleLayoutChange}
-        >
-          <option value="">--Choose an layout--</option>
-          <option value="layout1">Development</option>
-          <option value="layout2">Wellpalte 32</option> 
-          <option value="layout3">Wellpalte 96</option> 
-        </select>
+        {/* OVERLAP */}
 
-        <label style={{ fontSize: "16px" }}>Raster:</label>
+        <FormControl style={{ marginLeft: "10px", width: "80px" }}>
+          <TextField
+            label="Overlap X"
+            type="number"
+            value={wellSelectorState.overlapWidth}
+            onChange={handleOverlapWidthSpinnerChange}
+            inputProps={{
+              min: -1,
+              max: 1,
+              step: 0.1,
+            }}
+          />
+        </FormControl>
 
-        <input
-          type="number"
-          value={wellSelectorState.rasterHeight}
-          onChange={handleRasterHeightSpinnerChange}
-          min="1"
-          step="5"
-          style={{ marginLeft: "0px", width: "60px" }}
-        />
+        <FormControl>
+          <TextField
+            label="Overlap Y"
+            type="number"
+            value={wellSelectorState.overlapHeight}
+            onChange={handleOverlapHeightSpinnerChange}
+            inputProps={{
+              min: -1,
+              max: 1,
+              step: 0.1,
+            }}
+            style={{ marginRight: "10px", width: "80px" }}
+          />
+        </FormControl>
 
-        <input
-          type="number"
-          value={wellSelectorState.rasterWidth}
-          onChange={handleRasterWidthSpinnerChange}
-          min="1"
-          step="5"
-          style={{ marginRight: "10px", width: "60px" }}
-        />
+        {/* RASTER */}
 
-        <label style={{ fontSize: "16px" }}>Overlap:</label>
+        <FormControl>
+          <TextField
+            label="Raster Width"
+            type="number"
+            value={wellSelectorState.rasterHeight}
+            onChange={handleRasterHeightSpinnerChange}
+            inputProps={{
+              min: 1,
+              step: 5,
+            }}
+            style={{ marginLeft: "0px", width: "96px" }}
+          />
+        </FormControl>
 
-        <input
-          type="number"
-          value={wellSelectorState.overlapHeight}
-          onChange={handleOverlapHeightSpinnerChange}
-          min="-1"
-          max="1"
-          step=".1"
-          style={{ marginLeft: "0px", width: "60px" }}
-        />
+        <FormControl>
+          <TextField
+            label="Raster Height"
+            type="number"
+            value={wellSelectorState.rasterWidth}
+            onChange={handleRasterWidthSpinnerChange}
+            inputProps={{
+              min: 1,
+              step: 5,
+            }}
+            style={{ marginRight: "10px", width: "96px" }}
+          />
+        </FormControl>
 
-        <input
-          type="number"
-          value={wellSelectorState.overlapWidth}
-          onChange={handleOverlapWidthSpinnerChange}
-          min="-1"
-          max="1"
-          step=".1"
-          style={{ marginRight: "10px", width: "60px" }}
-        />
+        {/* VIEW */}
 
-        <label style={{ fontSize: "16px" }}>View:</label>
-
-        <button onClick={() => handleResetView()}>reset view</button>
+        <Button variant="contained" onClick={() => handleResetView()}>
+          reset view
+        </Button>
 
         <label style={{ fontSize: "14px" }}>
           <input
@@ -161,26 +194,54 @@ const WellSelectorComponent = () => {
         </label>
       </div>
 
-      {/* Buttons to change the mode */}
-      <div style={{ marginBottom: "10px" }}>
-        <label style={{ fontSize: "16px" }}>Modes:</label>
+      {/* MODE */}
+      <div
+        style={{
+          marginBottom: "10px",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <ButtonGroup>
+          <Button
+            variant="contained"
+            style={{}}
+            onClick={() => handleModeChange(Mode.SINGLE_SELECT)}
+            disabled={wellSelectorState.mode == Mode.SINGLE_SELECT}
+          >
+            SINGLE select
+          </Button>
 
-        <button onClick={() => handleModeChange(Mode.SINGLE_SELECT)}>
-          SINGLE select
-        </button>
+          <Button
+            variant="contained"
+            style={{}}
+            onClick={() => handleModeChange(Mode.AREA_SELECT)}
+            disabled={wellSelectorState.mode == Mode.AREA_SELECT}
+          >
+            AREA select
+          </Button>
 
-        <button onClick={() => handleModeChange(Mode.AREA_SELECT)}>
-          AREA select
-        </button>
+          <Button
+            variant="contained"
+            style={{}}
+            onClick={() => handleModeChange(Mode.CUP_SELECT)}
+            disabled={wellSelectorState.mode == Mode.CUP_SELECT}
+          >
+            CUP select
+          </Button>
 
-        <button onClick={() => handleModeChange(Mode.CUP_SELECT)}>
-          CUP select
-        </button>
-
-        <button onClick={() => handleModeChange(Mode.MOVE_CAMERA)}>
-          MOVE CAMERA
-        </button>
+          <Button
+            variant="contained"
+            style={{}}
+            onClick={() => handleModeChange(Mode.MOVE_CAMERA)}
+            disabled={wellSelectorState.mode == Mode.MOVE_CAMERA}
+          >
+            MOVE CAMERA
+          </Button>
+        </ButtonGroup>
       </div>
+
       {/* WellSelectorComponent with mode passed as prop width: "100%", height: "100%", display: "block"*/}
       <WellSelectorCanvas ref={childRef} style={{}} />
     </div>

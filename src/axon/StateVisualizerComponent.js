@@ -11,7 +11,7 @@ class StateVisualizerComponent extends Component {
     const roundedZ = Math.round(z);
 
     return (
-      <div  style={{ border: '1px solid white', padding: '10px'}}>
+      <div  style={{ border: '1px solid #eee', padding: '10px'}}>
         <table>
           <thead>
             <tr>

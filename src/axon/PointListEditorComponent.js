@@ -4,6 +4,16 @@ import { useDispatch, useSelector } from "react-redux";
 
 import * as experimentSlice from "../state/slices/ExperimentSlice";
 
+import {
+  Button,
+  Input,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+} from "@mui/material";
+
 //##################################################################################
 const PointListEditorComponent = () => {
   //local state
@@ -61,7 +71,7 @@ const PointListEditorComponent = () => {
   return (
     <div
       style={{
-        border: "1px solid #fff",
+        border: "1px solid #eee",
         textAlign: "left",
         padding: "10px",
         margin: "0px",
@@ -70,7 +80,7 @@ const PointListEditorComponent = () => {
     >
       {/* Header */}
       <h4 style={{ margin: "0", padding: "0" }}>Point List Editor</h4>
-
+ 
       {/* Remove item button */}
       <div
         style={{
@@ -81,16 +91,28 @@ const PointListEditorComponent = () => {
         }}
       >
         {/* create point*/}
-        <button onClick={handleCreatePoint}>+</button>
+        <Button variant="contained" onClick={handleCreatePoint}>
+          +
+        </Button>
 
         {/* view mode */}
-        <select value={viewMode} onChange={(e) => setViewMode(e.target.value)}>
-          <option value="position">Position Parameter</option>
-          <option value="shape">Shape Parameter</option>
-        </select>
+        <FormControl>
+          <InputLabel>Parameter</InputLabel>
+          <Select
+            sx={{ height: "32px" }}
+            label="Parameter"
+            value={viewMode}
+            onChange={(e) => setViewMode(e.target.value)}
+          >
+            <MenuItem value="position">Position</MenuItem>
+            <MenuItem value="shape">Shape</MenuItem>
+          </Select>
+        </FormControl>
 
         {/* delete all */}
-        <button onClick={handleDeleteAll}>delete all</button>
+        <Button variant="contained" onClick={handleDeleteAll}>
+          delete all
+        </Button>
       </div>
 
       {/* Sortable list */}
@@ -112,7 +134,7 @@ const PointListEditorComponent = () => {
             <div //point item
               className="draggableItem"
               style={{
-                border: "1px solid #fff",
+                border: "1px solid #eee",
                 textAlign: "left",
                 padding: "4px",
                 margin: "0px",
@@ -138,9 +160,9 @@ const PointListEditorComponent = () => {
               </div>
 
               {/* Input for x value */}
-              {viewMode == "position" && <div>x</div>}
+              {viewMode == "position" && <div>x:</div>}
               {viewMode == "position" && (
-                <input
+                <Input
                   type="number"
                   value={item.x}
                   onChange={(e) =>
@@ -156,9 +178,9 @@ const PointListEditorComponent = () => {
               )}
 
               {/* Input for y value */}
-              {viewMode == "position" && <div>y</div>}
+              {viewMode == "position" && <div>y:</div>}
               {viewMode == "position" && (
-                <input
+                <Input
                   type="number"
                   value={item.y}
                   onChange={(e) =>
@@ -176,22 +198,25 @@ const PointListEditorComponent = () => {
               {/* Input for shape value */}
               {viewMode == "shape" && <div>S</div>}
               {viewMode == "shape" && (
-                <select
-                  value={item.shape}
-                  onChange={(e) =>
-                    handlePositionChanged(index, "shape", e.target.value)
-                  }
-                >
-                  <option value="">Off</option>
-                  <option value="rectangle">Rect</option>
-                  <option value="circle">Circle</option>
-                </select>
+                <FormControl>
+                  <Select
+                    sx={{ height: "32px" }}
+                    value={item.shape}
+                    onChange={(e) =>
+                      handlePositionChanged(index, "shape", e.target.value)
+                    }
+                  >
+                    <MenuItem value="">Off</MenuItem>
+                    <MenuItem value="rectangle">Rect</MenuItem>
+                    <MenuItem value="circle">Circle</MenuItem>
+                  </Select>
+                </FormControl>
               )}
 
-              {/* Input for n value */console.log(item.shape)}
-              {viewMode == "shape" && item.shape != "" && <div>nX</div>}
+              {/* Input for n value */ console.log(item.shape)}
+              {viewMode == "shape" && item.shape != "" && <div>nX:</div>}
               {viewMode == "shape" && item.shape != "" && (
-                <input
+                <Input
                   type="number"
                   value={item.neighborsX}
                   min="0"
@@ -207,9 +232,11 @@ const PointListEditorComponent = () => {
                   style={{ flex: 1 }} // Ensures inputs take equal space
                 />
               )}
-              {viewMode == "shape" && item.shape == "rectangle" && <div>nY</div>}
               {viewMode == "shape" && item.shape == "rectangle" && (
-                <input
+                <div>nY:</div>
+              )}
+              {viewMode == "shape" && item.shape == "rectangle" && (
+                <Input
                   type="number"
                   value={item.neighborsY}
                   min="0"
@@ -227,9 +254,16 @@ const PointListEditorComponent = () => {
               )}
 
               {/* dummy button*/}
-              <button disabled={true}>Goto</button>
+              <Button sx={{ padding: "0px" }} disabled={true}>
+                Goto
+              </Button>
               {/* Remove item button*/}
-              <button onClick={() => handleRemovePoint(index)}>Delete</button>
+              <Button
+                sx={{ padding: "0px" }}
+                onClick={() => handleRemovePoint(index)}
+              >
+                Delete
+              </Button>
             </div>
           )
         )}

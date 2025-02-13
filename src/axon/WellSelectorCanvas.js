@@ -21,6 +21,8 @@ export const Mode = Object.freeze({
 //##################################################################################
 const WellSelectorCanvas = forwardRef((props, ref) => {
   const canvasRef = useRef(null);
+  const parentRef = useRef(null);
+  const isRendering = useRef(false); 
 
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -84,7 +86,7 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
 
   //##################################################################################
   useEffect(() => {
-    // Draw canvas content
+    // Draw canvas content when state changed
     renderCanvas();
   }, [
     scale,
@@ -97,6 +99,9 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
     mouseMovePosition,
     position,
   ]);
+
+  //##################################################################################
+
 
   //##################################################################################
   const calcPixelToPhysicalRatio = () => {
@@ -434,7 +439,8 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
       ctx.stroke();
 
       // draw the index as label
-      ctx.font = "10px Arial";
+      const fontSize = 10/scale; 
+      ctx.font = `${fontSize}px Arial`;
       ctx.fillStyle = ctx.strokeStyle; //"black"; use same color for text
       const textWidth = ctx.measureText(index).width;
       const textX = squareX - centerWidth/2 + 2; 
@@ -667,7 +673,7 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
 
   //##################################################################################
   const handleMouseMove = (e) => {
-    console.log("handleMouseMove");
+    //console.log("handleMouseMove");
     //handle mouse move
     const newMousePosition = getLocalMousePosition(e);
     const canvasRect = canvasRef.current.getBoundingClientRect();
@@ -895,11 +901,12 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
 
   //##################################################################################
   return (
-    <div
+    <div ref={parentRef}
       style={{
         position: "relative",
-        border: "1px solid white", //TODO RM ME
+        border: "1px solid #eee", //TODO RM ME
         overflow: "hidden",
+        //background: "black",
         //width: "100%",
         //height: "100%"
       }}
@@ -919,6 +926,8 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
         onContextMenu={handleContextMenu}
         style={{
           //border: "1px solid white", //Note: dont set border size because it leads to canvas grow (canvas.parentElement.clientWidth)
+          width: "100%",  // Canvas width will adjust to the parent's width
+          height: "100%", // Canvas height will adjust to the parent's height
           cursor: getCursorStyle(),
           display: "block",
         }}

@@ -14,16 +14,16 @@ import webSocketConnectionReducer from "./slices/WebSocketConnectionSlice";
 import positionReducer from "./slices/PositionSlice";
 import wellSelectorReducer from "./slices/WellSelectorSlice";
 import experimentReducer from "./slices/ExperimentSlice";
-import hardwareReduzer from "./slices/HardwareSlice";
-import liveStreamReduzer from "./slices/LiveStreamSlice";
+import hardwareReducer from "./slices/HardwareSlice";
+import liveStreamReducer from "./slices/LiveStreamSlice";
 
 // Combine reducers
 const rootReducer = combineReducers({
   webSocketSettingsState: webSocketSettingsReducer,
   webSocketConnectionState: webSocketConnectionReducer,
   experimentState: experimentReducer,
-  liveStreamState: liveStreamReduzer,
-  hardwareState: hardwareReduzer,
+  liveStreamState: liveStreamReducer,
+  hardwareState: hardwareReducer,
   wellSelectorState: wellSelectorReducer,
   position: positionReducer,
 });

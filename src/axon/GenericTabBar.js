@@ -1,5 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 
+import {
+    Button, 
+  } from "@mui/material";
+
 // Global counter to generate unique IDs for each component instance
 let counter = 0;
 
@@ -40,17 +44,18 @@ function GenericTabBar({ children, tabNames, id }) {
 
   const renderTabs = () => {
     return React.Children.map(children, (child, index) => (
-      <button
+      <Button
         style={{
           padding: "10px",
           cursor: "pointer",
+          border: "1px solid #eee",
           borderBottom: activeTab === index ? "8px solid blue" : "none",
         }}
         onClick={() => setActiveTab(index)}
         key={index}
       >
         {tabNames[index] || `Tab ${index + 1}`}
-      </button>
+      </Button>
     ));
   };
 

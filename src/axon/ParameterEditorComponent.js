@@ -3,10 +3,15 @@ import { useDispatch, useSelector } from "react-redux";
 import * as experimentSlice from "../state/slices/ExperimentSlice.js";  
 import * as hardwareSlice from "../state/slices/HardwareSlice.js";  
 
+import { useTheme } from '@mui/material/styles';
+
 const ParameterEditorComponent = () => {
-  const dispatch = useDispatch();
+
+//theme
+const theme = useTheme();
 
   // Accessing parameterValue and parameterRange in Redux store
+  const dispatch = useDispatch();
   const parameterValue = useSelector((state) => state.experimentState.parameterValue); 
   const parameterRange = useSelector((state) => state.hardwareState.parameterRange); 
 
@@ -45,14 +50,14 @@ const ParameterEditorComponent = () => {
     //left: '50%',
     transform: 'translateX(-100%)',
     fontSize: '14px',
-    color: '#fff',
-    textShadow: '3px 3px 5px rgba(0, 0, 0, 0.9)'
+    //color: 'red',
+    //textShadow: '3px 3px 5px rgba(0, 0, 0, 0.9)'
   };
 
   return (
     <div
       style={{
-        border: "1px solid #fff",
+        border: "1px solid #eee",
         textAlign: "left",
         padding: "10px",
         margin: "0px",
