@@ -8,6 +8,7 @@ import * as hardwareSlice from "../state/slices/HardwareSlice.js";
 import * as positionSlice from "../state/slices/PositionSlice.js";
 
 import * as wsUtils from "./WellSelectorUtils.js";
+
 //##################################################################################
 
 export const Mode = Object.freeze({
@@ -484,9 +485,9 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
         );
 
         // Draw squares inside the bounding box
-
         if (isShiftKeyPressed) {
-            //create multiple points
+          //shift: create multiple points
+          //create multiple points
           pointsInRectList.forEach((point) => {
             const insideWidth = wellSelectorState.showOverlap
               ? getRasterWidthAsPx()
@@ -504,7 +505,7 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
             );
           });
         } else {
-            //create single point
+          //without shift: create single point
           //calc and draw center rect
           const centerPoint = wsUtils.calcCenterPoint(
             mouseDownPosition,

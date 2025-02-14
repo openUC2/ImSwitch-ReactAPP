@@ -35,6 +35,7 @@ const initialExperimentState = {
   pointList: [
     {
       id: uuidv4(),
+      name: "",
       x: 100000,
       y: 100000,
       shape: "",
@@ -143,6 +144,7 @@ const experimentSlice = createSlice({
       console.log("createPoint", action);
       const newPoint = {
         id: uuidv4(),
+        name: action.payload.name != null ? action.payload.name : "",
         x: action.payload.x,
         y: action.payload.y,
         shape: action.payload.shape != null ? action.payload.shape : "",

@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { ReactSortable } from "react-sortablejs";
 import { useDispatch, useSelector } from "react-redux";
+import { FixedSizeList as List } from "react-window";
 
 import * as experimentSlice from "../state/slices/ExperimentSlice";
+
+import { Shape } from "./WellSelectorCanvas.js";
 
 import {
   Button,
@@ -12,12 +15,20 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
+  Box,
 } from "@mui/material";
+//##################################################################################
+
+export const ViewMode = Object.freeze({
+  NAME: "name",
+  POSITION: "position",
+  SHAPE: "shape",
+});
 
 //##################################################################################
 const PointListEditorComponent = () => {
   //local state
-  const [viewMode, setViewMode] = useState("position");
+  const [viewMode, setViewMode] = useState(ViewMode.NAME);
 
   //redux dispatcher
   const dispatch = useDispatch();
@@ -68,6 +79,17 @@ const PointListEditorComponent = () => {
   };
 
   //##################################################################################
+  const PointItem = ({ item, index }) => {
+    // Render the item (customize as needed)
+    return (
+      <div key={index}>
+        <p>{item.name}</p> {/* or however you want to display the item */}
+        {/* Other item details */}
+      </div>
+    );
+  };
+  
+  //##################################################################################
   return (
     <div
       style={{
@@ -80,7 +102,7 @@ const PointListEditorComponent = () => {
     >
       {/* Header */}
       <h4 style={{ margin: "0", padding: "0" }}>Point List Editor</h4>
- 
+
       {/* Remove item button */}
       <div
         style={{
@@ -104,8 +126,9 @@ const PointListEditorComponent = () => {
             value={viewMode}
             onChange={(e) => setViewMode(e.target.value)}
           >
-            <MenuItem value="position">Position</MenuItem>
-            <MenuItem value="shape">Shape</MenuItem>
+            <MenuItem value={ViewMode.NAME}>Name</MenuItem>
+            <MenuItem value={ViewMode.POSITION}>Position</MenuItem>
+            <MenuItem value={ViewMode.SHAPE}>Shape</MenuItem>
           </Select>
         </FormControl>
 
@@ -131,7 +154,8 @@ const PointListEditorComponent = () => {
             item,
             index //for each point
           ) => (
-            <div //point item
+            <div //<------------------------------------------BEGIN ITEM
+              key={item.id} //ReactSortable item key
               className="draggableItem"
               style={{
                 border: "1px solid #eee",
@@ -146,9 +170,8 @@ const PointListEditorComponent = () => {
                 marginTop: "-1px",
                 //flexWrap: "wrap", // Allow the items to wrap if the screen is small
               }}
-              key={index} //key={item.id}
             >
-              {/* Point Name */}
+              {/* Point INDEX */}
               <div
                 className="drag-handle"
                 style={{
@@ -159,9 +182,23 @@ const PointListEditorComponent = () => {
                 ≡{index}:
               </div>
 
+              {/* Input for name value */}
+              {viewMode == ViewMode.NAME && <div></div>}
+              {viewMode == ViewMode.NAME && (
+                <Input
+                  type="text"
+                  value={item.name}
+                  onChange={(e) =>
+                    handlePositionChanged(index, "name", e.target.value)
+                  }
+                  placeholder="name"
+                  style={{ flex: 1 }} // Ensures inputs take equal space
+                />
+              )}
+
               {/* Input for x value */}
-              {viewMode == "position" && <div>x:</div>}
-              {viewMode == "position" && (
+              {viewMode == ViewMode.POSITION && <div>x:</div>}
+              {viewMode == ViewMode.POSITION && (
                 <Input
                   type="number"
                   value={item.x}
@@ -178,8 +215,8 @@ const PointListEditorComponent = () => {
               )}
 
               {/* Input for y value */}
-              {viewMode == "position" && <div>y:</div>}
-              {viewMode == "position" && (
+              {viewMode == ViewMode.POSITION && <div>y:</div>}
+              {viewMode == ViewMode.POSITION && (
                 <Input
                   type="number"
                   value={item.y}
@@ -196,8 +233,8 @@ const PointListEditorComponent = () => {
               )}
 
               {/* Input for shape value */}
-              {viewMode == "shape" && <div>S</div>}
-              {viewMode == "shape" && (
+              {viewMode == ViewMode.SHAPE && <div>S</div>}
+              {viewMode == ViewMode.SHAPE && (
                 <FormControl>
                   <Select
                     sx={{ height: "32px" }}
@@ -206,16 +243,16 @@ const PointListEditorComponent = () => {
                       handlePositionChanged(index, "shape", e.target.value)
                     }
                   >
-                    <MenuItem value="">Off</MenuItem>
-                    <MenuItem value="rectangle">Rect</MenuItem>
-                    <MenuItem value="circle">Circle</MenuItem>
+                    <MenuItem value={Shape.EMPTY}>Off</MenuItem>
+                    <MenuItem value={Shape.RECTANGLE}>Rect</MenuItem>
+                    <MenuItem value={Shape.CIRCLE}>Circle</MenuItem>
                   </Select>
                 </FormControl>
               )}
 
               {/* Input for n value */ console.log(item.shape)}
-              {viewMode == "shape" && item.shape != "" && <div>nX:</div>}
-              {viewMode == "shape" && item.shape != "" && (
+              {viewMode == ViewMode.SHAPE && item.shape != "" && <div>nX:</div>}
+              {viewMode == ViewMode.SHAPE && item.shape != "" && (
                 <Input
                   type="number"
                   value={item.neighborsX}
@@ -232,10 +269,10 @@ const PointListEditorComponent = () => {
                   style={{ flex: 1 }} // Ensures inputs take equal space
                 />
               )}
-              {viewMode == "shape" && item.shape == "rectangle" && (
+              {viewMode == ViewMode.SHAPE && item.shape == Shape.RECTANGLE && (
                 <div>nY:</div>
               )}
-              {viewMode == "shape" && item.shape == "rectangle" && (
+              {viewMode == ViewMode.SHAPE && item.shape == Shape.RECTANGLE && (
                 <Input
                   type="number"
                   value={item.neighborsY}
@@ -254,17 +291,21 @@ const PointListEditorComponent = () => {
               )}
 
               {/* dummy button*/}
-              <Button sx={{ padding: "0px" }} disabled={true}>
-                Goto
-              </Button>
+              {viewMode != ViewMode.READONLY && (
+                <Button sx={{ padding: "0px" }} disabled={true}>
+                  Goto
+                </Button>
+              )}
               {/* Remove item button*/}
-              <Button
-                sx={{ padding: "0px" }}
-                onClick={() => handleRemovePoint(index)}
-              >
-                Delete
-              </Button>
-            </div>
+              {viewMode != ViewMode.READONLY && (
+                <Button
+                  sx={{ padding: "0px" }}
+                  onClick={() => handleRemovePoint(index)}
+                >
+                  Delete
+                </Button>
+              )}
+            </div>//<------------------------------------------END ITEM
           )
         )}
       </ReactSortable>
