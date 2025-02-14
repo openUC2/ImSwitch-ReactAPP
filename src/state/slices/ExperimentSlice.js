@@ -140,15 +140,17 @@ const experimentSlice = createSlice({
       }
     },
     createPoint: (state, action) => {
-      console.log("createPoint");
+      console.log("createPoint", action);
       const newPoint = {
         id: uuidv4(),
         x: action.payload.x,
         y: action.payload.y,
-        shape: "",
-        neighborsX: 0,
-        neighborsY: 0,
+        shape: action.payload.shape != null ? action.payload.shape : "",
+        neighborsX: action.payload.neighborsX != null ? action.payload.neighborsX : 0,
+        neighborsY: action.payload.neighborsY != null ? action.payload.neighborsY : 0,
       };
+      
+      console.log("createPoint newPoint", newPoint, action.payload.neighborsX);
       state.pointList.push(newPoint);
     },
     addPoint: (state, action) => {

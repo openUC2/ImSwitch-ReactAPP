@@ -206,6 +206,14 @@ export function isSquareInsideRect2(x, y, rasterSize, x1, y1, x2, y2) {
 }
 
 //##################################################################################
+export const calcCenterPoint = (pointA, pointB) => {
+    const centerX = (pointA.x + pointB.x) / 2;
+    const centerY = (pointA.y + pointB.y) / 2;
+    return { x: centerX, y: centerY };
+  };
+
+
+//##################################################################################
 export function isLineIntersectingSquare(
   x1,
   y1,
