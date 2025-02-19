@@ -9,6 +9,9 @@ import * as positionSlice from "../state/slices/PositionSlice.js";
 
 import * as wsUtils from "./WellSelectorUtils.js";
 
+import apiGetHistoStatus from "../backendapi/apiGetHistoStatus.js";
+import apiMovePositioner from "../backendapi/apiMovePositioner";
+
 //##################################################################################
 
 export const Mode = Object.freeze({
@@ -909,13 +912,23 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
     //handle mode
     if (wellSelectorState.mode == Mode.MOVE_CAMERA) {
       //move camera
+      apiMovePositioner({
+        axis: "X",
+        dist: calcPx2Phy(localPos.x),
+        isAbsolute: true
+      })
+        .then((positionerResponse) => {
+          console.log("apiMovePositioner", positionerResponse);
+        })
+        .catch((error) => {
+          console.error("apiMovePositioner", "Error moving position:", error);
+        });
+      //save target
       dispatch(
         wellSelectorSlice.setCameraTargetPosition(
           calcPxPoint2PhyPoint(localPos)
         )
       );
-      //TODO web request??
-      console.warn("TODO Implement web request");
     }
 
     //hide context menu
