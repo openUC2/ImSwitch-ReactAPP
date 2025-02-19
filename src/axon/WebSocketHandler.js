@@ -29,7 +29,7 @@ const WebSocketHandler = () => {
   useEffect(() => {
     //create the socket
     const adress =
-      connectionSettingsState.ip + ":" + connectionSettingsState.port;
+      connectionSettingsState.ip + ":" + connectionSettingsState.websocketPort;
     console.log("WebSocket", adress);
     const socket = io(adress, {
       transports: ["websocket"],

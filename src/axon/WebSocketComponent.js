@@ -27,8 +27,12 @@ const WebSocketComponent = () => {
             <td>{connectionSettingsState.ip}</td>
           </tr>
           <tr>
-            <td>Port</td>
-            <td>{connectionSettingsState.port}</td>
+            <td>Port (ws)</td>
+            <td>{connectionSettingsState.websocketPort}</td>
+          </tr>
+          <tr>
+            <td>Port (api)</td>
+            <td>{connectionSettingsState.apiPort}</td>
           </tr>
           <thead>
             <tr>

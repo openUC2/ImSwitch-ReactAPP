@@ -140,7 +140,9 @@ function App() {
   const drawerWidth = sidebarVisible ? 240 : 60; // Full width when open, minimized when hidden
 
   const [hostIP, setHostIP] = useState(connectionSettingsState.ip);
-  const [hostPort, sethostPort] = useState(connectionSettingsState.port);
+  //const [hostPort, sethostPort] = useState(connectionSettingsState.port);
+  const [websocketPort, setWebsocketPort] = useState(connectionSettingsState.websocketPort);
+  const [apiPort, setApiPort] = useState(connectionSettingsState.apiPort);
 
   const [selectedPlugin, setSelectedPlugin] = useState("LiveView"); // Control which plugin to show
   const [isDialogOpen, setDialogOpen] = useState(false);
@@ -161,7 +163,7 @@ function App() {
   FileManager
   */
   const fileUploadConfig = {
-    url: `https://${hostIP}:${hostPort}/upload`, // Change this as per your API URL
+    url: `https://${hostIP}:${apiPort}/upload`, // Change this as per your API URL
   };
 
   // Fetch Files
@@ -218,7 +220,7 @@ function App() {
   };
 
   const handleDownload = async (files) => {
-    await downloadFile(files, hostIP, hostPort);
+    await downloadFile(files, hostIP, apiPort);
   };
 
   const handleRefresh = () => getFiles();
@@ -235,7 +237,7 @@ function App() {
       try {
         const validPort = await checkPortsForApi(currentHostname, portsToCheck);
         setHostIP(`https://${currentHostname}`);
-        sethostPort(validPort);
+        setApiPort(validPort);
       } catch (error) {
         console.error("No valid API port found.");
       }
@@ -263,9 +265,9 @@ function App() {
  
   // change API url/port and update filelist
   useEffect(() => {
-    api.defaults.baseURL = `${hostIP}:${hostPort}`;
+    api.defaults.baseURL = `${hostIP}:${apiPort}`;
     handleRefresh();
-  }, [hostIP, hostPort]);
+  }, [hostIP, apiPort]);
 
   // Dialog handlers for the URL / Port settings
   const handleCloseDialog = () => {
@@ -277,10 +279,16 @@ function App() {
     setDialogOpen(true);
   };
 
+
   // Handle changes to the IP address
-  const handlehostPortChange = (event) => {
+  const handlehostWebsocketPortChange = (event) => {
     let port = event.target.value.trim();
-    sethostPort(port);
+    setWebsocketPort(port);
+  };
+  // Handle changes to the IP address
+  const handlehostApiPortChange = (event) => {
+    let port = event.target.value.trim();
+    setApiPort(port);
   };
 
   // Handle changes to the port
@@ -299,12 +307,14 @@ function App() {
   // Save the IP address and port
   const handleSavehostIP = () => {
     setHostIP(hostIP);
-    sethostPort(hostPort);
+    setApiPort(apiPort);
+    setWebsocketPort(websocketPort);
     handleCloseDialog();
     
     //redux
     dispatch(connectionSettingsSlice.setIp(hostIP));
-    dispatch(connectionSettingsSlice.setPort(hostPort));
+    dispatch(connectionSettingsSlice.setWebsocketPort(websocketPort));
+    dispatch(connectionSettingsSlice.setApiPort(apiPort));
   };
 
   const toggleTheme = () => {
@@ -500,7 +510,7 @@ function App() {
               <LiveWidgetProvider>
                 <LiveView
                   hostIP={hostIP}
-                  hostPort={hostPort}
+                  hostPort={websocketPort}
                   // pass down a setter or context for the image if needed
                   onImageUpdate={(img) => setSharedImage(img)}
                 />
@@ -511,17 +521,17 @@ function App() {
             )}
             {selectedPlugin === "HistoScan" && (
               <WidgetContextProvider>
-                <HistoScanController hostIP={hostIP} hostPort={hostPort} />
+                <HistoScanController hostIP={hostIP} hostPort={apiPort} />
               </WidgetContextProvider>
             )}
             {selectedPlugin === "JupyteNotebook" && (
               <JupyterProvider>
-                <JupyterExecutor hostIP={hostIP} hostPort={hostPort} />
+                <JupyterExecutor hostIP={hostIP} hostPort={apiPort} />
               </JupyterProvider>
             )}
             {selectedPlugin === "Infinity Scanning" && (
               <WidgetContextProvider>
-                <LargeFovScanController hostIP={hostIP} hostPort={hostPort} />
+                <LargeFovScanController hostIP={hostIP} hostPort={apiPort} />
               </WidgetContextProvider>
             )}
             {selectedPlugin === "Blockly" && (
@@ -534,7 +544,7 @@ function App() {
                 <MCTProvider>
                   <TimelapseController
                     hostIP={hostIP}
-                    hostPort={hostPort}
+                    hostPort={apiPort}
                     title="Timelapse"
                   />
                 </MCTProvider>
@@ -545,7 +555,7 @@ function App() {
               <div className="app">
                 <div className="file-manager-container">
                   <FileManager
-                    baseUrl={`${hostIP}:${hostPort}`}
+                    baseUrl={`${hostIP}:${apiPort}`}
                     files={files}
                     fileUploadConfig={fileUploadConfig}
                     isLoading={isLoading}
@@ -560,7 +570,7 @@ function App() {
                     layout="grid"
                     enableFilePreview
                     maxFileSize={10485760}
-                    filePreviewPath={`${hostIP}:${hostPort}/`}
+                    filePreviewPath={`${hostIP}:${apiPort}/`}
                     acceptedFileTypes=".txt, .png, .jpg, .jpeg, .pdf, .doc, .docx, .exe, .js, .csv"
                   />
                 </div>
@@ -568,22 +578,22 @@ function App() {
             )}
             {selectedPlugin === "Lightsheet" && (
               <WidgetContextProvider>
-                <LightsheetController hostIP={hostIP} hostPort={hostPort} />
+                <LightsheetController hostIP={hostIP} hostPort={apiPort} />
               </WidgetContextProvider>
             )}
             {selectedPlugin === "FlowStop" && (
               <WidgetContextProvider>
-                <FlowStopController hostIP={hostIP} hostPort={hostPort} />
+                <FlowStopController hostIP={hostIP} hostPort={apiPort} />
               </WidgetContextProvider>
             )}
             {selectedPlugin === "SocketView" && (
-              <SocketView hostIP={hostIP} hostPort={hostPort} />
+              <SocketView hostIP={hostIP} hostPort={websocketPort} />
             )}
             {selectedPlugin === "Widgets" && (
               <WidgetContextProvider>
                 <Tab_Widgets
                   hostIP={hostIP}
-                  hostPort={hostPort}
+                  hostPort={apiPort}
                   layout={layout}
                   onLayoutChange={(newLayout) => setLayout(newLayout)}
                 />
@@ -607,12 +617,21 @@ function App() {
               />
               <TextField
                 margin="dense"
-                id="port"
-                label="Port"
+                id="port websocket"
+                label="Port (websocket)"
                 type="text"
                 fullWidth
-                value={hostPort}
-                onChange={handlehostPortChange}
+                value={websocketPort}
+                onChange={handlehostWebsocketPortChange}
+              />
+              <TextField
+                margin="dense"
+                id="port api"
+                label="Port (API)"
+                type="text"
+                fullWidth
+                value={apiPort}
+                onChange={handlehostApiPortChange}
               />
             </DialogContent>
             <DialogActions>

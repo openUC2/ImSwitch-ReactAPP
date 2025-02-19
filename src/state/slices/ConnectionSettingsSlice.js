@@ -3,7 +3,10 @@ import { createSlice } from '@reduxjs/toolkit';
 // Define the initial state  
 const initialState = {
     ip: `https://${window.location.hostname}`,//ip: "https://localhost", "https://imswitch.openuc2.com"
-    port: 8002
+    //port: 8002,  //DEPREACTED
+    websocketPort: 8002,
+    apiPort: 8002,
+    //TODO protocol? seperated? http/https
 };
 
 // Create webSocketSettingsSlice slice
@@ -15,9 +18,13 @@ const connectionSettingsSlice = createSlice({
         console.log("setIp", action.payload);
         state.ip = action.payload;
     },
-    setPort: (state, action) => {
-        console.log("setPort", action.payload);
-        state.port = action.payload;
+    setWebsocketPort: (state, action) => {
+        console.log("setWebsocketPort", action.payload);
+        state.websocketPort = action.payload;
+    },
+    setApiPort: (state, action) => {
+        console.log("setApiPort", action.payload);
+        state.apiPort = action.payload;
     },
   
     resetState: (state) => {
@@ -30,7 +37,8 @@ const connectionSettingsSlice = createSlice({
 // Export actions from wellSelectorState slice
 export const { 
     setIp, 
-    setPort,
+    setWebsocketPort,
+    setApiPort,
     resetState,
 } = connectionSettingsSlice.actions;
 
