@@ -34,6 +34,11 @@ import { MCTProvider } from "./context/MCTContext";
 import AxonTabComponent from './axon/AxonTabComponent';
 import WebSocketHandler from './axon/WebSocketHandler';
 
+//redux
+import { useDispatch, useSelector } from "react-redux";
+import * as connectionSettingsSlice from "./state/slices/ConnectionSettingsSlice.js";
+
+
 // Filemanager
 import FileManager from "./FileManager/FileManager/FileManager";
 import { createFolderAPI } from "./FileManager/api/createFolderAPI";
@@ -119,13 +124,24 @@ const darkTheme = createTheme({
 });
 
 function App() {
+    /*
+    Redux
+    */
+    // redux dispatcher
+    const dispatch = useDispatch();
+    
+    // Access global Redux state
+    const connectionSettingsState = useSelector(connectionSettingsSlice.getConnectionSettingsState);
+    
   /*
   States
   */
   const [sidebarVisible, setSidebarVisible] = useState(true); // Sidebar visibility state
   const drawerWidth = sidebarVisible ? 240 : 60; // Full width when open, minimized when hidden
-  const [hostIP, setHostIP] = useState(`https://${window.location.hostname}`);
-  const [hostPort, sethostPort] = useState(8001);
+
+  const [hostIP, setHostIP] = useState(connectionSettingsState.ip);
+  const [hostPort, sethostPort] = useState(connectionSettingsState.port);
+
   const [selectedPlugin, setSelectedPlugin] = useState("LiveView"); // Control which plugin to show
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true); // State to toggle between light and dark themes
@@ -277,6 +293,7 @@ function App() {
       ip = ip.replace("http://", "https://");
     }
     setHostIP(ip);
+
   };
 
   // Save the IP address and port
@@ -284,6 +301,10 @@ function App() {
     setHostIP(hostIP);
     sethostPort(hostPort);
     handleCloseDialog();
+    
+    //redux
+    dispatch(connectionSettingsSlice.setIp(hostIP));
+    dispatch(connectionSettingsSlice.setPort(hostPort));
   };
 
   const toggleTheme = () => {

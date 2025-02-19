@@ -1,8 +1,8 @@
 import React, { useEffect } from "react";
 
 import { useDispatch, useSelector } from "react-redux";
-import * as webSocketSettingsSlice from "../state/slices/WebSocketSettingsSlice.js";
-import * as webSocketConnectionSlice from "../state/slices/WebSocketConnectionSlice.js";
+import * as connectionSettingsSlice from "../state/slices/ConnectionSettingsSlice.js";
+import * as webSocketSlice from "../state/slices/WebSocketSlice.js";
 import * as liveStreamSlice from "../state/slices/LiveStreamSlice.js";
 import * as hardwareSlice from "../state/slices/HardwareSlice.js";
 
@@ -15,8 +15,8 @@ const WebSocketHandler = () => {
   const dispatch = useDispatch();
 
   // Access global Redux state
-  const webSocketSettingsState = useSelector(
-    webSocketSettingsSlice.getWebSocketSettingsState
+  const connectionSettingsState = useSelector(
+    connectionSettingsSlice.getConnectionSettingsState
   );
 
   /*const webSocketConnectionState = useSelector(
@@ -29,7 +29,7 @@ const WebSocketHandler = () => {
   useEffect(() => {
     //create the socket
     const adress =
-      webSocketSettingsState.ip + ":" + webSocketSettingsState.port;
+      connectionSettingsState.ip + ":" + connectionSettingsState.port;
     console.log("WebSocket", adress);
     const socket = io(adress, {
       transports: ["websocket"],
@@ -45,13 +45,13 @@ const WebSocketHandler = () => {
     socket.on("connect", () => {
       console.log(`WebSocket connected with socket id: ${socket.id}`);
       //update redux state
-      dispatch(webSocketConnectionSlice.setConnected(true));
+      dispatch(webSocketSlice.setConnected(true));
     });
 
     socket.on("signal", (data) => {
       //console.log('WebSocket signal', data);
       //update redux state
-      dispatch(webSocketConnectionSlice.incrementSignalCount());
+      dispatch(webSocketSlice.incrementSignalCount());
 
       //handle signal
       const dataJson = JSON.parse(data);
@@ -95,7 +95,7 @@ const WebSocketHandler = () => {
     socket.onclose = () => {
       console.log("WebSocket closed");
       //update redux state
-      dispatch(webSocketConnectionSlice.resetState());
+      dispatch(webSocketSlice.resetState());
     };
 
     //##################################################################################
@@ -104,7 +104,7 @@ const WebSocketHandler = () => {
       socket.off("broadcast");
       socket.close();
     };
-  }, [dispatch]);
+  }, [dispatch, connectionSettingsState]);
 
   return null; // This component does not render anything, just manages the WebSocket
 };

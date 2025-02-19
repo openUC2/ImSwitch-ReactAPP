@@ -2,13 +2,13 @@ import { createSlice } from '@reduxjs/toolkit';
 
 // Define the initial state  
 const initialState = {
-    ip: "https://imswitch.openuc2.com",//ip: "https://localhost",
-    port: 8002,
+    ip: `https://${window.location.hostname}`,//ip: "https://localhost", "https://imswitch.openuc2.com"
+    port: 8002
 };
 
 // Create webSocketSettingsSlice slice
-const webSocketSettingsSlice = createSlice({
-  name: 'webSocketSettingsState',
+const connectionSettingsSlice = createSlice({
+  name: 'connectionSettingsState',
   initialState: initialState,
   reducers: {
     setIp: (state, action) => {
@@ -32,10 +32,10 @@ export const {
     setIp, 
     setPort,
     resetState,
-} = webSocketSettingsSlice.actions;
+} = connectionSettingsSlice.actions;
 
 // Selector helper
-export const getWebSocketSettingsState = (state) => state.webSocketSettingsState;
+export const getConnectionSettingsState = (state) => state.connectionSettingsState;
 
 // Export reducer from wellSelectorState slice
-export default webSocketSettingsSlice.reducer;
+export default connectionSettingsSlice.reducer;

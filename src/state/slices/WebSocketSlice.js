@@ -7,8 +7,8 @@ const initialState = {
 };
 
 // Create webSocketConnectionSlice slice
-const webSocketConnectionSlice = createSlice({
-  name: 'webSocketConnectionState',
+const webSocketSlice = createSlice({
+  name: 'webSocketState',
   initialState: initialState,
   reducers: {
     setConnected: (state, action) => {
@@ -34,10 +34,10 @@ export const {
     setConnected,
     incrementSignalCount,
     resetState,
-} = webSocketConnectionSlice.actions;
+} = webSocketSlice.actions;
 
 // Selector helper
-export const getWebSocketConnectionState = (state) => state.webSocketConnectionState;
+export const getWebSocketState = (state) => state.webSocketState;
 
 // Export reducer from slice
-export default webSocketConnectionSlice.reducer;
+export default webSocketSlice.reducer;

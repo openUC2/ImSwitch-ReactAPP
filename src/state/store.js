@@ -9,8 +9,8 @@ import storageSession from "redux-persist/lib/storage/session";
 
 //import slices
 //Note: the name "positionReducer" is generated with name out of createSlice() + "Reducer"
-import webSocketSettingsReducer from "./slices/WebSocketSettingsSlice";
-import webSocketConnectionReducer from "./slices/WebSocketConnectionSlice";
+import connectionSettingsReducer from "./slices/ConnectionSettingsSlice";
+import webSocketReducer from "./slices/WebSocketSlice";
 import positionReducer from "./slices/PositionSlice";
 import wellSelectorReducer from "./slices/WellSelectorSlice";
 import experimentReducer from "./slices/ExperimentSlice";
@@ -19,8 +19,8 @@ import liveStreamReducer from "./slices/LiveStreamSlice";
 
 // Combine reducers
 const rootReducer = combineReducers({
-  webSocketSettingsState: webSocketSettingsReducer,
-  webSocketConnectionState: webSocketConnectionReducer,
+  connectionSettingsState: connectionSettingsReducer,
+  webSocketState: webSocketReducer,
   experimentState: experimentReducer,
   liveStreamState: liveStreamReducer,
   hardwareState: hardwareReducer,
@@ -38,8 +38,8 @@ const persistConfig = {
   key: "root",
   storage, //<--storage type
   whitelist: [ //<-- add all slices that should be persisted
-    "webSocketSettingsState",
-    "liveStreamState",
+    "connectionSettingsState",
+    //"liveStreamState",
     "hardwareState",
     "experimentState",
     "wellSelectorState",
