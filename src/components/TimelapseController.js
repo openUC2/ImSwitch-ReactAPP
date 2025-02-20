@@ -58,7 +58,7 @@ const TimelapseController = ({ hostIP, hostPort }) => {
       try {
         const parsedData = JSON.parse(data);
         if (parsedData.name === "sigTimelapseWorkflowUpdate") {
-          const args = JSON.parse(parsedData.args.arg0.replace(/'/g, '"'));
+          const args = data.args.p0;
           setCurrentStep(`Step ${args.step_id}: ${args.name}`);
           console.log("Timelapse workflow update:", args);
           if (args.name === "Done") {

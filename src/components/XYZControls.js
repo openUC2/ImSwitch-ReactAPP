@@ -15,8 +15,8 @@ function XYZControls({ hostIP, hostPort }) {
       try {
         const jdata = JSON.parse(data);
         if (jdata.name === "sigUpdateMotorPosition") {
-          const parsedArgs = JSON.parse(jdata.args.p0.replace(/'/g, '"'));
-          const positionerKeys = Object.keys(parsedArgs);
+          const parsedArgs = jdata.args.p0;
+          const positionerKeys = Object.keys(parsedArgs);  
 
           if (positionerKeys.length > 0) {
             const key = positionerKeys[0];

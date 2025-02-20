@@ -93,10 +93,7 @@ const HistoScanController = ({ hostIP, hostPort }) => {
           console.log("Signal received in HistoScanController", jdata);
           setScanIndex(jdata.args.p0);
         } else if (jdata.name === "sigUpdateMotorPosition") {
-          // Parse args.p0 und ersetze einfache Anführungszeichen durch doppelte
-          const parsedArgs = JSON.parse(jdata.args.p0.replace(/'/g, '"'));
-
-          // Extrahiere alle Positioner-Namen (z.B. ESP32Stage)
+          const parsedArgs = jdata.args.p0;
           const positionerKeys = Object.keys(parsedArgs);
 
           if (positionerKeys.length > 0) {
@@ -139,7 +136,7 @@ const HistoScanController = ({ hostIP, hostPort }) => {
 
       const renderedWidth = img.offsetWidth;
       const renderedHeight = img.offsetHeight;
-      const parsedArgs = JSON.parse(jdata.args.p0.replace(/'/g, '"'));
+      const parsedArgs = jdata.args.p0;
       const shape = parsedArgs.shape;
       const data = parsedArgs.data;
 
