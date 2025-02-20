@@ -9,6 +9,7 @@ import LiveViewComponent from "./LiveViewComponent";
 import PositionControllerComponent from "./PositionControllerComponent";
 import PositionViewComponent from "./PositionViewComponent";
 import ParameterEditorComponent from "./ParameterEditorComponent";
+import ExperimentComponent from "./ExperimentComponent";
 import ResizablePanel from "./ResizablePanel";//<ResizablePanel></ResizablePanel> performace issues :/
 
 const AxonTabComponent = () => {
@@ -41,6 +42,7 @@ const AxonTabComponent = () => {
                 "Parameter",
                 "Well Selector",
                 "State",
+                "Experiment"
               ]}
             >
               <LiveViewControlWrapper />
@@ -51,6 +53,7 @@ const AxonTabComponent = () => {
                 <WebSocketComponent />
                 <PositionViewComponent />
               </div>
+              <ExperimentComponent />
             </GenericTabBar>
           </div>
       </div>

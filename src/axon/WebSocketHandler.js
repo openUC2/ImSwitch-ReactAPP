@@ -66,7 +66,7 @@ const WebSocketHandler = () => {
         dispatch(liveStreamSlice.setLiveViewImage(dataJson.image));
       } else if (dataJson.name == "sigUpdateMotorPosition") {
         //
-        console.log("sigUpdateMotorPosition");
+        console.log("sigUpdateMotorPosition", dataJson);
         //parse
         const p0Object = JSON.parse(dataJson.args.p0.replace(/'/g, '"'));
         //update redux state
