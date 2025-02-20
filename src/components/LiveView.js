@@ -54,15 +54,10 @@ const useStyles = makeStyles(() => ({
   },
 }));
 
-/*
-  Make sure you pass down `drawerWidth` and `appBarHeight` from the parent
-  (App.js), or otherwise define them here. For example, if your drawer is
-  240px wide when open, and the AppBar is 64px high:
-*/
-const drawerWidth = 240;
+// Adjust these values or pass them in as props
 const appBarHeight = 64;
 
-export default function LiveView({ hostIP, hostPort }) {
+export default function LiveView({ hostIP, hostPort, drawerWidth }) {
   const classes = useStyles();
   const socket = useWebSocket();
 
@@ -84,9 +79,15 @@ export default function LiveView({ hostIP, hostPort }) {
   const [gain, setGain] = useState("");
   const [isCamSettingsAuto, setCamSettingsIsAuto] = useState(true);
 
+  // Let the user toggle histogram overlay
+  const [showHistogram, setShowHistogram] = useState(false);
+
+  // Actual histogram data from the socket
   const [histogramX, setHistogramX] = useState([]);
   const [histogramY, setHistogramY] = useState([]);
   const [histogramActive, setHistogramActive] = useState(false);
+
+  // The min/max slider for grayscale display
   const [minVal, setMinVal] = useState(0);
   const [maxVal, setMaxVal] = useState(1023);
 
@@ -98,19 +99,16 @@ export default function LiveView({ hostIP, hostPort }) {
   const [isIllumination2Checked, setisIllumination2Checked] = useState(false);
   const [isIllumination3Checked, setisIllumination3Checked] = useState(false);
 
-  // Listen on socket for the first tab's detector frames & pixel size
+  // Listen on socket for frames + histogram
   useEffect(() => {
     if (!socket) return;
     socket.on("signal", (data) => {
       const jdata = JSON.parse(data);
-
       if (jdata.name === "sigUpdateImage") {
         const detectorName = jdata.detectorname;
         const imgSrc = `data:image/jpeg;base64,${jdata.image}`;
         setImageUrls((prev) => ({ ...prev, [detectorName]: imgSrc }));
-        if (jdata.pixelsize) {
-          setPixelSize(jdata.pixelsize);
-        }
+        if (jdata.pixelsize) setPixelSize(jdata.pixelsize);
       } else if (jdata.name === "sigHistogramComputed") {
         setHistogramX(jdata.args.p0);
         setHistogramY(jdata.args.p1);
@@ -132,7 +130,7 @@ export default function LiveView({ hostIP, hostPort }) {
     })();
   }, [hostIP, hostPort]);
 
-  // Turn on/off histogram display if available
+  // Check if histogram is possible
   useEffect(() => {
     (async () => {
       try {
@@ -147,7 +145,7 @@ export default function LiveView({ hostIP, hostPort }) {
     })();
   }, [hostIP, hostPort]);
 
-  // Get min/max from server for slider
+  // Fetch min/max values for initial slider setup
   useEffect(() => {
     (async () => {
       try {
@@ -162,11 +160,12 @@ export default function LiveView({ hostIP, hostPort }) {
     })();
   }, [hostIP, hostPort]);
 
-  // Poll-based image (tab #1 if there are 2 detectors)
+  // Poll-based image: if there's a second detector, poll once per second
   useEffect(() => {
     if (activeTab === 1 && detectors.length > 1) {
       const intervalId = setInterval(async () => {
         try {
+          // Adjust the endpoint to match your second camera
           const res = await fetch(
             `${hostIP}:${hostPort}/HistoScanController/getPreviewCameraImage?resizeFactor=1`
           );
@@ -177,12 +176,11 @@ export default function LiveView({ hostIP, hostPort }) {
           }
         } catch {}
       }, 1000);
-
       return () => clearInterval(intervalId);
     }
   }, [activeTab, detectors, hostIP, hostPort]);
 
-  // Laser names
+  // Get laser names
   useEffect(() => {
     (async () => {
       try {
@@ -195,7 +193,7 @@ export default function LiveView({ hostIP, hostPort }) {
     })();
   }, [hostIP, hostPort]);
 
-  // Laser value for the first laser
+  // If first laser name is available, get its value
   useEffect(() => {
     if (laserNames.length > 0) {
       (async () => {
@@ -210,12 +208,11 @@ export default function LiveView({ hostIP, hostPort }) {
     }
   }, [laserNames, hostIP, hostPort]);
 
-  // Handlers
+  // Handlers for grayscale slider
   const handleRangeChange = (event, newValue) => {
     setMinVal(newValue[0]);
     setMaxVal(newValue[1]);
   };
-
   const handleRangeChangeCommitted = async (event, newValue) => {
     try {
       await fetch(
@@ -224,6 +221,7 @@ export default function LiveView({ hostIP, hostPort }) {
     } catch {}
   };
 
+  // Streaming / snapping / recording
   const handleStreamToggle = async () => {
     const newStatus = !isStreamRunning;
     try {
@@ -258,6 +256,7 @@ export default function LiveView({ hostIP, hostPort }) {
     } catch {}
   };
 
+  // Camera settings
   const handleCamSettingsSwitchChange = async (event) => {
     setCamSettingsIsAuto(event.target.checked);
     try {
@@ -266,7 +265,6 @@ export default function LiveView({ hostIP, hostPort }) {
       );
     } catch {}
   };
-
   const handleExposureChange = async (event) => {
     setExposureTime(event.target.value);
     try {
@@ -275,7 +273,6 @@ export default function LiveView({ hostIP, hostPort }) {
       );
     } catch {}
   };
-
   const handleGainChange = async (event) => {
     setGain(event.target.value);
     try {
@@ -285,6 +282,7 @@ export default function LiveView({ hostIP, hostPort }) {
     } catch {}
   };
 
+  // Illumination
   const handleIlluminationSliderChange = async (event, laserIndex) => {
     const value = event.target.value;
     if (!laserNames[laserIndex]) return;
@@ -296,7 +294,6 @@ export default function LiveView({ hostIP, hostPort }) {
     } catch {}
     if (laserIndex === 0) setSliderIllu1Value(value);
   };
-
   const handleIlluminationCheckboxChange = async (event, laserIndex) => {
     const isActive = event.target.checked ? "true" : "false";
     if (!laserNames[laserIndex]) return;
@@ -311,10 +308,12 @@ export default function LiveView({ hostIP, hostPort }) {
     else if (laserIndex === 2) setisIllumination3Checked(event.target.checked);
   };
 
+  // Tabs
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
   };
 
+  // Stage movement
   const handleStageMove = async (direction) => {
     try {
       await fetch(
@@ -323,12 +322,13 @@ export default function LiveView({ hostIP, hostPort }) {
     } catch {}
   };
 
-  // Scale bar: 50px on screen => 50px * pixelSize in microns
+  // Scale bar: 50px = scaleBarPx * pixelSize in microns
   const scaleBarPx = 50;
   const scaleBarMicrons = pixelSize
     ? (scaleBarPx * pixelSize).toFixed(2)
     : null;
 
+  // Histogram chart
   const histogramData = {
     labels: histogramX,
     datasets: [
@@ -341,7 +341,6 @@ export default function LiveView({ hostIP, hostPort }) {
       },
     ],
   };
-
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -356,301 +355,363 @@ export default function LiveView({ hostIP, hostPort }) {
   };
 
   return (
-    <Box sx={{ width: "100%", height: "100%" }}>
-      {/* 
-        Left area is now offset by `drawerWidth` and `appBarHeight`.
-        This ensures it does not start directly at the browser window's left edge.
+    <>
+      {/*
+        Main container:
+        - Positioned under the AppBar (top: appBarHeight) and to the right of the drawer (left: drawerWidth)
+        - We fill the rest of the viewport width (calc(100% - drawerWidth)) 
+        - We also set the total height to (100vh - appBarHeight).
+        - We hide scrollbars (overflow: hidden).
       */}
       <Box
         sx={{
-          position: "fixed",
-          top: appBarHeight,        // offset so we don't overlap the top AppBar
-          left: drawerWidth,        // offset so we start where the sidebar ends
-          width: "60%",             // 60% of the entire viewport
+          position: "absolute",
+          top: appBarHeight,
+          left: drawerWidth,
+          width: `calc(100% - ${drawerWidth}px)`,
           height: `calc(100vh - ${appBarHeight}px)`,
-          overflow: "hidden",
-          backgroundColor: "inherit",
-          p: 2,
-          boxSizing: "border-box",
-          borderRight: "1px solid #444",
+          display: "flex",
+          overflow: "hidden", // hide scrollbars
         }}
       >
-        <Box sx={{ display: "flex", gap: 1, mb: 2 }}>
-          <Button
-            onClick={handleStreamToggle}
-            variant="contained"
-            color={isStreamRunning ? "secondary" : "primary"}
-          >
-            {isStreamRunning ? <Stop /> : <PlayArrow />}
-            {isStreamRunning ? "Stop Stream" : "Start Stream"}
-          </Button>
-          <Button onClick={snapPhoto}>
-            <CameraAlt />
-          </Button>
-          <Button
-            onClick={startRecording}
-            className={isRecording ? classes.blinking : ""}
-          >
-            <FiberManualRecord />
-          </Button>
-          <Button onClick={stopRecording}>
-            <StopIcon />
-          </Button>
-        </Box>
-
-        <FormControlLabel
-          control={
-            <Switch
-              checked={isCamSettingsAuto}
-              onChange={handleCamSettingsSwitchChange}
-              color="primary"
-            />
-          }
-          label={
-            isCamSettingsAuto
-              ? "Automatic Camera Settings"
-              : "Manual Camera Settings"
-          }
-        />
-
-        <Box sx={{ mt: 2, display: "flex", gap: 2 }}>
-          <TextField
-            label="Exposure Time"
-            type="number"
-            value={exposureTime}
-            onChange={handleExposureChange}
-            size="small"
-          />
-          <TextField
-            label="Gain"
-            type="number"
-            value={gain}
-            onChange={handleGainChange}
-            size="small"
-          />
-        </Box>
-
-        <Tabs value={activeTab} onChange={handleTabChange} sx={{ mt: 2, mb: 1 }}>
-          {detectors.map((detectorName, idx) => (
-            <Tab key={detectorName} label={detectorName} />
-          ))}
-        </Tabs>
-
-        <Box sx={{ position: "relative", width: "100%", height: "60vh" }}>
-          {/* Tab #0 => first detector (socket image) */}
-          {detectors[0] && (
-            <Box
-              sx={{
-                display: activeTab === 0 ? "block" : "none",
-                width: "100%",
-                height: "100%",
-                position: "relative",
-              }}
+        {/** 
+          LEFT COLUMN (60% width): Live stream, camera settings, slider
+          Absolutely fill the parent's height, no scrolling
+        */}
+        <Box
+          sx={{
+            width: "60%",
+            height: "100%",
+            p: 2,
+            boxSizing: "border-box",
+            position: "relative",
+          }}
+        >
+          {/* Buttons row */}
+          <Box sx={{ display: "flex", gap: 1, mb: 2 }}>
+            <Button
+              onClick={handleStreamToggle}
+              variant="contained"
+              color={isStreamRunning ? "secondary" : "primary"}
             >
-              {/* Scale bar overlay */}
-              {scaleBarMicrons && (
+              {isStreamRunning ? <Stop /> : <PlayArrow />}
+              {isStreamRunning ? "Stop Stream" : "Start Stream"}
+            </Button>
+            <Button onClick={snapPhoto}>
+              <CameraAlt />
+            </Button>
+            <Button
+              onClick={startRecording}
+              className={isRecording ? classes.blinking : ""}
+            >
+              <FiberManualRecord />
+            </Button>
+            <Button onClick={stopRecording}>
+              <StopIcon />
+            </Button>
+          </Box>
+
+          {/* Camera settings row */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={isCamSettingsAuto}
+                  onChange={handleCamSettingsSwitchChange}
+                  color="primary"
+                />
+              }
+              label={
+                isCamSettingsAuto
+                  ? "Automatic Camera Settings"
+                  : "Manual Camera Settings"
+              }
+            />
+
+            {/* Checkbox to toggle histogram overlay */}
+            {histogramActive && (
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={showHistogram}
+                    onChange={(e) => setShowHistogram(e.target.checked)}
+                  />
+                }
+                label="Show Histogram Overlay"
+              />
+            )}
+          </Box>
+
+          <Box sx={{ mt: 2, display: "flex", gap: 2 }}>
+            <TextField
+              label="Exposure Time"
+              type="number"
+              value={exposureTime}
+              onChange={handleExposureChange}
+              size="small"
+            />
+            <TextField
+              label="Gain"
+              type="number"
+              value={gain}
+              onChange={handleGainChange}
+              size="small"
+            />
+          </Box>
+
+          {/* Detector Tabs */}
+          <Tabs value={activeTab} onChange={handleTabChange} sx={{ mt: 2 }}>
+            {detectors.map((detectorName) => (
+              <Tab key={detectorName} label={detectorName} />
+            ))}
+          </Tabs>
+
+          {/** Live image area **/}
+          <Box
+            sx={{
+              position: "relative",
+              width: "100%",
+              height: "calc(100% - 140px)", // subtract space for the top controls & tabs
+              mt: 1,
+            }}
+          >
+            {/* First Tab => socket image */}
+            {detectors[0] && (
+              <Box
+                sx={{
+                  display: activeTab === 0 ? "block" : "none",
+                  width: "100%",
+                  height: "100%",
+                  position: "relative",
+                }}
+              >
+                {/* If user toggles histogram, we overlay the chart */}
+                {showHistogram && (
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      top: 10,
+                      left: 10,
+                      width: 200,
+                      height: 200,
+                      backgroundColor: "rgba(0,0,0,0.5)",
+                      zIndex: 5,
+                      p: 1,
+                    }}
+                  >
+                    {histogramX.length && histogramY.length ? (
+                      <Bar data={histogramData} options={chartOptions} />
+                    ) : (
+                      <Typography sx={{ color: "#fff" }}>Loading...</Typography>
+                    )}
+                  </Box>
+                )}
+
+                {/* Scale bar overlay => bottom center */}
+                {scaleBarMicrons && (
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      bottom: 10,
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      color: "#fff",
+                      display: "flex",
+                      alignItems: "center",
+                      zIndex: 4,
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: `${scaleBarPx}px`,
+                        height: "2px",
+                        backgroundColor: "white",
+                        marginRight: "6px",
+                      }}
+                    />
+                    <Typography variant="body2">
+                      {scaleBarMicrons} µm
+                    </Typography>
+                  </Box>
+                )}
+
+                {/* Stage movement overlay => top-right */}
+                <Box sx={{ position: "absolute", bottom: 100, left: 10, zIndex: 3 }}>
+                  <Button
+                    variant="contained"
+                    onClick={() => handleStageMove("up")}
+                    sx={{ mb: 1 }}
+                  >
+                    ↑
+                  </Button>
+                  <Box sx={{ display: "flex", flexDirection: "row", gap: 1 }}>
+                    <Button
+                      variant="contained"
+                      onClick={() => handleStageMove("left")}
+                    >
+                      ←
+                    </Button>
+                    <Button
+                      variant="contained"
+                      onClick={() => handleStageMove("right")}
+                    >
+                      →
+                    </Button>
+                  </Box>
+                  <Button
+                    variant="contained"
+                    onClick={() => handleStageMove("down")}
+                    sx={{ mt: 1 }}
+                  >
+                    ↓
+                  </Button>
+                </Box>
+
+                {/* The actual socket image */}
+                {imageUrls[detectors[0]] ? (
+                  <img
+                    src={imageUrls[detectors[0]]}
+                    alt={detectors[0]}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "contain",
+                    }}
+                  />
+                ) : (
+                  <Typography>No image from socket</Typography>
+                )}
+
+                {/* Vertical slider (min/max) overlay */}
                 <Box
                   sx={{
                     position: "absolute",
-                    bottom: 10,
-                    left: 10,
-                    color: "#fff",
+                    top: 10,
+                    right: 0,
+                    height: "100%",
                     display: "flex",
                     alignItems: "center",
-                    zIndex: 2,
+                    zIndex: 6,
                   }}
                 >
-                  <Box
-                    sx={{
-                      width: `${scaleBarPx}px`,
-                      height: "2px",
-                      backgroundColor: "white",
-                      marginRight: "6px",
-                    }}
+                  <Slider
+                    orientation="vertical"
+                    value={[minVal, maxVal]}
+                    onChange={handleRangeChange}
+                    onChangeCommitted={handleRangeChangeCommitted}
+                    min={0}
+                    max={1024}
+                    valueLabelDisplay="on"
+                    valueLabelFormat={(val, idx) =>
+                      idx === 0 ? `Min: ${val}` : `Max: ${val}`
+                    }
+                    sx={{ height: "60%", mr: 1 }}
                   />
-                  <Typography variant="body2">
-                    {scaleBarMicrons} µm
+                  <Typography variant="body2" sx={{ color: "#fff", writingMode: "vertical-rl", transform: "rotate(180deg)" }}>
+                    Gray Range
                   </Typography>
                 </Box>
-              )}
-
-              {/* Stage movement overlay */}
-              <Box sx={{ position: "absolute", top: 10, right: 10, zIndex: 3 }}>
-                <Button
-                  variant="contained"
-                  onClick={() => handleStageMove("up")}
-                  sx={{ mb: 1 }}
-                >
-                  ↑
-                </Button>
-                <Box sx={{ display: "flex", flexDirection: "row", gap: 1 }}>
-                  <Button
-                    variant="contained"
-                    onClick={() => handleStageMove("left")}
-                  >
-                    ←
-                  </Button>
-                  <Button
-                    variant="contained"
-                    onClick={() => handleStageMove("right")}
-                  >
-                    →
-                  </Button>
-                </Box>
-                <Button
-                  variant="contained"
-                  onClick={() => handleStageMove("down")}
-                  sx={{ mt: 1 }}
-                >
-                  ↓
-                </Button>
               </Box>
+            )}
 
-              {imageUrls[detectors[0]] ? (
-                <img
-                  src={imageUrls[detectors[0]]}
-                  alt={detectors[0]}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "contain",
-                  }}
-                />
-              ) : (
-                <Typography>No image from socket</Typography>
-              )}
-            </Box>
-          )}
-
-          {/* Tab #1 => second detector polled (if detectors.length > 1) */}
-          {detectors.length > 1 && (
-            <Box
-              sx={{
-                display: activeTab === 1 ? "block" : "none",
-                width: "100%",
-                height: "100%",
-              }}
-            >
-              {pollImageUrl ? (
-                <img
-                  src={pollImageUrl}
-                  alt="Second Detector Poll"
-                  style={{ width: "100%", height: "100%", objectFit: "contain" }}
-                />
-              ) : (
-                <Typography>No polled image</Typography>
-              )}
-            </Box>
-          )}
-        </Box>
-
-        {/* Histogram + vertical slider */}
-        <Box sx={{ display: "flex", flexDirection: "row", mt: 2 }}>
-          <Box sx={{ flex: 1 }}>
-            {histogramActive && (
-              <Box sx={{ width: "100%", height: 250 }}>
-                {histogramX.length && histogramY.length ? (
-                  <Bar data={histogramData} options={chartOptions} />
+            {/* Second Tab => polled image (if available) */}
+            {detectors.length > 1 && (
+              <Box
+                sx={{
+                  display: activeTab === 1 ? "block" : "none",
+                  width: "100%",
+                  height: "100%",
+                  position: "relative",
+                }}
+              >
+                {pollImageUrl ? (
+                  <img
+                    src={pollImageUrl}
+                    alt="Second Detector Poll"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "contain",
+                    }}
+                  />
                 ) : (
-                  <Typography>Loading histogram...</Typography>
+                  <Typography>No polled image</Typography>
                 )}
               </Box>
             )}
           </Box>
+        </Box>
 
-          <Box
-            sx={{
-              width: 40,
-              display: "flex",
-              alignItems: "center",
-              ml: 2,
-            }}
-          >
-            <Slider
-              orientation="vertical"
-              value={[minVal, maxVal]}
-              onChange={handleRangeChange}
-              onChangeCommitted={handleRangeChangeCommitted}
-              min={0}
-              max={1024}
-              valueLabelDisplay="on"
-              valueLabelFormat={(val, idx) =>
-                idx === 0 ? `Min: ${val}` : `Max: ${val}`
-              }
-              sx={{ height: 180 }}
-            />
+        {/**
+          RIGHT COLUMN (40% width): Stage Control, Autofocus, Illumination
+          Fill remaining space, no scrollbars visible
+        */}
+        <Box
+          sx={{
+            width: "40%",
+            height: "100%",
+            p: 2,
+            boxSizing: "border-box",
+            overflow: "hidden", // hide scrollbars
+          }}
+        >
+          <Box mb={3}>
+            <Typography variant="h6">Stage Control</Typography>
+            <XYZControls hostIP={hostIP} hostPort={hostPort} />
+          </Box>
+
+          <Box mb={3}>
+            <Typography variant="h6">Autofocus</Typography>
+            <AutofocusController hostIP={hostIP} hostPort={hostPort} />
+          </Box>
+
+          <Box mb={3}>
+            <Typography variant="h6">Illumination</Typography>
+            {laserNames.length > 0 ? (
+              laserNames.map((laserName, index) => {
+                const sliderVal =
+                  index === 0
+                    ? sliderIllu1Value
+                    : index === 1
+                    ? sliderIllu2Value
+                    : sliderIllu3Value;
+                const checkedVal =
+                  index === 0
+                    ? isIllumination1Checked
+                    : index === 1
+                    ? isIllumination2Checked
+                    : isIllumination3Checked;
+
+                return (
+                  <Box
+                    key={laserName}
+                    sx={{ display: "flex", alignItems: "center", mb: 1 }}
+                  >
+                    <Typography sx={{ width: 80 }}>{laserName}</Typography>
+                    <Slider
+                      value={sliderVal}
+                      min={0}
+                      max={1023}
+                      onChange={(e) =>
+                        handleIlluminationSliderChange(e, index)
+                      }
+                      sx={{ flex: 1, mx: 2 }}
+                    />
+                    <Checkbox
+                      checked={checkedVal}
+                      onChange={(e) =>
+                        handleIlluminationCheckboxChange(e, index)
+                      }
+                    />
+                  </Box>
+                );
+              })
+            ) : (
+              <Typography>Loading laser names...</Typography>
+            )}
           </Box>
         </Box>
       </Box>
-
-      {/* Right side scrollable */}
-      <Box
-        sx={{
-          position: "relative",
-          // This starts just after our fixed left panel (60% of viewport + drawer offset).
-          marginLeft: `calc(${drawerWidth}px + 60%)`,
-          width: `calc(40%)`,
-          height: `calc(100vh - ${appBarHeight}px)`,
-          overflowY: "auto",
-          mt: `${appBarHeight}px`,
-          p: 2,
-          boxSizing: "border-box",
-        }}
-      >
-        <Box mb={3}>
-          <Typography variant="h6">Stage Control</Typography>
-          <XYZControls hostIP={hostIP} hostPort={hostPort} />
-        </Box>
-
-        <Box mb={3}>
-          <Typography variant="h6">Autofocus</Typography>
-          <AutofocusController hostIP={hostIP} hostPort={hostPort} />
-        </Box>
-
-        <Box mb={3}>
-          <Typography variant="h6">Illumination</Typography>
-          {laserNames.length > 0 ? (
-            laserNames.map((laserName, index) => {
-              const sliderVal =
-                index === 0
-                  ? sliderIllu1Value
-                  : index === 1
-                  ? sliderIllu2Value
-                  : sliderIllu3Value;
-              const checkedVal =
-                index === 0
-                  ? isIllumination1Checked
-                  : index === 1
-                  ? isIllumination2Checked
-                  : isIllumination3Checked;
-
-              return (
-                <Box
-                  key={laserName}
-                  sx={{ display: "flex", alignItems: "center", mb: 1 }}
-                >
-                  <Typography sx={{ width: 80 }}>{laserName}</Typography>
-                  <Slider
-                    value={sliderVal}
-                    min={0}
-                    max={1023}
-                    onChange={(e) => handleIlluminationSliderChange(e, index)}
-                    sx={{ flex: 1, mx: 2 }}
-                  />
-                  <Checkbox
-                    checked={checkedVal}
-                    onChange={(e) =>
-                      handleIlluminationCheckboxChange(e, index)
-                    }
-                  />
-                </Box>
-              );
-            })
-          ) : (
-            <Typography>Loading laser names...</Typography>
-          )}
-        </Box>
-      </Box>
-    </Box>
+    </>
   );
 }

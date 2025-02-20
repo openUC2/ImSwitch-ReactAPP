@@ -463,6 +463,7 @@ function App() {
                 <LiveView
                   hostIP={hostIP}
                   hostPort={hostPort}
+                  drawerWidth={drawerWidth}
                   // pass down a setter or context for the image if needed
                   onImageUpdate={(img) => setSharedImage(img)}
                 />
