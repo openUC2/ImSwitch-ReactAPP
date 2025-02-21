@@ -33,6 +33,11 @@ const hardwareSlice = createSlice({
       state.position.z = action.payload.z;
       state.position.a = action.payload.a;
     },
+    setParamaeterRange: (state, action) => {
+      //console.log("setParamaeterRange");
+      //console.log(action.payload);
+      state.parameterRange = action.payload; 
+    },
 
     resetState: (state) => {
       console.log("resetState");
@@ -44,6 +49,7 @@ const hardwareSlice = createSlice({
 // Export actions from slice
 export const {
   setPosition, 
+  setParamaeterRange,
   resetState,
 } = hardwareSlice.actions;
 
