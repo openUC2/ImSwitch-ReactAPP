@@ -371,7 +371,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
           width: `calc(100% - ${drawerWidth}px)`,
           height: `calc(100vh - ${appBarHeight}px)`,
           display: "flex",
-          overflow: "hidden", // hide scrollbars
+          overflow: "hidden", // keep horizontal hidden, we'll handle vertical for the right side
         }}
       >
         {/** 
@@ -650,9 +650,9 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
           sx={{
             width: "40%",
             height: "100%",
+            overflowY: "auto",
             p: 2,
             boxSizing: "border-box",
-            overflow: "hidden", // hide scrollbars
           }}
         >
           <Box mb={3}>
