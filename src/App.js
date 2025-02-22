@@ -523,7 +523,7 @@ function App() {
               <LiveWidgetProvider>
                 <LiveView
                   hostIP={hostIP}
-                  hostPort={hostPort}
+                  hostPort={websocketPort}
                   drawerWidth={drawerWidth}
                   // pass down a setter or context for the image if needed
                   onImageUpdate={(img) => setSharedImage(img)}
@@ -602,12 +602,12 @@ function App() {
             )}
             {selectedPlugin === "UC2" && (
               <WidgetContextProvider>
-                <UC2Controller hostIP={hostIP} hostPort={hostPort} />
+                <UC2Controller hostIP={hostIP} hostPort={apiPort} />
               </WidgetContextProvider>
             )}
             {selectedPlugin === "Sepmon" && (
               <WidgetContextProvider>
-                <SepMonController hostIP={hostIP} hostPort={hostPort} />
+                <SepMonController hostIP={hostIP} hostPort={apiPort} />
               </WidgetContextProvider>
             )}
             {selectedPlugin === "SocketView" && (

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { ReactSortable } from "react-sortablejs";
 import { useDispatch, useSelector } from "react-redux";
-import { FixedSizeList as List } from "react-window";
+//import { FixedSizeList as List } from "react-window";
 
 import * as experimentSlice from "../state/slices/ExperimentSlice";
 
