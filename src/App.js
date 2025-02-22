@@ -31,6 +31,15 @@ import axios from "axios";
 import { WebSocketProvider } from "./context/WebSocketContext";
 import { MCTProvider } from "./context/MCTContext";
 
+//axon
+import AxonTabComponent from './axon/AxonTabComponent';
+import WebSocketHandler from './axon/WebSocketHandler';
+
+//redux
+import { useDispatch, useSelector } from "react-redux";
+import * as connectionSettingsSlice from "./state/slices/ConnectionSettingsSlice.js";
+
+
 // Filemanager
 import FileManager from "./FileManager/FileManager/FileManager";
 import { createFolderAPI } from "./FileManager/api/createFolderAPI";
@@ -70,7 +79,7 @@ import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { WidgetContextProvider } from "./context/WidgetContext";
 import CommentIcon from "@mui/icons-material/Comment";
 import FlowStopController from "./components/FlowStopController";
-import SepMonController from "./components/SepmonController"; 
+import SepMonController from "./components/SepmonController";
 
 // Define both light and dark themes
 const lightTheme = createTheme({
@@ -117,13 +126,26 @@ const darkTheme = createTheme({
 });
 
 function App() {
+    /*
+    Redux
+    */
+    // redux dispatcher
+    const dispatch = useDispatch();
+
+    // Access global Redux state
+    const connectionSettingsState = useSelector(connectionSettingsSlice.getConnectionSettingsState);
+
   /*
   States
   */
   const [sidebarVisible, setSidebarVisible] = useState(true); // Sidebar visibility state
   const drawerWidth = sidebarVisible ? 240 : 60; // Full width when open, minimized when hidden
-  const [hostIP, setHostIP] = useState(`https://${window.location.hostname}`);
-  const [hostPort, sethostPort] = useState(8001);
+
+  const [hostIP, setHostIP] = useState(connectionSettingsState.ip);
+  //const [hostPort, sethostPort] = useState(connectionSettingsState.port);
+  const [websocketPort, setWebsocketPort] = useState(connectionSettingsState.websocketPort);
+  const [apiPort, setApiPort] = useState(connectionSettingsState.apiPort);
+
   const [selectedPlugin, setSelectedPlugin] = useState("LiveView"); // Control which plugin to show
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true); // State to toggle between light and dark themes
@@ -136,13 +158,13 @@ function App() {
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const [files, setFiles] = useState([]);
-  
+
 
   /*
   FileManager
   */
   const fileUploadConfig = {
-    url: `https://${hostIP}:${hostPort}/upload`, // Change this as per your API URL
+    url: `https://${hostIP}:${apiPort}/upload`, // Change this as per your API URL
   };
 
   // Fetch Files
@@ -199,7 +221,7 @@ function App() {
   };
 
   const handleDownload = async (files) => {
-    await downloadFile(files, hostIP, hostPort);
+    await downloadFile(files, hostIP, apiPort);
   };
 
   const handleRefresh = () => getFiles();
@@ -216,7 +238,7 @@ function App() {
       try {
         const validPort = await checkPortsForApi(currentHostname, portsToCheck);
         setHostIP(`https://${currentHostname}`);
-        sethostPort(validPort);
+        setApiPort(validPort);
       } catch (error) {
         console.error("No valid API port found.");
       }
@@ -241,12 +263,12 @@ function App() {
     }
     throw new Error("No valid port found for API.");
   };
- 
+
   // change API url/port and update filelist
   useEffect(() => {
-    api.defaults.baseURL = `${hostIP}:${hostPort}`;
+    api.defaults.baseURL = `${hostIP}:${apiPort}`;
     handleRefresh();
-  }, [hostIP, hostPort]);
+  }, [hostIP, apiPort]);
 
   // Dialog handlers for the URL / Port settings
   const handleCloseDialog = () => {
@@ -258,10 +280,16 @@ function App() {
     setDialogOpen(true);
   };
 
+
   // Handle changes to the IP address
-  const handlehostPortChange = (event) => {
+  const handlehostWebsocketPortChange = (event) => {
     let port = event.target.value.trim();
-    sethostPort(port);
+    setWebsocketPort(port);
+  };
+  // Handle changes to the IP address
+  const handlehostApiPortChange = (event) => {
+    let port = event.target.value.trim();
+    setApiPort(port);
   };
 
   // Handle changes to the port
@@ -274,13 +302,20 @@ function App() {
       ip = ip.replace("http://", "https://");
     }
     setHostIP(ip);
+
   };
 
   // Save the IP address and port
   const handleSavehostIP = () => {
     setHostIP(hostIP);
-    sethostPort(hostPort);
+    setApiPort(apiPort);
+    setWebsocketPort(websocketPort);
     handleCloseDialog();
+
+    //redux
+    dispatch(connectionSettingsSlice.setIp(hostIP));
+    dispatch(connectionSettingsSlice.setWebsocketPort(websocketPort));
+    dispatch(connectionSettingsSlice.setApiPort(apiPort));
   };
 
   const toggleTheme = () => {
@@ -293,6 +328,7 @@ function App() {
 
   return (
     <ThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
+      <WebSocketHandler />{/* headless */}
       <WebSocketProvider hostIP={hostIP}>
         <CssBaseline />
         <Box sx={{ display: "flex" }}>
@@ -339,13 +375,23 @@ function App() {
               },
             }}
           >
+            {/* Sidebar content */}
             <List>
+              {/* axon */}
+              <ListItem button onClick={() => handlePluginChange("Axon")}>
+                <ListItemIcon>
+                  <SettingsOverscanSharpIcon />
+                </ListItemIcon>
+                <ListItemText primary={sidebarVisible ? "Axon" : ""} />
+              </ListItem>
+              {/* LiveView */}
               <ListItem button onClick={() => handlePluginChange("LiveView")}>
                 <ListItemIcon>
                   <DashboardIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "Live View" : ""} />
               </ListItem>
+              {/* FileManager */}
               <ListItem
                 button
                 onClick={() => handlePluginChange("FileManager")}
@@ -355,54 +401,63 @@ function App() {
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "File Manager" : ""} />
               </ListItem>
+              {/* HistoScan */}
               <ListItem button onClick={() => handlePluginChange("HistoScan")}>
                 <ListItemIcon>
                   <SettingsOverscanSharpIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "HistoScan" : ""} />
               </ListItem>
+              {/* JupyteNotebook */}
               <ListItem button onClick={() => handlePluginChange("JupyteNotebook")}>
                 <ListItemIcon>
                   <SettingsOverscanSharpIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "JupyteNotebook" : ""} />
               </ListItem>
+              {/* Infinity Scanning */}
               <ListItem button onClick={() => handlePluginChange("Infinity Scanning")}>
                 <ListItemIcon>
                   <SettingsOverscanSharpIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "Infinity Scanning" : ""} />
               </ListItem>
+              {/* Blockly */}
               <ListItem button onClick={() => handlePluginChange("Blockly")}>
                 <ListItemIcon>
                   <SettingsIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "Blockly" : ""} />
               </ListItem>
+              {/* Timelapse */}
               <ListItem button onClick={() => handlePluginChange("Timelapse")}>
                 <ListItemIcon>
                   <AccessTimeIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "Timelapse" : ""} />
               </ListItem>
+              {/* SocketView */}
               <ListItem button onClick={() => handlePluginChange("SocketView")}>
                 <ListItemIcon>
                   <CommentIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "SocketView" : ""} />
               </ListItem>
+              {/* Lightsheet */}
               <ListItem button onClick={() => handlePluginChange("Lightsheet")}>
                 <ListItemIcon>
                   <ThreeDRotationIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "Lightsheet" : ""} />
               </ListItem>
+              {/* FlowStop */}
               <ListItem button onClick={() => handlePluginChange("FlowStop")}>
                 <ListItemIcon>
                   <AirIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "FlowStop" : ""} />
               </ListItem>
+              {/* Widgets */}
               <ListItem button onClick={() => handlePluginChange("Sepmon")}>
                 <ListItemIcon>
                   <AirIcon />
@@ -414,25 +469,28 @@ function App() {
                   <AirIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "UC2" : ""} />
-              </ListItem>              
+              </ListItem>
               <ListItem button onClick={() => handlePluginChange("Widgets")}>
                 <ListItemIcon>
                   <DevicesIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "Widgets" : ""} />
               </ListItem>
+              {/* Connections */}
               <ListItem button onClick={handleOpenDialog}>
                 <ListItemIcon>
                   <WifiSharpIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "Connections" : ""} />
               </ListItem>
+              {/* About */}
               <ListItem button onClick={() => handlePluginChange("About")}>
                 <ListItemIcon>
                   <InfoIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "About" : ""} />
               </ListItem>
+              {/* ImJoy */}
               <ListItem button onClick={() => handlePluginChange("ImJoy")}>
                 <ListItemIcon>
                   <BuildIcon />
@@ -458,6 +516,9 @@ function App() {
             component="main"
             sx={{ flexGrow: 1, p: 3, marginTop: "64px" }} // Push content below AppBar
           >
+          {selectedPlugin === "Axon" && (
+            <AxonTabComponent/>
+          )}
             {selectedPlugin === "LiveView" && (
               <LiveWidgetProvider>
                 <LiveView
@@ -474,17 +535,17 @@ function App() {
             )}
             {selectedPlugin === "HistoScan" && (
               <WidgetContextProvider>
-                <HistoScanController hostIP={hostIP} hostPort={hostPort} />
+                <HistoScanController hostIP={hostIP} hostPort={apiPort} />
               </WidgetContextProvider>
             )}
             {selectedPlugin === "JupyteNotebook" && (
               <JupyterProvider>
-                <JupyterExecutor hostIP={hostIP} hostPort={hostPort} />
+                <JupyterExecutor hostIP={hostIP} hostPort={apiPort} />
               </JupyterProvider>
             )}
             {selectedPlugin === "Infinity Scanning" && (
               <WidgetContextProvider>
-                <LargeFovScanController hostIP={hostIP} hostPort={hostPort} />
+                <LargeFovScanController hostIP={hostIP} hostPort={apiPort} />
               </WidgetContextProvider>
             )}
             {selectedPlugin === "Blockly" && (
@@ -497,7 +558,7 @@ function App() {
                 <MCTProvider>
                   <TimelapseController
                     hostIP={hostIP}
-                    hostPort={hostPort}
+                    hostPort={apiPort}
                     title="Timelapse"
                   />
                 </MCTProvider>
@@ -508,7 +569,7 @@ function App() {
               <div className="app">
                 <div className="file-manager-container">
                   <FileManager
-                    baseUrl={`${hostIP}:${hostPort}`}
+                    baseUrl={`${hostIP}:${apiPort}`}
                     files={files}
                     fileUploadConfig={fileUploadConfig}
                     isLoading={isLoading}
@@ -523,7 +584,7 @@ function App() {
                     layout="grid"
                     enableFilePreview
                     maxFileSize={10485760}
-                    filePreviewPath={`${hostIP}:${hostPort}/`}
+                    filePreviewPath={`${hostIP}:${apiPort}/`}
                     acceptedFileTypes=".txt, .png, .jpg, .jpeg, .pdf, .doc, .docx, .exe, .js, .csv"
                   />
                 </div>
@@ -531,12 +592,12 @@ function App() {
             )}
             {selectedPlugin === "Lightsheet" && (
               <WidgetContextProvider>
-                <LightsheetController hostIP={hostIP} hostPort={hostPort} />
+                <LightsheetController hostIP={hostIP} hostPort={apiPort} />
               </WidgetContextProvider>
             )}
             {selectedPlugin === "FlowStop" && (
               <WidgetContextProvider>
-                <FlowStopController hostIP={hostIP} hostPort={hostPort} />
+                <FlowStopController hostIP={hostIP} hostPort={apiPort} />
               </WidgetContextProvider>
             )}
             {selectedPlugin === "UC2" && (
@@ -550,13 +611,13 @@ function App() {
               </WidgetContextProvider>
             )}
             {selectedPlugin === "SocketView" && (
-              <SocketView hostIP={hostIP} hostPort={hostPort} />
+              <SocketView hostIP={hostIP} hostPort={websocketPort} />
             )}
             {selectedPlugin === "Widgets" && (
               <WidgetContextProvider>
                 <Tab_Widgets
                   hostIP={hostIP}
-                  hostPort={hostPort}
+                  hostPort={apiPort}
                   layout={layout}
                   onLayoutChange={(newLayout) => setLayout(newLayout)}
                 />
@@ -580,12 +641,21 @@ function App() {
               />
               <TextField
                 margin="dense"
-                id="port"
-                label="Port"
+                id="port websocket"
+                label="Port (websocket)"
                 type="text"
                 fullWidth
-                value={hostPort}
-                onChange={handlehostPortChange}
+                value={websocketPort}
+                onChange={handlehostWebsocketPortChange}
+              />
+              <TextField
+                margin="dense"
+                id="port api"
+                label="Port (API)"
+                type="text"
+                fullWidth
+                value={apiPort}
+                onChange={handlehostApiPortChange}
               />
             </DialogContent>
             <DialogActions>

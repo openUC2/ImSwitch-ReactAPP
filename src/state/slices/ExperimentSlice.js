@@ -1,0 +1,218 @@
+import { createSlice } from "@reduxjs/toolkit";
+import { v4 as uuidv4 } from "uuid";
+
+// Define the initial state
+const initialExperimentState = {
+  name: "experiment",
+  wellLayout: {
+    name: "test",
+    unit: "um",
+    width: 1000000,
+    height: 600000,
+    wells: [
+      { x: 200000, y: 200000, shape: "circle", radius: 50000 },
+      { x: 400000, y: 200000, shape: "circle", radius: 90000 },
+      { x: 600000, y: 200000, shape: "circle", radius: 90000 },
+      { x: 800000, y: 200000, shape: "circle", radius: 90000 },
+      { x: 200000, y: 400000, shape: "circle", radius: 90000 },
+      { x: 400000, y: 400000, shape: "circle", radius: 90000 },
+      {
+        x: 600000,
+        y: 400000,
+        shape: "rectangle",
+        width: 90000,
+        height: 180000,
+      },
+      {
+        x: 800000,
+        y: 400000,
+        shape: "rectangle",
+        width: 180000,
+        height: 180000,
+      },
+    ],
+  },
+  pointList: [
+    {
+      id: uuidv4(),
+      name: "",
+      x: 100000,
+      y: 100000,
+      shape: "",
+      neighborsX: 0,
+      neighborsY: 0,
+    },
+  ],
+  parameterValue: {
+    illumination: "",
+    brightfield: false,
+    darkfield: false,
+    laserWaveLength: 0,
+    differentialPhaseContrast: false,
+    timeLapsePeriod: 0.1,
+    numberOfImages: 1,
+    autoFocus: false,
+    autoFocusMin: 0.0,
+    autoFocusMax: 0.0,
+    autoFocusStepSize: 0.1,
+    zStack: false,
+    zStackMin: 0.0,
+    zStackMax: 0.0,
+    zStackStepSize: 0.1,
+  },
+};
+
+// Create slice
+const experimentSlice = createSlice({
+  name: "experimentState",
+  initialState: initialExperimentState,
+  reducers: {
+    //------------------------ well layout
+    setWellLayout: (state, action) => {
+      state.wellLayout = action.payload;
+    },
+    //------------------------ parameter
+    setIllumination: (state, action) => {
+      console.log("setIllumination", action.payload);
+      state.parameterValue.illumination = action.payload;
+    },
+    setBrightfield: (state, action) => {
+      console.log("setBrightfield");
+      state.parameterValue.brightfield = action.payload;
+    },
+    setDarkfield: (state, action) => {
+      console.log("setDarkfield");
+      state.parameterValue.darkfield = action.payload;
+    },
+    setLaserWaveLength: (state, action) => {
+      console.log("setLaserWaveLength");
+      state.parameterValue.laserWaveLength = action.payload;
+    },
+    setDifferentialPhaseContrast: (state, action) => {
+      console.log("setDifferentialPhaseContrast");
+      state.parameterValue.differentialPhaseContrast = action.payload;
+    },
+    setTimeLapsePeriod: (state, action) => {
+      console.log("setTimeLapsePeriod");
+      state.parameterValue.timeLapsePeriod = action.payload;
+    },
+    setNumberOfImages: (state, action) => {
+      console.log("setNumberOfImages");
+      state.parameterValue.numberOfImages = action.payload;
+    },
+    setAutoFocus: (state, action) => {
+      console.log("setAutoFocus");
+      state.parameterValue.autoFocus = action.payload;
+    },
+    setAutoFocusMin: (state, action) => {
+      console.log("setAutoFocusMin");
+      state.parameterValue.autoFocusMin = action.payload;
+    },
+    setAutoFocusMax: (state, action) => {
+      console.log("setAutoFocusMax");
+      state.parameterValue.autoFocusMax = action.payload;
+    },
+    setAutoFocusStepSize: (state, action) => {
+      console.log("setAutoFocusStepSize");
+      state.parameterValue.autoFocusStepSize = action.payload;
+    },
+    setZStack: (state, action) => {
+      console.log("setZStack");
+      state.parameterValue.zStack = action.payload;
+    },
+    setZStackMin: (state, action) => {
+      console.log("setZStackMin");
+      state.parameterValue.zStackMin = action.payload;
+    },
+    setZStackMax: (state, action) => {
+      console.log("setZStackMax");
+      state.parameterValue.zStackMax = action.payload;
+    },
+    setZStackStepSize: (state, action) => {
+      console.log("setZStackStepSize");
+      state.parameterValue.zStackStepSize = action.payload;
+    },
+    //------------------------ points
+    updateParameter: (state, action) => {
+      console.log("setParameter", action.payload);
+      const { key, value } = action.payload; //Call: updateParameter({parameterName: value})
+      if (state.parameterValue.hasOwnProperty(key)) {
+        state.parameterValue[key] = value;
+      }
+    },
+    createPoint: (state, action) => {
+      console.log("createPoint", action);
+      const newPoint = {
+        id: uuidv4(),
+        name: action.payload.name != null ? action.payload.name : "",
+        x: action.payload.x,
+        y: action.payload.y,
+        shape: action.payload.shape != null ? action.payload.shape : "",
+        neighborsX: action.payload.neighborsX != null ? action.payload.neighborsX : 0,
+        neighborsY: action.payload.neighborsY != null ? action.payload.neighborsY : 0,
+      };
+      
+      console.log("createPoint newPoint", newPoint, action.payload.neighborsX);
+      state.pointList.push(newPoint);
+    },
+    addPoint: (state, action) => {
+      console.log("addPoint");
+      state.pointList.push(action.payload);
+    },
+    removePoint: (state, action) => {
+      console.log("removePoint");
+      //return state.filter(point => point.id !== action.payload);
+      state.pointList.splice(action.payload, 1);
+    },
+    setPointList: (state, action) => {
+      console.log("setPointList");
+      state.pointList = action.payload;
+    },
+    replacePoint: (state, action) => {
+      console.log("replacePoint", action.payload);
+      const { index, newPoint } = action.payload;
+      if (index >= 0 && index < state.pointList.length) {
+        state.pointList[index] = newPoint;
+      }
+    },
+
+    //------------------------ state
+    resetState: (state) => {
+      console.log("resetState");
+      return initialExperimentState; // Reset to initial state
+    },
+  },
+});
+
+// Export actions from slice
+export const {
+  setWellLayout,
+
+  setIllumination,
+  setBrightfield,
+  setDarkfield,
+  setLaserWaveLength,
+  setDifferentialPhaseContrast,
+  setTimeLapsePeriod,
+  setNumberOfImages,
+  setAutoFocus,
+  setAutoFocusMin,
+  setAutoFocusMax,
+  setAutoFocusStepSize,
+  setZStack,
+  setZStackMin,
+  setZStackMax,
+  setZStackStepSize,
+
+  createPoint,
+  addPoint,
+  removePoint,
+  setPointList,
+  replacePoint,
+} = experimentSlice.actions;
+
+// Selector helper
+export const getExperimentState = (state) => state.experimentState;
+
+// Export reducer from slice
+export default experimentSlice.reducer;

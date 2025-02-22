@@ -1,0 +1,77 @@
+import { createSlice } from '@reduxjs/toolkit';
+
+// Define the initial state for wellSelectorState
+const initialWellSelectorState = {
+  mode: 'single',          // string: could be 'default', 'select', 'edit', etc.
+  rasterWidth: 40000.0,          // float: size of the raster grid width
+  rasterHeight: 20000.0,          // float: size of the raster grid height
+  overlapWidth: 0.0,          // float: size of the overlap between the rasters
+  overlapHeight: 0.0,          // float: size of the overlap between the rasters
+  showOverlap: true,          // bool: show overlap or not 
+  cameraTargetPosition: { x: 0.0, y: 0.0 },          // float: x position of the camera target 
+};
+
+// Create wellSelectorState slice
+const wellSelectorSlice = createSlice({
+  name: 'wellSelectorState',
+  initialState: initialWellSelectorState,
+  reducers: {
+    setMode: (state, action) => {
+        console.log("setMode");
+        state.mode = action.payload;
+    },
+    setRasterWidth: (state, action) => {
+        console.log("setRasterWidth");
+        state.rasterWidth = action.payload;
+    },
+    setRasterHeight: (state, action) => {
+        console.log("setRasterHeight");
+        state.rasterHeight = action.payload;
+    },
+    setOverlapWidth: (state, action) => {
+        console.log("setOverlapWidth");
+        state.overlapWidth = action.payload;
+        if(isNaN(state.overlapWidth)){
+            state.overlapWidth = 0;
+        }
+    },
+    setOverlapHeight: (state, action) => {
+        console.log("setOverlapHeight");
+        state.overlapHeight = action.payload;
+    },
+    setMouseDownFlag: (state, action) => {
+        console.log("setMouseDownFlag");
+        state.mouseDownFlag = action.payload;
+    },
+    setShowOverlap: (state, action) => {
+        console.log("setShowOverlap");
+        state.showOverlap = action.payload;	
+    },
+    setCameraTargetPosition: (state, action) => {
+        console.log("setCameraTargetPosition");
+        state.cameraTargetPosition = action.payload;	
+    },
+    resetState: (state) => {
+        console.log("resetState");
+        return { ...initialWellSelectorState }; // Reset to initial state
+    }
+  },
+});
+
+// Export actions from  slice
+export const { 
+  setMode, 
+  setRasterWidth,
+  setRasterHeight,
+  setOverlapWidth,
+  setOverlapHeight,
+  setShowOverlap,
+  setCameraTargetPosition,
+  resetState 
+} = wellSelectorSlice.actions;
+
+// Selector helper
+export const getWellSelectorState = (state) => state.wellSelectorState;
+
+// Export reducer from  slice
+export default wellSelectorSlice.reducer;
