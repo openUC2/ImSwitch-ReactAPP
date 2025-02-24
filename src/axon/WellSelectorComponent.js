@@ -2,7 +2,11 @@ import React, { useState, useRef, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 import WellSelectorCanvas, { Mode } from "./WellSelectorCanvas.js";
+
 import * as wsUtils from "./WellSelectorUtils.js";
+
+import InfoPopup from "./InfoPopup.js";
+
 
 import * as wellSelectorSlice from "../state/slices/WellSelectorSlice.js";
 import * as experimentSlice from "../state/slices/ExperimentSlice.js";
@@ -29,12 +33,13 @@ import {
 const WellSelectorComponent = () => {
   //local state
   const [wellLayoutFileList, setWellLayoutFileList] = useState([
-    "image/test.json",
-    "image/test1.json",
+    "image/test.json",//TODO remove test
+    "image/test1.json",//TODO remove test
   ]);
 
   //child ref
-  const childRef = useRef();
+  const childRef = useRef();//canvas 
+  const infoPopupRef = useRef();
 
   //redux dispatcher
   const dispatch = useDispatch();
@@ -130,6 +135,8 @@ const WellSelectorComponent = () => {
           console.log("apiDownloadJson", data);
           //handle layout
           //TODO
+        //set popup
+           infoPopupRef.current.showMessage("TODO impl me"); 
           console.error("-----------------------------------------------TODO impl me------------------------------------------------------------");
         })
         .catch((err) => {
@@ -142,9 +149,9 @@ const WellSelectorComponent = () => {
 
     //get from web
     ///TODO 
-    console.log(JSON.stringify(wsUtils.wellLayoutDevelopment));
-    console.log(JSON.stringify(wsUtils.wellLayout32));
-    console.log(JSON.stringify(wsUtils.wellLayout96));
+    //console.log(JSON.stringify(wsUtils.wellLayoutDevelopment));
+    //console.log(JSON.stringify(wsUtils.wellLayout32));
+    //console.log(JSON.stringify(wsUtils.wellLayout96));
 
 
     //set new layout
@@ -311,6 +318,7 @@ const WellSelectorComponent = () => {
 
       {/* WellSelectorComponent with mode passed as prop width: "100%", height: "100%", display: "block"*/}
       <WellSelectorCanvas ref={childRef} style={{}} />
+      <InfoPopup ref={infoPopupRef}/>
     </div>
   );
 };

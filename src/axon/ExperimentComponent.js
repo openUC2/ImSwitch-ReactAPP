@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 import { Button, ButtonGroup, Snackbar } from "@mui/material";
 
 import * as wsUtils from "./WellSelectorUtils.js";
+
+import InfoPopup from "./InfoPopup.js";
 
 import * as experimentSlice from "../state/slices/ExperimentSlice.js";
 import * as experimentStatusSlice from "../state/slices/ExperimentStatusSlice.js";
@@ -26,10 +28,7 @@ const Status = Object.freeze({
 //##################################################################################
 const ExperimentComponent = () => {
   //state
-  //const [status, setStatus] = useState(Status.IDLE); //TODO move to experiment slice
-
-  const [popupOpen, setPopupOpen] = useState(false);
-  const [popupMessage, setPopupMessage] = useState("");
+  const infoPopupRef = useRef(null);
 
   //redux dispatcher
   const dispatch = useDispatch();
@@ -40,16 +39,7 @@ const ExperimentComponent = () => {
   const wellSelectorState = useSelector(wellSelectorSlice.getWellSelectorState);
 
 
-  //##################################################################################
-  useEffect(() => {//popup time out handler
-    if (popupOpen) {
-      const timer = setTimeout(() => {
-        setPopupOpen(false);
-      }, 3000); // Close after 3 seconds
 
-      return () => clearTimeout(timer); // Cleanup on unmount or when `popupOpen` changes
-    }
-  }, [popupOpen]);
 
   //##################################################################################
   useEffect(() => {//periodic experiment status fetch
@@ -68,10 +58,7 @@ const ExperimentComponent = () => {
   }, []); // Empty dependency array ensures this runs once on mount
 
   //##################################################################################
-  const showPopupMessage = (message) => {
-      setPopupMessage(message);
-      setPopupOpen(true);
-  }
+ 
  
 
   //##################################################################################
@@ -138,13 +125,13 @@ const ExperimentComponent = () => {
         //set state 
         dispatch(experimentStatusSlice.setStatus(Status.RUNNING));
         //set popup
-        showPopupMessage("Experiment started..."); 
+        infoPopupRef.current.showMessage("Experiment started..."); 
       })
       .catch((err) => {
         // Handle error
         //console.error("handleStart", err)
         //set popup
-        showPopupMessage("Start Experiment failed"); 
+        infoPopupRef.current.showMessage("Start Experiment failed"); 
       });
   };
 
@@ -158,12 +145,12 @@ const ExperimentComponent = () => {
         //set state 
         dispatch(experimentStatusSlice.setStatus(Status.PAUSED));
         //set popup
-        showPopupMessage("Experiment paused"); 
+        infoPopupRef.current.showMessage("Experiment paused"); 
       })
       .catch((err) => {
         // Handle error
         //set popup
-        showPopupMessage("Pause Experiment failed"); 
+        infoPopupRef.current.showMessage("Pause Experiment failed"); 
       });
   };
 
@@ -177,19 +164,18 @@ const ExperimentComponent = () => {
         //set state 
         dispatch(experimentStatusSlice.setStatus(Status.RUNNING));
         //set popup
-        showPopupMessage("Experiment resumed..."); 
+        infoPopupRef.current.showMessage("Experiment resumed..."); 
       })
       .catch((err) => {
         // Handle error
         //set popup
-        showPopupMessage("Resume Experiment failed"); 
+        infoPopupRef.current.showMessage("Resume Experiment failed"); 
       });
   };
 
   //##################################################################################
   const handleStop = () => {
-    console.log("Experiment stopped");
-    setPopupOpen(true);
+    console.log("Experiment stopped"); 
     //create request
     apiStopExperiment()
       .then((data) => {
@@ -197,12 +183,12 @@ const ExperimentComponent = () => {
         //set state 
         dispatch(experimentStatusSlice.setStatus(Status.IDLE));
         //set popup
-        showPopupMessage("Experiment stopped"); 
+        infoPopupRef.current.showMessage("Experiment stopped"); 
       })
       .catch((err) => {
         // Handle error
         //set popup
-        showPopupMessage("Stop Experiment failed"); 
+        infoPopupRef.current.showMessage("Stop Experiment failed"); 
       });
   };
 
@@ -254,6 +240,7 @@ const ExperimentComponent = () => {
         </Button>
       </ButtonGroup>
 
+      {/* Header 
       <Snackbar
         open={popupOpen}
         autoHideDuration={null} // automatically hide
@@ -263,7 +250,9 @@ const ExperimentComponent = () => {
           vertical: "bottom",
           horizontal: "right", // You can change this to top, left, etc.
         }}
-      />
+      />*/}
+
+<InfoPopup ref={infoPopupRef}/>
     </div>
   );
 };
