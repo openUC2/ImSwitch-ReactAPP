@@ -302,8 +302,8 @@ export function isLineIntersectingSquare(
 }
 
 //##################################################################################
-export const wellLayoutEmpty = {
-    name: "empty",
+export const wellLayoutDefault = {
+    name: "Default",
     unit: "um",
     width: 120000,  // Standard width for 32-well plate
     height: 80000,  // Standard height for 32-well plate
@@ -311,7 +311,7 @@ export const wellLayoutEmpty = {
   };
 
   export const wellLayoutDevelopment = {
-    name: "development",
+    name: "Development",
     unit: "um",
     width: 1000000,
     height: 600000,
@@ -340,7 +340,7 @@ export const wellLayoutEmpty = {
   };
 
 export const wellLayout32 = {
-    name: "layout32",
+    name: "Wellplate 32",
     unit: "um",
     width: 128000,
     height: 86000,
@@ -374,7 +374,7 @@ export const wellLayout32 = {
 ;
 
 export const wellLayout96 = {
-    name: "layout96",
+    name: "Wellplate 96",
     unit: "um",
     width: 128000,
     height: 86000,

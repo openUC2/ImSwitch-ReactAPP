@@ -5,11 +5,12 @@ import { v4 as uuidv4 } from "uuid";
 const initialExperimentState = {
   name: "experiment",
   wellLayout: {
-    name: "test",
+    name: "Default",
     unit: "um",
     width: 1000000,
     height: 600000,
     wells: [
+      /*
       { x: 200000, y: 200000, shape: "circle", radius: 50000 },
       { x: 400000, y: 200000, shape: "circle", radius: 90000 },
       { x: 600000, y: 200000, shape: "circle", radius: 90000 },
@@ -30,9 +31,11 @@ const initialExperimentState = {
         width: 180000,
         height: 180000,
       },
+      */
     ],
   },
   pointList: [
+    /*
     {
       id: uuidv4(),
       name: "",
@@ -42,6 +45,7 @@ const initialExperimentState = {
       neighborsX: 0,
       neighborsY: 0,
     },
+    */
   ],
   parameterValue: {
     illumination: "",

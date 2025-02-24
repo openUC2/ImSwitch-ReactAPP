@@ -5,7 +5,7 @@ const initialState = {
     ip: `https://${window.location.hostname}`,//ip: "https://localhost", "https://imswitch.openuc2.com"
     //port: 8002,  //DEPREACTED
     websocketPort: 8002,
-    apiPort: 8002,
+    apiPort: 443,
     //TODO protocol? seperated? http/https
 };
 

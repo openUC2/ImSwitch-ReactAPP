@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 import WellSelectorCanvas, { Mode } from "./WellSelectorCanvas.js";
@@ -7,6 +7,9 @@ import * as wsUtils from "./WellSelectorUtils.js";
 import * as wellSelectorSlice from "../state/slices/WellSelectorSlice.js";
 import * as experimentSlice from "../state/slices/ExperimentSlice.js";
 import * as hardwareSlice from "../state/slices/HardwareSlice.js";
+
+import apiGetSampleLayoutFilePaths from "../backendapi/apiGetSampleLayoutFilePaths.js";
+import apiDownloadJson from "../backendapi/apiDownloadJson.js";
 
 import {
   Button,
@@ -24,6 +27,12 @@ import {
 
 //##################################################################################
 const WellSelectorComponent = () => {
+  //local state
+  const [wellLayoutFileList, setWellLayoutFileList] = useState([
+    "image/test.json",
+    "image/test1.json",
+  ]);
+
   //child ref
   const childRef = useRef();
 
@@ -34,6 +43,21 @@ const WellSelectorComponent = () => {
   const wellSelectorState = useSelector(wellSelectorSlice.getWellSelectorState);
   const experimentState = useSelector(experimentSlice.getExperimentState);
   const hardwareState = useSelector(hardwareSlice.getHardwareState);
+
+  //##################################################################################
+  useEffect(() => {
+    //request welllayout file list
+    apiGetSampleLayoutFilePaths()
+      .then((data) => {
+        //console.log("apiGetSampleLayoutFilePaths",data)
+        //set file list
+        setWellLayoutFileList(data);
+      })
+      .catch((err) => {
+        //handle error if needed
+        console.log(err);
+      });
+  }, []); // Empty dependency array ensures this runs once on mount
 
   //##################################################################################
   const handleModeChange = (mode) => {
@@ -86,17 +110,44 @@ const WellSelectorComponent = () => {
 
   //##################################################################################
   const handleLayoutChange = (event) => {
+    console.log("handleLayoutChange");
     //select layout
-    let wellLayout = wsUtils.wellLayoutEmpty;
-    //check
-    if (event.target.value === "development") {
+    let wellLayout; // = wsUtils.wellLayoutDefault;
+
+    //check defaults
+    if (event.target.value === "Default") {
+      wellLayout = wsUtils.wellLayoutDefault;
+    } else if (event.target.value === "Development") {
       wellLayout = wsUtils.wellLayoutDevelopment;
-    } else if (event.target.value === "layout32") {
+    } else if (event.target.value === "Wellplate 32") {
       wellLayout = wsUtils.wellLayout32;
-    } else if (event.target.value === "layout96") {
+    } else if (event.target.value === "Wellplate 96") {
       wellLayout = wsUtils.wellLayout96;
+    } else {
+      //donwload layout
+      apiDownloadJson(event.target.value) // Pass the JSON file path
+        .then((data) => {
+          console.log("apiDownloadJson", data);
+          //handle layout
+          //TODO
+          console.error("-----------------------------------------------TODO impl me------------------------------------------------------------");
+        })
+        .catch((err) => {
+          //handle error if needed
+          console.log(err);
+        });
+
+      return;
     }
 
+    //get from web
+    ///TODO 
+    console.log(JSON.stringify(wsUtils.wellLayoutDevelopment));
+    console.log(JSON.stringify(wsUtils.wellLayout32));
+    console.log(JSON.stringify(wsUtils.wellLayout96));
+
+
+    //set new layout
     dispatch(experimentSlice.setWellLayout(wellLayout));
   };
 
@@ -109,11 +160,27 @@ const WellSelectorComponent = () => {
 
         <FormControl>
           <InputLabel>Layout</InputLabel>
-          <Select label="Layout" value={experimentState.wellLayout.name} onChange={handleLayoutChange}>
-            <MenuItem value="empty">--Choose layout--</MenuItem>
-            <MenuItem value="development">Development</MenuItem>
-            <MenuItem value="layout32">Wellpalte 32</MenuItem>
-            <MenuItem value="layout96">Wellpalte 96</MenuItem>
+          <Select
+            label="Layout"
+            value={experimentState.wellLayout.name}
+            onChange={handleLayoutChange}
+          >
+            {/* current layout */}
+            <MenuItem
+              style={{ backgroundColor: "lightblue" }}
+              value={experimentState.wellLayout.name}
+            >
+              {experimentState.wellLayout.name}
+            </MenuItem>
+            {/* hard coded layouts */}
+            <MenuItem value="Default">Default</MenuItem>
+            <MenuItem value="Development">Development</MenuItem>
+            <MenuItem value="Wellplate 32">Wellplate 32</MenuItem>
+            <MenuItem value="Wellplate 96">Wellplate 96</MenuItem>
+            {/* online layouts */}
+            {wellLayoutFileList.map((file, index) => (
+              <MenuItem value={file}>{file}</MenuItem>
+            ))}
           </Select>
         </FormControl>
 

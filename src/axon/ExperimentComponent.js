@@ -59,7 +59,7 @@ const ExperimentComponent = () => {
     // Set an interval to call fetchData every x seconds 
     const intervalId = setInterval(() => {
         fetchGetExperimentStatus(dispatch);
-      }, 5000);//Request period
+      }, 3000);//Request period
 
     // Cleanup on component unmount
     return () => {
@@ -218,7 +218,7 @@ const ExperimentComponent = () => {
       }}
     >
       {/* Header */}
-      <h4 style={{ margin: "0", padding: "0" }}>Experiment</h4>
+      <h4 style={{ margin: "0", padding: "0" }}>Experiment ({experimentStatusState.status})</h4>
 
       <ButtonGroup>
         <Button

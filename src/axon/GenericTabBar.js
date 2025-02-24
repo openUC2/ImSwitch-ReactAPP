@@ -39,26 +39,10 @@ function GenericTabBar({ children, tabNames, id }) {
     }
   }, [activeTab, localStorageKey]);
 
-  const renderTabs = () => {
-    return React.Children.map(children, (child, index) => (
-      <Button
-        style={{
-          padding: "10px",
-          cursor: "pointer",
-          border: "1px solid #eee",
-          borderBottom: activeTab === index ? "8px solid blue" : "none",
-        }}
-        onClick={() => setActiveTab(index)}
-        key={index}
-      >
-        {tabNames[index] || `Tab ${index + 1}`}
-      </Button>
-    ));
-  };
 
   return (
     <div>
-      <div style={{ display: "flex", borderBottom: "1px solid #ccc" }}>
+      <div style={{ display: "flex", padding: "8px" }}>
         {/*renderTabs()*/}
         <Paper>
           <Tabs
