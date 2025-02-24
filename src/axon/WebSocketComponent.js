@@ -1,21 +1,23 @@
-import React from 'react'; 
+import React from "react";
 import { useDispatch, useSelector } from "react-redux";
 import * as connectionSettingsSlice from "../state/slices/ConnectionSettingsSlice.js";
 import * as webSocketSlice from "../state/slices/WebSocketSlice.js";
 
 //##################################################################################
-const WebSocketComponent = () => { 
-    // redux dispatcher
-    const dispatch = useDispatch();
-  
-    // Access global Redux state
-    const connectionSettingsState = useSelector(connectionSettingsSlice.getConnectionSettingsState);
-    const webSocketState = useSelector(webSocketSlice.getWebSocketState);
+const WebSocketComponent = () => {
+  // redux dispatcher
+  const dispatch = useDispatch();
 
-//##################################################################################
+  // Access global Redux state
+  const connectionSettingsState = useSelector(
+    connectionSettingsSlice.getConnectionSettingsState
+  );
+  const webSocketState = useSelector(webSocketSlice.getWebSocketState);
+
+  //##################################################################################
   return (
-    <div style={{ border: '1px solid white', padding: '10px' }}>
-      <table style={{ textAlign: 'left' }}>
+    <div style={{ border: "1px solid white", padding: "10px" }}>
+      <table style={{ textAlign: "left" }}>
         <thead>
           <tr>
             <th>Settings</th>
@@ -34,15 +36,22 @@ const WebSocketComponent = () => {
             <td>Port (api)</td>
             <td>{connectionSettingsState.apiPort}</td>
           </tr>
-          <thead>
-            <tr>
-              <th>Status</th>
-              <th><div style={{ width: "16px", height: "16px", borderRadius: "100%", backgroundColor: webSocketState.connected ? "green" : "red" }}/></th>
-            </tr>
-          </thead>
-            <tr>
+          <tr>
+            <th>Status</th>
+            <th>
+              <div
+                style={{
+                  width: "16px",
+                  height: "16px",
+                  borderRadius: "100%",
+                  backgroundColor: webSocketState.connected ? "green" : "red",
+                }}
+              />
+            </th>
+          </tr>
+          <tr>
             <td>Connection</td>
-            <td>{webSocketState.connected ? 'Connected' : 'Disconnected'}</td> 
+            <td>{webSocketState.connected ? "Connected" : "Disconnected"}</td>
           </tr>
           <tr>
             <td>Signal Count</td>

@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 
-import {
-    Button, 
-  } from "@mui/material";
+import { Button, Paper, Tabs, Tab } from "@mui/material";
 
 // Global counter to generate unique IDs for each component instance
 let counter = 0;
@@ -23,7 +21,6 @@ function GenericTabBar({ children, tabNames, id }) {
     }
     return 0; // Default to 0 if no id is provided
   });
-
 
   // Load the active tab from localStorage when the component mounts, but only if `id` is set
   useEffect(() => {
@@ -62,7 +59,18 @@ function GenericTabBar({ children, tabNames, id }) {
   return (
     <div>
       <div style={{ display: "flex", borderBottom: "1px solid #ccc" }}>
-        {renderTabs()}
+        {/*renderTabs()*/}
+        <Paper>
+          <Tabs
+            value={activeTab}
+            onChange={(event, newValue) => setActiveTab(newValue)}
+            //aria-label="settings tabs"
+          >
+            {tabNames.map((tabName) => (
+              <Tab  key={tabName} label={tabName} />
+            ))}
+          </Tabs>
+        </Paper>
       </div>
       <div style={{ marginTop: "0px" }}>
         {/* Render the content of the active tab */}

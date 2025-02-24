@@ -14,6 +14,7 @@ import webSocketReducer from "./slices/WebSocketSlice";
 import positionReducer from "./slices/PositionSlice";
 import wellSelectorReducer from "./slices/WellSelectorSlice";
 import experimentReducer from "./slices/ExperimentSlice";
+import experimentStatusReducer from "./slices/ExperimentStatusSlice";
 import hardwareReducer from "./slices/HardwareSlice";
 import liveStreamReducer from "./slices/LiveStreamSlice";
 
@@ -22,6 +23,7 @@ const rootReducer = combineReducers({
   connectionSettingsState: connectionSettingsReducer,
   webSocketState: webSocketReducer,
   experimentState: experimentReducer,
+  experimentStatusState: experimentStatusReducer,
   liveStreamState: liveStreamReducer,
   hardwareState: hardwareReducer,
   wellSelectorState: wellSelectorReducer,
@@ -39,7 +41,6 @@ const persistConfig = {
   storage, //<--storage type
   whitelist: [ //<-- add all slices that should be persisted
     "connectionSettingsState",
-    //"liveStreamState",
     "hardwareState",
     "experimentState",
     "wellSelectorState",

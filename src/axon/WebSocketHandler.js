@@ -79,8 +79,8 @@ const WebSocketHandler = () => {
           })
         );
       } else {
-        console.warn("WebSocket: Unhandled signal from socket:", dataJson.name);
-        console.warn(dataJson);
+        //console.warn("WebSocket: Unhandled signal from socket:", dataJson.name);
+        //console.warn(dataJson);
       }
     });
 
