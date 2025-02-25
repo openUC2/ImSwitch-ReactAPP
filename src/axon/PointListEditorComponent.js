@@ -250,7 +250,7 @@ const PointListEditorComponent = () => {
                 </FormControl>
               )}
 
-              {/* Input for n value */ console.log(item.shape)}
+              {/* Input for n value */ }
               {viewMode == ViewMode.SHAPE && item.shape != "" && <div>nX:</div>}
               {viewMode == ViewMode.SHAPE && item.shape != "" && (
                 <Input

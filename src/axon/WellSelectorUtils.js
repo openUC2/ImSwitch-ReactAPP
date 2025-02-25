@@ -316,11 +316,11 @@ export const wellLayoutDefault = {
     width: 1000000,
     height: 600000,
     wells: [
-      { x: 200000, y: 200000, shape: "circle", radius: 50000 },
-      { x: 400000, y: 200000, shape: "circle", radius: 90000 },
-      { x: 600000, y: 200000, shape: "circle", radius: 90000 },
-      { x: 800000, y: 200000, shape: "circle", radius: 90000 },
-      { x: 200000, y: 400000, shape: "circle", radius: 90000 },
+      { x: 200000, y: 200000, shape: "circle", radius: 50000, name:"A1" },
+      { x: 400000, y: 200000, shape: "circle", radius: 90000, name:"A2" },
+      { x: 600000, y: 200000, shape: "circle", radius: 90000, name:"A3" },
+      { x: 800000, y: 200000, shape: "circle", radius: 90000, name:"A4" },
+      { x: 200000, y: 400000, shape: "circle", radius: 90000, name:"B1" },
       { x: 400000, y: 400000, shape: "circle", radius: 90000 },
       {
         x: 600000,
@@ -335,6 +335,7 @@ export const wellLayoutDefault = {
         shape: "rectangle",
         width: 180000,
         height: 180000,
+        name:"B4"
       },
     ],
   };
