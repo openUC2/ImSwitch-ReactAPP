@@ -4,6 +4,7 @@ import SocketView from "./components/SocketView";
 import HistoScanController from "./components/HistoScanController";
 import LargeFovScanController from "./components/OpenLayers";
 import TimelapseController from "./components/TimelapseController";
+import ObjectiveController from "./components/ObjectiveController.js";
 import AboutPage from "./components/AboutPage";
 import { LiveWidgetProvider } from "./context/LiveWidgetContext"; // Import the context provider
 import Tab_Widgets from "./components/Tab_Widgets";
@@ -436,6 +437,13 @@ function App() {
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "Timelapse" : ""} />
               </ListItem>
+              {/* Objective */}
+              <ListItem button onClick={() => handlePluginChange("Objective")}>
+                <ListItemIcon>
+                  <SettingsIcon />
+                </ListItemIcon>
+                <ListItemText primary={sidebarVisible ? "Objective" : ""} />
+              </ListItem>
               {/* SocketView */}
               <ListItem button onClick={() => handlePluginChange("SocketView")}>
                 <ListItemIcon>
@@ -563,6 +571,9 @@ function App() {
                   />
                 </MCTProvider>
               </WidgetContextProvider>
+            )}
+            {selectedPlugin === "Objective" && (
+              <ObjectiveController hostIP={hostIP} hostPort={apiPort} />
             )}
             {selectedPlugin === "About" && <AboutPage />}
             {selectedPlugin === "FileManager" && (
