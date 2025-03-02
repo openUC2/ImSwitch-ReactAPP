@@ -302,8 +302,8 @@ export function isLineIntersectingSquare(
 }
 
 //##################################################################################
-export const wellLayoutEmpty = {
-    name: "empty",
+export const wellLayoutDefault = {
+    name: "Default",
     unit: "um",
     width: 120000,  // Standard width for 32-well plate
     height: 80000,  // Standard height for 32-well plate
@@ -311,16 +311,16 @@ export const wellLayoutEmpty = {
   };
 
   export const wellLayoutDevelopment = {
-    name: "development",
+    name: "Development",
     unit: "um",
     width: 1000000,
     height: 600000,
     wells: [
-      { x: 200000, y: 200000, shape: "circle", radius: 50000 },
-      { x: 400000, y: 200000, shape: "circle", radius: 90000 },
-      { x: 600000, y: 200000, shape: "circle", radius: 90000 },
-      { x: 800000, y: 200000, shape: "circle", radius: 90000 },
-      { x: 200000, y: 400000, shape: "circle", radius: 90000 },
+      { x: 200000, y: 200000, shape: "circle", radius: 50000, name:"A1" },
+      { x: 400000, y: 200000, shape: "circle", radius: 90000, name:"A2" },
+      { x: 600000, y: 200000, shape: "circle", radius: 90000, name:"A3" },
+      { x: 800000, y: 200000, shape: "circle", radius: 90000, name:"A4" },
+      { x: 200000, y: 400000, shape: "circle", radius: 90000, name:"B1" },
       { x: 400000, y: 400000, shape: "circle", radius: 90000 },
       {
         x: 600000,
@@ -335,12 +335,13 @@ export const wellLayoutEmpty = {
         shape: "rectangle",
         width: 180000,
         height: 180000,
+        name:"B4"
       },
     ],
   };
 
 export const wellLayout32 = {
-    name: "layout32",
+    name: "Wellplate 32",
     unit: "um",
     width: 128000,
     height: 86000,
@@ -374,7 +375,7 @@ export const wellLayout32 = {
 ;
 
 export const wellLayout96 = {
-    name: "layout96",
+    name: "Wellplate 96",
     unit: "um",
     width: 128000,
     height: 86000,

@@ -531,7 +531,7 @@ function App() {
               <LiveWidgetProvider>
                 <LiveView
                   hostIP={hostIP}
-                  hostPort={websocketPort}
+                  hostPort={apiPort}
                   drawerWidth={drawerWidth}
                   // pass down a setter or context for the image if needed
                   onImageUpdate={(img) => setSharedImage(img)}

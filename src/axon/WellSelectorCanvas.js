@@ -11,6 +11,7 @@ import * as wsUtils from "./WellSelectorUtils.js";
 
 import apiGetHistoStatus from "../backendapi/apiGetHistoStatus.js";
 import apiMovePositioner from "../backendapi/apiMovePositioner";
+import { X } from "@mui/icons-material";
 
 //##################################################################################
 
@@ -159,6 +160,14 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
       const topLeftX = x - width / 2;
       const topLeftY = y - height / 2;
       ctx.strokeRect(topLeftX, topLeftY, width, height);
+    }
+
+    //draw name if exsists
+    if (well.name) {
+      ctx.font = "12px Arial";
+      ctx.fillStyle = strokeStyle;
+      ctx.textAlign = "center";
+      ctx.fillText(well.name, x, y);
     }
   };
 
@@ -824,7 +833,7 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
           if (
             isWellInsideSelection(well, mouseDownPosition, mouseMovePosition)
           ) {
-            createNewPoint(well);
+            createNewPoint(well);//Note: this also set well name as point name
           }
         });
       }
@@ -1004,8 +1013,14 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
   //##################################################################################
   const createNewPoint = (position) => {
     //create new point
-    dispatch(experimentSlice.createPoint(position));
+    dispatch(experimentSlice.createPoint({
+        x: position.x,
+        y: position.y,
+        name: position.name || ""
+      }));
   };
+
+
 
   //##################################################################################
   const createNewPointWithShape = (position, shape, neighborsX, neighborsY) => {

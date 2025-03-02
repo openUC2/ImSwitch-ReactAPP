@@ -68,7 +68,7 @@ const WebSocketHandler = () => {
         //
         console.log("sigUpdateMotorPosition", dataJson);
         //parse
-        const p0Object = JSON.parse(dataJson.args.p0.replace(/'/g, '"'));
+        const p0Object = JSON.parse(dataJson.args.p0.replace(/'/g, '"')); //TODO fix hardcoded access!!
         //update redux state
         dispatch(
           hardwareSlice.setPosition({
@@ -79,8 +79,8 @@ const WebSocketHandler = () => {
           })
         );
       } else {
-        console.warn("WebSocket: Unhandled signal from socket:", dataJson.name);
-        console.warn(dataJson);
+        //console.warn("WebSocket: Unhandled signal from socket:", dataJson.name);
+        //console.warn(dataJson);
       }
     });
 

@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 
-import {
-    Button, 
-  } from "@mui/material";
+import { Button, Paper, Tabs, Tab } from "@mui/material";
 
 // Global counter to generate unique IDs for each component instance
 let counter = 0;
@@ -24,7 +22,6 @@ function GenericTabBar({ children, tabNames, id }) {
     return 0; // Default to 0 if no id is provided
   });
 
-
   // Load the active tab from localStorage when the component mounts, but only if `id` is set
   useEffect(() => {
     if (localStorageKey) {
@@ -42,27 +39,22 @@ function GenericTabBar({ children, tabNames, id }) {
     }
   }, [activeTab, localStorageKey]);
 
-  const renderTabs = () => {
-    return React.Children.map(children, (child, index) => (
-      <Button
-        style={{
-          padding: "10px",
-          cursor: "pointer",
-          border: "1px solid #eee",
-          borderBottom: activeTab === index ? "8px solid blue" : "none",
-        }}
-        onClick={() => setActiveTab(index)}
-        key={index}
-      >
-        {tabNames[index] || `Tab ${index + 1}`}
-      </Button>
-    ));
-  };
 
   return (
     <div>
-      <div style={{ display: "flex", borderBottom: "1px solid #ccc" }}>
-        {renderTabs()}
+      <div style={{ display: "flex", padding: "8px" }}>
+        {/*renderTabs()*/}
+        <Paper>
+          <Tabs
+            value={activeTab}
+            onChange={(event, newValue) => setActiveTab(newValue)}
+            //aria-label="settings tabs"
+          >
+            {tabNames.map((tabName) => (
+              <Tab  key={tabName} label={tabName} />
+            ))}
+          </Tabs>
+        </Paper>
       </div>
       <div style={{ marginTop: "0px" }}>
         {/* Render the content of the active tab */}

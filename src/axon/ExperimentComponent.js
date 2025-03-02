@@ -1,12 +1,21 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
-import { Button, ButtonGroup } from "@mui/material";
+import { Button, ButtonGroup, Snackbar } from "@mui/material";
 
 import * as wsUtils from "./WellSelectorUtils.js";
 
+import InfoPopup from "./InfoPopup.js";
+
 import * as experimentSlice from "../state/slices/ExperimentSlice.js";
+import * as experimentStatusSlice from "../state/slices/ExperimentStatusSlice.js";
 import * as wellSelectorSlice from "../state/slices/WellSelectorSlice.js";
+
+import apiStartWellplateExperiment from "../backendapi/apiStartWellplateExperiment.js";
+import apiStopExperiment from "../backendapi/apiStopExperiment.js";
+import apiPauseWorkflow from "../backendapi/apiPauseWorkflow.js";
+import apiResumeExperiment from "../backendapi/apiResumeExperiment.js";
+import fetchGetExperimentStatus from "../middleware/fetchGetExperimentStatus.js";
 
 //##################################################################################
 // Enum-like object for status
@@ -19,20 +28,42 @@ const Status = Object.freeze({
 //##################################################################################
 const ExperimentComponent = () => {
   //state
-  const [status, setStatus] = useState(Status.IDLE);//TODO move to experiment slice
+  const infoPopupRef = useRef(null);
 
   //redux dispatcher
   const dispatch = useDispatch();
 
   // Access global Redux state
   const experimentState = useSelector(experimentSlice.getExperimentState);
+  const experimentStatusState = useSelector(experimentStatusSlice.getExperimentStatusState);
   const wellSelectorState = useSelector(wellSelectorSlice.getWellSelectorState);
+
+
+
+
+  //##################################################################################
+  useEffect(() => {//periodic experiment status fetch
+    // Initial fetch
+    fetchGetExperimentStatus(dispatch);
+
+    // Set an interval to call fetchData every x seconds 
+    const intervalId = setInterval(() => {
+        fetchGetExperimentStatus(dispatch);
+      }, 3000);//Request period
+
+    // Cleanup on component unmount
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, []); // Empty dependency array ensures this runs once on mount
+
+  //##################################################################################
+ 
+ 
 
   //##################################################################################
   const handleStart = () => {
     console.log("Experiment started");
-    //set state
-    setStatus(Status.RUNNING);
 
     //create experiment request
     const experimentRequest = {
@@ -80,41 +111,87 @@ const ExperimentComponent = () => {
     });
 
     // Convert object to JSON
-    const jsonString = JSON.stringify(experimentRequest);
+    //const jsonString = JSON.stringify(experimentRequest);
 
     //show reuslt
-    console.log("experiment(obj):", experimentRequest);
-    console.log("experiment(json):", jsonString);
+    //console.log("experiment(obj):", experimentRequest);
+    //console.log("experiment(json):", jsonString);
 
-
-    //TODO create request------------------
-    console.error("TODO IMPLEMENT REQUEST");
-
+    //create request
+    apiStartWellplateExperiment(experimentRequest)
+      .then((data) => {
+        // Handle success response
+        console.log("apiStartWellplateExperiment", data);
+        //set state 
+        dispatch(experimentStatusSlice.setStatus(Status.RUNNING));
+        //set popup
+        infoPopupRef.current.showMessage("Experiment started..."); 
+      })
+      .catch((err) => {
+        // Handle error
+        //console.error("handleStart", err)
+        //set popup
+        infoPopupRef.current.showMessage("Start Experiment failed"); 
+      });
   };
 
   //##################################################################################
   const handlePause = () => {
     console.log("Experiment paused");
-    setStatus(Status.PAUSED);
-    //TODO create request------------------
-    console.error("TODO IMPLEMENT REQUEST");
+    //create request
+    apiPauseWorkflow()
+      .then((data) => {
+        // Handle success response
+        //set state 
+        dispatch(experimentStatusSlice.setStatus(Status.PAUSED));
+        //set popup
+        infoPopupRef.current.showMessage("Experiment paused"); 
+      })
+      .catch((err) => {
+        // Handle error
+        //set popup
+        infoPopupRef.current.showMessage("Pause Experiment failed"); 
+      });
   };
 
   //##################################################################################
   const handleResume = () => {
     console.log("Experiment resumed");
-    setStatus(Status.RUNNING);
-    //TODO create request------------------
-    console.error("TODO IMPLEMENT REQUEST");
+    //create request
+    apiResumeExperiment()
+      .then((data) => {
+        // Handle success response
+        //set state 
+        dispatch(experimentStatusSlice.setStatus(Status.RUNNING));
+        //set popup
+        infoPopupRef.current.showMessage("Experiment resumed..."); 
+      })
+      .catch((err) => {
+        // Handle error
+        //set popup
+        infoPopupRef.current.showMessage("Resume Experiment failed"); 
+      });
   };
 
   //##################################################################################
   const handleStop = () => {
-    console.log("Experiment stopped");
-    setStatus(Status.IDLE);
-    //TODO create request------------------
-    console.error("TODO IMPLEMENT REQUEST");
+    console.log("Experiment stopped"); 
+    //create request
+    apiStopExperiment()
+      .then((data) => {
+        // Handle success response
+        //set state 
+        dispatch(experimentStatusSlice.setStatus(Status.IDLE));
+        //set popup
+        infoPopupRef.current.showMessage("Experiment stopped"); 
+      })
+      .catch((err) => {
+        // Handle error
+        //set popup
+        infoPopupRef.current.showMessage("Stop Experiment failed"); 
+      });
   };
+
 
   //##################################################################################
   return (
@@ -127,13 +204,13 @@ const ExperimentComponent = () => {
       }}
     >
       {/* Header */}
-      <h4 style={{ margin: "0", padding: "0" }}>Experiment</h4>
+      <h4 style={{ margin: "0", padding: "0" }}>Experiment ({experimentStatusState.status})</h4>
 
       <ButtonGroup>
         <Button
           variant="contained"
           onClick={handleStart}
-          disabled={status !== Status.IDLE}
+          disabled={experimentStatusState.status !== Status.IDLE}
         >
           Start
         </Button>
@@ -141,7 +218,7 @@ const ExperimentComponent = () => {
         <Button
           variant="contained"
           onClick={handlePause}
-          disabled={status !== Status.RUNNING}
+          disabled={experimentStatusState.status !== Status.RUNNING}
         >
           Pause
         </Button>
@@ -149,7 +226,7 @@ const ExperimentComponent = () => {
         <Button
           variant="contained"
           onClick={handleResume}
-          disabled={status !== Status.PAUSED}
+          disabled={experimentStatusState.status !== Status.PAUSED}
         >
           Resume
         </Button>
@@ -157,11 +234,25 @@ const ExperimentComponent = () => {
         <Button
           variant="contained"
           onClick={handleStop}
-          disabled={status === Status.IDLE}
+          disabled={experimentStatusState.status === Status.IDLE}
         >
           Stop
         </Button>
       </ButtonGroup>
+
+      {/* Header 
+      <Snackbar
+        open={popupOpen}
+        autoHideDuration={null} // automatically hide
+        //onClose={() => setPopupOpen(false)}
+        message={popupMessage}
+        anchorOrigin={{
+          vertical: "bottom",
+          horizontal: "right", // You can change this to top, left, etc.
+        }}
+      />*/}
+
+<InfoPopup ref={infoPopupRef}/>
     </div>
   );
 };
