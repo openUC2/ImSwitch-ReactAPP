@@ -70,14 +70,31 @@ const WebSocketHandler = () => {
         //parse
         const p0Object = JSON.parse(dataJson.args.p0.replace(/'/g, '"')); //TODO fix hardcoded access!!
         //update redux state
-        dispatch(
-          hardwareSlice.setPosition({
-            x: p0Object.VirtualStage.X,
-            y: p0Object.VirtualStage.Y,
-            z: p0Object.VirtualStage.Z,
-            a: p0Object.VirtualStage.A,
-          })
-        );
+        try{
+          dispatch(
+            hardwareSlice.setPosition({
+              x: p0Object.VirtualStage.X,
+              y: p0Object.VirtualStage.Y,
+              z: p0Object.VirtualStage.Z,
+              a: p0Object.VirtualStage.A,
+            })
+          );
+        }
+        catch (error) {
+          console.error("sigUpdateMotorPosition", error);
+          /*
+          WebSocketHandler.js:75 Uncaught (in promise) TypeError: Cannot read properties of undefined (reading 'X')
+    at Socket.<anonymous> (WebSocketHandler.js:75:1)
+    at __webpack_modules__../node_modules/@socket.io/component-emitter/lib/esm/index.js.Emitter.emit (index.js:136:1)
+    at Socket.emitEvent (socket.js:538:1)
+    at Socket.onevent (socket.js:525:1)
+    at Socket.onpacket (socket.js:495:1)
+    at __webpack_modules__../node_modules/@socket.io/component-emitter/lib/esm/index.js.Emitter.emit (index.js:136:1)
+    at manager.js:209:1
+
+fetchGetExperimentStatus.js:10 
+*/
+        }
       } else {
         //console.warn("WebSocket: Unhandled signal from socket:", dataJson.name);
         //console.warn(dataJson);

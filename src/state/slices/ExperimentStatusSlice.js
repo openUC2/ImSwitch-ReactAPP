@@ -12,7 +12,7 @@ const experimentStatusSlice = createSlice({
   initialState: initialExperimentStatusState,
   reducers: {
     setStatus: (state, action) => {
-      //console.log("setStatus");
+      console.log("setStatus");
       state.status = action.payload;
     },
        

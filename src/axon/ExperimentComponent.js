@@ -23,6 +23,7 @@ const Status = Object.freeze({
   IDLE: "idle",
   RUNNING: "running",
   PAUSED: "paused",
+  STOPPING: "stopping",
 });
 
 //##################################################################################
@@ -177,17 +178,18 @@ const ExperimentComponent = () => {
   const handleStop = () => {
     console.log("Experiment stopped"); 
     //create request
+    dispatch(experimentStatusSlice.setStatus(Status.IDLE )); // FIXME: This is a workaround to avoid the "stopping" status
     apiStopExperiment()
       .then((data) => {
         // Handle success response
         //set state 
-        dispatch(experimentStatusSlice.setStatus(Status.IDLE));
         //set popup
         infoPopupRef.current.showMessage("Experiment stopped"); 
       })
       .catch((err) => {
         // Handle error
         //set popup
+        console.log("handleStop", err);
         infoPopupRef.current.showMessage("Stop Experiment failed"); 
       });
   };
@@ -210,7 +212,7 @@ const ExperimentComponent = () => {
         <Button
           variant="contained"
           onClick={handleStart}
-          disabled={experimentStatusState.status !== Status.IDLE}
+          disabled={experimentStatusState.status !== Status.IDLE  && experimentStatusState.status === Status.STOPPING}
         >
           Start
         </Button>
@@ -234,7 +236,7 @@ const ExperimentComponent = () => {
         <Button
           variant="contained"
           onClick={handleStop}
-          disabled={experimentStatusState.status === Status.IDLE}
+          disabled={experimentStatusState.status === Status.IDLE || experimentStatusState.status !== Status.STOPPING}
         >
           Stop
         </Button>
