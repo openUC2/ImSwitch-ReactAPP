@@ -927,11 +927,24 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
         isAbsolute: true
       })
         .then((positionerResponse) => {
-          console.log("apiMovePositioner", positionerResponse);
+          console.log("apiMovePositioner X", positionerResponse);
         })
         .catch((error) => {
-          console.error("apiMovePositioner", "Error moving position:", error);
+          console.error("apiMovePositioner X", "Error moving position:", error);
         });
+
+      apiMovePositioner({
+        axis: "Y",
+        dist: calcPx2Phy(localPos.y),
+        isAbsolute: true
+      })
+        .then((positionerResponse) => {
+          console.log("apiMovePositioner Y", positionerResponse);
+        })
+        .catch((error) => {
+          console.error("apiMovePositioner Y", "Error moving position:", error);
+        });
+
       //save target
       dispatch(
         wellSelectorSlice.setCameraTargetPosition(
