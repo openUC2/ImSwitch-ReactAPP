@@ -4,11 +4,11 @@ const PositionControllerComponent = () => {
   const [intervalId, setIntervalId] = useState(null);
 
   const movePosition = (direction) => {
-    const url = `https://imswitch.openuc2.com/PositionerController/movePositioner?positionerName=VirtualStage&axis=`;
+    const url = `https://imswitch.openuc2.com/PositionerController/movePositioner?positionerName=VirtualStage&speed=20000&axis=`;
 
     let axis, dist;
 
-    const speed = 5;
+    const speed = 5000;
 
     switch (direction) {
       case 'up':
@@ -31,7 +31,7 @@ const PositionControllerComponent = () => {
         return;
     }
 
-    const apiUrl = `${url}${axis}&dist=${dist}&isAbsolute=false&isBlocking=false&speed=10000`;
+    const apiUrl = `${url}${axis}&dist=${dist}&isAbsolute=false&isBlocking=false&speed=20000`;
 
     // Send the request to the server
     fetch(apiUrl)

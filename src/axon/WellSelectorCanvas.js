@@ -924,7 +924,8 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
       apiMovePositioner({
         axis: "X",
         dist: calcPx2Phy(localPos.x),
-        isAbsolute: true
+        isAbsolute: true, 
+        speed: 15000
       })
         .then((positionerResponse) => {
           console.log("apiMovePositioner X", positionerResponse);
@@ -936,7 +937,8 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
       apiMovePositioner({
         axis: "Y",
         dist: calcPx2Phy(localPos.y),
-        isAbsolute: true
+        isAbsolute: true,
+        speed: 15000
       })
         .then((positionerResponse) => {
           console.log("apiMovePositioner Y", positionerResponse);

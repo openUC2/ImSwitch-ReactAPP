@@ -68,9 +68,9 @@ const WebSocketHandler = () => {
         //
         console.log("sigUpdateMotorPosition", dataJson);
         //parse
-        const p0Object = JSON.parse(dataJson.args.p0.replace(/'/g, '"')); //TODO fix hardcoded access!!
         //update redux state
         try{
+          const p0Object = JSON.parse(dataJson.args.p0.replace(/'/g, '"')); //TODO fix hardcoded access!!
           dispatch(
             hardwareSlice.setPosition({
               x: p0Object.VirtualStage.X,
