@@ -12,7 +12,7 @@ import * as wellSelectorSlice from "../state/slices/WellSelectorSlice.js";
 import * as experimentSlice from "../state/slices/ExperimentSlice.js";
 import * as hardwareSlice from "../state/slices/HardwareSlice.js";
 
-import apiGetSampleLayoutFilePaths from "../backendapi/apiGetSampleLayoutFilePaths.js";
+import apiHistoScanControllerGetSampleLayoutFilePaths from "../backendapi/apiHistoScanControllerGetSampleLayoutFilePaths.js";
 import apiDownloadJson from "../backendapi/apiDownloadJson.js";
 
 import {
@@ -52,9 +52,9 @@ const WellSelectorComponent = () => {
   //##################################################################################
   useEffect(() => {
     //request welllayout file list
-    apiGetSampleLayoutFilePaths()
+    apiHistoScanControllerGetSampleLayoutFilePaths()
       .then((data) => {
-        //console.log("apiGetSampleLayoutFilePaths",data)
+        //console.log("apiHistoScanControllerGetSampleLayoutFilePaths",data)
         //set file list
         setWellLayoutFileList(data);
       })

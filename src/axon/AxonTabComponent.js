@@ -24,13 +24,14 @@ const AxonTabComponent = () => {
               "Well Selector",
               "Live View",
               "Parameter",
-              "Point List",
+              "Points",
               "State",
             ]}
           >
             <WellSelectorComponent />
             <LiveViewControlWrapper />
             <ParameterEditorComponent />
+
             <PointListEditorComponent />
             <div style={{ display: "flex" }}>
               <WebSocketComponent />
@@ -43,17 +44,16 @@ const AxonTabComponent = () => {
             id="2"
             tabNames={[
               "Live View",
-              "Point List",
+              "Points",
+              "Shape",
               "Parameter",
               "Well Selector",
               "Experiment",
             ]}
           >
             <LiveViewControlWrapper />
-            <div>
-              <PointListEditorComponent />
-              <PointListShapeEditorComponent />
-            </div>
+            <PointListEditorComponent />
+            <PointListShapeEditorComponent />
             <ParameterEditorComponent />
             <WellSelectorComponent />
             <ExperimentComponent />

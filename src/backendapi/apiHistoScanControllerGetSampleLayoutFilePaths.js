@@ -1,7 +1,7 @@
-// src/api/apiGetSampleLayoutFilePaths.js
-import createAxiosInstance from "../backendapi/createAxiosInstance";
+// src/api/apiHistoScanControllerGetSampleLayoutFilePaths.js
+import createAxiosInstance from "./createAxiosInstance";
 
-const apiGetSampleLayoutFilePaths = async () => {
+const apiHistoScanControllerGetSampleLayoutFilePaths = async () => {
   try {
     const axiosInstance = createAxiosInstance(); // Create Axios instance
     const response = await axiosInstance.get("/HistoScanController/getSampleLayoutFilePaths"); // Send GET request to the new endpoint
@@ -12,13 +12,13 @@ const apiGetSampleLayoutFilePaths = async () => {
   }
 };
 
-export default apiGetSampleLayoutFilePaths;
+export default apiHistoScanControllerGetSampleLayoutFilePaths;
 
 /*
 // Example usage:
 
 const fetchSampleLayoutFilePaths = () => {
-  apiGetSampleLayoutFilePaths()
+  apiHistoScanControllerGetSampleLayoutFilePaths()
     .then((data) => {
       setSampleLayoutFilePaths(data); // Handle success response
     })

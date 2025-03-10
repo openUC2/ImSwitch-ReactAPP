@@ -1,13 +1,13 @@
 import * as hardwareSlice from "../state/slices/HardwareSlice.js";
 
-import apiGetCurrentExperimentParams from "../backendapi/apiGetCurrentExperimentParams.js";
+import apiGetCurrentExperimentParams from "../backendapi/apiExperimentControllerGetCurrentExperimentParams.js";
 
 
-const fetchGetCurrentExperimentParams = (dispatch) => {
+const fetchExperimentControllerGetCurrentExperimentParams = (dispatch) => {
     //request
   apiGetCurrentExperimentParams()
     .then((data) => {
-      console.log("fetchGetCurrentExperimentParams", data);
+      console.log("fetchExperimentControllerGetCurrentExperimentParams", data);
 
       // Parse the data
       const updatedParameterRange = {
@@ -47,4 +47,4 @@ const fetchGetCurrentExperimentParams = (dispatch) => {
     });
 };
 
-export default fetchGetCurrentExperimentParams;
+export default fetchExperimentControllerGetCurrentExperimentParams;

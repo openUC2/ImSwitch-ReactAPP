@@ -6,7 +6,7 @@ import * as hardwareSlice from "../state/slices/HardwareSlice.js";
 
 
 
-import fetchGetCurrentExperimentParams from '../middleware/fetchGetCurrentExperimentParams'; // Adjust the import path
+import fetchExperimentControllerGetCurrentExperimentParams from '../middleware/fetchExperimentControllerGetCurrentExperimentParams.js';  
 
 
 import { useTheme } from "@mui/material/styles";
@@ -28,7 +28,7 @@ const ParameterEditorComponent = () => {
   //##################################################################################
   useEffect(() => {
     //update on startup
-    fetchGetCurrentExperimentParams(dispatch);
+    fetchExperimentControllerGetCurrentExperimentParams(dispatch);
   }, []); // Empty dependency array means this runs once when the component mounts
 
   //##################################################################################

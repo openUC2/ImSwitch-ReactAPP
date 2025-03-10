@@ -1,8 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 
+import {
+  Button,
+  Input,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Box,
+} from "@mui/material";
+
+//##################################################################################
 const PositionControllerComponent = () => {
   const [intervalId, setIntervalId] = useState(null);
 
+  //##################################################################################
   const movePosition = (direction) => {
     const url = `https://imswitch.openuc2.com/PositionerController/movePositioner?positionerName=VirtualStage&speed=20000&axis=`;
 
@@ -11,20 +24,20 @@ const PositionControllerComponent = () => {
     const speed = 5000;
 
     switch (direction) {
-      case 'up':
-        axis = 'Y';
+      case "up":
+        axis = "Y";
         dist = speed;
         break;
-      case 'down':
-        axis = 'Y';
+      case "down":
+        axis = "Y";
         dist = -speed;
         break;
-      case 'left':
-        axis = 'X';
+      case "left":
+        axis = "X";
         dist = speed;
         break;
-      case 'right':
-        axis = 'X';
+      case "right":
+        axis = "X";
         dist = -speed;
         break;
       default:
@@ -35,15 +48,16 @@ const PositionControllerComponent = () => {
 
     // Send the request to the server
     fetch(apiUrl)
-      .then(response => response.json())
-      .then(data => {
-        console.log('Moved Successfully:', data);
+      .then((response) => response.json())
+      .then((data) => {
+        console.log("Moved Successfully:", data);
       })
-      .catch(error => {
-        console.error('Moved Error:', error);
+      .catch((error) => {
+        console.error("Moved Error:", error);
       });
   };
 
+  //##################################################################################
   const startMoving = (direction) => {
     // Start calling movePosition repeatedly
     const id = setInterval(() => {
@@ -52,6 +66,7 @@ const PositionControllerComponent = () => {
     setIntervalId(id);
   };
 
+  //##################################################################################
   const stopMoving = () => {
     // Clear the interval to stop calling movePosition
     if (intervalId) {
@@ -60,48 +75,71 @@ const PositionControllerComponent = () => {
     }
   };
 
+  //##################################################################################
   return (
-    <div className="arrow-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: "10px", border: '0px solid white' }}>
-      <div>
-        <button
-          onMouseDown={() => startMoving('up')}
+    <div
+      className="arrow-container"
+      style={{
+        padding: "10px",
+        border: "0px solid white",
+        display: 'flex', flexDirection: 'column', gap: '4px'
+      }}
+    >
+      <div style={{  display: 'flex', gap: '4px' }}>
+        <Button
+         variant="contained"
+          onMouseDown={() => startMoving("minus")}
           onMouseUp={stopMoving}
           onMouseLeave={stopMoving}
-          style={{ padding: '0px 8px', fontSize: '24px' }}
+        >
+          -
+        </Button>
+        <Button
+         variant="contained"
+          onMouseDown={() => startMoving("up")}
+          onMouseUp={stopMoving}
+          onMouseLeave={stopMoving} 
         >
           ↑
-        </button>
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', width: '100px' }}>
-        <button
-          onMouseDown={() => startMoving('left')}
+        </Button>
+        <Button
+         variant="contained"
+          onMouseDown={() => startMoving("plus")}
           onMouseUp={stopMoving}
-          onMouseLeave={stopMoving}
-          style={{ padding: '0px 4px', fontSize: '24px' }}
+          onMouseLeave={stopMoving} 
+        >
+          +
+        </Button>
+      </div>
+
+      <div style={{  display: 'flex', gap: '4px' }}>
+        <Button
+         variant="contained"
+          onMouseDown={() => startMoving("left")}
+          onMouseUp={stopMoving}
+          onMouseLeave={stopMoving} 
         >
           ←
-        </button>
-        <button
-          onMouseDown={() => startMoving('right')}
+        </Button>
+        <Button
+         variant="contained"
+          onMouseDown={() => startMoving("down")}
           onMouseUp={stopMoving}
-          onMouseLeave={stopMoving}
-          style={{ padding: '0px 4px', fontSize: '24px' }}
-        >
-          →
-        </button>
-      </div>
-      <div>
-        <button
-          onMouseDown={() => startMoving('down')}
-          onMouseUp={stopMoving}
-          onMouseLeave={stopMoving}
-          style={{ padding: '0px 8px', fontSize: '24px' }}
+          onMouseLeave={stopMoving} 
         >
           ↓
-        </button>
+        </Button>
+        <Button
+         variant="contained"
+          onMouseDown={() => startMoving("right")}
+          onMouseUp={stopMoving}
+          onMouseLeave={stopMoving} 
+        >
+          →
+        </Button>
       </div>
     </div>
   );
 };
-
+//##################################################################################
 export default PositionControllerComponent;

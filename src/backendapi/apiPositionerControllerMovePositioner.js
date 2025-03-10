@@ -1,7 +1,7 @@
-// src/api/apiMovePositioner.js
-import createAxiosInstance from "../backendapi/createAxiosInstance";
+// src/api/apiPositionerControllerMovePositioner.js
+import createAxiosInstance from "./createAxiosInstance";
 
-const apiMovePositioner = async ({
+const apiPositionerControllerMovePositioner = async ({
   positionerName,
   axis = "X",
   dist,
@@ -41,12 +41,12 @@ const apiMovePositioner = async ({
   }
 };
 
-export default apiMovePositioner;
+export default apiPositionerControllerMovePositioner;
 
 /*
 //Example:
 
-  apiMovePositioner({
+  apiPositionerControllerMovePositioner({
     positionerName: "Positioner1",  // Optional
     axis: "Y",                      // Optional (defaults to "X")
     dist: 10,                        // Optional

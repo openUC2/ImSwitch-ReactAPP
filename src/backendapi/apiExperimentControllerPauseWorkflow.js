@@ -1,7 +1,7 @@
-// src/api/apiPauseWorkflow.js
-import createAxiosInstance from "../backendapi/createAxiosInstance";
+// src/api/apiExperimentControllerPauseWorkflow.js
+import createAxiosInstance from "./createAxiosInstance";
 
-const apiPauseWorkflow = async () => {
+const apiExperimentControllerPauseWorkflow = async () => {
   try {
     const axiosInstance = createAxiosInstance(); // Create Axios instance
     const response = await axiosInstance.get("/ExperimentController/pauseWorkflow"); // Send GET request
@@ -12,13 +12,13 @@ const apiPauseWorkflow = async () => {
   }
 };
 
-export default apiPauseWorkflow;
+export default apiExperimentControllerPauseWorkflow;
 
 /*
 // Example usage:
 
 const pauseWorkflow = () => {
-  apiPauseWorkflow()
+  apiExperimentControllerPauseWorkflow()
     .then((data) => {
       setWorkflowStatus(data); // Handle success response
     })

@@ -9,8 +9,8 @@ import * as positionSlice from "../state/slices/PositionSlice.js";
 
 import * as wsUtils from "./WellSelectorUtils.js";
 
-import apiGetHistoStatus from "../backendapi/apiGetHistoStatus.js";
-import apiMovePositioner from "../backendapi/apiMovePositioner";
+import apiistoScanControllerGetHistoStatus from "../backendapi/apiHistoScanControllerGetHistoStatus.js";
+import apiPositionerControllerMovePositioner from "../backendapi/apiPositionerControllerMovePositioner.js";
 import { X } from "@mui/icons-material";
 
 //##################################################################################
@@ -648,10 +648,10 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
     const squareY = calcPhy2Px(hardwareState.position.y) - cameraHeight / 2;
 
     // draw neighbors around the original rectangle
-    ctx.strokeStyle = "green"; // Black color for the square's outline
+    ctx.strokeStyle = "red"; // Black color for the square's outline
     ctx.lineWidth = 1; // Line width for the square
     ctx.lineCap = "round"; // Rounded ends for lines
-    //ctx.strokeRect(squareX, squareY, cameraWidth, cameraHeight);
+    ctx.strokeRect(squareX, squareY, cameraWidth, cameraHeight);
 
     //------------ draw mouse position
 
@@ -921,7 +921,7 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
     //handle mode
     if (wellSelectorState.mode == Mode.MOVE_CAMERA) {
       //move camera
-      apiMovePositioner({
+      apiPositionerControllerMovePositioner({
         axis: "X",
         dist: calcPx2Phy(localPos.x),
         isAbsolute: true, 
@@ -934,7 +934,7 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
           console.error("apiMovePositioner X", "Error moving position:", error);
         });
 
-      apiMovePositioner({
+        apiPositionerControllerMovePositioner({
         axis: "Y",
         dist: calcPx2Phy(localPos.y),
         isAbsolute: true,
