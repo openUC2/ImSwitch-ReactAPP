@@ -833,7 +833,7 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
           if (
             isWellInsideSelection(well, mouseDownPosition, mouseMovePosition)
           ) {
-            createNewPoint(well);//Note: this also set well name as point name
+            createNewPoint(well); //Note: this also set well name as point name
           }
         });
       }
@@ -924,8 +924,8 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
       apiPositionerControllerMovePositioner({
         axis: "X",
         dist: calcPx2Phy(localPos.x),
-        isAbsolute: true, 
-        speed: 15000
+        isAbsolute: true,
+        speed: 15000,
       })
         .then((positionerResponse) => {
           console.log("apiMovePositioner X", positionerResponse);
@@ -934,11 +934,11 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
           console.error("apiMovePositioner X", "Error moving position:", error);
         });
 
-        apiPositionerControllerMovePositioner({
+      apiPositionerControllerMovePositioner({
         axis: "Y",
         dist: calcPx2Phy(localPos.y),
         isAbsolute: true,
-        speed: 15000
+        speed: 15000,
       })
         .then((positionerResponse) => {
           console.log("apiMovePositioner Y", positionerResponse);
@@ -1028,14 +1028,14 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
   //##################################################################################
   const createNewPoint = (position) => {
     //create new point
-    dispatch(experimentSlice.createPoint({
+    dispatch(
+      experimentSlice.createPoint({
         x: position.x,
         y: position.y,
-        name: position.name || ""
-      }));
+        name: position.name || "",
+      })
+    );
   };
-
-
 
   //##################################################################################
   const createNewPointWithShape = (position, shape, neighborsX, neighborsY) => {
