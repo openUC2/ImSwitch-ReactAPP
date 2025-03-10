@@ -4,13 +4,13 @@ import { useDispatch, useSelector } from "react-redux";
 
 import * as wellSelectorSlice from "../state/slices/WellSelectorSlice.js";
 import * as experimentSlice from "../state/slices/ExperimentSlice.js";
-import * as hardwareSlice from "../state/slices/HardwareSlice.js";
 import * as positionSlice from "../state/slices/PositionSlice.js";
 
 import * as wsUtils from "./WellSelectorUtils.js";
 
 import apiistoScanControllerGetHistoStatus from "../backendapi/apiHistoScanControllerGetHistoStatus.js";
 import apiPositionerControllerMovePositioner from "../backendapi/apiPositionerControllerMovePositioner.js";
+
 import { X } from "@mui/icons-material";
 
 //##################################################################################
@@ -61,10 +61,8 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
 
   // Access global Redux state
   const wellSelectorState = useSelector(wellSelectorSlice.getWellSelectorState);
-  const experimentState = useSelector(experimentSlice.getExperimentState);
-  const hardwareState = useSelector(hardwareSlice.getHardwareState);
-
-  const position = useSelector(positionSlice.getPosition);
+  const experimentState = useSelector(experimentSlice.getExperimentState); 
+  const positionState = useSelector(positionSlice.getPositionState);
 
   //##################################################################################
   useImperativeHandle(ref, () => ({
@@ -102,12 +100,11 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
     scale,
     offset,
     wellSelectorState,
-    experimentState,
-    hardwareState,
+    experimentState, 
     mouseDownFlag,
     mouseDownPosition,
     mouseMovePosition,
-    position,
+    positionState,
   ]);
 
   //##################################################################################
@@ -644,8 +641,10 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
     const cameraHeight = getRasterHeightAsPx();
 
     //center square
-    const squareX = calcPhy2Px(hardwareState.position.x) - cameraWidth / 2;
-    const squareY = calcPhy2Px(hardwareState.position.y) - cameraHeight / 2;
+    const squareX = calcPhy2Px(positionState.x) - cameraWidth / 2;
+    const squareY = calcPhy2Px(positionState.y) - cameraHeight / 2;
+
+console.log(positionState);//---------------------------------------------
 
     // draw neighbors around the original rectangle
     ctx.strokeStyle = "red"; // Black color for the square's outline
@@ -787,7 +786,7 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
     const newMousePosition = getLocalMousePosition(e);
     const canvasRect = canvasRef.current.getBoundingClientRect();
     setMouseMovePosition(newMousePosition);
-    dispatch(positionSlice.setPosition({ ...newMousePosition, z: 0 }));
+    //dispatch(positionSlice.setPosition({ ...newMousePosition, z: 0 }));
 
     //handle mode
     if (wellSelectorState.mode == Mode.SINGLE_SELECT) {

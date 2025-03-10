@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import * as connectionSettingsSlice from "../state/slices/ConnectionSettingsSlice.js";
 import * as webSocketSlice from "../state/slices/WebSocketSlice.js";
 import * as liveStreamSlice from "../state/slices/LiveStreamSlice.js";
-import * as hardwareSlice from "../state/slices/HardwareSlice.js";
+import * as positionSlice from "../state/slices/PositionSlice.js";
 
 import { io } from "socket.io-client";
 
@@ -19,11 +19,7 @@ const WebSocketHandler = () => {
     connectionSettingsSlice.getConnectionSettingsState
   );
 
-  /*const webSocketConnectionState = useSelector(
-    webSocketConnectionSlice.getWebSocketConnectionState
-  );*/
-  //const liveStreamState = useSelector(liveStreamSlice.getLiveStreamState);
-  //const hardwareState = useSelector(hardwareSlice.getHardwareState);
+
 
   //##################################################################################
   useEffect(() => {
@@ -56,15 +52,11 @@ const WebSocketHandler = () => {
       //handle signal
       const dataJson = JSON.parse(data);
       //console.log(dataJson);
-      if (dataJson.name == "sigUpdateImage") {
+      if (dataJson.name == "sigUpdateImage") {//----------------------------------
         //console.log("sigUpdateImage");
         //update redux state
         dispatch(liveStreamSlice.setLiveViewImage(dataJson.image));
-      } else if (dataJson.name == "sigImageUpdated") {
-        //console.log("sigImageUpdated");
-        //update redux state
-        //dispatch(liveStreamSlice.setLiveViewImage(dataJson.image));
-      } else if (dataJson.name == "sigUpdateMotorPosition") {
+      } else if (dataJson.name == "sigUpdateMotorPosition") {//----------------------------------
         //
         console.log("sigUpdateMotorPosition", dataJson);
         //parse
@@ -72,7 +64,7 @@ const WebSocketHandler = () => {
         try{
           const p0Object = JSON.parse(dataJson.args.p0.replace(/'/g, '"')); //TODO fix hardcoded access!!
           dispatch(
-            hardwareSlice.setPosition({
+            positionSlice.setPosition({
               x: p0Object.VirtualStage.X,
               y: p0Object.VirtualStage.Y,
               z: p0Object.VirtualStage.Z,
@@ -84,16 +76,16 @@ const WebSocketHandler = () => {
           console.error("sigUpdateMotorPosition", error);
           /*
           WebSocketHandler.js:75 Uncaught (in promise) TypeError: Cannot read properties of undefined (reading 'X')
-    at Socket.<anonymous> (WebSocketHandler.js:75:1)
-    at __webpack_modules__../node_modules/@socket.io/component-emitter/lib/esm/index.js.Emitter.emit (index.js:136:1)
-    at Socket.emitEvent (socket.js:538:1)
-    at Socket.onevent (socket.js:525:1)
-    at Socket.onpacket (socket.js:495:1)
-    at __webpack_modules__../node_modules/@socket.io/component-emitter/lib/esm/index.js.Emitter.emit (index.js:136:1)
-    at manager.js:209:1
+            at Socket.<anonymous> (WebSocketHandler.js:75:1)
+            at __webpack_modules__../node_modules/@socket.io/component-emitter/lib/esm/index.js.Emitter.emit (index.js:136:1)
+            at Socket.emitEvent (socket.js:538:1)
+            at Socket.onevent (socket.js:525:1)
+            at Socket.onpacket (socket.js:495:1)
+            at __webpack_modules__../node_modules/@socket.io/component-emitter/lib/esm/index.js.Emitter.emit (index.js:136:1)
+            at manager.js:209:1
 
-fetchGetExperimentStatus.js:10 
-*/
+        fetchGetExperimentStatus.js:10 
+        */
         }
       } else {
         //console.warn("WebSocket: Unhandled signal from socket:", dataJson.name);

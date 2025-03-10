@@ -1,4 +1,4 @@
-import * as hardwareSlice from "../state/slices/HardwareSlice.js";
+import * as parameterRangeSlice from "../state/slices/ParameterRangeSlice.js";
 
 import apiGetCurrentExperimentParams from "../backendapi/apiExperimentControllerGetCurrentExperimentParams.js";
 
@@ -9,38 +9,32 @@ const fetchExperimentControllerGetCurrentExperimentParams = (dispatch) => {
     .then((data) => {
       console.log("fetchExperimentControllerGetCurrentExperimentParams", data);
 
-      // Parse the data
-      const updatedParameterRange = {
-        illumination: data.illuminationSources,
-        laserWaveLength: data.laserWavelengths,
-        timeLapsePeriod: {
-          min: data.timeLapsePeriodMin,
-          max: data.timeLapsePeriodMax
-        },
-        numberOfImages: {
-          min: data.numberOfImagesMin,
-          max: data.numberOfImagesMax
-        },
-        autoFocus: {
-          min: data.autofocusMinFocusPosition,
-          max: data.autofocusMaxFocusPosition
-        },
-        autoFocusStepSize: {
-          min: data.autofocusStepSizeMin,
-          max: data.autofocusStepSizeMax
-        },
-        zStack: {
-          min: data.zStackMinFocusPosition,
-          max: data.zStackMaxFocusPosition
-        },
-        zStackStepSize: {
-          min: data.zStackStepSizeMin,
-          max: data.zStackStepSizeMax
-        }
-      };
 
-      // Update Redux
-      dispatch(hardwareSlice.setParamaeterRange(updatedParameterRange));
+      //update redux states 
+
+      dispatch(parameterRangeSlice.setIllumination(data.illuminationSources));
+      dispatch(parameterRangeSlice.setLaserWaveLength(data.laserWavelengths));
+
+      dispatch(parameterRangeSlice.setTimeLapsePeriodMin(data.timeLapsePeriodMin));
+      dispatch(parameterRangeSlice.setTimeLapsePeriodMax(data.timeLapsePeriodMax));
+
+      dispatch(parameterRangeSlice.setNumberOfImagesMin(data.numberOfImagesMin));
+      dispatch(parameterRangeSlice.setNumberOfImagesMax(data.numberOfImagesMax));
+
+      dispatch(parameterRangeSlice.setAutoFocusMin(data.autofocusMinFocusPosition));
+      dispatch(parameterRangeSlice.setAutoFocusMax(data.autofocusMaxFocusPosition));
+
+      dispatch(parameterRangeSlice.setAutoFocusStepSizeMin(data.autofocusStepSizeMin));
+      dispatch(parameterRangeSlice.setAutoFocusStepSizeMax(data.autofocusStepSizeMax));
+
+      dispatch(parameterRangeSlice.setZStackMin(data.zStackMinFocusPosition));
+      dispatch(parameterRangeSlice.setZStackMax(data.zStackMaxFocusPosition));
+
+      dispatch(parameterRangeSlice.setZStackStepSizeMin(data.zStackStepSizeMin));
+      dispatch(parameterRangeSlice.setZStackStepSizeMax(data.zStackStepSizeMax));
+
+      dispatch(parameterRangeSlice.setSpeed([1, 5, 10, 50, 100, 500, 1000, 10000, 20000, 100000])); // TODO: Should come from backend
+    
     })
     .catch((err) => {
       console.error("Failed to fetch experiment parameters", err);

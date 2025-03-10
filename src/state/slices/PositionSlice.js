@@ -6,18 +6,22 @@ const initialPositionState = {
   x: 0,
   y: 0,
   z: 0,
+  a: 0
 };
 
 // Create position slice
 const positionSlice = createSlice({
-  name: 'position',
+  name: 'positionState',
   initialState: initialPositionState,
   reducers: {
     setPosition: (state, action) => {
-      state.x = action.payload.x;
-      state.y = action.payload.y;
-      state.z = action.payload.z;
-    },
+        //console.log("setPosition");
+        //console.log(action.payload);
+        state.x = action.payload.x;
+        state.y = action.payload.y;
+        state.z = action.payload.z;
+        state.a = action.payload.a;
+      },
   },
 });
 
@@ -25,7 +29,7 @@ const positionSlice = createSlice({
 export const { setPosition } = positionSlice.actions;
 
 // Selector helper
-export const getPosition = (state) => state.position;
+export const getPositionState = (state) => state.position;
 
 
 

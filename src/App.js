@@ -34,7 +34,7 @@ import { MCTProvider } from "./context/MCTContext";
 
 //axon
 import AxonTabComponent from './axon/AxonTabComponent';
-import WebSocketHandler from './axon/WebSocketHandler';
+import WebSocketHandler from './middleware/WebSocketHandler';
 
 //redux
 import { useDispatch, useSelector } from "react-redux";

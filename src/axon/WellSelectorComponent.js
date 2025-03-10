@@ -9,8 +9,7 @@ import InfoPopup from "./InfoPopup.js";
 
 
 import * as wellSelectorSlice from "../state/slices/WellSelectorSlice.js";
-import * as experimentSlice from "../state/slices/ExperimentSlice.js";
-import * as hardwareSlice from "../state/slices/HardwareSlice.js";
+import * as experimentSlice from "../state/slices/ExperimentSlice.js"; 
 
 import apiHistoScanControllerGetSampleLayoutFilePaths from "../backendapi/apiHistoScanControllerGetSampleLayoutFilePaths.js";
 import apiDownloadJson from "../backendapi/apiDownloadJson.js";
@@ -46,8 +45,7 @@ const WellSelectorComponent = () => {
 
   // Access global Redux state
   const wellSelectorState = useSelector(wellSelectorSlice.getWellSelectorState);
-  const experimentState = useSelector(experimentSlice.getExperimentState);
-  const hardwareState = useSelector(hardwareSlice.getHardwareState);
+  const experimentState = useSelector(experimentSlice.getExperimentState); 
 
   //##################################################################################
   useEffect(() => {
