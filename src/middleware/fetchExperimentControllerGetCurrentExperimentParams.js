@@ -12,6 +12,8 @@ const fetchExperimentControllerGetCurrentExperimentParams = (dispatch) => {
 
       //update redux states 
 
+//TODO create a universal parameter range setter in parameter range slcice to avoid multiple state changes
+
       dispatch(parameterRangeSlice.setIllumination(data.illuminationSources));
       dispatch(parameterRangeSlice.setLaserWaveLength(data.laserWavelengths));
 
@@ -33,7 +35,7 @@ const fetchExperimentControllerGetCurrentExperimentParams = (dispatch) => {
       dispatch(parameterRangeSlice.setZStackStepSizeMin(data.zStackStepSizeMin));
       dispatch(parameterRangeSlice.setZStackStepSizeMax(data.zStackStepSizeMax));
 
-      dispatch(parameterRangeSlice.setSpeed([1, 5, 10, 50, 100, 500, 1000, 10000, 20000, 100000])); // TODO: Should come from backend
+      dispatch(parameterRangeSlice.setSpeed([1, 5, 10, 50, 100, 500, 1000, 10000, 20000, 100000])); // TODO: Should sent from backend
     
     })
     .catch((err) => {

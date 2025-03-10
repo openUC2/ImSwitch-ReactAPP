@@ -641,10 +641,10 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
     const cameraHeight = getRasterHeightAsPx();
 
     //center square
+    console.log("rednerCanvas: draw camera position", positionState);
     const squareX = calcPhy2Px(positionState.x) - cameraWidth / 2;
     const squareY = calcPhy2Px(positionState.y) - cameraHeight / 2;
-
-console.log(positionState);//---------------------------------------------
+ 
 
     // draw neighbors around the original rectangle
     ctx.strokeStyle = "red"; // Black color for the square's outline

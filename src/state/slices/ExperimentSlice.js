@@ -10,13 +10,13 @@ const initialExperimentState = {
     width: 1000000,
     height: 600000,
     wells: [
-      /*
+      /* Example well
       { x: 200000, y: 200000, shape: "circle", radius: 50000 },
       { x: 400000, y: 200000, shape: "circle", radius: 90000 },
       { x: 600000, y: 200000, shape: "circle", radius: 90000 },
       { x: 800000, y: 200000, shape: "circle", radius: 90000 },
       { x: 200000, y: 400000, shape: "circle", radius: 90000 },
-      { x: 400000, y: 400000, shape: "circle", radius: 90000 },
+      { x: 400000, y: 400000, shape: "circle", radius: 90000, name: "A1" },
       {
         x: 600000,
         y: 400000,
@@ -35,7 +35,7 @@ const initialExperimentState = {
     ],
   },
   pointList: [
-    /*
+    /* Example item:
     {
       id: uuidv4(),
       name: "",

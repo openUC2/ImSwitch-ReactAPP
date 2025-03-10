@@ -25,6 +25,8 @@ const parameterRangeSlice = createSlice({
         return { ...initialParameterRangeState }; // Reset to initial state
       },
   
+      //TODO Add universal setter for all parameters. -> questionable whether the parsing instructions from api to state should be done here
+
       // Setters for each parameter
       setIllumination: (state, action) => {
         state.illumination = action.payload;
