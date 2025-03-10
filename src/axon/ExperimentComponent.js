@@ -59,9 +59,7 @@ const ExperimentComponent = () => {
     };
   }, []); // Empty dependency array ensures this runs once on mount
 
-  //##################################################################################
- 
- 
+  
 
   //##################################################################################
   const handleStart = () => {
@@ -194,7 +192,27 @@ const ExperimentComponent = () => {
         infoPopupRef.current.showMessage("Stop Experiment failed"); 
       });
   };
+  
+  //##################################################################################
+  const showStartButton = () => {
+    return experimentStatusState.status === Status.IDLE || experimentStatusState.status === Status.STOPPING;
+  };
 
+  //##################################################################################
+  const showPauseButton = () => {
+    return experimentStatusState.status === Status.RUNNING;
+  };
+  
+  //##################################################################################
+  const showResumeButton = () => {
+    return experimentStatusState.status === Status.PAUSED;
+  };
+
+
+  //##################################################################################
+  const showStopButton = () => {
+   return experimentStatusState.status !== Status.IDLE;
+  };
 
   //##################################################################################
   return (
@@ -213,7 +231,7 @@ const ExperimentComponent = () => {
         <Button
           variant="contained"
           onClick={handleStart}
-          disabled={experimentStatusState.status !== Status.IDLE  && experimentStatusState.status === Status.STOPPING}
+          disabled={!showStartButton()}
         >
           Start
         </Button>
@@ -221,7 +239,7 @@ const ExperimentComponent = () => {
         <Button
           variant="contained"
           onClick={handlePause}
-          disabled={experimentStatusState.status !== Status.RUNNING}
+          disabled={!showPauseButton()}
         >
           Pause
         </Button>
@@ -229,7 +247,7 @@ const ExperimentComponent = () => {
         <Button
           variant="contained"
           onClick={handleResume}
-          disabled={experimentStatusState.status !== Status.PAUSED}
+          disabled={!showResumeButton()}
         >
           Resume
         </Button>
@@ -237,7 +255,7 @@ const ExperimentComponent = () => {
         <Button
           variant="contained"
           onClick={handleStop}
-          disabled={experimentStatusState.status === Status.IDLE || experimentStatusState.status !== Status.STOPPING}
+          disabled={!showStopButton()}
         >
           Stop
         </Button>
