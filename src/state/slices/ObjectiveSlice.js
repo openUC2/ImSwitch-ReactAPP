@@ -3,8 +3,8 @@ import { createSlice } from "@reduxjs/toolkit";
 
 // Define the initial state
 const initialObjectiveState = {
-  fovX: 10,
-  fovY: 10,
+  fovX: 40000,
+  fovY: 20000,
 };
 
 // Create slice
