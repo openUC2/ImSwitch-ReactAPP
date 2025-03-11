@@ -75,22 +75,6 @@ const WellSelectorComponent = () => {
   };
 
   //##################################################################################
-  const handleRasterWidthSpinnerChange = (event) => {
-    // Update the spinner value
-    const value = parseFloat(event.target.value, 10);
-    // Update Redux state
-    dispatch(wellSelectorSlice.setRasterWidth(value));
-  };
-
-  //##################################################################################
-  const handleRasterHeightSpinnerChange = (event) => {
-    // Update the spinner value
-    const value = parseFloat(event.target.value, 10);
-    // Update Redux state
-    dispatch(wellSelectorSlice.setRasterHeight(value));
-  };
-
-  //##################################################################################
   const handleOverlapWidthSpinnerChange = (event) => {
     // Update the spinner value
     const value = parseFloat(event.target.value, 10);
@@ -223,36 +207,7 @@ const WellSelectorComponent = () => {
           />
         </FormControl>
 
-        {/* RASTER */}
-
-        <FormControl>
-          <TextField
-            label="Raster Width"
-            type="number"
-            value={wellSelectorState.rasterHeight}
-            onChange={handleRasterHeightSpinnerChange}
-            inputProps={{
-              min: 1,
-              step: 5,
-            }}
-            style={{ marginLeft: "0px", width: "96px" }}
-          />
-        </FormControl>
-
-        <FormControl>
-          <TextField
-            label="Raster Height"
-            type="number"
-            value={wellSelectorState.rasterWidth}
-            onChange={handleRasterWidthSpinnerChange}
-            inputProps={{
-              min: 1,
-              step: 5,
-            }}
-            style={{ marginRight: "10px", width: "96px" }}
-          />
-        </FormControl>
-
+      
         {/* VIEW */}
 
         <Button variant="contained" onClick={() => handleResetView()}>
