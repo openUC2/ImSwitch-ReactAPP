@@ -1,17 +1,24 @@
-
 import apiObjectiveControllerGetStatus from "../backendapi/apiObjectiveControllerGetStatus.js";
 
 import * as objectiveSlice from "../state/slices/ObjectiveSlice.js";
 
 const fetchObjectiveControllerGetStatus = (dispatch) => {
-    // Request to fetch objective status
-    apiObjectiveControllerGetStatus()
+  // Request to fetch objective status
+  apiObjectiveControllerGetStatus()
     .then((data) => {
       console.log("fetchObjectiveControllerGetStatus", data);
 
       // Update Redux with the fetched status
-      dispatch(objectiveSlice.setFovX(data.FOV[0]*1000)); //TODO remove fov dummy data correction factor
-      dispatch(objectiveSlice.setFovY(data.FOV[1]*1000)); //TODO remove fov dummy data correction factor
+      dispatch(objectiveSlice.setFovX(data.FOV[0] * 1000)); //TODO remove fov dummy data correction factor
+      dispatch(objectiveSlice.setFovY(data.FOV[1] * 1000)); //TODO remove fov dummy data correction factor
+
+      //TODO check if field exists
+      dispatch(objectiveSlice.setPosX1(data.x1));
+      dispatch(objectiveSlice.setPosX2(data.x2)); 
+      dispatch(objectiveSlice.setPixelSize(data.pixelsize)); 
+
+
+  
       //TODO add more objective results
       /*reposne: 
       {

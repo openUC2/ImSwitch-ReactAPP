@@ -59,13 +59,20 @@ const WebSocketHandler = () => {
         //----------------------------------------------
       } else if (dataJson.name == "sigObjectiveChanged") {
         console.log("sigObjectiveChanged", dataJson);
-        //update redux state
-        dispatch(objectiveSlice.setFovX(dataJson.p4));
-        dispatch(objectiveSlice.setFovY(dataJson.p5));
-        //TODO add more
+        //update redux state 
+        // TODO add check if parameter exists
+        // TODO check if this works
+        dispatch(objectiveSlice.setPixelSize(dataJson.args[0]));
+        dispatch(objectiveSlice.setNA(dataJson.args[1])); 
+        dispatch(objectiveSlice.setMagnification(dataJson.args[2]));
+        dispatch(objectiveSlice.setObjectiveName(dataJson.args[3])); 
+        dispatch(objectiveSlice.setFovX(dataJson.args[4]));
+        dispatch(objectiveSlice.setFovY(dataJson.args[5]));
+
         /*  data:
         Args: {"p0":0.2,"p1":0.5,"p2":10,"p3":"10x","p4":100,"p5":100}
-        sigObjectiveChanged = Signal(float, float, float, str, float, float) # pixelsize, NA, magnification, objectiveName, FOVx, FOVy
+        sigObjectiveChanged = Signal(float, float, float, str, float, float) 
+              # pixelsize, NA, magnification, objectiveName, FOVx, FOVy
         */
         //----------------------------------------------
       } else if (dataJson.name == "sigUpdateMotorPosition") {
