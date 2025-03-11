@@ -17,10 +17,10 @@ const positionSlice = createSlice({
     setPosition: (state, action) => {
         //console.log("setPosition");
         //console.log(action.payload);
-        state.x = action.payload.x;
-        state.y = action.payload.y;
-        state.z = action.payload.z;
-        state.a = action.payload.a;
+        state.x = action.payload.x ?? state.x;
+        state.y = action.payload.y ?? state.y;
+        state.z = action.payload.z ?? state.z;
+        state.a = action.payload.a ?? state.a;
       },
   },
 });
