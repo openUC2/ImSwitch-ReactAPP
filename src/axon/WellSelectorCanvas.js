@@ -5,11 +5,14 @@ import { useDispatch, useSelector } from "react-redux";
 import * as wellSelectorSlice from "../state/slices/WellSelectorSlice.js";
 import * as experimentSlice from "../state/slices/ExperimentSlice.js";
 import * as positionSlice from "../state/slices/PositionSlice.js";
+import * as objectiveSlice from "../state/slices/ObjectiveSlice.js";
 
 import * as wsUtils from "./WellSelectorUtils.js";
 
 import apiistoScanControllerGetHistoStatus from "../backendapi/apiHistoScanControllerGetHistoStatus.js";
 import apiPositionerControllerMovePositioner from "../backendapi/apiPositionerControllerMovePositioner.js";
+
+import fetchObjectiveControllerGetStatus from "../middleware/fetchObjectiveControllerGetStatus.js";
 
 import { X } from "@mui/icons-material";
 
@@ -63,6 +66,7 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
   const wellSelectorState = useSelector(wellSelectorSlice.getWellSelectorState);
   const experimentState = useSelector(experimentSlice.getExperimentState); 
   const positionState = useSelector(positionSlice.getPositionState);
+  const objectiveState = useSelector(objectiveSlice.getObjectiveState);
 
   //##################################################################################
   useImperativeHandle(ref, () => ({
@@ -90,7 +94,14 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
     return () => {
       canvas.removeEventListener("wheel", preventDefaultScroll);
     };
-  }, []);
+  }, []);//Triggered on component startup
+
+  //##################################################################################
+  useEffect(() => {
+    //initial fov request 
+    //console.log("initial fov request ");
+    fetchObjectiveControllerGetStatus(dispatch);
+  }, []);//TODO maybe add connection change
 
   //##################################################################################
   useEffect(() => {
@@ -105,6 +116,7 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
     mouseDownPosition,
     mouseMovePosition,
     positionState,
+    objectiveState,
   ]);
 
   //##################################################################################
@@ -242,11 +254,11 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
   //##################################################################################
 
   function getRasterWidthAsPx() {
-    return calcPhy2Px(wellSelectorState.rasterWidth);
+    return calcPhy2Px(objectiveState.fovX);
   }
 
   function getRasterHeightAsPx() {
-    return calcPhy2Px(wellSelectorState.rasterHeight);
+    return calcPhy2Px(objectiveState.fovY);
   }
 
   //##################################################################################
