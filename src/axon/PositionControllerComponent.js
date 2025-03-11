@@ -4,7 +4,7 @@ const PositionControllerComponent = () => {
   const [intervalId, setIntervalId] = useState(null);
 
   const movePosition = (direction) => {
-    const url = `https://imswitch.openuc2.com/PositionerController/movePositioner?positionerName=VirtualStage&speed=20000&axis=`;
+    const url = `https://imswitch.openuc2.com/PositionerController/movePositioner?positionerName=ESP32Stage&speed=20000&axis=`;
 
     let axis, dist;
 

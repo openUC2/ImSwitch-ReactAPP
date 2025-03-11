@@ -340,7 +340,7 @@ export const wellLayoutDefault = {
     ],
   };
 
-export const wellLayout32 = {
+  export const wellLayout32 = {
     name: "Wellplate 32",
     unit: "um",
     width: 128000,
@@ -373,6 +373,25 @@ export const wellLayout32 = {
     ]
 }
 ;
+
+export const histolayout = {
+  name: "histolayout",
+  unit: "um",
+  width: 128000,
+  height: 86000,
+  wells: [
+    {
+      x: 15000,
+      y: 0,
+      shape: "rectangle",
+      width: 24000,
+      height: 100000,
+      name: "A1",
+    }
+    ]
+}
+;
+
 
 export const wellLayout96 = {
     name: "Wellplate 96",

@@ -651,7 +651,7 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
     ctx.strokeStyle = "green"; // Black color for the square's outline
     ctx.lineWidth = 1; // Line width for the square
     ctx.lineCap = "round"; // Rounded ends for lines
-    //ctx.strokeRect(squareX, squareY, cameraWidth, cameraHeight);
+    ctx.strokeRect(squareX, squareY, cameraWidth, cameraHeight);
 
     //------------ draw mouse position
 

@@ -10,7 +10,7 @@ import { io } from "socket.io-client";
 
 //##################################################################################
 const WebSocketHandler = () => {
-    console.log("WebSocket WebSocketHandler");
+  console.log("WebSocket WebSocketHandler");
   // redux dispatcher
   const dispatch = useDispatch();
 
@@ -69,18 +69,24 @@ const WebSocketHandler = () => {
         console.log("sigUpdateMotorPosition", dataJson);
         //parse
         //update redux state
-        try{
-          const p0Object = JSON.parse(dataJson.args.p0.replace(/'/g, '"')); //TODO fix hardcoded access!!
-          dispatch(
-            hardwareSlice.setPosition({
-              x: p0Object.VirtualStage.X,
-              y: p0Object.VirtualStage.Y,
-              z: p0Object.VirtualStage.Z,
-              a: p0Object.VirtualStage.A,
-            })
-          );
-        }
-        catch (error) {
+        try {
+          const parsedArgs = dataJson.args.p0;
+          const positionerKeys = Object.keys(parsedArgs);
+
+          if (positionerKeys.length > 0) {
+            const key = positionerKeys[0];
+            const correctedPositions = parsedArgs[key];
+
+            dispatch(
+              hardwareSlice.setPosition({
+                x: correctedPositions.X,
+                y: correctedPositions.Y,
+                z: correctedPositions.Z,
+                a: correctedPositions.A,
+              })
+            );
+          }
+        } catch (error) {
           console.error("sigUpdateMotorPosition", error);
           /*
           WebSocketHandler.js:75 Uncaught (in promise) TypeError: Cannot read properties of undefined (reading 'X')
