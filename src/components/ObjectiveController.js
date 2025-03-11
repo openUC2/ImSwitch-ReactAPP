@@ -26,18 +26,18 @@ const ExtendedObjectiveController = ({ hostIP, hostPort }) => {
   ////const State = useSelector(Slice.getState);
 
   //states
-  ///const [currentObjective, setCurrentObjective] = useState(null);//TODO replace objectiveState.currentObjective
-  ///const [objectiveName, setObjectiveName] = useState("");//TODO replace objectiveState.objectivName
-  ///const [pixelsize, setPixelsize] = useState(null);//TODO replace objectiveState.pixelsize
-  ///const [NA, setNA] = useState(null);//TODO replace objectiveState.NA
-  ///const [magnification, setMagnification] = useState(null);//TODO replace objectiveState.magnification
+  ///const [currentObjective, setCurrentObjective] = useState(null);//TODO replace with objectiveState.currentObjective
+  ///const [objectiveName, setObjectiveName] = useState("");//TODO replace with objectiveState.objectivName
+  ///const [pixelsize, setPixelsize] = useState(null);//TODO replace with objectiveState.pixelsize
+  ///const [NA, setNA] = useState(null);//TODO replace with objectiveState.NA
+  ///const [magnification, setMagnification] = useState(null);//TODO replace with objectiveState.magnification
 
   const [imageUrls, setImageUrls] = useState({});
   const [detectors, setDetectors] = useState([]);
 
   // Objective positions (x1/x2) from backend status
-  ///const [posX1, setPosX1] = useState(null);//TODO replace objectiveState.posX1
-  ///const [posX2, setPosX2] = useState(null);//TODO replace objectiveState.posX2
+  ///const [posX1, setPosX1] = useState(null);//TODO replace with objectiveState.posX1
+  ///const [posX2, setPosX2] = useState(null);//TODO replace with objectiveState.posX2
 
   // Manual input fields for positions
   const [manualX1, setManualX1] = useState("");
@@ -60,6 +60,8 @@ const ExtendedObjectiveController = ({ hostIP, hostPort }) => {
           ///dispatch(objectiveSlice.setObjectiveName(jdata.args[2])); //setObjectiveName(jdata.args[3]);
         } else if (jdata.name === "sigUpdateImage") {
           //TODO dont get wat archived here
+          //console.log(jdata);
+          //console.log(imageUrls);
           const detectorName = jdata.detectorname;
           const imgSrc = `data:image/jpeg;base64,${jdata.image}`;
           setImageUrls((prev) => ({ ...prev, [detectorName]: imgSrc }));
@@ -89,10 +91,10 @@ const ExtendedObjectiveController = ({ hostIP, hostPort }) => {
     // Get detector names
     apiSettingsControllerGetDetectorNames()
       .then((data) => {
-        setDetectors(data.json());
+        setDetectors(data);
       })
       .catch((err) => {
-        console.log("Failed to fetch detector names"); // Handle the error
+        console.log("Failed to fetch detector names", err); // Handle the error 
       });
   }, [hostIP, hostPort]); // on host ip/port change
 
@@ -191,8 +193,7 @@ const ExtendedObjectiveController = ({ hostIP, hostPort }) => {
     apiPositionerControllerGetPositions()
       .then((data) => {
         // Handle success response
-        const jsonData = data.json();
-        const currentA = jsonData.ESP32Stage.A;
+        const currentA = data.ESP32Stage.A;  //TODO this is hardcoded.
         if (which === "x1") {
           handleSetX1(currentA);
         } else if (which === "x2") {
