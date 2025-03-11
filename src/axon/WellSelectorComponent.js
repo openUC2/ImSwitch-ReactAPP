@@ -122,6 +122,8 @@ const WellSelectorComponent = () => {
       wellLayout = wsUtils.wellLayoutDefault;
     } else if (event.target.value === "Development") {
       wellLayout = wsUtils.wellLayoutDevelopment;
+    } else if (event.target.value === "histolayout") {
+      wellLayout = wsUtils.histolayout;
     } else if (event.target.value === "Wellplate 32") {
       wellLayout = wsUtils.wellLayout32;
     } else if (event.target.value === "Wellplate 96") {
@@ -182,6 +184,7 @@ const WellSelectorComponent = () => {
             <MenuItem value="Development">Development</MenuItem>
             <MenuItem value="Wellplate 32">Wellplate 32</MenuItem>
             <MenuItem value="Wellplate 96">Wellplate 96</MenuItem>
+            <MenuItem value="histolayout">histolayout</MenuItem>
             {/* online layouts */}
             {wellLayoutFileList.map((file, index) => (
               <MenuItem value={file}>{file}</MenuItem>
