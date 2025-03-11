@@ -19,94 +19,19 @@ const PositionControllerComponent = () => {
 
   const moveDistance = 5000;//TODO adjust
   const zoomDistance = 100;//TODO adjust
-
+ 
   //##################################################################################
-  const moveUp = () => {
+  const movePositioner = (axis, dist) => {
     apiPositionerControllerMovePositioner({
-      axis: "Y",
-      dist: moveDistance,
+      axis,
+      dist,
       isAbsolute: false,
     })
       .then((positionerResponse) => {
-        console.log("Moved successfully:", positionerResponse);
+        console.log(`Move ${axis} by ${dist} successful:`, positionerResponse);
       })
       .catch((error) => {
-        console.log("Moved error:", error);
-      });
-  };
-
-  //##################################################################################
-  const moveDown = () => {
-    apiPositionerControllerMovePositioner({
-      axis: "Y",
-      dist: -moveDistance,
-      isAbsolute: false,
-    })
-      .then((positionerResponse) => {
-        console.log("Moved successfully:", positionerResponse);
-      })
-      .catch((error) => {
-        console.log("Moved error:", error);
-      });
-  };
-
-  //##################################################################################
-  const moveLeft = () => {
-    apiPositionerControllerMovePositioner({
-      axis: "X",
-      dist: moveDistance,
-      isAbsolute: false,
-    })
-      .then((positionerResponse) => {
-        console.log("Moved successfully:", positionerResponse);
-      })
-      .catch((error) => {
-        console.log("Moved error:", error);
-      });
-  };
-
-  //##################################################################################
-  const moveRight = () => {
-    apiPositionerControllerMovePositioner({
-      axis: "X",
-      dist: -moveDistance,
-      isAbsolute: false,
-    })
-      .then((positionerResponse) => {
-        console.log("Moved successfully:", positionerResponse);
-      })
-      .catch((error) => {
-        console.log("Moved error:", error);
-      });
-  };
-
-  //##################################################################################
-  const zoomPlus = () => {
-    apiPositionerControllerMovePositioner({
-      axis: "Z",
-      dist: zoomDistance,
-      isAbsolute: false,
-    })
-      .then((positionerResponse) => {
-        console.log("Zoom successfully:", positionerResponse);
-      })
-      .catch((error) => {
-        console.log("Zoom error:", error);
-      });
-  };
-
-  //##################################################################################
-  const zoomMinus = () => {
-    apiPositionerControllerMovePositioner({
-      axis: "Z",
-      dist: -zoomDistance,
-      isAbsolute: false,
-    })
-      .then((positionerResponse) => {
-        console.log("Zoom successfully:", positionerResponse);
-      })
-      .catch((error) => {
-        console.log("Zoom error:", error);
+        console.log(`Move ${axis} by ${dist} error:`, error);
       });
   };
 
@@ -115,23 +40,23 @@ const PositionControllerComponent = () => {
     // Start calling movePosition repeatedly
     const id = setInterval(() => {
       switch (action) {
-        case "minus":
-          zoomMinus();
+        case "minus": 
+          movePositioner("Z", -zoomDistance);
           break;
-        case "plus":
-          zoomPlus();
+        case "plus":  
+          movePositioner("Z", zoomDistance);
           break;
-        case "up":
-          moveUp();
+        case "up": 
+          movePositioner("Y", moveDistance);
           break;
-        case "down":
-          moveDown();
+        case "down": 
+          movePositioner("Y", -moveDistance);
           break;
-        case "left":
-          moveLeft();
+        case "left": 
+          movePositioner("X", moveDistance);
           break;
-        case "right":
-          moveRight();
+        case "right": 
+          movePositioner("X", -moveDistance);
           break;
         default:
             console.log("ERROR unhandled action:", action);
