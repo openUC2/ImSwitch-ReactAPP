@@ -3,8 +3,6 @@ import { createSlice } from '@reduxjs/toolkit';
 // Define the initial state for wellSelectorState
 const initialWellSelectorState = {
   mode: 'single',          // string: could be 'default', 'select', 'edit', etc.
-  rasterWidth: 40000.0,          // float: size of the raster grid width
-  rasterHeight: 20000.0,          // float: size of the raster grid height
   overlapWidth: 0.0,          // float: size of the overlap between the rasters
   overlapHeight: 0.0,          // float: size of the overlap between the rasters
   showOverlap: true,          // bool: show overlap or not 
@@ -19,14 +17,6 @@ const wellSelectorSlice = createSlice({
     setMode: (state, action) => {
         console.log("setMode");
         state.mode = action.payload;
-    },
-    setRasterWidth: (state, action) => {
-        console.log("setRasterWidth");
-        state.rasterWidth = action.payload;
-    },
-    setRasterHeight: (state, action) => {
-        console.log("setRasterHeight");
-        state.rasterHeight = action.payload;
     },
     setOverlapWidth: (state, action) => {
         console.log("setOverlapWidth");
@@ -61,8 +51,6 @@ const wellSelectorSlice = createSlice({
 // Export actions from  slice
 export const { 
   setMode, 
-  setRasterWidth,
-  setRasterHeight,
   setOverlapWidth,
   setOverlapHeight,
   setShowOverlap,
