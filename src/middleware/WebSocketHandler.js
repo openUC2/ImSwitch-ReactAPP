@@ -5,6 +5,7 @@ import * as connectionSettingsSlice from "../state/slices/ConnectionSettingsSlic
 import * as webSocketSlice from "../state/slices/WebSocketSlice.js";
 import * as liveStreamSlice from "../state/slices/LiveStreamSlice.js";
 import * as positionSlice from "../state/slices/PositionSlice.js";
+import * as objectiveSlice from "../state/slices/ObjectiveSlice.js";
 
 import { io } from "socket.io-client";
 
@@ -50,17 +51,26 @@ const WebSocketHandler = () => {
       //handle signal
       const dataJson = JSON.parse(data);
       //console.log(dataJson);
+      //----------------------------------------------
       if (dataJson.name == "sigUpdateImage") {
-        //----------------------------------
         //console.log("sigUpdateImage");
         //update redux state
         dispatch(liveStreamSlice.setLiveViewImage(dataJson.image));
+        //----------------------------------------------
+      } else if (dataJson.name == "sigObjectiveChanged") {
+        console.log("sigObjectiveChanged", dataJson);
+        //update redux state
+        dispatch(objectiveSlice.setFovX(dataJson.p4));
+        dispatch(objectiveSlice.setFovY(dataJson.p5));
+        //TODO add more
+        /*  data:
+        Args: {"p0":0.2,"p1":0.5,"p2":10,"p3":"10x","p4":100,"p5":100}
+        sigObjectiveChanged = Signal(float, float, float, str, float, float) # pixelsize, NA, magnification, objectiveName, FOVx, FOVy
+        */
+        //----------------------------------------------
       } else if (dataJson.name == "sigUpdateMotorPosition") {
-        //----------------------------------
-        //
         console.log("sigUpdateMotorPosition", dataJson);
         //parse
-        //update redux state
         try {
           const parsedArgs = dataJson.args.p0;
           const positionerKeys = Object.keys(parsedArgs);
@@ -69,30 +79,24 @@ const WebSocketHandler = () => {
             const key = positionerKeys[0];
             const correctedPositions = parsedArgs[key];
 
+            //update redux state
             dispatch(
-                positionSlice.setPosition({
-                x: correctedPositions.X,
-                y: correctedPositions.Y,
-                z: correctedPositions.Z,
-                a: correctedPositions.A,
-              })
+              positionSlice.setPosition(
+                Object.fromEntries(
+                  Object.entries({
+                    x: correctedPositions.X,
+                    y: correctedPositions.Y,
+                    z: correctedPositions.Z,
+                    a: correctedPositions.A,
+                  }).filter(([_, value]) => value !== undefined) //Note: filter out undefined values
+                )
+              )
             );
           }
         } catch (error) {
           console.error("sigUpdateMotorPosition", error);
-          /*
-          WebSocketHandler.js:75 Uncaught (in promise) TypeError: Cannot read properties of undefined (reading 'X')
-            at Socket.<anonymous> (WebSocketHandler.js:75:1)
-            at __webpack_modules__../node_modules/@socket.io/component-emitter/lib/esm/index.js.Emitter.emit (index.js:136:1)
-            at Socket.emitEvent (socket.js:538:1)
-            at Socket.onevent (socket.js:525:1)
-            at Socket.onpacket (socket.js:495:1)
-            at __webpack_modules__../node_modules/@socket.io/component-emitter/lib/esm/index.js.Emitter.emit (index.js:136:1)
-            at manager.js:209:1
-
-        fetchGetExperimentStatus.js:10 
-        */
         }
+        //----------------------------------------------
       } else {
         //console.warn("WebSocket: Unhandled signal from socket:", dataJson.name);
         //console.warn(dataJson);
