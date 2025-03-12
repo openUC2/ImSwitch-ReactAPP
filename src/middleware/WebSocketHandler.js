@@ -53,21 +53,33 @@ const WebSocketHandler = () => {
       //console.log(dataJson);
       //----------------------------------------------
       if (dataJson.name == "sigUpdateImage") {
-        //console.log("sigUpdateImage");
+        //console.log("sigUpdateImage", dataJson);
         //update redux state
         dispatch(liveStreamSlice.setLiveViewImage(dataJson.image));
+        /*
+        sigUpdateImage: 
+        Object { 
+            name: "sigUpdateImage", 
+            detectorname: "WidefieldCamera", 
+            pixelsize: 0.2, 
+            format: "jpeg", 
+            image: "................Base64.encodede.image......." 
+        }
+        */
         //----------------------------------------------
       } else if (dataJson.name == "sigObjectiveChanged") {
         console.log("sigObjectiveChanged", dataJson);
         //update redux state 
         // TODO add check if parameter exists
         // TODO check if this works
-        dispatch(objectiveSlice.setPixelSize(dataJson.args[0]));
-        dispatch(objectiveSlice.setNA(dataJson.args[1])); 
-        dispatch(objectiveSlice.setMagnification(dataJson.args[2]));
-        dispatch(objectiveSlice.setObjectiveName(dataJson.args[3])); 
-        dispatch(objectiveSlice.setFovX(dataJson.args[4]));
-        dispatch(objectiveSlice.setFovY(dataJson.args[5]));
+        dispatch(objectiveSlice.setPixelSize(dataJson.args.p0));
+        dispatch(objectiveSlice.setNA(dataJson.args.p1)); 
+        dispatch(objectiveSlice.setMagnification(dataJson.args.p2));
+        dispatch(objectiveSlice.setObjectiveName(dataJson.args.p3)); 
+        console.log("XXX", dataJson);
+        console.log("XXX", dataJson.args.p3);
+        dispatch(objectiveSlice.setFovX(dataJson.args.p4));
+        dispatch(objectiveSlice.setFovY(dataJson.args.p5));
 
         /*  data:
         Args: {"p0":0.2,"p1":0.5,"p2":10,"p3":"10x","p4":100,"p5":100}

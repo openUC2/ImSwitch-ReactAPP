@@ -11,7 +11,6 @@ const fetchObjectiveControllerGetCurrentObjective = (dispatch) => {
       // Update Redux with the fetched data
       dispatch(objectiveSlice.setCurrentObjective(data[0])); 
       dispatch(objectiveSlice.setObjectiveName(data[1])); 
-
       /*reposne: 
         [
         1,

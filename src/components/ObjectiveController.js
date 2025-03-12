@@ -52,7 +52,7 @@ const ExtendedObjectiveController = ({ hostIP, hostPort }) => {
       try {
         const jdata = JSON.parse(data);
         if (jdata.name === "sigObjectiveChanged") {
-          //is handled in WebSocketHandler:
+          //Note: this is allready handled in WebSocketHandler
           // Expected order: [pixelsize, NA, magnification, objectiveName]
           ///dispatch(objectiveSlice.setPixelSize(jdata.args[0])); //setPixelsize(jdata.args[0]);
           ///dispatch(objectiveSlice.setNA(jdata.args[1])); //setNA(jdata.args[1]);
@@ -60,6 +60,7 @@ const ExtendedObjectiveController = ({ hostIP, hostPort }) => {
           ///dispatch(objectiveSlice.setObjectiveName(jdata.args[2])); //setObjectiveName(jdata.args[3]);
         } else if (jdata.name === "sigUpdateImage") {
           //TODO dont get wat archived here
+          //TODO 
           //console.log(jdata);
           //console.log(imageUrls);
           const detectorName = jdata.detectorname;
@@ -109,6 +110,7 @@ const ExtendedObjectiveController = ({ hostIP, hostPort }) => {
     //request calibrate
     apiObjectiveControllerCalibrateObjective()
       .then((data) => {
+        console.info("Calibrate response"); 
         //fetch current objective
         fetchObjectiveControllerGetCurrentObjective(dispatch);
       })
