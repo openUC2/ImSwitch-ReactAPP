@@ -51,7 +51,8 @@ const UC2Controller = ({ hostIP, hostPort, WindowTitle }) => {
    const [setAsCurrentConfig, setSetAsCurrentConfig] = useState(true);
    const [restartAfterSave, setRestartAfterSave] = useState(false);
    const [overwriteFile, setOverwriteFile] = useState(false);
- 
+   const [uc2Connected, setUc2Connected] = useState(false);
+
   const socket = useWebSocket();
 
   useEffect(() => {
@@ -104,6 +105,23 @@ const UC2Controller = ({ hostIP, hostPort, WindowTitle }) => {
   const handleSetupChange = (event) => {
     setSelectedSetup(event.target.value);
   };
+
+  useEffect(() => {
+    const checkConnection = () => {
+      fetch(`${hostIP}:${hostPort}/UC2ConfigController/is_connected`)
+        .then((res) => res.json())
+        .then((data) => {
+          setUc2Connected(data === true);
+        })
+        .catch(() => {
+          setUc2Connected(false);
+        });
+    };
+    // alle 5 Sekunden überprüfen
+    checkConnection();
+    const intervalId = setInterval(checkConnection, 5000);
+    return () => clearInterval(intervalId);
+  }, [hostIP, hostPort]);
 
   const reconnect = () => {
     const url = `${hostIP}:${hostPort}/UC2ConfigController/reconnect`;
@@ -254,6 +272,24 @@ const UC2Controller = ({ hostIP, hostPort, WindowTitle }) => {
                 UC2-ESP32
               </Button>
             </div>
+            <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          p: 1,
+          gap: 1,
+        }}
+      >
+        <Typography variant="body1">UC2 Connected:</Typography>
+        <Box
+          sx={{
+            width: 16,
+            height: 16,
+            borderRadius: "50%",
+            backgroundColor: uc2Connected ? "green" : "red",
+          }}
+        />
+      </Box>
           </Grid>
         </Grid>
       </TabPanel>
