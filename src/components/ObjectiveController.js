@@ -52,7 +52,7 @@ const ExtendedObjectiveController = ({ hostIP, hostPort }) => {
       try {
         const jdata = JSON.parse(data);
         if (jdata.name === "sigObjectiveChanged") {
-          //Note: this is allready handled in WebSocketHandler
+          //Note: this is allready handled in WebSocketHandler !!!!!!!!
           // Expected order: [pixelsize, NA, magnification, objectiveName]
           ///dispatch(objectiveSlice.setPixelSize(jdata.args[0])); //setPixelsize(jdata.args[0]);
           ///dispatch(objectiveSlice.setNA(jdata.args[1])); //setNA(jdata.args[1]);

@@ -76,8 +76,6 @@ const WebSocketHandler = () => {
         dispatch(objectiveSlice.setNA(dataJson.args.p1)); 
         dispatch(objectiveSlice.setMagnification(dataJson.args.p2));
         dispatch(objectiveSlice.setObjectiveName(dataJson.args.p3)); 
-        console.log("XXX", dataJson);
-        console.log("XXX", dataJson.args.p3);
         dispatch(objectiveSlice.setFovX(dataJson.args.p4));
         dispatch(objectiveSlice.setFovY(dataJson.args.p5));
 
