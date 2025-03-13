@@ -4,6 +4,11 @@ import createAxiosInstance from "./createAxiosInstance";
 const apiObjectiveControllerMoveToObjective = async (slot) => {
   try {
     const axiosInstance = createAxiosInstance(); // Create Axios instance
+    // print URL 
+    console.log(
+      "Request URL:",
+      axiosInstance.defaults.baseURL + `/ObjectiveController/moveToObjective?slot=${slot}`
+    );
     const response = await axiosInstance.get(`/ObjectiveController/moveToObjective?slot=${slot}`); // Send GET request with the slot parameter
     return response.data; // Return the data from the response
   } catch (error) {
