@@ -108,7 +108,9 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
         const detectorName = jdata.detectorname;
         const imgSrc = `data:image/jpeg;base64,${jdata.image}`;
         setImageUrls((prev) => ({ ...prev, [detectorName]: imgSrc }));
-        if (jdata.pixelsize) setPixelSize(jdata.pixelsize);
+        if (jdata.pixelsize) {
+          setPixelSize(jdata.pixelsize);
+        }
       } else if (jdata.name === "sigHistogramComputed") {
         setHistogramX(jdata.args.p0);
         setHistogramY(jdata.args.p1);
@@ -315,10 +317,18 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
 
   // Stage movement
   const handleStageMove = async (direction) => {
+    let url = "";
+    if (direction === "up") {
+      url = `${hostIP}:${hostPort}/PositionerController/movePositioner?axis=Y&dist=1000&isAbsolute=false&isBlocking=false`;
+    } else if (direction === "down") {
+      url = `${hostIP}:${hostPort}/PositionerController/movePositioner?axis=Y&dist=-1000&isAbsolute=false&isBlocking=false`;
+    } else if (direction === "left") {
+      url = `${hostIP}:${hostPort}/PositionerController/movePositioner?axis=X&dist=1000&isAbsolute=false&isBlocking=false`;
+    } else if (direction === "right") {
+      url = `${hostIP}:${hostPort}/PositionerController/movePositioner?axis=X&dist=-1000&isAbsolute=false&isBlocking=false`;
+    }
     try {
-      await fetch(
-        `${hostIP}:${hostPort}/StageController/move?dir=${direction}&step=10`
-      );
+      await fetch(url);
     } catch {}
   };
 
@@ -512,8 +522,8 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
                   <Box
                     sx={{
                       position: "absolute",
-                      bottom: 10,
-                      left: "50%",
+                      bottom: 100,
+                      left: "60%",
                       transform: "translateX(-50%)",
                       color: "#fff",
                       display: "flex",
@@ -524,9 +534,9 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
                     <Box
                       sx={{
                         width: `${scaleBarPx}px`,
-                        height: "2px",
+                        height: "10px",
                         backgroundColor: "white",
-                        marginRight: "6px",
+                        marginRight: "16px",
                       }}
                     />
                     <Typography variant="body2">
@@ -536,7 +546,14 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
                 )}
 
                 {/* Stage movement overlay => top-right */}
-                <Box sx={{ position: "absolute", bottom: 100, left: 10, zIndex: 3 }}>
+                <Box
+                  sx={{
+                    position: "absolute",
+                    bottom: 100,
+                    left: 10,
+                    zIndex: 3,
+                  }}
+                >
                   <Button
                     variant="contained"
                     onClick={() => handleStageMove("up")}
@@ -607,7 +624,14 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
                     }
                     sx={{ height: "60%", mr: 1 }}
                   />
-                  <Typography variant="body2" sx={{ color: "#fff", writingMode: "vertical-rl", transform: "rotate(180deg)" }}>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: "#fff",
+                      writingMode: "vertical-rl",
+                      transform: "rotate(180deg)",
+                    }}
+                  >
                     Gray Range
                   </Typography>
                 </Box>
@@ -692,9 +716,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
                       value={sliderVal}
                       min={0}
                       max={1023}
-                      onChange={(e) =>
-                        handleIlluminationSliderChange(e, index)
-                      }
+                      onChange={(e) => handleIlluminationSliderChange(e, index)}
                       sx={{ flex: 1, mx: 2 }}
                     />
                     <Checkbox

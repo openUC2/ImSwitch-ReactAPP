@@ -13,6 +13,8 @@ const initialObjectiveState = {
   magnification: 0,
   posX1: 0,
   posX2: 0,
+  posZ1: 0,
+  posZ2: 0,
 };
 
 // Create slice
@@ -56,6 +58,14 @@ const objectiveSlice = createSlice({
       console.log("setPosX2", action.payload);
       state.posX2 = action.payload;
     },
+    setPosZ1: (state, action) => {
+      console.log("setPosZ1", action.payload);
+      state.posZ1 = action.payload;
+    },
+    setPosZ2: (state, action) => {
+      console.log("setPosZ2", action.payload);
+      state.posZ2 = action.payload;
+    },
 
     resetState: (state) => {
       console.log("resetState");
@@ -75,6 +85,8 @@ export const {
   setMagnification,
   setPosX1,
   setPosX2,
+  setPosZ1,
+  setPosZ2,
   resetState,
 } = objectiveSlice.actions;
 

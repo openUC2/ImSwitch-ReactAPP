@@ -42,6 +42,8 @@ const ExtendedObjectiveController = ({ hostIP, hostPort }) => {
   // Manual input fields for positions
   const [manualX1, setManualX1] = useState("");
   const [manualX2, setManualX2] = useState("");
+  const [manualZ1, setManualZ1] = useState("");
+  const [manualZ2, setManualZ2] = useState("");
 
   const socket = useWebSocket(); //TODO remove
 
@@ -60,7 +62,7 @@ const ExtendedObjectiveController = ({ hostIP, hostPort }) => {
           ///dispatch(objectiveSlice.setObjectiveName(jdata.args[2])); //setObjectiveName(jdata.args[3]);
         } else if (jdata.name === "sigUpdateImage") {
           //TODO dont get wat archived here
-          //TODO 
+          //TODO
           //console.log(jdata);
           //console.log(imageUrls);
           const detectorName = jdata.detectorname;
@@ -95,7 +97,7 @@ const ExtendedObjectiveController = ({ hostIP, hostPort }) => {
         setDetectors(data);
       })
       .catch((err) => {
-        console.log("Failed to fetch detector names", err); // Handle the error 
+        console.log("Failed to fetch detector names", err); // Handle the error
       });
   }, [hostIP, hostPort]); // on host ip/port change
 
@@ -110,7 +112,7 @@ const ExtendedObjectiveController = ({ hostIP, hostPort }) => {
     //request calibrate
     apiObjectiveControllerCalibrateObjective()
       .then((data) => {
-        console.info("Calibrate response"); 
+        console.info("Calibrate response");
         //fetch current objective
         fetchObjectiveControllerGetCurrentObjective(dispatch);
       })
@@ -178,7 +180,7 @@ const ExtendedObjectiveController = ({ hostIP, hostPort }) => {
     }
     //api request
     apiObjectiveControllerSetPositions({
-      x1: numericValue,
+      x2: numericValue,
       isBlocking: false,
     })
       .then((data) => {
@@ -190,16 +192,62 @@ const ExtendedObjectiveController = ({ hostIP, hostPort }) => {
       });
   };
 
+  const handleSetZ1 = (value) => {
+    //handle value
+    const numericValue = Number(value);
+    if (isNaN(numericValue)) {
+      console.error("Error Z1 must be a number");
+      return;
+    }
+    //api request
+    apiObjectiveControllerSetPositions({
+      z1: numericValue,
+      isBlocking: false,
+    })
+      .then((data) => {
+        //refresh
+        refreshStatus();
+      })
+      .catch((err) => {
+        console.error("Api eror setting Z1:", err);
+      });
+  };
+
+  const handleSetZ2 = (value) => {
+    //handle value
+    const numericValue = Number(value);
+    if (isNaN(numericValue)) {
+      console.error("Error Z2 must be a number");
+      return;
+    }
+    //api request
+    apiObjectiveControllerSetPositions({
+      z2: numericValue,
+      isBlocking: false,
+    })
+      .then((data) => {
+        //refresh
+        refreshStatus();
+      })
+      .catch((err) => {
+        console.error("Api eror setting Z2:", err);
+      });
+  };
+
   // Read current position from PositionerController and set as X1 or X2
   const handleSetCurrentAs = async (which) => {
     apiPositionerControllerGetPositions()
       .then((data) => {
         // Handle success response
-        const currentA = data.ESP32Stage.A;  //TODO this is hardcoded.
+        const currentA = data.ESP32Stage.A; //TODO this is hardcoded.
         if (which === "x1") {
           handleSetX1(currentA);
         } else if (which === "x2") {
           handleSetX2(currentA);
+        } else if (which === "z1") {
+          handleSetZ1(currentA);
+        } else if (which === "z2") {
+          handleSetZ2(currentA);
         }
       })
       .catch((err) => {
@@ -388,6 +436,84 @@ const ExtendedObjectiveController = ({ hostIP, hostPort }) => {
                 style={{ marginLeft: "10px" }}
               >
                 Switch to Objective 2
+              </Button>
+            </Grid>
+          </Grid>
+          {/* Z1 */}
+          <Grid
+            container
+            spacing={1}
+            alignItems="center"
+            style={{ marginTop: "10px" }}
+          >
+            <Grid item xs={2}>
+              <Typography>Z1:</Typography>
+            </Grid>
+            <Grid item xs={2}>
+              <Typography>
+                {objectiveState.posZ1 !== null
+                  ? objectiveState.posZ1
+                  : "Unknown"}
+              </Typography>
+            </Grid>
+            <Grid item xs={2}>
+              <TextField
+                label="Set Z1"
+                value={manualZ1}
+                onChange={(e) => setManualZ1(e.target.value)}
+                size="small"
+              />
+            </Grid>
+            <Grid item xs={2}>
+              <Button variant="contained" onClick={() => handleSetZ1(manualZ1)}>
+                Set Z1
+              </Button>
+            </Grid>
+            <Grid item xs={2}>
+              <Button
+                variant="contained"
+                onClick={() => handleSetCurrentAs("z1")}
+              >
+                Set Current as Z1
+              </Button>
+            </Grid>
+          </Grid>
+          {/* Z2 */}
+          <Grid
+            container
+            spacing={1}
+            alignItems="center"
+            style={{ marginTop: "10px" }}
+          >
+            <Grid item xs={2}>
+              <Typography>Z2:</Typography>
+            </Grid>
+            <Grid item xs={2}>
+              <Typography>
+                {objectiveState.posZ2 !== null
+                  ? objectiveState.posZ2
+                  : "Unknown"}
+              </Typography>
+            </Grid>
+            <Grid item xs={2}>
+              <TextField
+                label="Set Z2"
+                value={manualZ2}
+                onChange={(e) => setManualZ2(e.target.value)}
+                size="small"
+              />
+            </Grid>
+            <Grid item xs={2}>
+              <Button variant="contained" onClick={() => handleSetZ2(manualZ2)}>
+                Set Z2
+              </Button>
+            </Grid>
+            <Grid item xs={2}>
+              <Button
+                variant="contained"
+                onClick={() => handleSetCurrentAs("z2")}
+              >
+                Set Current as Z2
               </Button>
             </Grid>
           </Grid>

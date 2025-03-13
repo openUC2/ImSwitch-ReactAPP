@@ -1,7 +1,7 @@
 import createAxiosInstance from "./createAxiosInstance";
 
 // Function to set positions with optional parameters in an object
-const apiObjectiveControllerSetPositions = async ({ x1, x2, isBlocking = false }) => {
+const apiObjectiveControllerSetPositions = async ({ x1, x2, z1, z2, isBlocking = false }) => {
   try {
     // Start the query string with the base URL
     let query = "/ObjectiveController/setPositions?";
@@ -14,6 +14,16 @@ const apiObjectiveControllerSetPositions = async ({ x1, x2, isBlocking = false }
     // Include x2 if it's provided
     if (x2 !== undefined) {
       query += `x2=${x2}&`;
+    }
+
+    // include z1 if it's provided
+    if (z1 !== undefined) {
+      query += `z1=${z1}&`;
+    }
+
+    // include z2 if it's provided
+    if (z2 !== undefined) {
+      query += `z2=${z2}&`;
     }
     
     // Include isBlocking, defaulting to false if not provided
