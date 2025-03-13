@@ -78,6 +78,7 @@ const rootReducerWithSync = (state, action) => {
 const syncStateAcrossTabs = () => {
   window.addEventListener("storage", (event) => {
     if (event.key === "persist:root") {
+        console.log("State change from another tab detected!");
       const updatedState = JSON.parse(event.newValue);
         // Check if any slice is stringified and needs parsing
         Object.keys(updatedState).forEach(sliceKey => {
