@@ -22,6 +22,7 @@ import { makeStyles } from "@mui/styles";
 import { Bar } from "react-chartjs-2";
 import XYZControls from "./XYZControls";
 import AutofocusController from "./AutofocusController";
+import DetectorParameters from "./DetectorParameters"; // <--- NEW COMPONENT
 import { useWebSocket } from "../context/WebSocketContext";
 import { LiveWidgetContext } from "../context/LiveWidgetContext";
 import {
@@ -54,7 +55,6 @@ const useStyles = makeStyles(() => ({
   },
 }));
 
-// Adjust these values or pass them in as props
 const appBarHeight = 64;
 
 export default function LiveView({ hostIP, hostPort, drawerWidth }) {
@@ -75,9 +75,6 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
 
   const [isStreamRunning, setIsStreamRunning] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const [exposureTime, setExposureTime] = useState("");
-  const [gain, setGain] = useState("");
-  const [isCamSettingsAuto, setCamSettingsIsAuto] = useState(true);
 
   // Let the user toggle histogram overlay
   const [showHistogram, setShowHistogram] = useState(false);
@@ -123,9 +120,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
   useEffect(() => {
     (async () => {
       try {
-        const response = await fetch(
-          `${hostIP}:${hostPort}/SettingsController/getDetectorNames`
-        );
+        const response = await fetch(`${hostIP}:${hostPort}/SettingsController/getDetectorNames`);
         const data = await response.json();
         setDetectors(data);
       } catch {}
@@ -136,9 +131,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
   useEffect(() => {
     (async () => {
       try {
-        const response = await fetch(
-          `${hostIP}:${hostPort}/HistogrammController/histogrammActive`
-        );
+        const response = await fetch(`${hostIP}:${hostPort}/HistogrammController/histogrammActive`);
         if (response.status !== 404) setHistogramActive(true);
         else setHistogramActive(false);
       } catch {
@@ -151,9 +144,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
   useEffect(() => {
     (async () => {
       try {
-        const response = await fetch(
-          `${hostIP}:${hostPort}/HistogrammController/minmaxvalues`
-        );
+        const response = await fetch(`${hostIP}:${hostPort}/HistogrammController/minmaxvalues`);
         if (!response.ok) return;
         const data = await response.json();
         setMinVal(data.minVal);
@@ -167,7 +158,6 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
     if (activeTab === 1 && detectors.length > 1) {
       const intervalId = setInterval(async () => {
         try {
-          // Adjust the endpoint to match your second camera
           const res = await fetch(
             `${hostIP}:${hostPort}/HistoScanController/getPreviewCameraImage?resizeFactor=1`
           );
@@ -186,9 +176,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
   useEffect(() => {
     (async () => {
       try {
-        const response = await fetch(
-          `${hostIP}:${hostPort}/LaserController/getLaserNames`
-        );
+        const response = await fetch(`${hostIP}:${hostPort}/LaserController/getLaserNames`);
         const data = await response.json();
         setLaserNames(data);
       } catch {}
@@ -227,27 +215,21 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
   const handleStreamToggle = async () => {
     const newStatus = !isStreamRunning;
     try {
-      await fetch(
-        `${hostIP}:${hostPort}/ViewController/setLiveViewActive?active=${newStatus}`
-      );
+      await fetch(`${hostIP}:${hostPort}/ViewController/setLiveViewActive?active=${newStatus}`);
     } catch {}
     setIsStreamRunning(newStatus);
   };
 
   const snapPhoto = async () => {
     try {
-      await fetch(
-        `${hostIP}:${hostPort}/RecordingController/snapImage?output=false&toList=true`
-      );
+      await fetch(`${hostIP}:${hostPort}/RecordingController/snapImage?output=false&toList=true`);
     } catch {}
   };
 
   const startRecording = async () => {
     setIsRecording(true);
     try {
-      await fetch(
-        `${hostIP}:${hostPort}/RecordingController/startRecording?mSaveFormat=4`
-      );
+      await fetch(`${hostIP}:${hostPort}/RecordingController/startRecording?mSaveFormat=4`);
     } catch {}
   };
 
@@ -258,41 +240,13 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
     } catch {}
   };
 
-  // Camera settings
-  const handleCamSettingsSwitchChange = async (event) => {
-    setCamSettingsIsAuto(event.target.checked);
-    try {
-      await fetch(
-        `${hostIP}:${hostPort}/SettingsController/setDetectorMode?isAuto=${event.target.checked}`
-      );
-    } catch {}
-  };
-  const handleExposureChange = async (event) => {
-    setExposureTime(event.target.value);
-    try {
-      await fetch(
-        `${hostIP}:${hostPort}/SettingsController/setDetectorExposureTime?exposureTime=${event.target.value}`
-      );
-    } catch {}
-  };
-  const handleGainChange = async (event) => {
-    setGain(event.target.value);
-    try {
-      await fetch(
-        `${hostIP}:${hostPort}/SettingsController/setDetectorGain?gain=${event.target.value}`
-      );
-    } catch {}
-  };
-
   // Illumination
   const handleIlluminationSliderChange = async (event, laserIndex) => {
     const value = event.target.value;
     if (!laserNames[laserIndex]) return;
     const laserName = encodeURIComponent(laserNames[laserIndex]);
     try {
-      await fetch(
-        `${hostIP}:${hostPort}/LaserController/setLaserValue?laserName=${laserName}&value=${value}`
-      );
+      await fetch(`${hostIP}:${hostPort}/LaserController/setLaserValue?laserName=${laserName}&value=${value}`);
     } catch {}
     if (laserIndex === 0) setSliderIllu1Value(value);
   };
@@ -301,9 +255,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
     if (!laserNames[laserIndex]) return;
     const laserName = encodeURIComponent(laserNames[laserIndex]);
     try {
-      await fetch(
-        `${hostIP}:${hostPort}/LaserController/setLaserActive?laserName=${laserName}&active=${isActive}`
-      );
+      await fetch(`${hostIP}:${hostPort}/LaserController/setLaserActive?laserName=${laserName}&active=${isActive}`);
     } catch {}
     if (laserIndex === 0) setisIllumination1Checked(event.target.checked);
     else if (laserIndex === 1) setisIllumination2Checked(event.target.checked);
@@ -332,13 +284,10 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
     } catch {}
   };
 
-  // Scale bar: 50px = scaleBarPx * pixelSize in microns
+  // Scale bar calculation
   const scaleBarPx = 50;
-  const scaleBarMicrons = pixelSize
-    ? (scaleBarPx * pixelSize).toFixed(2)
-    : null;
+  const scaleBarMicrons = pixelSize ? (scaleBarPx * pixelSize).toFixed(2) : null;
 
-  // Histogram chart
   const histogramData = {
     labels: histogramX,
     datasets: [
@@ -346,8 +295,6 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
         label: "Histogram",
         data: histogramY,
         borderWidth: 1,
-        backgroundColor: "rgba(63, 81, 181, 0.7)",
-        borderColor: "rgba(63, 81, 181, 1)",
       },
     ],
   };
@@ -366,13 +313,6 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
 
   return (
     <>
-      {/*
-        Main container:
-        - Positioned under the AppBar (top: appBarHeight) and to the right of the drawer (left: drawerWidth)
-        - We fill the rest of the viewport width (calc(100% - drawerWidth)) 
-        - We also set the total height to (100vh - appBarHeight).
-        - We hide scrollbars (overflow: hidden).
-      */}
       <Box
         sx={{
           position: "absolute",
@@ -381,13 +321,10 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
           width: `calc(100% - ${drawerWidth}px)`,
           height: `calc(100vh - ${appBarHeight}px)`,
           display: "flex",
-          overflow: "hidden", // keep horizontal hidden, we'll handle vertical for the right side
+          overflow: "hidden",
         }}
       >
-        {/** 
-          LEFT COLUMN (60% width): Live stream, camera settings, slider
-          Absolutely fill the parent's height, no scrolling
-        */}
+        {/* LEFT COLUMN (Live stream, streaming controls, DetectorParameters) */}
         <Box
           sx={{
             width: "60%",
@@ -397,7 +334,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
             position: "relative",
           }}
         >
-          {/* Buttons row */}
+          {/* Live controls row */}
           <Box sx={{ display: "flex", gap: 1, mb: 2 }}>
             <Button
               onClick={handleStreamToggle}
@@ -410,10 +347,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
             <Button onClick={snapPhoto}>
               <CameraAlt />
             </Button>
-            <Button
-              onClick={startRecording}
-              className={isRecording ? classes.blinking : ""}
-            >
+            <Button onClick={startRecording} className={isRecording ? classes.blinking : ""}>
               <FiberManualRecord />
             </Button>
             <Button onClick={stopRecording}>
@@ -421,53 +355,21 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
             </Button>
           </Box>
 
-          {/* Camera settings row */}
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          {/* Detector parameter UI (new component) */}
+          <DetectorParameters hostIP={hostIP} hostPort={hostPort} />
+
+          {/* Checkbox to toggle histogram overlay */}
+          {histogramActive && (
             <FormControlLabel
               control={
-                <Switch
-                  checked={isCamSettingsAuto}
-                  onChange={handleCamSettingsSwitchChange}
-                  color="primary"
+                <Checkbox
+                  checked={showHistogram}
+                  onChange={(e) => setShowHistogram(e.target.checked)}
                 />
               }
-              label={
-                isCamSettingsAuto
-                  ? "Automatic Camera Settings"
-                  : "Manual Camera Settings"
-              }
+              label="Show Histogram Overlay"
             />
-
-            {/* Checkbox to toggle histogram overlay */}
-            {histogramActive && (
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={showHistogram}
-                    onChange={(e) => setShowHistogram(e.target.checked)}
-                  />
-                }
-                label="Show Histogram Overlay"
-              />
-            )}
-          </Box>
-
-          <Box sx={{ mt: 2, display: "flex", gap: 2 }}>
-            <TextField
-              label="Exposure Time"
-              type="number"
-              value={exposureTime}
-              onChange={handleExposureChange}
-              size="small"
-            />
-            <TextField
-              label="Gain"
-              type="number"
-              value={gain}
-              onChange={handleGainChange}
-              size="small"
-            />
-          </Box>
+          )}
 
           {/* Detector Tabs */}
           <Tabs value={activeTab} onChange={handleTabChange} sx={{ mt: 2 }}>
@@ -476,16 +378,8 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
             ))}
           </Tabs>
 
-          {/** Live image area **/}
-          <Box
-            sx={{
-              position: "relative",
-              width: "100%",
-              height: "calc(100% - 140px)", // subtract space for the top controls & tabs
-              mt: 1,
-            }}
-          >
-            {/* First Tab => socket image */}
+          {/* Live Image region */}
+          <Box sx={{ position: "relative", width: "100%", height: "calc(100% - 140px)", mt: 1 }}>
             {detectors[0] && (
               <Box
                 sx={{
@@ -495,7 +389,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
                   position: "relative",
                 }}
               >
-                {/* If user toggles histogram, we overlay the chart */}
+                {/* Histogram overlay */}
                 {showHistogram && (
                   <Box
                     sx={{
@@ -517,7 +411,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
                   </Box>
                 )}
 
-                {/* Scale bar overlay => bottom center */}
+                {/* Scale bar overlay */}
                 {scaleBarMicrons && (
                   <Box
                     sx={{
@@ -531,55 +425,25 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
                       zIndex: 4,
                     }}
                   >
-                    <Box
-                      sx={{
-                        width: `${scaleBarPx}px`,
-                        height: "10px",
-                        backgroundColor: "white",
-                        marginRight: "16px",
-                      }}
-                    />
-                    <Typography variant="body2">
-                      {scaleBarMicrons} µm
-                    </Typography>
+                    <Box sx={{ width: `${scaleBarPx}px`, height: "10px", backgroundColor: "white", marginRight: "16px" }} />
+                    <Typography variant="body2">{scaleBarMicrons} µm</Typography>
                   </Box>
                 )}
 
-                {/* Stage movement overlay => top-right */}
-                <Box
-                  sx={{
-                    position: "absolute",
-                    bottom: 100,
-                    left: 10,
-                    zIndex: 3,
-                  }}
-                >
-                  <Button
-                    variant="contained"
-                    onClick={() => handleStageMove("up")}
-                    sx={{ mb: 1 }}
-                  >
+                {/* Stage movement overlay */}
+                <Box sx={{ position: "absolute", bottom: 100, left: 10, zIndex: 3 }}>
+                  <Button variant="contained" onClick={() => handleStageMove("up")} sx={{ mb: 1 }}>
                     ↑
                   </Button>
                   <Box sx={{ display: "flex", flexDirection: "row", gap: 1 }}>
-                    <Button
-                      variant="contained"
-                      onClick={() => handleStageMove("left")}
-                    >
+                    <Button variant="contained" onClick={() => handleStageMove("left")}>
                       ←
                     </Button>
-                    <Button
-                      variant="contained"
-                      onClick={() => handleStageMove("right")}
-                    >
+                    <Button variant="contained" onClick={() => handleStageMove("right")}>
                       →
                     </Button>
                   </Box>
-                  <Button
-                    variant="contained"
-                    onClick={() => handleStageMove("down")}
-                    sx={{ mt: 1 }}
-                  >
+                  <Button variant="contained" onClick={() => handleStageMove("down")} sx={{ mt: 1 }}>
                     ↓
                   </Button>
                 </Box>
@@ -619,9 +483,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
                     min={0}
                     max={1024}
                     valueLabelDisplay="on"
-                    valueLabelFormat={(val, idx) =>
-                      idx === 0 ? `Min: ${val}` : `Max: ${val}`
-                    }
+                    valueLabelFormat={(val, idx) => (idx === 0 ? `Min: ${val}` : `Max: ${val}`)}
                     sx={{ height: "60%", mr: 1 }}
                   />
                   <Typography
@@ -638,7 +500,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
               </Box>
             )}
 
-            {/* Second Tab => polled image (if available) */}
+            {/* Second tab => polled image */}
             {detectors.length > 1 && (
               <Box
                 sx={{
@@ -666,10 +528,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
           </Box>
         </Box>
 
-        {/**
-          RIGHT COLUMN (40% width): Stage Control, Autofocus, Illumination
-          Fill remaining space, no scrollbars visible
-        */}
+        {/* RIGHT COLUMN (Stage Control, Autofocus, Illumination) */}
         <Box
           sx={{
             width: "40%",
@@ -721,9 +580,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
                     />
                     <Checkbox
                       checked={checkedVal}
-                      onChange={(e) =>
-                        handleIlluminationCheckboxChange(e, index)
-                      }
+                      onChange={(e) => handleIlluminationCheckboxChange(e, index)}
                     />
                   </Box>
                 );
