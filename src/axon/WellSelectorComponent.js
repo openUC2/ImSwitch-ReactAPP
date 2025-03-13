@@ -47,6 +47,7 @@ const WellSelectorComponent = () => {
   const wellSelectorState = useSelector(wellSelectorSlice.getWellSelectorState);
   const experimentState = useSelector(experimentSlice.getExperimentState); 
 
+
   //##################################################################################
   useEffect(() => {
     //request welllayout file list
