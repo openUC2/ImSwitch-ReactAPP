@@ -79,6 +79,7 @@ import {
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { WidgetContextProvider } from "./context/WidgetContext";
 import CommentIcon from "@mui/icons-material/Comment";
+import ZoomOutMapIcon from "@mui/icons-material/ZoomOutMap";
 import FlowStopController from "./components/FlowStopController";
 import SepMonController from "./components/SepmonController";
 
@@ -304,7 +305,7 @@ function App() {
 
   // change API url/port and update filelist
   useEffect(() => {
-    api.defaults.baseURL = `${hostIP}:${apiPort}`;
+    api.defaults.baseURL = `${hostIP}:${apiPort}/FileManager`;
     handleRefresh();
   }, [hostIP, apiPort]);
 
@@ -477,7 +478,7 @@ function App() {
               {/* Objective */}
               <ListItem button onClick={() => handlePluginChange("Objective")}>
                 <ListItemIcon>
-                  <SettingsIcon />
+                  <ZoomOutMapIcon/>
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "Objective" : ""} />
               </ListItem>

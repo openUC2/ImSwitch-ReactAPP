@@ -16,7 +16,6 @@ import { dateStringValidator, urlValidator } from "../validators/propValidators"
 import "./FileManager.scss";
 
 const FileManager = ({
-  baseUrl,
   files,
   fileUploadConfig,
   isLoading,

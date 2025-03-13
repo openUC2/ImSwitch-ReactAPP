@@ -16,8 +16,8 @@ const fetchObjectiveControllerGetStatus = (dispatch) => {
       dispatch(objectiveSlice.setPosX1(data.x1));
       dispatch(objectiveSlice.setPosX2(data.x2)); 
       dispatch(objectiveSlice.setPixelSize(data.pixelsize)); 
-
-
+      dispatch(objectiveSlice.setPosZ1(data.z1));
+      dispatch(objectiveSlice.setPosZ2(data.z2));
   
       //TODO add more objective results
       /*reposne: 

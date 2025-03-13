@@ -72,12 +72,12 @@ const WebSocketHandler = () => {
         //update redux state 
         // TODO add check if parameter exists
         // TODO check if this works
-        dispatch(objectiveSlice.setPixelSize(dataJson.args.p0));
-        dispatch(objectiveSlice.setNA(dataJson.args.p1)); 
-        dispatch(objectiveSlice.setMagnification(dataJson.args.p2));
-        dispatch(objectiveSlice.setObjectiveName(dataJson.args.p3)); 
-        dispatch(objectiveSlice.setFovX(dataJson.args.p4));
-        dispatch(objectiveSlice.setFovY(dataJson.args.p5));
+        dispatch(objectiveSlice.setPixelSize(dataJson.args.p0.pixelsize));
+        dispatch(objectiveSlice.setNA(dataJson.args.p0.NA)); 
+        dispatch(objectiveSlice.setMagnification(dataJson.args.p0.magnification));
+        dispatch(objectiveSlice.setObjectiveName(dataJson.args.p0.objectiveName)); 
+        dispatch(objectiveSlice.setFovX(dataJson.args.p0.FOV[0]));
+        dispatch(objectiveSlice.setFovY(dataJson.args.p0.FOV[1]));
 
         /*  data:
         Args: {"p0":0.2,"p1":0.5,"p2":10,"p3":"10x","p4":100,"p5":100}

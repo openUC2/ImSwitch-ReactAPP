@@ -1,7 +1,10 @@
+import { api } from "./api";
+
 export const downloadFile = async (files, hostname, port) => {
   if (files.length === 0) return;
 
   try {
+    // build url based on api
     const fileQuery = files.map((file) => `${file.path}`).join("&");
     const url = `${hostname}:${port}/download/${fileQuery}`; //${import.meta.env.VITE_API_BASE_URL}/download?${fileQuery}`;
 

@@ -240,14 +240,15 @@ const ExtendedObjectiveController = ({ hostIP, hostPort }) => {
       .then((data) => {
         // Handle success response
         const currentA = data.ESP32Stage.A; //TODO this is hardcoded.
+        const currentZ = data.ESP32Stage.Z; //TODO this is hardcoded.
         if (which === "x1") {
           handleSetX1(currentA);
         } else if (which === "x2") {
           handleSetX2(currentA);
         } else if (which === "z1") {
-          handleSetZ1(currentA);
+          handleSetZ1(currentZ);
         } else if (which === "z2") {
-          handleSetZ2(currentA);
+          handleSetZ2(currentZ);
         }
       })
       .catch((err) => {
