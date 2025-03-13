@@ -34,7 +34,7 @@ import { MCTProvider } from "./context/MCTContext";
 
 //axon
 import AxonTabComponent from './axon/AxonTabComponent';
-import WebSocketHandler from './axon/WebSocketHandler';
+import WebSocketHandler from './middleware/WebSocketHandler';
 
 //redux
 import { useDispatch, useSelector } from "react-redux";
@@ -91,6 +91,26 @@ const lightTheme = createTheme({
     fontFamily: "Roboto",
     fontWeightBold: 700,
   },
+  components: {
+    MuiCssBaseline: {
+      styleOverrides: `
+        @font-face {
+          font-family: 'Roboto';
+          font-style: normal;
+          font-display: swap;
+          font-weight: 400;
+          src: local('Roboto'), local('Roboto-Regular'), url('/fonts/Roboto-Regular.ttf') format('truetype');
+        }
+        @font-face {
+          font-family: 'Roboto';
+          font-style: normal;
+          font-display: swap;
+          font-weight: 700;
+          src: local('Roboto-Bold'), url('/fonts/Roboto-Bold.ttf') format('truetype');
+        }
+      `,
+    },
+  },
 });
 
 const darkTheme = createTheme({
@@ -122,7 +142,24 @@ const darkTheme = createTheme({
         },
       },
     },
-    // Weitere Komponenten können hier hinzugefügt werden
+    MuiCssBaseline: {
+      styleOverrides: `
+        @font-face {
+          font-family: 'Roboto';
+          font-style: normal;
+          font-display: swap;
+          font-weight: 400;
+          src: local('Roboto'), local('Roboto-Regular'), url('/fonts/Roboto-Regular.ttf') format('truetype');
+        }
+        @font-face {
+          font-family: 'Roboto';
+          font-style: normal;
+          font-display: swap;
+          font-weight: 700;
+          src: local('Roboto-Bold'), url('/fonts/Roboto-Bold.ttf') format('truetype');
+        }
+      `,
+    },
   },
 });
 

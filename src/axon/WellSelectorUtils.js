@@ -131,7 +131,7 @@ export function isRectInsideRect(x1, y1, width, height, rx1, ry1, rx2, ry2) {
 
 //##################################################################################
 export function isCircleInsideRect(cx, cy, r, x1, y1, x2, y2) {
-  console.log("isCircleInsideRect2", cx, cy, r, x1, y1, x2, y2);
+  //console.log("isCircleInsideRect2", cx, cy, r, x1, y1, x2, y2);
   // Ensure x1, y1 is the top-left and x2, y2 is the bottom-right
   const rectLeft = Math.min(x1, x2);
   const rectRight = Math.max(x1, x2);
@@ -340,7 +340,7 @@ export const wellLayoutDefault = {
     ],
   };
 
-export const wellLayout32 = {
+  export const wellLayout32 = {
     name: "Wellplate 32",
     unit: "um",
     width: 128000,
@@ -373,6 +373,25 @@ export const wellLayout32 = {
     ]
 }
 ;
+
+export const histolayout = {
+  name: "histolayout",
+  unit: "um",
+  width: 128000,
+  height: 86000,
+  wells: [
+    {
+      x: 15000,
+      y: 0,
+      shape: "rectangle",
+      width: 24000,
+      height: 100000,
+      name: "A1",
+    }
+    ]
+}
+;
+
 
 export const wellLayout96 = {
     name: "Wellplate 96",

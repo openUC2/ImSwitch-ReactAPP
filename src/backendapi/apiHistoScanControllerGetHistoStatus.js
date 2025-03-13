@@ -1,7 +1,7 @@
-// src/api/apiGethistostatus.js
-import createAxiosInstance from "../backendapi/createAxiosInstance";
+// src/api/apiHistoScanControllerGetHistoStatus.js
+import createAxiosInstance from "./createAxiosInstance";
 
-const apiGetHistoStatus = async () => {
+const apiHistoScanControllerGetHistoStatus = async () => {
   try {
     const axiosInstance = createAxiosInstance(); // Create Axios instance
     const response = await axiosInstance.get("/HistoScanController/getHistoStatus"); // Send GET request
@@ -12,14 +12,14 @@ const apiGetHistoStatus = async () => {
   }
 };
 
-export default apiGetHistoStatus;
+export default apiHistoScanControllerGetHistoStatus;
 
 
 /*
 //Example usage:
 
 const fetchHistoStatus = () => {
-  apiGetHistoStatus()
+  apiHistoScanControllerGetHistoStatus()
     .then((data) => {
       setStatus(data); // Set the status after the data is fetched
     })

@@ -20,7 +20,7 @@ const AxisControl = ({
   mPosition,
 }) => {
   const [steps, setSteps] = useState("1000");
-  const [speedValue, setSpeed] = useState("10000");
+  const [speedValue, setSpeed] = useState("20000");
   const [isStepsOpen, setStepsOpen] = useState(false);
   const [isSpeedOpen, setSpeedOpen] = useState(false);
   const [targetPosition, setTargetPosition] = useState(0);

@@ -1,13 +1,13 @@
 import React from 'react';
 import { useDispatch, useSelector } from "react-redux";
-import * as hardwareSlice from "../state/slices/HardwareSlice.js";
+import * as positionSlice from "../state/slices/PositionSlice.js";
 
 const PositionViewComponent = () => {
     // redux dispatcher
     const dispatch = useDispatch();
   
     // Access global Redux state
-    const hardwareState = useSelector(hardwareSlice.getHardwareState);
+    const positionState = useSelector(positionSlice.getPositionState);
 
  
 
@@ -29,19 +29,19 @@ const PositionViewComponent = () => {
           <tbody>
             <tr>
               <td>x</td>
-              <td>{hardwareState.position.x}</td>
+              <td>{positionState.x}</td>
             </tr>
             <tr>
               <td>y</td>
-              <td>{hardwareState.position.y}</td>
+              <td>{positionState.y}</td>
             </tr>
             <tr>
               <td>z</td>
-              <td>{hardwareState.position.z}</td>
+              <td>{positionState.z}</td>
             </tr>
             <tr>
               <td>a</td>
-              <td>{hardwareState.position.a}</td>
+              <td>{positionState.a}</td>
             </tr>
           </tbody>
         </table>

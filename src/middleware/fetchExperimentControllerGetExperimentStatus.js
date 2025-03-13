@@ -1,9 +1,9 @@
 import * as expermentStatusSlice from "../state/slices/ExperimentStatusSlice.js";
  
-import apiGetExperimentStatus from "../backendapi/apiGetExperimentStatus.js";
+import apiGetExperimentStatus from "../backendapi/apiExperimentControllerGetExperimentStatus.js";
 
 
-const fetchGetExperimentStatus = (dispatch) => {
+const fetchExperimentControllerGetExperimentStatus = (dispatch) => {
     //request
     apiGetExperimentStatus()
     .then((data) => {
@@ -17,4 +17,4 @@ const fetchGetExperimentStatus = (dispatch) => {
     });
 };
 
-export default fetchGetExperimentStatus;
+export default fetchExperimentControllerGetExperimentStatus;

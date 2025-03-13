@@ -11,11 +11,12 @@ import * as experimentSlice from "../state/slices/ExperimentSlice.js";
 import * as experimentStatusSlice from "../state/slices/ExperimentStatusSlice.js";
 import * as wellSelectorSlice from "../state/slices/WellSelectorSlice.js";
 
-import apiStartWellplateExperiment from "../backendapi/apiStartWellplateExperiment.js";
-import apiStopExperiment from "../backendapi/apiStopExperiment.js";
-import apiPauseWorkflow from "../backendapi/apiPauseWorkflow.js";
-import apiResumeExperiment from "../backendapi/apiResumeExperiment.js";
-import fetchGetExperimentStatus from "../middleware/fetchGetExperimentStatus.js";
+import apiExperimentControllerStartWellplateExperiment from "../backendapi/apiExperimentControllerStartWellplateExperiment.js";
+import apiExperimentControllerStopExperiment from "../backendapi/apiExperimentControllerStopExperiment.js";
+import apiExperimentControllerPauseWorkflow from "../backendapi/apiExperimentControllerPauseWorkflow.js";
+import apiExperimentControllerResumeExperiment from "../backendapi/apiExperimentControllerResumeExperiment.js";
+
+import fetchGetExperimentStatus from "../middleware/fetchExperimentControllerGetExperimentStatus.js";
 
 //##################################################################################
 // Enum-like object for status
@@ -58,9 +59,7 @@ const ExperimentComponent = () => {
     };
   }, []); // Empty dependency array ensures this runs once on mount
 
-  //##################################################################################
- 
- 
+  
 
   //##################################################################################
   const handleStart = () => {
@@ -119,7 +118,7 @@ const ExperimentComponent = () => {
     //console.log("experiment(json):", jsonString);
 
     //create request
-    apiStartWellplateExperiment(experimentRequest)
+    apiExperimentControllerStartWellplateExperiment(experimentRequest)
       .then((data) => {
         // Handle success response
         console.log("apiStartWellplateExperiment", data);
@@ -140,7 +139,7 @@ const ExperimentComponent = () => {
   const handlePause = () => {
     console.log("Experiment paused");
     //create request
-    apiPauseWorkflow()
+    apiExperimentControllerPauseWorkflow()
       .then((data) => {
         // Handle success response
         //set state 
@@ -159,7 +158,7 @@ const ExperimentComponent = () => {
   const handleResume = () => {
     console.log("Experiment resumed");
     //create request
-    apiResumeExperiment()
+    apiExperimentControllerResumeExperiment()
       .then((data) => {
         // Handle success response
         //set state 
@@ -179,7 +178,7 @@ const ExperimentComponent = () => {
     console.log("Experiment stopped"); 
     //create request
     dispatch(experimentStatusSlice.setStatus(Status.IDLE )); // FIXME: This is a workaround to avoid the "stopping" status
-    apiStopExperiment()
+    apiExperimentControllerStopExperiment()
       .then((data) => {
         // Handle success response
         //set state 
@@ -193,7 +192,27 @@ const ExperimentComponent = () => {
         infoPopupRef.current.showMessage("Stop Experiment failed"); 
       });
   };
+  
+  //##################################################################################
+  const showStartButton = () => {
+    return experimentStatusState.status === Status.IDLE || experimentStatusState.status === Status.STOPPING;
+  };
 
+  //##################################################################################
+  const showPauseButton = () => {
+    return experimentStatusState.status === Status.RUNNING;
+  };
+  
+  //##################################################################################
+  const showResumeButton = () => {
+    return experimentStatusState.status === Status.PAUSED;
+  };
+
+
+  //##################################################################################
+  const showStopButton = () => {
+   return experimentStatusState.status !== Status.IDLE;
+  };
 
   //##################################################################################
   return (
@@ -212,7 +231,7 @@ const ExperimentComponent = () => {
         <Button
           variant="contained"
           onClick={handleStart}
-          disabled={experimentStatusState.status !== Status.IDLE  && experimentStatusState.status === Status.STOPPING}
+          disabled={!showStartButton()}
         >
           Start
         </Button>
@@ -220,7 +239,7 @@ const ExperimentComponent = () => {
         <Button
           variant="contained"
           onClick={handlePause}
-          disabled={experimentStatusState.status !== Status.RUNNING}
+          disabled={!showPauseButton()}
         >
           Pause
         </Button>
@@ -228,7 +247,7 @@ const ExperimentComponent = () => {
         <Button
           variant="contained"
           onClick={handleResume}
-          disabled={experimentStatusState.status !== Status.PAUSED}
+          disabled={!showResumeButton()}
         >
           Resume
         </Button>
@@ -236,7 +255,7 @@ const ExperimentComponent = () => {
         <Button
           variant="contained"
           onClick={handleStop}
-          disabled={experimentStatusState.status === Status.IDLE || experimentStatusState.status !== Status.STOPPING}
+          disabled={!showStopButton()}
         >
           Stop
         </Button>

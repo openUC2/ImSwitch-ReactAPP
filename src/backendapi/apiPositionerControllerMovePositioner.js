@@ -1,7 +1,7 @@
-// src/api/apiMovePositioner.js
-import createAxiosInstance from "../backendapi/createAxiosInstance";
+// src/api/apiPositionerControllerMovePositioner.js
+import createAxiosInstance from "./createAxiosInstance";
 
-const apiMovePositioner = async ({
+const apiPositionerControllerMovePositioner = async ({
   positionerName,
   axis = "X",
   dist,
@@ -16,17 +16,24 @@ const apiMovePositioner = async ({
     let url = "/PositionerController/movePositioner?";
     const queryParams = [];
 
-    if (positionerName)
+    if (positionerName) {
       queryParams.push(`positionerName=${encodeURIComponent(positionerName)}`);
-    if (axis) queryParams.push(`axis=${encodeURIComponent(axis)}`);
-    if (dist !== undefined)
+    }
+    if (axis) {
+      queryParams.push(`axis=${encodeURIComponent(axis)}`);
+    }
+    if (dist !== undefined) {
       queryParams.push(`dist=${encodeURIComponent(dist)}`);
-    if (isAbsolute !== undefined)
+    }
+    if (isAbsolute !== undefined) {
       queryParams.push(`isAbsolute=${encodeURIComponent(isAbsolute)}`);
-    if (isBlocking !== undefined)
+    }
+    if (isBlocking !== undefined) {
       queryParams.push(`isBlocking=${encodeURIComponent(isBlocking)}`);
-    if (speed !== undefined)
+    }
+    if (speed !== undefined) {
       queryParams.push(`speed=${encodeURIComponent(speed)}`);
+    }
 
     // Join all query parameters with '&'
     url += queryParams.join("&");
@@ -41,12 +48,12 @@ const apiMovePositioner = async ({
   }
 };
 
-export default apiMovePositioner;
+export default apiPositionerControllerMovePositioner;
 
 /*
 //Example:
 
-  apiMovePositioner({
+  apiPositionerControllerMovePositioner({
     positionerName: "Positioner1",  // Optional
     axis: "Y",                      // Optional (defaults to "X")
     dist: 10,                        // Optional

@@ -9,10 +9,9 @@ import InfoPopup from "./InfoPopup.js";
 
 
 import * as wellSelectorSlice from "../state/slices/WellSelectorSlice.js";
-import * as experimentSlice from "../state/slices/ExperimentSlice.js";
-import * as hardwareSlice from "../state/slices/HardwareSlice.js";
+import * as experimentSlice from "../state/slices/ExperimentSlice.js"; 
 
-import apiGetSampleLayoutFilePaths from "../backendapi/apiGetSampleLayoutFilePaths.js";
+import apiHistoScanControllerGetSampleLayoutFilePaths from "../backendapi/apiHistoScanControllerGetSampleLayoutFilePaths.js";
 import apiDownloadJson from "../backendapi/apiDownloadJson.js";
 
 import {
@@ -46,15 +45,14 @@ const WellSelectorComponent = () => {
 
   // Access global Redux state
   const wellSelectorState = useSelector(wellSelectorSlice.getWellSelectorState);
-  const experimentState = useSelector(experimentSlice.getExperimentState);
-  const hardwareState = useSelector(hardwareSlice.getHardwareState);
+  const experimentState = useSelector(experimentSlice.getExperimentState); 
 
   //##################################################################################
   useEffect(() => {
     //request welllayout file list
-    apiGetSampleLayoutFilePaths()
+    apiHistoScanControllerGetSampleLayoutFilePaths()
       .then((data) => {
-        //console.log("apiGetSampleLayoutFilePaths",data)
+        //console.log("apiHistoScanControllerGetSampleLayoutFilePaths",data)
         //set file list
         setWellLayoutFileList(data);
       })
@@ -74,22 +72,6 @@ const WellSelectorComponent = () => {
   const handleResetView = () => {
     //call child methode
     childRef.current.resetView();
-  };
-
-  //##################################################################################
-  const handleRasterWidthSpinnerChange = (event) => {
-    // Update the spinner value
-    const value = parseFloat(event.target.value, 10);
-    // Update Redux state
-    dispatch(wellSelectorSlice.setRasterWidth(value));
-  };
-
-  //##################################################################################
-  const handleRasterHeightSpinnerChange = (event) => {
-    // Update the spinner value
-    const value = parseFloat(event.target.value, 10);
-    // Update Redux state
-    dispatch(wellSelectorSlice.setRasterHeight(value));
   };
 
   //##################################################################################
@@ -124,6 +106,8 @@ const WellSelectorComponent = () => {
       wellLayout = wsUtils.wellLayoutDefault;
     } else if (event.target.value === "Development") {
       wellLayout = wsUtils.wellLayoutDevelopment;
+    } else if (event.target.value === "histolayout") {
+      wellLayout = wsUtils.histolayout;
     } else if (event.target.value === "Wellplate 32") {
       wellLayout = wsUtils.wellLayout32;
     } else if (event.target.value === "Wellplate 96") {
@@ -184,6 +168,7 @@ const WellSelectorComponent = () => {
             <MenuItem value="Development">Development</MenuItem>
             <MenuItem value="Wellplate 32">Wellplate 32</MenuItem>
             <MenuItem value="Wellplate 96">Wellplate 96</MenuItem>
+            <MenuItem value="histolayout">histolayout</MenuItem>
             {/* online layouts */}
             {wellLayoutFileList.map((file, index) => (
               <MenuItem value={file}>{file}</MenuItem>
@@ -222,36 +207,7 @@ const WellSelectorComponent = () => {
           />
         </FormControl>
 
-        {/* RASTER */}
-
-        <FormControl>
-          <TextField
-            label="Raster Width"
-            type="number"
-            value={wellSelectorState.rasterHeight}
-            onChange={handleRasterHeightSpinnerChange}
-            inputProps={{
-              min: 1,
-              step: 5,
-            }}
-            style={{ marginLeft: "0px", width: "96px" }}
-          />
-        </FormControl>
-
-        <FormControl>
-          <TextField
-            label="Raster Height"
-            type="number"
-            value={wellSelectorState.rasterWidth}
-            onChange={handleRasterWidthSpinnerChange}
-            inputProps={{
-              min: 1,
-              step: 5,
-            }}
-            style={{ marginRight: "10px", width: "96px" }}
-          />
-        </FormControl>
-
+      
         {/* VIEW */}
 
         <Button variant="contained" onClick={() => handleResetView()}>
