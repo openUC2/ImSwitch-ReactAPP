@@ -2,14 +2,15 @@ import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 import * as experimentSlice from "../state/slices/ExperimentSlice.js";
-import * as hardwareSlice from "../state/slices/HardwareSlice.js";
+import * as parameterRangeSlice from "../state/slices/ParameterRangeSlice.js";
 
 
 
-import fetchGetCurrentExperimentParams from '../middleware/fetchGetCurrentExperimentParams'; // Adjust the import path
+import fetchExperimentControllerGetCurrentExperimentParams from '../middleware/fetchExperimentControllerGetCurrentExperimentParams.js';  
 
 
-import { useTheme } from "@mui/material/styles";
+import { useTheme  } from "@mui/material/styles";
+import { FormControl, InputLabel, NativeSelect } from "@mui/material";
 
 //##################################################################################
 const ParameterEditorComponent = () => {
@@ -18,17 +19,16 @@ const ParameterEditorComponent = () => {
 
   // Accessing parameterValue and parameterRange in Redux store
   const dispatch = useDispatch();
+
   const parameterValue = useSelector(
     (state) => state.experimentState.parameterValue
   );
-  const parameterRange = useSelector(
-    (state) => state.hardwareState.parameterRange
-  );
+  const parameterRange = useSelector(parameterRangeSlice.getParameterRangeState);
 
   //##################################################################################
   useEffect(() => {
     //update on startup
-    fetchGetCurrentExperimentParams(dispatch);
+    fetchExperimentControllerGetCurrentExperimentParams(dispatch);
   }, []); // Empty dependency array means this runs once when the component mounts
 
   //##################################################################################
@@ -100,7 +100,7 @@ const ParameterEditorComponent = () => {
             <td style={tdStyle}>General</td>
             <td style={tdStyle}>Illumination</td>
             <td style={tdStyle}>
-              <select
+              <NativeSelect
                 value={parameterValue.illumination}
                 onChange={(e) =>
                   dispatch(experimentSlice.setIllumination(e.target.value))
@@ -112,7 +112,7 @@ const ParameterEditorComponent = () => {
                     {option}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </td>
           </tr>
           <tr>
@@ -147,7 +147,7 @@ const ParameterEditorComponent = () => {
             <td style={tdStyle}></td>
             <td style={tdStyle}>Laser</td>
             <td style={tdStyle}>
-              <select
+              <NativeSelect
                 value={parameterValue.laserWaveLength}
                 onChange={(e) =>
                   dispatch(
@@ -161,7 +161,7 @@ const ParameterEditorComponent = () => {
                     {wavelength} nm
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </td>
           </tr>
           <tr>
@@ -180,6 +180,25 @@ const ParameterEditorComponent = () => {
                 }
                 style={{ ...inputStyle, ...checkboxStyle }}
               />
+            </td>
+          </tr>
+          <tr>
+            <td style={tdStyle}></td>
+            <td style={tdStyle}>Speed</td>
+            <td style={tdStyle}>
+            <NativeSelect
+                value={parameterValue.speed}
+                onChange={(e) =>
+                  dispatch(experimentSlice.setSpeed(Number(e.target.value)))
+                }
+                style={selectStyle}
+              >
+                {parameterRange.speed.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </NativeSelect>
             </td>
           </tr>
 

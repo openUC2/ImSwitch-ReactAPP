@@ -1,26 +1,51 @@
 import React, { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { Paper, Grid, Button, Typography, TextField } from "@mui/material";
 import { useWebSocket } from "../context/WebSocketContext";
 
+import * as objectiveSlice from "../state/slices/ObjectiveSlice.js";
+
+import apiPositionerControllerMovePositioner from "../backendapi/apiPositionerControllerMovePositioner.js";
+import apiObjectiveControllerSetPositions from "../backendapi/apiObjectiveControllerSetPositions.js";
+import apiObjectiveControllerCalibrateObjective from "../backendapi/apiObjectiveControllerCalibrateObjective.js";
+import apiObjectiveControllerGetCurrentObjective from "../backendapi/apiObjectiveControllerGetCurrentObjective.js";
+import apiObjectiveControllerMoveToObjective from "../backendapi/apiObjectiveControllerMoveToObjective.js";
+import apiObjectiveControllerGetStatus from "../backendapi/apiObjectiveControllerGetStatus.js";
+import apiPositionerControllerGetPositions from "../backendapi/apiPositionerControllerGetPositions.js";
+import apiSettingsControllerGetDetectorNames from "../backendapi/apiSettingsControllerGetDetectorNames.js";
+
+import fetchObjectiveControllerGetStatus from "../middleware/fetchObjectiveControllerGetStatus.js";
+import fetchObjectiveControllerGetCurrentObjective from "../middleware/fetchObjectiveControllerGetCurrentObjective.js";
+
 const ExtendedObjectiveController = ({ hostIP, hostPort }) => {
-  const [currentObjective, setCurrentObjective] = useState(null);
-  const [objectiveName, setObjectiveName] = useState("");
-  const [pixelsize, setPixelsize] = useState(null);
-  const [NA, setNA] = useState(null);
-  const [magnification, setMagnification] = useState(null);
+  //redux dispatcher
+  const dispatch = useDispatch();
+
+  // Access global Redux state
+  const objectiveState = useSelector(objectiveSlice.getObjectiveState);
+  ////const State = useSelector(Slice.getState);
+
+  //states
+  ///const [currentObjective, setCurrentObjective] = useState(null);//TODO replace with objectiveState.currentObjective
+  ///const [objectiveName, setObjectiveName] = useState("");//TODO replace with objectiveState.objectivName
+  ///const [pixelsize, setPixelsize] = useState(null);//TODO replace with objectiveState.pixelsize
+  ///const [NA, setNA] = useState(null);//TODO replace with objectiveState.NA
+  ///const [magnification, setMagnification] = useState(null);//TODO replace with objectiveState.magnification
+
   const [imageUrls, setImageUrls] = useState({});
-  const [pixelSize, setPixelSize] = useState(null);
   const [detectors, setDetectors] = useState([]);
 
   // Objective positions (x1/x2) from backend status
-  const [posX1, setPosX1] = useState(null);
-  const [posX2, setPosX2] = useState(null);
+  ///const [posX1, setPosX1] = useState(null);//TODO replace with objectiveState.posX1
+  ///const [posX2, setPosX2] = useState(null);//TODO replace with objectiveState.posX2
 
   // Manual input fields for positions
   const [manualX1, setManualX1] = useState("");
   const [manualX2, setManualX2] = useState("");
+  const [manualZ1, setManualZ1] = useState("");
+  const [manualZ2, setManualZ2] = useState("");
 
-  const socket = useWebSocket();
+  const socket = useWebSocket(); //TODO remove
 
   // Update objective parameters from socket signal "sigObjectiveChanged"
   useEffect(() => {
@@ -29,16 +54,27 @@ const ExtendedObjectiveController = ({ hostIP, hostPort }) => {
       try {
         const jdata = JSON.parse(data);
         if (jdata.name === "sigObjectiveChanged") {
+          //Note: this is allready handled in WebSocketHandler !!!!!!!!
           // Expected order: [pixelsize, NA, magnification, objectiveName]
-          setPixelsize(jdata.args[0]);
-          setNA(jdata.args[1]);
-          setMagnification(jdata.args[2]);
-          setObjectiveName(jdata.args[3]);
+          ///dispatch(objectiveSlice.setPixelSize(jdata.args[0])); //setPixelsize(jdata.args[0]);
+          ///dispatch(objectiveSlice.setNA(jdata.args[1])); //setNA(jdata.args[1]);
+          ///dispatch(objectiveSlice.setMagnification(jdata.args[2])); //setMagnification(jdata.args[2]);
+          ///dispatch(objectiveSlice.setObjectiveName(jdata.args[2])); //setObjectiveName(jdata.args[3]);
         } else if (jdata.name === "sigUpdateImage") {
+          //TODO dont get wat archived here
+          //TODO
+          //console.log(jdata);
+          //console.log(imageUrls);
           const detectorName = jdata.detectorname;
           const imgSrc = `data:image/jpeg;base64,${jdata.image}`;
           setImageUrls((prev) => ({ ...prev, [detectorName]: imgSrc }));
-          if (jdata.pixelsize) setPixelSize(jdata.pixelsize);
+          if (jdata.pixelsize) {
+            console.log(
+              "TODO change ExtendedObjectiveController setPixelSize call"
+            );
+            //TODO why is pixel size grabbed from here?
+            dispatch(objectiveSlice.setPixelSize(jdata.pixelsize)); //TODO is this needed? its not changed, but its frequently updated
+          }
         }
       } catch (error) {
         console.error("Error parsing signal data:", error);
@@ -50,147 +86,174 @@ const ExtendedObjectiveController = ({ hostIP, hostPort }) => {
     };
   }, [socket]);
 
-  // Get detector names
   useEffect(() => {
-    (async () => {
-      try {
-        const response = await fetch(
-          `${hostIP}:${hostPort}/SettingsController/getDetectorNames`
-        );
-        const data = await response.json();
+    //fetch current objective
+    fetchObjectiveControllerGetCurrentObjective(dispatch);
+    //refresh status
+    refreshStatus();
+    // Get detector names
+    apiSettingsControllerGetDetectorNames()
+      .then((data) => {
         setDetectors(data);
-      } catch {}
-    })();
-  }, [hostIP, hostPort]);
-
-  // Fetch current objective from backend on mount
-  useEffect(() => {
-    const fetchCurrentObjective = async () => {
-      try {
-        const res = await fetch(
-          `${hostIP}:${hostPort}/ObjectiveController/getCurrentObjective`
-        );
-        const data = await res.json();
-        // Expected data: [objectiveSlot, objectiveName]
-        setCurrentObjective(data[0]);
-        setObjectiveName(data[1]);
-      } catch (error) {
-        console.error("Error fetching current objective:", error);
-      }
-    };
-    fetchCurrentObjective();
-  }, [hostIP, hostPort]);
+      })
+      .catch((err) => {
+        console.log("Failed to fetch detector names", err); // Handle the error
+      });
+  }, [hostIP, hostPort]); // on host ip/port change
 
   // Fetch objective status (x1 and x2) from backend
-  const refreshStatus = async () => {
-    try {
-      const res = await fetch(
-        `${hostIP}:${hostPort}/ObjectiveController/getstatus`
-      );
-      const data = await res.json();
-      // Assuming the response JSON contains x1 and x2 fields.
-      setPosX1(data.x1);
-      setPosX2(data.x2);
-    } catch (error) {
-      console.error("Error fetching objective status:", error);
-    }
+  const refreshStatus = () => {
+    //request fetch status
+    fetchObjectiveControllerGetStatus(dispatch);
   };
 
-  useEffect(() => {
-    refreshStatus();
-  }, [hostIP, hostPort]);
-
   // Calibrate objective (home) and update state
-  const handleCalibrate = async () => {
-    try {
-      await fetch(
-        `${hostIP}:${hostPort}/ObjectiveController/calibrateObjective`
-      );
-      const res = await fetch(
-        `${hostIP}:${hostPort}/ObjectiveController/getCurrentObjective`
-      );
-      const data = await res.json();
-      setCurrentObjective(data[0]);
-      setObjectiveName(data[1]);
-      refreshStatus();
-    } catch (error) {
-      console.error("Error calibrating objective:", error);
-    }
+  const handleCalibrate = () => {
+    //request calibrate
+    apiObjectiveControllerCalibrateObjective()
+      .then((data) => {
+        console.info("Calibrate response");
+        //fetch current objective
+        fetchObjectiveControllerGetCurrentObjective(dispatch);
+      })
+      .catch((err) => {
+        console.error("Failed to calibrate the objective"); // Handle the error
+      });
   };
 
   // Switch objective (slot should be 1 or 2)
-  const handleSwitchObjective = async (slot) => {
-    try {
-      await fetch(
-        `${hostIP}:${hostPort}/ObjectiveController/moveToObjective?slot=${slot}`
-      );
-      setCurrentObjective(slot);
-      refreshStatus();
-    } catch (error) {
-      console.error(`Error switching to objective ${slot}:`, error);
-    }
+  const handleSwitchObjective = (slot) => {
+    apiObjectiveControllerMoveToObjective(slot)
+      .then((data) => {
+        dispatch(objectiveSlice.setCurrentObjective(slot)); //setCurrentObjective(slot);
+        refreshStatus();
+      })
+      .catch((err) => {
+        console.error(`Error switching to objective ${slot}:`, err);
+      });
   };
 
   // Move the objective lens via PositionerController
-  const movePositioner = async (dist) => {
-    try {
-      await fetch(
-        `${hostIP}:${hostPort}/PositionerController/movePositioner?axis=A&dist=${dist}&isAbsolute=false&isBlocking=false`
-      );
-    } catch (error) {
-      console.error(`Error moving positioner by ${dist} steps:`, error);
-    }
+  const movePositioner = (dist) => {
+    apiPositionerControllerMovePositioner({
+      axis: "A",
+      dist: dist,
+      isAbsolute: false,
+      isBlocking: false,
+    })
+      .then((positionerResponse) => {
+        console.log(`Move by ${dist} successful:`, positionerResponse);
+      })
+      .catch((error) => {
+        console.log(`Move by ${dist} error:`, error);
+      });
   };
 
   // Set objective positions (x1 or x2) manually via backend
-  const handleSetX1 = async (value) => {
-    try {
-      const numericValue = Number(value);
-      if (isNaN(numericValue)) {
-        throw new Error("X1 must be a number");
-      }
-      await fetch(
-        `${hostIP}:${hostPort}/ObjectiveController/setPositions?x1=${numericValue}&isBlocking=false`
-      );
-      refreshStatus();
-    } catch (error) {
-      console.error("Error setting X1:", error);
+  const handleSetX1 = (value) => {
+    //handle value
+    const numericValue = Number(value);
+    if (isNaN(numericValue)) {
+      console.error("Error X1 must be a number");
+      return;
     }
+    //api request
+    apiObjectiveControllerSetPositions({
+      x1: numericValue,
+      isBlocking: false,
+    })
+      .then((data) => {
+        //refresh
+        refreshStatus();
+      })
+      .catch((err) => {
+        console.error("Api eror setting X1:", err);
+      });
   };
 
-  const handleSetX2 = async (value) => {
-    try {
-      const numericValue = Number(value);
-      if (isNaN(numericValue)) {
-        throw new Error("X2 must be a number");
-      }
-      await fetch(
-        `${hostIP}:${hostPort}/ObjectiveController/setPositions?x2=${numericValue}&isBlocking=false`
-      );
-      refreshStatus();
-    } catch (error) {
-      console.error("Error setting X2:", error);
+  const handleSetX2 = (value) => {
+    //handle value
+    const numericValue = Number(value);
+    if (isNaN(numericValue)) {
+      console.error("Error X2 must be a number");
+      return;
     }
+    //api request
+    apiObjectiveControllerSetPositions({
+      x2: numericValue,
+      isBlocking: false,
+    })
+      .then((data) => {
+        //refresh
+        refreshStatus();
+      })
+      .catch((err) => {
+        console.error("Api eror setting X2:", err);
+      });
+  };
+
+  const handleSetZ1 = (value) => {
+    //handle value
+    const numericValue = Number(value);
+    if (isNaN(numericValue)) {
+      console.error("Error Z1 must be a number");
+      return;
+    }
+    //api request
+    apiObjectiveControllerSetPositions({
+      z1: numericValue,
+      isBlocking: false,
+    })
+      .then((data) => {
+        //refresh
+        refreshStatus();
+      })
+      .catch((err) => {
+        console.error("Api eror setting Z1:", err);
+      });
+  };
+
+  const handleSetZ2 = (value) => {
+    //handle value
+    const numericValue = Number(value);
+    if (isNaN(numericValue)) {
+      console.error("Error Z2 must be a number");
+      return;
+    }
+    //api request
+    apiObjectiveControllerSetPositions({
+      z2: numericValue,
+      isBlocking: false,
+    })
+      .then((data) => {
+        //refresh
+        refreshStatus();
+      })
+      .catch((err) => {
+        console.error("Api eror setting Z2:", err);
+      });
   };
 
   // Read current position from PositionerController and set as X1 or X2
   const handleSetCurrentAs = async (which) => {
-    try {
-      const res = await fetch(
-        `${hostIP}:${hostPort}/PositionerController/getPositionerPositions`
-      );
-      const data = await res.json();
-      // Assuming the response structure:
-      // { "ESP32Stage": { "X": ..., "Y": ..., "Z": ..., "A": ... } }
-      const currentA = data.ESP32Stage.A;
-      if (which === "x1") {
-        await handleSetX1(currentA);
-      } else if (which === "x2") {
-        await handleSetX2(currentA);
-      }
-    } catch (error) {
-      console.error(`Error setting current position as ${which}:`, error);
-    }
+    apiPositionerControllerGetPositions()
+      .then((data) => {
+        // Handle success response
+        const currentA = data.ESP32Stage.A; //TODO this is hardcoded.
+        const currentZ = data.ESP32Stage.Z; //TODO this is hardcoded.
+        if (which === "x1") {
+          handleSetX1(currentA);
+        } else if (which === "x2") {
+          handleSetX2(currentA);
+        } else if (which === "z1") {
+          handleSetZ1(currentZ);
+        } else if (which === "z2") {
+          handleSetZ2(currentZ);
+        }
+      })
+      .catch((err) => {
+        console.error(`Error setting current position as ${which}:`, err);
+      });
   };
 
   return (
@@ -201,13 +264,21 @@ const ExtendedObjectiveController = ({ hostIP, hostPort }) => {
           <Typography variant="h6">Objective Controller</Typography>
           <Typography>
             Current Objective:{" "}
-            {currentObjective !== null ? currentObjective : "Unknown"} (
-            {objectiveName || "Unknown"})
+            {objectiveState.currentObjective !== null
+              ? objectiveState.currentObjective
+              : "Unknown"}{" "}
+            ({objectiveState.objectivName || "Unknown"})
           </Typography>
           <Typography>
-            Pixelsize: {pixelsize !== null ? pixelsize : "Unknown"}, NA:{" "}
-            {NA !== null ? NA : "Unknown"}, Magnification:{" "}
-            {magnification !== null ? magnification : "Unknown"}
+            Pixelsize:{" "}
+            {objectiveState.pixelsize !== null
+              ? objectiveState.pixelsize
+              : "Unknown"}
+            , NA: {objectiveState.NA !== null ? objectiveState.NA : "Unknown"},
+            Magnification:{" "}
+            {objectiveState.magnification !== null
+              ? objectiveState.magnification
+              : "Unknown"}
           </Typography>
         </Grid>
 
@@ -216,10 +287,9 @@ const ExtendedObjectiveController = ({ hostIP, hostPort }) => {
           <Button variant="contained" color="primary" onClick={handleCalibrate}>
             Calibrate Objective
           </Button>
-            <Button variant="outlined" onClick={refreshStatus}>
-              Refresh Positions
-            </Button>
-  
+          <Button variant="outlined" onClick={refreshStatus}>
+            Refresh Positions
+          </Button>
         </Grid>
         <Grid item xs={2}>
           <Typography variant="h6">Detectors</Typography>
@@ -283,7 +353,11 @@ const ExtendedObjectiveController = ({ hostIP, hostPort }) => {
               <Typography>X1:</Typography>
             </Grid>
             <Grid item xs={2}>
-              <Typography>{posX1 !== null ? posX1 : "Unknown"}</Typography>
+              <Typography>
+                {objectiveState.posX1 !== null
+                  ? objectiveState.posX1
+                  : "Unknown"}
+              </Typography>
             </Grid>
             <Grid item xs={2}>
               <TextField
@@ -328,7 +402,11 @@ const ExtendedObjectiveController = ({ hostIP, hostPort }) => {
               <Typography>X2:</Typography>
             </Grid>
             <Grid item xs={2}>
-              <Typography>{posX2 !== null ? posX2 : "Unknown"}</Typography>
+              <Typography>
+                {objectiveState.posX2 !== null
+                  ? objectiveState.posX2
+                  : "Unknown"}
+              </Typography>
             </Grid>
             <Grid item xs={2}>
               <TextField
@@ -361,7 +439,84 @@ const ExtendedObjectiveController = ({ hostIP, hostPort }) => {
                 Switch to Objective 2
               </Button>
             </Grid>
-
+          </Grid>
+          {/* Z1 */}
+          <Grid
+            container
+            spacing={1}
+            alignItems="center"
+            style={{ marginTop: "10px" }}
+          >
+            <Grid item xs={2}>
+              <Typography>Z1:</Typography>
+            </Grid>
+            <Grid item xs={2}>
+              <Typography>
+                {objectiveState.posZ1 !== null
+                  ? objectiveState.posZ1
+                  : "Unknown"}
+              </Typography>
+            </Grid>
+            <Grid item xs={2}>
+              <TextField
+                label="Set Z1"
+                value={manualZ1}
+                onChange={(e) => setManualZ1(e.target.value)}
+                size="small"
+              />
+            </Grid>
+            <Grid item xs={2}>
+              <Button variant="contained" onClick={() => handleSetZ1(manualZ1)}>
+                Set Z1
+              </Button>
+            </Grid>
+            <Grid item xs={2}>
+              <Button
+                variant="contained"
+                onClick={() => handleSetCurrentAs("z1")}
+              >
+                Set Current as Z1
+              </Button>
+            </Grid>
+          </Grid>
+          {/* Z2 */}
+          <Grid
+            container
+            spacing={1}
+            alignItems="center"
+            style={{ marginTop: "10px" }}
+          >
+            <Grid item xs={2}>
+              <Typography>Z2:</Typography>
+            </Grid>
+            <Grid item xs={2}>
+              <Typography>
+                {objectiveState.posZ2 !== null
+                  ? objectiveState.posZ2
+                  : "Unknown"}
+              </Typography>
+            </Grid>
+            <Grid item xs={2}>
+              <TextField
+                label="Set Z2"
+                value={manualZ2}
+                onChange={(e) => setManualZ2(e.target.value)}
+                size="small"
+              />
+            </Grid>
+            <Grid item xs={2}>
+              <Button variant="contained" onClick={() => handleSetZ2(manualZ2)}>
+                Set Z2
+              </Button>
+            </Grid>
+            <Grid item xs={2}>
+              <Button
+                variant="contained"
+                onClick={() => handleSetCurrentAs("z2")}
+              >
+                Set Current as Z2
+              </Button>
+            </Grid>
           </Grid>
         </Grid>
       </Grid>

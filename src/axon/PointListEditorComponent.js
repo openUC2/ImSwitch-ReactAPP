@@ -5,6 +5,8 @@ import { useDispatch, useSelector } from "react-redux";
 
 import * as experimentSlice from "../state/slices/ExperimentSlice";
 
+import apiPositionerControllerMovePositioner from "../backendapi/apiPositionerControllerMovePositioner.js";
+
 import { Shape } from "./WellSelectorCanvas.js";
 
 import {
@@ -35,12 +37,12 @@ const PointListEditorComponent = () => {
 
   // Access global Redux state
   const experimentState = useSelector(experimentSlice.getExperimentState);
-  console.log("PointListEditorComponent", experimentState);
-  console.log("PointListEditorComponent", experimentState.pointList);
+  //console.log("PointListEditorComponent", experimentState);
+  //console.log("PointListEditorComponent", experimentState.pointList);
 
   //##################################################################################
   const setOrderedList = (newList) => {
-    console.log("setOrderedList", newList);
+    //console.log("setOrderedList", newList);
     dispatch(experimentSlice.setPointList(newList)); // Update Redux state
   };
 
@@ -77,6 +79,50 @@ const PointListEditorComponent = () => {
     // Update Redux state
     dispatch(experimentSlice.setPointList([]));
   };
+  //##################################################################################
+  const handleGotoButtonClick = (x, y) => {
+    console.log("handleGotoButtonClick", x, y);
+    // Do something with x and y
+    apiPositionerControllerMovePositioner({
+      axis: "X",
+      dist: x,
+      isAbsolute: true,
+      speed: 15000,
+    })
+      .then((positionerResponse) => {
+        console.log(
+          "apiPositionerControllerMovePositioner X",
+          positionerResponse
+        );
+      })
+      .catch((error) => {
+        console.error(
+          "apiPositionerControllerMovePositioner X",
+          "Error moving position:",
+          error
+        );
+      });
+
+    apiPositionerControllerMovePositioner({
+      axis: "Y",
+      dist: y,
+      isAbsolute: true,
+      speed: 15000,
+    })
+      .then((positionerResponse) => {
+        console.log(
+          "apiPositionerControllerMovePositioner Y",
+          positionerResponse
+        );
+      })
+      .catch((error) => {
+        console.error(
+          "apiPositionerControllerMovePositioner Y",
+          "Error moving position:",
+          error
+        );
+      });
+  };
 
   //##################################################################################
   const PointItem = ({ item, index }) => {
@@ -88,7 +134,7 @@ const PointListEditorComponent = () => {
       </div>
     );
   };
-  
+
   //##################################################################################
   return (
     <div
@@ -250,7 +296,7 @@ const PointListEditorComponent = () => {
                 </FormControl>
               )}
 
-              {/* Input for n value */ }
+              {/* Input for n value */}
               {viewMode == ViewMode.SHAPE && item.shape != "" && <div>nX:</div>}
               {viewMode == ViewMode.SHAPE && item.shape != "" && (
                 <Input
@@ -292,7 +338,11 @@ const PointListEditorComponent = () => {
 
               {/* dummy button*/}
               {viewMode != ViewMode.READONLY && (
-                <Button sx={{ padding: "0px" }} disabled={true}>
+                <Button
+                  sx={{ padding: "0px" }}
+                  disabled={false}
+                  onClick={() => handleGotoButtonClick(item.x, item.y)}
+                >
                   Goto
                 </Button>
               )}
@@ -305,7 +355,7 @@ const PointListEditorComponent = () => {
                   Delete
                 </Button>
               )}
-            </div>//<------------------------------------------END ITEM
+            </div> //<------------------------------------------END ITEM
           )
         )}
       </ReactSortable>

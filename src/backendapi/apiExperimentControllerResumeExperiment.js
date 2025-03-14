@@ -1,7 +1,7 @@
-// src/api/apiResumeExperiment.js
-import createAxiosInstance from "../backendapi/createAxiosInstance";
+// src/api/apiExperimentControllerResumeExperiment.js
+import createAxiosInstance from "./createAxiosInstance";
 
-const apiResumeExperiment = async () => {
+const apiExperimentControllerResumeExperiment = async () => {
   try {
     const axiosInstance = createAxiosInstance(); // Create Axios instance
     const response = await axiosInstance.get("/ExperimentController/resumeExperiment"); // Send GET request
@@ -12,13 +12,13 @@ const apiResumeExperiment = async () => {
   }
 };
 
-export default apiResumeExperiment;
+export default apiExperimentControllerResumeExperiment;
 
 /*
 // Example usage:
 
 const resumeExperiment = () => {
-  apiResumeExperiment()
+  apiExperimentControllerResumeExperiment()
     .then((data) => {
       setExperimentStatus(data); // Handle success response
     })

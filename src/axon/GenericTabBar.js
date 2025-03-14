@@ -11,7 +11,7 @@ function GenericTabBar({ children, tabNames, id }) {
 
   // Generate the localStorageKey using the component's unique ID if `id` is set
   const localStorageKey = id ? `activeTab-${componentId}` : null;
-  console.log("localStorageKey", localStorageKey);
+  //console.log("localStorageKey", localStorageKey);
 
   //define state active tab and load if it is saved
   const [activeTab, setActiveTab] = useState(() => {

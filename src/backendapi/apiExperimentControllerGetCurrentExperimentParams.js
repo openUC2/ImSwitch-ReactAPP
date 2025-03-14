@@ -1,7 +1,7 @@
-// src/api/apiGetCurrentExperimentParams.js
-import createAxiosInstance from "../backendapi/createAxiosInstance";
+// src/api/apiExperimentControllerGetCurrentExperimentParams.js
+import createAxiosInstance from "./createAxiosInstance";
 
-const apiGetCurrentExperimentParams = async () => {
+const apiExperimentControllerGetCurrentExperimentParams = async () => {
   try {
     const axiosInstance = createAxiosInstance(); // Create Axios instance
     const response = await axiosInstance.get("/ExperimentController/getCurrentExperimentParameters"); // Send GET request
@@ -12,13 +12,13 @@ const apiGetCurrentExperimentParams = async () => {
   }
 };
 
-export default apiGetCurrentExperimentParams;
+export default apiExperimentControllerGetCurrentExperimentParams;
 
 /*
 // Example usage:
 
 const fetchExperimentParams = () => {
-  apiGetCurrentExperimentParams()
+  apiExperimentControllerGetCurrentExperimentParams()
     .then((data) => {
       setExperimentParams(data); // Set the experiment parameters after the data is fetched
     })

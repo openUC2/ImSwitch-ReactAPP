@@ -131,7 +131,7 @@ export function isRectInsideRect(x1, y1, width, height, rx1, ry1, rx2, ry2) {
 
 //##################################################################################
 export function isCircleInsideRect(cx, cy, r, x1, y1, x2, y2) {
-  console.log("isCircleInsideRect2", cx, cy, r, x1, y1, x2, y2);
+  //console.log("isCircleInsideRect2", cx, cy, r, x1, y1, x2, y2);
   // Ensure x1, y1 is the top-left and x2, y2 is the bottom-right
   const rectLeft = Math.min(x1, x2);
   const rectRight = Math.max(x1, x2);

@@ -4,13 +4,16 @@ import { useDispatch, useSelector } from "react-redux";
 
 import * as wellSelectorSlice from "../state/slices/WellSelectorSlice.js";
 import * as experimentSlice from "../state/slices/ExperimentSlice.js";
-import * as hardwareSlice from "../state/slices/HardwareSlice.js";
 import * as positionSlice from "../state/slices/PositionSlice.js";
+import * as objectiveSlice from "../state/slices/ObjectiveSlice.js";
 
 import * as wsUtils from "./WellSelectorUtils.js";
 
-import apiGetHistoStatus from "../backendapi/apiGetHistoStatus.js";
-import apiMovePositioner from "../backendapi/apiMovePositioner";
+import apiistoScanControllerGetHistoStatus from "../backendapi/apiHistoScanControllerGetHistoStatus.js";
+import apiPositionerControllerMovePositioner from "../backendapi/apiPositionerControllerMovePositioner.js";
+
+import fetchObjectiveControllerGetStatus from "../middleware/fetchObjectiveControllerGetStatus.js";
+
 import { X } from "@mui/icons-material";
 
 //##################################################################################
@@ -61,10 +64,9 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
 
   // Access global Redux state
   const wellSelectorState = useSelector(wellSelectorSlice.getWellSelectorState);
-  const experimentState = useSelector(experimentSlice.getExperimentState);
-  const hardwareState = useSelector(hardwareSlice.getHardwareState);
-
-  const position = useSelector(positionSlice.getPosition);
+  const experimentState = useSelector(experimentSlice.getExperimentState); 
+  const positionState = useSelector(positionSlice.getPositionState);
+  const objectiveState = useSelector(objectiveSlice.getObjectiveState);
 
   //##################################################################################
   useImperativeHandle(ref, () => ({
@@ -92,7 +94,14 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
     return () => {
       canvas.removeEventListener("wheel", preventDefaultScroll);
     };
-  }, []);
+  }, []);//Triggered on component startup
+
+  //##################################################################################
+  useEffect(() => {
+    //initial fov request 
+    //console.log("initial fov request ");
+    fetchObjectiveControllerGetStatus(dispatch);
+  }, []);//TODO maybe add connection change
 
   //##################################################################################
   useEffect(() => {
@@ -102,12 +111,12 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
     scale,
     offset,
     wellSelectorState,
-    experimentState,
-    hardwareState,
+    experimentState, 
     mouseDownFlag,
     mouseDownPosition,
     mouseMovePosition,
-    position,
+    positionState,
+    objectiveState,
   ]);
 
   //##################################################################################
@@ -245,11 +254,11 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
   //##################################################################################
 
   function getRasterWidthAsPx() {
-    return calcPhy2Px(wellSelectorState.rasterWidth);
+    return calcPhy2Px(objectiveState.fovX);
   }
 
   function getRasterHeightAsPx() {
-    return calcPhy2Px(wellSelectorState.rasterHeight);
+    return calcPhy2Px(objectiveState.fovY);
   }
 
   //##################################################################################
@@ -644,11 +653,13 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
     const cameraHeight = getRasterHeightAsPx();
 
     //center square
-    const squareX = calcPhy2Px(hardwareState.position.x) - cameraWidth / 2;
-    const squareY = calcPhy2Px(hardwareState.position.y) - cameraHeight / 2;
+    //console.log("rednerCanvas: draw camera position", positionState);
+    const squareX = calcPhy2Px(positionState.x) - cameraWidth / 2;
+    const squareY = calcPhy2Px(positionState.y) - cameraHeight / 2;
+ 
 
     // draw neighbors around the original rectangle
-    ctx.strokeStyle = "green"; // Black color for the square's outline
+    ctx.strokeStyle = "red"; // Black color for the square's outline
     ctx.lineWidth = 1; // Line width for the square
     ctx.lineCap = "round"; // Rounded ends for lines
     ctx.strokeRect(squareX, squareY, cameraWidth, cameraHeight);
@@ -787,7 +798,7 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
     const newMousePosition = getLocalMousePosition(e);
     const canvasRect = canvasRef.current.getBoundingClientRect();
     setMouseMovePosition(newMousePosition);
-    dispatch(positionSlice.setPosition({ ...newMousePosition, z: 0 }));
+    //dispatch(positionSlice.setPosition({ ...newMousePosition, z: 0 }));
 
     //handle mode
     if (wellSelectorState.mode == Mode.SINGLE_SELECT) {
@@ -833,7 +844,7 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
           if (
             isWellInsideSelection(well, mouseDownPosition, mouseMovePosition)
           ) {
-            createNewPoint(well);//Note: this also set well name as point name
+            createNewPoint(well); //Note: this also set well name as point name
           }
         });
       }
@@ -921,11 +932,11 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
     //handle mode
     if (wellSelectorState.mode == Mode.MOVE_CAMERA) {
       //move camera
-      apiMovePositioner({
+      apiPositionerControllerMovePositioner({
         axis: "X",
         dist: calcPx2Phy(localPos.x),
-        isAbsolute: true, 
-        speed: 15000
+        isAbsolute: true,
+        speed: 15000,
       })
         .then((positionerResponse) => {
           console.log("apiMovePositioner X", positionerResponse);
@@ -934,11 +945,11 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
           console.error("apiMovePositioner X", "Error moving position:", error);
         });
 
-      apiMovePositioner({
+      apiPositionerControllerMovePositioner({
         axis: "Y",
         dist: calcPx2Phy(localPos.y),
         isAbsolute: true,
-        speed: 15000
+        speed: 15000,
       })
         .then((positionerResponse) => {
           console.log("apiMovePositioner Y", positionerResponse);
@@ -1028,14 +1039,14 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
   //##################################################################################
   const createNewPoint = (position) => {
     //create new point
-    dispatch(experimentSlice.createPoint({
+    dispatch(
+      experimentSlice.createPoint({
         x: position.x,
         y: position.y,
-        name: position.name || ""
-      }));
+        name: position.name || "",
+      })
+    );
   };
-
-
 
   //##################################################################################
   const createNewPointWithShape = (position, shape, neighborsX, neighborsY) => {

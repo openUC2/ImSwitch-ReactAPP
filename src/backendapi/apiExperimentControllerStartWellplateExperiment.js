@@ -1,7 +1,7 @@
-// src/api/apiStartWellplateExperiment.js
-import createAxiosInstance from "../backendapi/createAxiosInstance";
+// src/api/apiExperimentControllerStartWellplateExperiment.js
+import createAxiosInstance from "./createAxiosInstance";
 
-const apiStartWellplateExperiment = async (experimentData) => {
+const apiExperimentControllerStartWellplateExperiment = async (experimentData) => {
   try {
     const axiosInstance = createAxiosInstance(); // Create Axios instance
     const response = await axiosInstance.post("/ExperimentController/startWellplateExperiment", experimentData); // Send POST request
@@ -12,14 +12,14 @@ const apiStartWellplateExperiment = async (experimentData) => {
   }
 };
 
-export default apiStartWellplateExperiment;
+export default apiExperimentControllerStartWellplateExperiment;
 
 
 /*
 // Example usage:
 
 const startExperiment = (experimentData) => {
-  apiStartWellplateExperiment(experimentData)
+  apiExperimentControllerStartWellplateExperiment(experimentData)
     .then((data) => {
       setExperimentStatus(data); // Handle success response
     })

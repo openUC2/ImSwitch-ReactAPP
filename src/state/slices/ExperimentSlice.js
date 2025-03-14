@@ -10,13 +10,13 @@ const initialExperimentState = {
     width: 1000000,
     height: 600000,
     wells: [
-      /*
+      /* Example well
       { x: 200000, y: 200000, shape: "circle", radius: 50000 },
       { x: 400000, y: 200000, shape: "circle", radius: 90000 },
       { x: 600000, y: 200000, shape: "circle", radius: 90000 },
       { x: 800000, y: 200000, shape: "circle", radius: 90000 },
       { x: 200000, y: 400000, shape: "circle", radius: 90000 },
-      { x: 400000, y: 400000, shape: "circle", radius: 90000 },
+      { x: 400000, y: 400000, shape: "circle", radius: 90000, name: "A1" },
       {
         x: 600000,
         y: 400000,
@@ -35,7 +35,7 @@ const initialExperimentState = {
     ],
   },
   pointList: [
-    /*
+    /* Example item:
     {
       id: uuidv4(),
       name: "",
@@ -48,7 +48,7 @@ const initialExperimentState = {
     */
   ],
   parameterValue: {
-    illumination: "",
+    illumination: "Brightfield",
     brightfield: false,
     darkfield: false,
     laserWaveLength: 0,
@@ -63,6 +63,7 @@ const initialExperimentState = {
     zStackMin: 0.0,
     zStackMax: 0.0,
     zStackStepSize: 0.1,
+    speed: 0
   },
 };
 
@@ -136,7 +137,11 @@ const experimentSlice = createSlice({
       console.log("setZStackStepSize");
       state.parameterValue.zStackStepSize = action.payload;
     },
-    //------------------------ points
+    setSpeed: (state, action) => {
+        console.log("setSpeed");
+        state.parameterValue.speed = action.payload;
+    },
+    //------------------------ generic
     updateParameter: (state, action) => {
       console.log("setParameter", action.payload);
       const { key, value } = action.payload; //Call: updateParameter({parameterName: value})
@@ -144,6 +149,7 @@ const experimentSlice = createSlice({
         state.parameterValue[key] = value;
       }
     },
+    //------------------------ points
     createPoint: (state, action) => {
       console.log("createPoint", action);
       const newPoint = {
@@ -207,6 +213,7 @@ export const {
   setZStackMin,
   setZStackMax,
   setZStackStepSize,
+  setSpeed,
 
   createPoint,
   addPoint,
