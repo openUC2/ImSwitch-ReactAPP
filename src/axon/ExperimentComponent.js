@@ -88,22 +88,6 @@ const ExperimentComponent = () => {
       const rasterHeightOverlaped =
         objectiveState.fovY * (1 - wellSelectorState.overlapHeight);
 
-      console.log(
-        "objectiveState.fovX",
-        objectiveState.fovX
-      );
-      console.log(
-        "objectiveState.fovY",
-        objectiveState.fovY
-      );
-      console.log("rasterWidthOverlaped", rasterWidthOverlaped);
-      console.log("rasterHeightOverlaped", rasterHeightOverlaped);
-      console.log("itPoint.x", itPoint.x);
-      console.log("itPoint.y", itPoint.y);
-      console.log("itPoint.neighborsX", itPoint.neighborsX);
-      console.log("itPoint.neighborsY", itPoint.neighborsY);
-      console.log("itPoint.shape", itPoint.shape);
-      /**/
       if (itPoint.shape == "circle") {
         point.neighborPointList = wsUtils.calculateNeighborPointsCircle(
           itPoint.x,
