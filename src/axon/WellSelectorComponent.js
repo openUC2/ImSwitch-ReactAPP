@@ -59,7 +59,7 @@ const WellSelectorComponent = () => {
       })
       .catch((err) => {
         //handle error if needed
-        console.log(err);
+        console.error(err);
       });
   }, []); // Empty dependency array ensures this runs once on mount
 

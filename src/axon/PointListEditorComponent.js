@@ -37,12 +37,12 @@ const PointListEditorComponent = () => {
 
   // Access global Redux state
   const experimentState = useSelector(experimentSlice.getExperimentState);
-  console.log("PointListEditorComponent", experimentState);
-  console.log("PointListEditorComponent", experimentState.pointList);
+  //console.log("PointListEditorComponent", experimentState);
+  //console.log("PointListEditorComponent", experimentState.pointList);
 
   //##################################################################################
   const setOrderedList = (newList) => {
-    console.log("setOrderedList", newList);
+    //console.log("setOrderedList", newList);
     dispatch(experimentSlice.setPointList(newList)); // Update Redux state
   };
 
