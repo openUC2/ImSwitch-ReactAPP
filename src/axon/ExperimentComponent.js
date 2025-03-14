@@ -10,6 +10,7 @@ import InfoPopup from "./InfoPopup.js";
 import * as experimentSlice from "../state/slices/ExperimentSlice.js";
 import * as experimentStatusSlice from "../state/slices/ExperimentStatusSlice.js";
 import * as wellSelectorSlice from "../state/slices/WellSelectorSlice.js";
+import * as objectiveSlice from "../state/slices/ObjectiveSlice.js";
 
 import apiExperimentControllerStartWellplateExperiment from "../backendapi/apiExperimentControllerStartWellplateExperiment.js";
 import apiExperimentControllerStopExperiment from "../backendapi/apiExperimentControllerStopExperiment.js";
@@ -37,29 +38,28 @@ const ExperimentComponent = () => {
 
   // Access global Redux state
   const experimentState = useSelector(experimentSlice.getExperimentState);
-  const experimentStatusState = useSelector(experimentStatusSlice.getExperimentStatusState);
+  const experimentStatusState = useSelector(
+    experimentStatusSlice.getExperimentStatusState
+  );
   const wellSelectorState = useSelector(wellSelectorSlice.getWellSelectorState);
-
-
-
+  const objectiveState = useSelector(objectiveSlice.getObjectiveState);
 
   //##################################################################################
-  useEffect(() => {//periodic experiment status fetch
+  useEffect(() => {
+    //periodic experiment status fetch
     // Initial fetch
     fetchGetExperimentStatus(dispatch);
 
-    // Set an interval to call fetchData every x seconds 
+    // Set an interval to call fetchData every x seconds
     const intervalId = setInterval(() => {
-        fetchGetExperimentStatus(dispatch);
-      }, 3000);//Request period
+      fetchGetExperimentStatus(dispatch);
+    }, 3000); //Request period
 
     // Cleanup on component unmount
     return () => {
       clearInterval(intervalId);
     };
   }, []); // Empty dependency array ensures this runs once on mount
-
-  
 
   //##################################################################################
   const handleStart = () => {
@@ -84,9 +84,26 @@ const ExperimentComponent = () => {
       };
       //calc and fill neighbor points
       const rasterWidthOverlaped =
-        wellSelectorState.rasterWidth * (1 - wellSelectorState.overlapWidth);
+        objectiveState.fovX * (1 - wellSelectorState.overlapWidth);
       const rasterHeightOverlaped =
-        wellSelectorState.rasterHeight * (1 - wellSelectorState.overlapHeight);
+        objectiveState.fovY * (1 - wellSelectorState.overlapHeight);
+
+      console.log(
+        "objectiveState.fovX",
+        objectiveState.fovX
+      );
+      console.log(
+        "objectiveState.fovY",
+        objectiveState.fovY
+      );
+      console.log("rasterWidthOverlaped", rasterWidthOverlaped);
+      console.log("rasterHeightOverlaped", rasterHeightOverlaped);
+      console.log("itPoint.x", itPoint.x);
+      console.log("itPoint.y", itPoint.y);
+      console.log("itPoint.neighborsX", itPoint.neighborsX);
+      console.log("itPoint.neighborsY", itPoint.neighborsY);
+      console.log("itPoint.shape", itPoint.shape);
+      /**/
       if (itPoint.shape == "circle") {
         point.neighborPointList = wsUtils.calculateNeighborPointsCircle(
           itPoint.x,
@@ -122,16 +139,16 @@ const ExperimentComponent = () => {
       .then((data) => {
         // Handle success response
         console.log("apiStartWellplateExperiment", data);
-        //set state 
+        //set state
         dispatch(experimentStatusSlice.setStatus(Status.RUNNING));
         //set popup
-        infoPopupRef.current.showMessage("Experiment started..."); 
+        infoPopupRef.current.showMessage("Experiment started...");
       })
       .catch((err) => {
         // Handle error
         //console.error("handleStart", err)
         //set popup
-        infoPopupRef.current.showMessage("Start Experiment failed"); 
+        infoPopupRef.current.showMessage("Start Experiment failed");
       });
   };
 
@@ -142,15 +159,15 @@ const ExperimentComponent = () => {
     apiExperimentControllerPauseWorkflow()
       .then((data) => {
         // Handle success response
-        //set state 
+        //set state
         dispatch(experimentStatusSlice.setStatus(Status.PAUSED));
         //set popup
-        infoPopupRef.current.showMessage("Experiment paused"); 
+        infoPopupRef.current.showMessage("Experiment paused");
       })
       .catch((err) => {
         // Handle error
         //set popup
-        infoPopupRef.current.showMessage("Pause Experiment failed"); 
+        infoPopupRef.current.showMessage("Pause Experiment failed");
       });
   };
 
@@ -161,57 +178,59 @@ const ExperimentComponent = () => {
     apiExperimentControllerResumeExperiment()
       .then((data) => {
         // Handle success response
-        //set state 
+        //set state
         dispatch(experimentStatusSlice.setStatus(Status.RUNNING));
         //set popup
-        infoPopupRef.current.showMessage("Experiment resumed..."); 
+        infoPopupRef.current.showMessage("Experiment resumed...");
       })
       .catch((err) => {
         // Handle error
         //set popup
-        infoPopupRef.current.showMessage("Resume Experiment failed"); 
+        infoPopupRef.current.showMessage("Resume Experiment failed");
       });
   };
 
   //##################################################################################
   const handleStop = () => {
-    console.log("Experiment stopped"); 
+    console.log("Experiment stopped");
     //create request
-    dispatch(experimentStatusSlice.setStatus(Status.IDLE )); // FIXME: This is a workaround to avoid the "stopping" status
+    dispatch(experimentStatusSlice.setStatus(Status.IDLE)); // FIXME: This is a workaround to avoid the "stopping" status
     apiExperimentControllerStopExperiment()
       .then((data) => {
         // Handle success response
-        //set state 
+        //set state
         //set popup
-        infoPopupRef.current.showMessage("Experiment stopped"); 
+        infoPopupRef.current.showMessage("Experiment stopped");
       })
       .catch((err) => {
         // Handle error
         //set popup
         console.log("handleStop", err);
-        infoPopupRef.current.showMessage("Stop Experiment failed"); 
+        infoPopupRef.current.showMessage("Stop Experiment failed");
       });
   };
-  
+
   //##################################################################################
   const showStartButton = () => {
-    return experimentStatusState.status === Status.IDLE || experimentStatusState.status === Status.STOPPING;
+    return (
+      experimentStatusState.status === Status.IDLE ||
+      experimentStatusState.status === Status.STOPPING
+    );
   };
 
   //##################################################################################
   const showPauseButton = () => {
     return experimentStatusState.status === Status.RUNNING;
   };
-  
+
   //##################################################################################
   const showResumeButton = () => {
     return experimentStatusState.status === Status.PAUSED;
   };
 
-
   //##################################################################################
   const showStopButton = () => {
-   return experimentStatusState.status !== Status.IDLE;
+    return experimentStatusState.status !== Status.IDLE;
   };
 
   //##################################################################################
@@ -225,7 +244,9 @@ const ExperimentComponent = () => {
       }}
     >
       {/* Header */}
-      <h4 style={{ margin: "0", padding: "0" }}>Experiment ({experimentStatusState.status})</h4>
+      <h4 style={{ margin: "0", padding: "0" }}>
+        Experiment ({experimentStatusState.status})
+      </h4>
 
       <ButtonGroup>
         <Button
@@ -273,7 +294,7 @@ const ExperimentComponent = () => {
         }}
       />*/}
 
-<InfoPopup ref={infoPopupRef}/>
+      <InfoPopup ref={infoPopupRef} />
     </div>
   );
 };
