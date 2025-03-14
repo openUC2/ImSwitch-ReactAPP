@@ -9,6 +9,7 @@ import PositionControllerComponent from "./PositionControllerComponent";
 import PositionViewComponent from "./PositionViewComponent";
 import ParameterEditorComponent from "./ParameterEditorComponent";
 import ExperimentComponent from "./ExperimentComponent";
+import ObjectiveController from "../components/ObjectiveController";
 import ResizablePanel from "./ResizablePanel"; //<ResizablePanel></ResizablePanel> performace issues :/
 
 const AxonTabComponent = () => {
@@ -47,6 +48,7 @@ const AxonTabComponent = () => {
               "Parameter",
               "Well Selector",
               "Experiment",
+              "Objective"
             ]}
           >
             <LiveViewControlWrapper />
@@ -55,6 +57,7 @@ const AxonTabComponent = () => {
             <ParameterEditorComponent />
             <WellSelectorComponent />
             <ExperimentComponent />
+            <ObjectiveController />
           </GenericTabBar>
         </div>
       </div>
