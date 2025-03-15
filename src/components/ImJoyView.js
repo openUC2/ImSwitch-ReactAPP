@@ -1,15 +1,10 @@
-// src/components/ImJoyView.js
 import React, { useEffect, useState } from "react";
 import { Box, Typography, Button } from "@mui/material";
 
-// Example of how you might load ImJoy
-// If you want to replicate the same code you have in LiveView (for ImJoy loading),
-// just copy it here or share it via context
-const ImJoyView = ({ sharedImage }) => {
+const ImJoyView = ({ hostIP, hostPort }) => {
   const [imjoyAPI, setImjoyAPI] = useState(null);
 
   useEffect(() => {
-    // Load ImJoy script dynamically
     const script = document.createElement("script");
     script.src = "https://lib.imjoy.io/imjoy-loader.js";
     script.async = true;
@@ -26,8 +21,6 @@ const ImJoyView = ({ sharedImage }) => {
         window_manager_container: "imjoy-window-container",
       });
       setImjoyAPI(app.imjoy.api);
-
-      // Add your menu item or other logic...
       app.addMenuItem({
         label: "➕ Load Plugin",
         callback() {
@@ -37,22 +30,18 @@ const ImJoyView = ({ sharedImage }) => {
       });
     };
     document.body.appendChild(script);
-
     return () => {
       document.body.removeChild(script);
     };
   }, []);
 
-  // Example: function to send the sharedImage to ImJoy
-  const handleSendToImJoy = async () => {
-    if (!imjoyAPI || !sharedImage) return;
+  const handleSnapAndSend = async () => {
+    if (!imjoyAPI) return;
     try {
-      // E.g. if `sharedImage` is a data URL
-      // You can fetch it as bytes, then pass it to ImJoy
-      const resp = await fetch(sharedImage);
-      const arrayBuffer = await resp.arrayBuffer();
-
-      // Possibly open an ImageJ window
+      const response = await fetch(
+        `${hostIP}:${hostPort}/RecordingController/snapNumpyToFastAPI?resizeFactor=1`
+      );
+      const arrayBuffer = await response.arrayBuffer();
       let ij = await imjoyAPI.getWindow("ImageJ.JS");
       if (!ij) {
         ij = await imjoyAPI.createWindow({
@@ -63,42 +52,18 @@ const ImJoyView = ({ sharedImage }) => {
       } else {
         await ij.show();
       }
-
-      // Then show the image
-      await ij.viewImage(arrayBuffer, { name: "shared-image.jpeg" });
+      await ij.viewImage(arrayBuffer, { name: "snapped-image.jpeg" });
     } catch (error) {
-      console.error("Error sending to ImJoy:", error);
+      console.error("Error snapping/sending:", error);
     }
   };
 
   return (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 2,
-        position: "relative",
-      }}
-    >
-      <Typography variant="h6" gutterBottom>
-        ImJoy Integration Page
-      </Typography>
-
-      {sharedImage ? (
-        <img
-          src={sharedImage}
-          alt="Shared"
-          style={{ maxWidth: "400px", border: "1px solid #ccc" }}
-        />
-      ) : (
-        <Typography variant="body1">No image shared yet.</Typography>
-      )}
-
-      <Button variant="contained" onClick={handleSendToImJoy}>
-        Send Image to ImJoy
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 2, position: "relative" }}>
+      <Typography variant="h6" gutterBottom>ImJoy Integration Page</Typography>
+      <Button variant="contained" onClick={handleSnapAndSend}>
+        Snap and Send to ImJoy
       </Button>
-
-      {/* The containers for ImJoy menu + windows */}
       <Box
         id="imjoy-menu-container"
         sx={{ width: "100%", height: 40, border: "1px solid #ccc", mb: 2 }}

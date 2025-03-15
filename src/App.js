@@ -10,7 +10,7 @@ import { LiveWidgetProvider } from "./context/LiveWidgetContext"; // Import the 
 import Tab_Widgets from "./components/Tab_Widgets";
 import LightsheetController from "./components/LightsheetController";
 import BlocklyController from "./components/BlocklyController";
-import ImJoyView from "./components/ImJoyView"; // <-- new file
+import ImJoyView from "./components/ImJoyView";
 import JupyterExecutor from "./components/JupyterExecutor";
 import { JupyterProvider } from "./context/JupyterContext";
 import UC2Controller from "./components/UC2Controller";
@@ -583,9 +583,15 @@ function App() {
                 />
               </LiveWidgetProvider>
             )}
-            {selectedPlugin === "ImJoyView" && (
-              <ImJoyView sharedImage={sharedImage} />
-            )}
+            <Box
+              sx={{ display: selectedPlugin === "ImJoy" ? "block" : "none" }}
+            >
+              <ImJoyView
+                hostIP={hostIP}
+                hostPort={apiPort}
+                sharedImage={sharedImage}
+              />
+            </Box>
             {selectedPlugin === "HistoScan" && (
               <WidgetContextProvider>
                 <HistoScanController hostIP={hostIP} hostPort={apiPort} />
