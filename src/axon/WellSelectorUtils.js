@@ -26,7 +26,7 @@ export function calculateNeighborPointsSquare(
       const neighborX = squareX + i * squareWidth;
       const neighborY = squareY + j * squareHeight;
 
-      points.push({ x: neighborX, y: neighborY });
+      points.push({ x: neighborX, y: neighborY, iX: i, iY: j});
     }
   }
 
@@ -71,8 +71,8 @@ export function calculateNeighborPointsCircle(
       // Calculate the position for the neighboring point
       const neighborX = squareX + i * squareWidth;
       const neighborY = squareY + j * squareHeight;
+      points.push({ x: neighborX, y: neighborY, iX: i, iY: j});
 
-      points.push({ x: neighborX, y: neighborY });
     }
   }
 

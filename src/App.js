@@ -11,10 +11,10 @@ import Tab_Widgets from "./components/Tab_Widgets";
 import LightsheetController from "./components/LightsheetController";
 import BlocklyController from "./components/BlocklyController";
 import ImJoyView from "./components/ImJoyView"; // <-- new file
-import JupyterExecutor from './components/JupyterExecutor';
+import JupyterExecutor from "./components/JupyterExecutor";
 import { JupyterProvider } from "./context/JupyterContext";
-import UC2Controller from './components/UC2Controller';
-import theme from './theme';
+import UC2Controller from "./components/UC2Controller";
+import theme from "./theme";
 import {
   Menu as MenuIcon,
   Dashboard as DashboardIcon,
@@ -33,13 +33,12 @@ import { WebSocketProvider } from "./context/WebSocketContext";
 import { MCTProvider } from "./context/MCTContext";
 
 //axon
-import AxonTabComponent from './axon/AxonTabComponent';
-import WebSocketHandler from './middleware/WebSocketHandler';
+import AxonTabComponent from "./axon/AxonTabComponent";
+import WebSocketHandler from "./middleware/WebSocketHandler";
 
 //redux
 import { useDispatch, useSelector } from "react-redux";
 import * as connectionSettingsSlice from "./state/slices/ConnectionSettingsSlice.js";
-
 
 // Filemanager
 import FileManager from "./FileManager/FileManager/FileManager";
@@ -52,7 +51,6 @@ import { downloadFile } from "./FileManager/api/downloadFileAPI";
 import { api } from "./FileManager/api/api";
 import "./FileManager/App.scss";
 import uc2Logo from "./assets/ouc2_logo_qaudratic.png";
-
 
 import {
   Button,
@@ -165,14 +163,16 @@ const darkTheme = createTheme({
 });
 
 function App() {
-    /*
+  /*
     Redux
     */
-    // redux dispatcher
-    const dispatch = useDispatch();
+  // redux dispatcher
+  const dispatch = useDispatch();
 
-    // Access global Redux state
-    const connectionSettingsState = useSelector(connectionSettingsSlice.getConnectionSettingsState);
+  // Access global Redux state
+  const connectionSettingsState = useSelector(
+    connectionSettingsSlice.getConnectionSettingsState
+  );
 
   /*
   States
@@ -182,7 +182,9 @@ function App() {
 
   const [hostIP, setHostIP] = useState(connectionSettingsState.ip);
   //const [hostPort, sethostPort] = useState(connectionSettingsState.port);
-  const [websocketPort, setWebsocketPort] = useState(connectionSettingsState.websocketPort);
+  const [websocketPort, setWebsocketPort] = useState(
+    connectionSettingsState.websocketPort
+  );
   const [apiPort, setApiPort] = useState(connectionSettingsState.apiPort);
 
   const [selectedPlugin, setSelectedPlugin] = useState("LiveView"); // Control which plugin to show
@@ -198,7 +200,6 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [files, setFiles] = useState([]);
 
-
   /*
   FileManager
   */
@@ -213,8 +214,6 @@ function App() {
     setFiles(response.data);
     setIsLoading(false);
   };
-
-
 
   const handleCreateFolder = async (name, parentFolder) => {
     setIsLoading(true);
@@ -319,7 +318,6 @@ function App() {
     setDialogOpen(true);
   };
 
-
   // Handle changes to the IP address
   const handlehostWebsocketPortChange = (event) => {
     let port = event.target.value.trim();
@@ -341,7 +339,6 @@ function App() {
       ip = ip.replace("http://", "https://");
     }
     setHostIP(ip);
-
   };
 
   // Save the IP address and port
@@ -367,7 +364,8 @@ function App() {
 
   return (
     <ThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
-      <WebSocketHandler />{/* headless */}
+      <WebSocketHandler />
+      {/* headless */}
       <WebSocketProvider hostIP={hostIP}>
         <CssBaseline />
         <Box sx={{ display: "flex" }}>
@@ -416,13 +414,6 @@ function App() {
           >
             {/* Sidebar content */}
             <List>
-              {/* axon */}
-              <ListItem button onClick={() => handlePluginChange("Axon")}>
-                <ListItemIcon>
-                  <SettingsOverscanSharpIcon />
-                </ListItemIcon>
-                <ListItemText primary={sidebarVisible ? "Axon" : ""} />
-              </ListItem>
               {/* LiveView */}
               <ListItem button onClick={() => handlePluginChange("LiveView")}>
                 <ListItemIcon>
@@ -430,6 +421,14 @@ function App() {
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "Live View" : ""} />
               </ListItem>
+              {/* WellPlate */}
+              <ListItem button onClick={() => handlePluginChange("WellPlate")}>
+                <ListItemIcon>
+                  <SettingsOverscanSharpIcon />
+                </ListItemIcon>
+                <ListItemText primary={sidebarVisible ? "WellPlate" : ""} />
+              </ListItem>
+
               {/* FileManager */}
               <ListItem
                 button
@@ -448,18 +447,28 @@ function App() {
                 <ListItemText primary={sidebarVisible ? "HistoScan" : ""} />
               </ListItem>
               {/* JupyteNotebook */}
-              <ListItem button onClick={() => handlePluginChange("JupyteNotebook")}>
+              <ListItem
+                button
+                onClick={() => handlePluginChange("JupyteNotebook")}
+              >
                 <ListItemIcon>
                   <SettingsOverscanSharpIcon />
                 </ListItemIcon>
-                <ListItemText primary={sidebarVisible ? "JupyteNotebook" : ""} />
+                <ListItemText
+                  primary={sidebarVisible ? "JupyteNotebook" : ""}
+                />
               </ListItem>
               {/* Infinity Scanning */}
-              <ListItem button onClick={() => handlePluginChange("Infinity Scanning")}>
+              <ListItem
+                button
+                onClick={() => handlePluginChange("Infinity Scanning")}
+              >
                 <ListItemIcon>
                   <SettingsOverscanSharpIcon />
                 </ListItemIcon>
-                <ListItemText primary={sidebarVisible ? "Infinity Scanning" : ""} />
+                <ListItemText
+                  primary={sidebarVisible ? "Infinity Scanning" : ""}
+                />
               </ListItem>
               {/* Blockly */}
               <ListItem button onClick={() => handlePluginChange("Blockly")}>
@@ -478,7 +487,7 @@ function App() {
               {/* Objective */}
               <ListItem button onClick={() => handlePluginChange("Objective")}>
                 <ListItemIcon>
-                  <ZoomOutMapIcon/>
+                  <ZoomOutMapIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "Objective" : ""} />
               </ListItem>
@@ -562,9 +571,7 @@ function App() {
             component="main"
             sx={{ flexGrow: 1, p: 3, marginTop: "64px" }} // Push content below AppBar
           >
-          {selectedPlugin === "Axon" && (
-            <AxonTabComponent/>
-          )}
+            {selectedPlugin === "WellPlate" && <AxonTabComponent />}
             {selectedPlugin === "LiveView" && (
               <LiveWidgetProvider>
                 <LiveView
