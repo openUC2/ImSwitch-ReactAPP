@@ -16,6 +16,7 @@ import experimentReducer from "./slices/ExperimentSlice";
 import experimentStatusReducer from "./slices/ExperimentStatusSlice";
 import parameterRangeReducer from "./slices/ParameterRangeSlice";
 import liveStreamReducer from "./slices/LiveStreamSlice";
+import tileStreamReducer from "./slices/TileStreamSlice";
 import objectiveReducer from "./slices/ObjectiveSlice";
 
 //#####################################################################################
@@ -26,6 +27,7 @@ const rootReducer = combineReducers({
   experimentState: experimentReducer,
   experimentStatusState: experimentStatusReducer,
   liveStreamState: liveStreamReducer,
+  tileStreamState: tileStreamReducer,
   parameterRangeState: parameterRangeReducer,
   wellSelectorState: wellSelectorReducer,
   objectiveState: objectiveReducer,

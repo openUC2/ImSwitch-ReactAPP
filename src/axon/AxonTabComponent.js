@@ -1,4 +1,5 @@
 import LiveViewControlWrapper from "./LiveViewControlWrapper";
+import TileViewComponent from "./TileViewComponent";
 import GenericTabBar from "./GenericTabBar";
 import WellSelectorComponent from "./WellSelectorComponent";
 import PointListEditorComponent from "./PointListEditorComponent";
@@ -43,6 +44,7 @@ const AxonTabComponent = () => {
             id="2"
             tabNames={[
               "Live View",
+              "Tile View",
               "Points",
               "Shape",
               "Parameter",
@@ -52,6 +54,7 @@ const AxonTabComponent = () => {
             ]}
           >
             <LiveViewControlWrapper />
+            <TileViewComponent />
             <PointListEditorComponent />
             <PointListShapeEditorComponent />
             <ParameterEditorComponent />

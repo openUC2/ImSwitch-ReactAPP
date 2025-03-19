@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import * as connectionSettingsSlice from "../state/slices/ConnectionSettingsSlice.js";
 import * as webSocketSlice from "../state/slices/WebSocketSlice.js";
 import * as liveStreamSlice from "../state/slices/LiveStreamSlice.js";
+import * as tileStreamSlice from "../state/slices/TileStreamSlice.js";
 import * as positionSlice from "../state/slices/PositionSlice.js";
 import * as objectiveSlice from "../state/slices/ObjectiveSlice.js";
 
@@ -55,8 +56,10 @@ const WebSocketHandler = () => {
       if (dataJson.name == "sigUpdateImage") {
         //console.log("sigUpdateImage", dataJson);
         //update redux state
-        dispatch(liveStreamSlice.setLiveViewImage(dataJson.image));
-        /*
+        if (dataJson.detectorname) {
+          dispatch(liveStreamSlice.setLiveViewImage(dataJson.image));
+
+          /*
         sigUpdateImage: 
         Object { 
             name: "sigUpdateImage", 
@@ -66,16 +69,26 @@ const WebSocketHandler = () => {
             image: "................Base64.encodede.image......." 
         }
         */
-        //----------------------------------------------
+          //----------------------------------------------
+        }
+      } else if (dataJson.name == "sigExperimentImageUpdate") {
+        console.log("sigExperimentImageUpdate", dataJson);
+
+        // update from tiled view
+        dispatch(tileStreamSlice.setTileViewImage(dataJson.image));
       } else if (dataJson.name == "sigObjectiveChanged") {
         console.log("sigObjectiveChanged", dataJson);
-        //update redux state 
+        //update redux state
         // TODO add check if parameter exists
         // TODO check if this works
         dispatch(objectiveSlice.setPixelSize(dataJson.args.p0.pixelsize));
-        dispatch(objectiveSlice.setNA(dataJson.args.p0.NA)); 
-        dispatch(objectiveSlice.setMagnification(dataJson.args.p0.magnification));
-        dispatch(objectiveSlice.setObjectiveName(dataJson.args.p0.objectiveName)); 
+        dispatch(objectiveSlice.setNA(dataJson.args.p0.NA));
+        dispatch(
+          objectiveSlice.setMagnification(dataJson.args.p0.magnification)
+        );
+        dispatch(
+          objectiveSlice.setObjectiveName(dataJson.args.p0.objectiveName)
+        );
         dispatch(objectiveSlice.setFovX(dataJson.args.p0.FOV[0]));
         dispatch(objectiveSlice.setFovY(dataJson.args.p0.FOV[1]));
 

@@ -17,41 +17,47 @@ import {
 } from "@mui/material";
 import { useWebSocket } from "../context/WebSocketContext";
 import { JsonEditor } from "json-edit-react";
+import AceEditor from "react-ace";
+import "ace-builds/src-noconflict/mode-json";
+import "ace-builds/src-noconflict/theme-github";
 
-const TabPanel = (props) => {
-  const { children, value, index, ...other } = props;
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`simple-tabpanel-${index}`}
-      aria-labelledby={`simple-tab-${index}`}
-      {...other}
-    >
-      {value === index && <Box p={3}>{children}</Box>}
-    </div>
-  );
-};
+const TabPanel = ({ children, value, index, ...other }) => (
+  <div
+    role="tabpanel"
+    hidden={value !== index}
+    {...other}
+    id={`simple-tabpanel-${index}`}
+    aria-labelledby={`simple-tab-${index}`}
+  >
+    {value === index && <Box p={3}>{children}</Box>}
+  </div>
+);
 
 const goToWebsite = () => {
   window.open("https://youseetoo.github.io", "_blank");
 };
 
-const UC2Controller = ({ hostIP, hostPort, WindowTitle }) => {
+const UC2Controller = ({ hostIP, hostPort }) => {
   const [tabIndex, setTabIndex] = useState(0);
   const [availableSetups, setAvailableSetups] = useState([]);
   const [selectedSetup, setSelectedSetup] = useState("");
   const [serialPayload, setSerialPayload] = useState("");
   const [serialLog, setSerialLog] = useState([]);
+  const [uc2Connected, setUc2Connected] = useState(false);
 
-   // For the Config Editor tab
-   const [selectedFileForEdit, setSelectedFileForEdit] = useState("");
-   const [editorJson, setEditorJson] = useState(null);
-   const [newFileName, setNewFileName] = useState("");
-   const [setAsCurrentConfig, setSetAsCurrentConfig] = useState(true);
-   const [restartAfterSave, setRestartAfterSave] = useState(false);
-   const [overwriteFile, setOverwriteFile] = useState(false);
-   const [uc2Connected, setUc2Connected] = useState(false);
+  // For config editing
+  const [selectedFileForEdit, setSelectedFileForEdit] = useState("");
+  // If we're loading an existing file, we use json-edit-react
+  const [editorJson, setEditorJson] = useState(null);
+  // If we're creating a new file, we use AceEditor
+  const [editorJsonText, setEditorJsonText] = useState("");
+  // Flag to toggle between json-edit-react (false) and Ace (true)
+  const [useAceEditor, setUseAceEditor] = useState(false);
+
+  const [newFileName, setNewFileName] = useState("");
+  const [setAsCurrentConfig, setSetAsCurrentConfig] = useState(true);
+  const [restartAfterSave, setRestartAfterSave] = useState(false);
+  const [overwriteFile, setOverwriteFile] = useState(false);
 
   const socket = useWebSocket();
 
@@ -60,23 +66,10 @@ const UC2Controller = ({ hostIP, hostPort, WindowTitle }) => {
     const handleSignal = (data) => {
       try {
         const jdata = JSON.parse(data);
-
-        // Example signals from your snippet
         if (jdata.name === "sigUC2SerialReadMessage") {
-          // Appending the incoming serial message to the log
           setSerialLog((prev) => [...prev, jdata.args?.p0 || ""]);
         } else if (jdata.name === "sigUC2SerialWriteMessage") {
-          // Could log when we successfully write
-          setSerialLog((prev) => [
-            ...prev,
-            `Write Message: ${jdata.args?.p0 || ""}`,
-          ]);
-        } else if (jdata.name === "sigObjectiveChanged") {
-          // Handle your existing logic
-          // ...
-        } else if (jdata.name === "sigUpdateImage") {
-          // Handle your existing logic
-          // ...
+          setSerialLog((prev) => [...prev, `Write Message: ${jdata.args?.p0 || ""}`]);
         }
       } catch (error) {
         console.error("Error parsing signal data:", error);
@@ -87,6 +80,24 @@ const UC2Controller = ({ hostIP, hostPort, WindowTitle }) => {
       socket.off("signal", handleSignal);
     };
   }, [socket]);
+
+  useEffect(() => {
+    fetchAvailableSetups();
+  }, []);
+
+  useEffect(() => {
+    const checkConnection = () => {
+      fetch(`${hostIP}:${hostPort}/UC2ConfigController/is_connected`)
+        .then((res) => res.json())
+        .then((data) => {
+          setUc2Connected(data === true);
+        })
+        .catch(() => setUc2Connected(false));
+    };
+    checkConnection();
+    const intervalId = setInterval(checkConnection, 5000);
+    return () => clearInterval(intervalId);
+  }, [hostIP, hostPort]);
 
   const handleTabChange = (event, newValue) => {
     setTabIndex(newValue);
@@ -106,40 +117,17 @@ const UC2Controller = ({ hostIP, hostPort, WindowTitle }) => {
     setSelectedSetup(event.target.value);
   };
 
-  useEffect(() => {
-    const checkConnection = () => {
-      fetch(`${hostIP}:${hostPort}/UC2ConfigController/is_connected`)
-        .then((res) => res.json())
-        .then((data) => {
-          setUc2Connected(data === true);
-        })
-        .catch(() => {
-          setUc2Connected(false);
-        });
-    };
-    // alle 5 Sekunden überprüfen
-    checkConnection();
-    const intervalId = setInterval(checkConnection, 5000);
-    return () => clearInterval(intervalId);
-  }, [hostIP, hostPort]);
-
   const reconnect = () => {
-    const url = `${hostIP}:${hostPort}/UC2ConfigController/reconnect`;
-    fetch(url, { method: "GET" })
+    fetch(`${hostIP}:${hostPort}/UC2ConfigController/reconnect`, { method: "GET" })
       .then((response) => response.json())
-      .then((data) => {
-        console.log(data);
-      })
+      .then((data) => console.log(data))
       .catch((error) => console.error("Error:", error));
   };
 
   const btConnect = () => {
-    const url = `${hostIP}:${hostPort}/UC2ConfigController/btpairing`;
-    fetch(url, { method: "GET" })
+    fetch(`${hostIP}:${hostPort}/UC2ConfigController/btpairing`, { method: "GET" })
       .then((response) => response.json())
-      .then((data) => {
-        console.log(data);
-      })
+      .then((data) => console.log(data))
       .catch((error) => console.error("Error:", error));
   };
 
@@ -153,18 +141,23 @@ const UC2Controller = ({ hostIP, hostPort, WindowTitle }) => {
     )}`;
     fetch(url, { method: "GET" })
       .then((response) => response.json())
-      .then((data) => {
-        console.log("Setup selected:", data);
-      })
+      .then((data) => console.log("Setup selected:", data))
       .catch((error) => console.error("Error setting setup:", error));
   };
 
-   // Fetch the JSON content of the selected file
-   const handleLoadSetupFile = () => {
+  const handleNewConfig = () => {
+    setUseAceEditor(true);
+    setEditorJson(null);
+    setEditorJsonText("{\n  \n}");
+    setSelectedFileForEdit("");
+  };
+
+  const handleLoadSetupFile = () => {
     if (!selectedFileForEdit) {
       alert("Please select a file to load.");
       return;
     }
+    setUseAceEditor(false);
     const url = `${hostIP}:${hostPort}/UC2ConfigController/readSetupFile?setupFileName=${encodeURIComponent(
       selectedFileForEdit
     )}`;
@@ -176,25 +169,40 @@ const UC2Controller = ({ hostIP, hostPort, WindowTitle }) => {
       .catch((error) => console.error("Error loading setup file:", error));
   };
 
-   // Save the JSON to a new file (or overwrite existing, depending on user choice)
-   const handleSaveFile = () => {
+  const handleSaveFile = () => {
     if (!newFileName) {
       alert("Please provide a filename.");
       return;
     }
-    if (!editorJson) {
-      alert("No JSON content to save.");
-      return;
+
+    let finalJson = null;
+    if (useAceEditor) {
+      if (!editorJsonText.trim()) {
+        alert("No JSON content to save.");
+        return;
+      }
+      try {
+        finalJson = JSON.parse(editorJsonText);
+      } catch (e) {
+        alert("Invalid JSON format in the editor.");
+        return;
+      }
+    } else {
+      if (!editorJson) {
+        alert("No JSON content to save.");
+        return;
+      }
+      finalJson = editorJson;
     }
+
     const url = `${hostIP}:${hostPort}/UC2ConfigController/writeNewSetupFile?setupFileName=${encodeURIComponent(
       newFileName
     )}&setAsCurrentConfig=${setAsCurrentConfig}&restart=${restartAfterSave}&overwrite=${overwriteFile}`;
+
     fetch(url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(editorJson),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(finalJson),
     })
       .then((response) => response.json())
       .then((data) => {
@@ -203,28 +211,14 @@ const UC2Controller = ({ hostIP, hostPort, WindowTitle }) => {
       .catch((error) => console.error("Error saving file:", error));
   };
 
-  useEffect(() => {
-    fetchAvailableSetups();
-  }, []);
-
-  // Send serial message via REST endpoint
   const handleSendSerial = () => {
     if (!serialPayload) return;
-    const url = `${hostIP}:${hostPort}/UC2ConfigController/writeSerial?payload=${encodeURIComponent(
-      serialPayload
-    )}`;
+    const url = `${hostIP}:${hostPort}/UC2ConfigController/writeSerial?payload=${encodeURIComponent(serialPayload)}`;
     fetch(url, { method: "GET" })
       .then((response) => response.json())
-      .then((data) => {
-        // Optionally log the response
-        setSerialLog((prev) => [...prev, `Sent: ${serialPayload}`]);
-      })
+      .then(() => setSerialLog((prev) => [...prev, `Sent: ${serialPayload}`]))
       .catch((error) => console.error("Error sending serial:", error));
   };
-
-  useEffect(() => {
-    fetchAvailableSetups();
-  }, []);
 
   return (
     <Paper>
@@ -243,53 +237,40 @@ const UC2Controller = ({ hostIP, hostPort, WindowTitle }) => {
         <Grid container spacing={2}>
           <Grid item xs={12}>
             <Typography variant="h6">Reconnect to UC2 board</Typography>
-            <div>
-              <Button
-                style={{ marginBottom: "20px" }}
-                variant="contained"
-                onClick={reconnect}
-              >
-                Reconnect
-              </Button>
-            </div>
+            <Button
+              style={{ marginBottom: "20px" }}
+              variant="contained"
+              onClick={reconnect}
+            >
+              Reconnect
+            </Button>
             <Typography variant="h6">Bluetooth Pairing</Typography>
-            <div>
-              <Button
-                style={{ marginBottom: "20px" }}
-                variant="contained"
-                onClick={btConnect}
-              >
-                BT Pairing
-              </Button>
-            </div>
+            <Button
+              style={{ marginBottom: "20px" }}
+              variant="contained"
+              onClick={btConnect}
+            >
+              BT Pairing
+            </Button>
             <Typography variant="h6">Flash New Firmware</Typography>
-            <div>
-              <Button
-                style={{ marginBottom: "20px" }}
-                variant="contained"
-                onClick={goToWebsite}
-              >
-                UC2-ESP32
-              </Button>
-            </div>
-            <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          p: 1,
-          gap: 1,
-        }}
-      >
-        <Typography variant="body1">UC2 Connected:</Typography>
-        <Box
-          sx={{
-            width: 16,
-            height: 16,
-            borderRadius: "50%",
-            backgroundColor: uc2Connected ? "green" : "red",
-          }}
-        />
-      </Box>
+            <Button
+              style={{ marginBottom: "20px" }}
+              variant="contained"
+              onClick={goToWebsite}
+            >
+              UC2-ESP32
+            </Button>
+            <Box sx={{ display: "flex", alignItems: "center", p: 1, gap: 1 }}>
+              <Typography variant="body1">UC2 Connected:</Typography>
+              <Box
+                sx={{
+                  width: 16,
+                  height: 16,
+                  borderRadius: "50%",
+                  backgroundColor: uc2Connected ? "green" : "red",
+                }}
+              />
+            </Box>
           </Grid>
         </Grid>
       </TabPanel>
@@ -312,11 +293,7 @@ const UC2Controller = ({ hostIP, hostPort, WindowTitle }) => {
                 ))}
               </Select>
             </FormControl>
-            <Button
-              style={{ marginBottom: "20px" }}
-              variant="contained"
-              onClick={handleSetSetup}
-            >
+            <Button variant="contained" onClick={handleSetSetup}>
               OK
             </Button>
           </Grid>
@@ -359,11 +336,7 @@ const UC2Controller = ({ hostIP, hostPort, WindowTitle }) => {
           </Paper>
         </Box>
       </TabPanel>
-    
 
-
-
-      {/* Tab 3: Serial CLI (example) */}
       <TabPanel value={tabIndex} index={3}>
         <Typography variant="h6">Configuration Editor</Typography>
         <Box mt={2}>
@@ -384,19 +357,46 @@ const UC2Controller = ({ hostIP, hostPort, WindowTitle }) => {
           <Button variant="contained" onClick={handleLoadSetupFile}>
             Load File
           </Button>
+          <Button
+            variant="contained"
+            onClick={handleNewConfig}
+            style={{ marginLeft: "10px" }}
+          >
+            New File
+          </Button>
         </Box>
+
         <Box mt={2}>
-          <Typography>Loaded file content:</Typography>
-          {editorJson ? (
-            <JsonEditor
-              data={editorJson}
-              setData={setEditorJson}
-              style={{ height: "400px", overflow: "auto" }}
-            />
+          {useAceEditor ? (
+            <>
+              <Typography>File content (AceEditor for new files):</Typography>
+              <AceEditor
+                mode="json"
+                setOptions={{ useWorker: false }}
+                theme="github"
+                onChange={(value) => setEditorJsonText(value)}
+                value={editorJsonText}
+                name="jsonEditor"
+                editorProps={{ $blockScrolling: true }}
+                width="100%"
+                height="400px"
+              />
+            </>
+          ) : editorJson ? (
+            <>
+              <Typography>File content (json-edit-react for loaded files):</Typography>
+              <div style={{ height: "400px", overflow: "auto", border: "1px solid #ccc" }}>
+                <JsonEditor
+                  data={editorJson}
+                  setData={setEditorJson}
+                />
+              </div>
+            </>
           ) : (
             <Typography variant="body2">No file loaded.</Typography>
           )}
         </Box>
+
         <Box mt={2}>
           <TextField
             label="Save As Filename"
@@ -439,8 +439,7 @@ const UC2Controller = ({ hostIP, hostPort, WindowTitle }) => {
           </Box>
         </Box>
       </TabPanel>
-        </Paper>
-  
+    </Paper>
   );
 };
 
