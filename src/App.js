@@ -415,14 +415,17 @@ function App() {
             {/* Sidebar content */}
             <List>
               {/* LiveView */}
-              <ListItem button onClick={() => handlePluginChange("LiveView")}>
+              <ListItem button 
+              selected={selectedPlugin === "LiveView"}
+              onClick={() => handlePluginChange("LiveView")}>
                 <ListItemIcon>
                   <DashboardIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "Live View" : ""} />
               </ListItem>
               {/* WellPlate */}
-              <ListItem button onClick={() => handlePluginChange("WellPlate")}>
+              <ListItem button 
+              selected={selectedPlugin === "WellPlate"} onClick={() => handlePluginChange("WellPlate")}>
                 <ListItemIcon>
                   <SettingsOverscanSharpIcon />
                 </ListItemIcon>
@@ -432,6 +435,7 @@ function App() {
               {/* FileManager */}
               <ListItem
                 button
+                selected={selectedPlugin === "FileManager"}
                 onClick={() => handlePluginChange("FileManager")}
               >
                 <ListItemIcon>
@@ -440,7 +444,7 @@ function App() {
                 <ListItemText primary={sidebarVisible ? "File Manager" : ""} />
               </ListItem>
               {/* HistoScan */}
-              <ListItem button onClick={() => handlePluginChange("HistoScan")}>
+              <ListItem button selected={selectedPlugin === "HistoScan"} onClick={() => handlePluginChange("HistoScan")}>
                 <ListItemIcon>
                   <SettingsOverscanSharpIcon />
                 </ListItemIcon>
@@ -449,6 +453,7 @@ function App() {
               {/* JupyteNotebook */}
               <ListItem
                 button
+                selected={selectedPlugin === "JupyterNotebook"}
                 onClick={() => handlePluginChange("JupyteNotebook")}
               >
                 <ListItemIcon>
@@ -461,6 +466,7 @@ function App() {
               {/* Infinity Scanning */}
               <ListItem
                 button
+                selected={selectedPlugin === "Infinity Scanning"}
                 onClick={() => handlePluginChange("Infinity Scanning")}
               >
                 <ListItemIcon>
@@ -471,55 +477,55 @@ function App() {
                 />
               </ListItem>
               {/* Blockly */}
-              <ListItem button onClick={() => handlePluginChange("Blockly")}>
+              <ListItem button selected={selectedPlugin === "Blockly"} onClick={() => handlePluginChange("Blockly")}>
                 <ListItemIcon>
                   <SettingsIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "Blockly" : ""} />
               </ListItem>
               {/* Timelapse */}
-              <ListItem button onClick={() => handlePluginChange("Timelapse")}>
+              <ListItem button selected={selectedPlugin === "Timelapse"} onClick={() => handlePluginChange("Timelapse")}>
                 <ListItemIcon>
                   <AccessTimeIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "Timelapse" : ""} />
               </ListItem>
               {/* Objective */}
-              <ListItem button onClick={() => handlePluginChange("Objective")}>
+              <ListItem button selected={selectedPlugin === "Objective"} onClick={() => handlePluginChange("Objective")}>
                 <ListItemIcon>
                   <ZoomOutMapIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "Objective" : ""} />
               </ListItem>
               {/* SocketView */}
-              <ListItem button onClick={() => handlePluginChange("SocketView")}>
+              <ListItem button selected={selectedPlugin === "SocketView"} onClick={() => handlePluginChange("SocketView")}>
                 <ListItemIcon>
                   <CommentIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "SocketView" : ""} />
               </ListItem>
               {/* Lightsheet */}
-              <ListItem button onClick={() => handlePluginChange("Lightsheet")}>
+              <ListItem button  selected={selectedPlugin === "Lightsheet"} onClick={() => handlePluginChange("Lightsheet")}>
                 <ListItemIcon>
                   <ThreeDRotationIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "Lightsheet" : ""} />
               </ListItem>
               {/* FlowStop */}
-              <ListItem button onClick={() => handlePluginChange("FlowStop")}>
+              <ListItem button selected={selectedPlugin === "FlowStop"} onClick={() => handlePluginChange("FlowStop")}>
                 <ListItemIcon>
                   <AirIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "FlowStop" : ""} />
               </ListItem>
               {/* Widgets */}
-              <ListItem button onClick={() => handlePluginChange("Sepmon")}>
+              <ListItem button selected={selectedPlugin === "Sepmon"} onClick={() => handlePluginChange("Sepmon")}>
                 <ListItemIcon>
                   <AirIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "Sepmon" : ""} />
               </ListItem>
-              <ListItem button onClick={() => handlePluginChange("UC2")}>
+              <ListItem button selected={selectedPlugin === "UC2"} onClick={() => handlePluginChange("UC2")}>
                 <ListItemIcon>
                   <AirIcon />
                 </ListItemIcon>
@@ -529,28 +535,28 @@ function App() {
                 <ListItemIcon>
                   <DevicesIcon />
                 </ListItemIcon>
-                <ListItemText primary={sidebarVisible ? "Widgets" : ""} />
+                <ListItemText selected={selectedPlugin === "Widgets"} primary={sidebarVisible ? "Widgets" : ""} />
               </ListItem>
               {/* Connections */}
-              <ListItem button onClick={handleOpenDialog}>
+              <ListItem button selected={selectedPlugin === "Connectoins"}  onClick={handleOpenDialog}>
                 <ListItemIcon>
                   <WifiSharpIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "Connections" : ""} />
               </ListItem>
               {/* About */}
-              <ListItem button onClick={() => handlePluginChange("About")}>
+              <ListItem button selected={selectedPlugin === "About"} onClick={() => handlePluginChange("About")}>
                 <ListItemIcon>
                   <InfoIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "About" : ""} />
               </ListItem>
               {/* ImJoy */}
-              <ListItem button onClick={() => handlePluginChange("ImJoy")}>
+              <ListItem button selected={selectedPlugin === "ImJoy"} onClick={() => handlePluginChange("ImJoy")}>
                 <ListItemIcon>
                   <BuildIcon />
                 </ListItemIcon>
-                <ListItemText primary={sidebarVisible ? "ImJoy" : ""} />
+                <ListItemText primary={sidebarVisible ? "Fiji" : ""} />
               </ListItem>
 
               {/* Add a minimize/maximize button */}

@@ -17,7 +17,7 @@ import apiPositionerControllerMovePositioner from "../backendapi/apiPositionerCo
 const PositionControllerComponent = () => {
   const [intervalId, setIntervalId] = useState(null);
 
-  const moveDistance = 5000;//TODO adjust
+  const moveDistance = 500;//TODO adjust
   const zoomDistance = 100;//TODO adjust
  
   //##################################################################################

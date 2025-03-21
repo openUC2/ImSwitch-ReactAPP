@@ -13,7 +13,12 @@ import {
   Grid,
   TextField,
   Checkbox,
-  FormControlLabel
+  FormControlLabel, 
+  Switch,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 import { useWebSocket } from "../context/WebSocketContext";
 import { JsonEditor } from "json-edit-react";
@@ -41,6 +46,8 @@ const UC2Controller = ({ hostIP, hostPort }) => {
   const [tabIndex, setTabIndex] = useState(0);
   const [availableSetups, setAvailableSetups] = useState([]);
   const [selectedSetup, setSelectedSetup] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false); // State for the confirmation dialog
+  const [restartSoftware, setRestartSoftware] = useState(false); // State for the switch
   const [serialPayload, setSerialPayload] = useState("");
   const [serialLog, setSerialLog] = useState([]);
   const [uc2Connected, setUc2Connected] = useState(false);
@@ -136,13 +143,22 @@ const UC2Controller = ({ hostIP, hostPort }) => {
       alert("Please select a setup before proceeding.");
       return;
     }
+
     const url = `${hostIP}:${hostPort}/UC2ConfigController/setSetupFileName?setupFileName=${encodeURIComponent(
       selectedSetup
-    )}`;
+    )}&restartSoftware=${restartSoftware}`;
+
     fetch(url, { method: "GET" })
       .then((response) => response.json())
-      .then((data) => console.log("Setup selected:", data))
+      .then((data) => {
+        console.log("Setup selected:", data);
+        setIsDialogOpen(true); // Open the confirmation dialog
+      })
       .catch((error) => console.error("Error setting setup:", error));
+  };
+
+  const handleDialogClose = () => {
+    setIsDialogOpen(false); // Close the dialog
   };
 
   const handleNewConfig = () => {
@@ -293,9 +309,36 @@ const UC2Controller = ({ hostIP, hostPort }) => {
                 ))}
               </Select>
             </FormControl>
+            {/* Switch to enable/disable restart */}
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={restartSoftware}
+                  onChange={(e) => setRestartSoftware(e.target.checked)}
+                />
+              }
+              label="Restart Software After Setup"
+            />
+
             <Button variant="contained" onClick={handleSetSetup}>
               OK
             </Button>
+
+            {/* Confirmation Dialog */}
+            <Dialog open={isDialogOpen} onClose={handleDialogClose}>
+              <DialogTitle>Setup Update in Progress</DialogTitle>
+              <DialogContent>
+                <Typography>
+                  The setup is being updated. This may take some time for the system
+                  to restart and be back online.
+                </Typography>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={handleDialogClose} color="primary">
+                  OK
+                </Button>
+              </DialogActions>
+            </Dialog>
           </Grid>
         </Grid>
       </TabPanel>
