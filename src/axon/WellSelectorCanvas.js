@@ -251,6 +251,41 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
     return isInside;
   }
 
+  useEffect(() => {
+    if (
+      wellSelectorState.savedBoundingBox &&
+      wellSelectorState.mode === Mode.AREA_SELECT
+    ) {
+      const { fromPos, toPos } = wellSelectorState.savedBoundingBox;
+  
+      const rasterWidthOverlaped =
+        getRasterWidthAsPx() * (1 - wellSelectorState.overlapWidth);
+      const rasterHeightOverlaped =
+        getRasterHeightAsPx() * (1 - wellSelectorState.overlapHeight);
+  
+      const rectangleWidth = Math.abs(toPos.x - fromPos.x);
+      const rectangleHeight = Math.abs(toPos.y - fromPos.y);
+  
+      const centerPoint = wsUtils.calcCenterPoint(fromPos, toPos);
+  
+      const timesWidth = Math.floor(rectangleWidth / rasterWidthOverlaped);
+      const timesHeight = Math.floor(rectangleHeight / rasterHeightOverlaped);
+      const neighborsWidth = Math.ceil(timesWidth / 2);
+      const neighborsHeight = Math.ceil(timesHeight / 2);
+  
+      // 🧼 Clear point list before re-adding
+      dispatch(experimentSlice.setPointList([]));
+  
+      // ➕ Add new center point with neighbors
+      createNewPointWithShape(
+        calcPxPoint2PhyPoint(centerPoint),
+        Shape.RECTANGLE,
+        neighborsWidth,
+        neighborsHeight
+      );
+    }
+  }, [objectiveState.fovX, objectiveState.fovY]);
+  
   //##################################################################################
 
   function getRasterWidthAsPx() {
@@ -914,6 +949,14 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
           );
         }
       }
+    }
+
+    if (wellSelectorState.mode === Mode.AREA_SELECT && mouseDownFlag) {
+      // Bounding-Box in Redux ablegen
+      dispatch(wellSelectorSlice.setSavedBoundingBox({
+        fromPos: mouseDownPosition,
+        toPos: mouseMovePosition
+      }));
     }
 
     //set flags

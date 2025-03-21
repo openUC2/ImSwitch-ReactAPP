@@ -9,8 +9,8 @@ const fetchObjectiveControllerGetStatus = (dispatch) => {
       console.log("fetchObjectiveControllerGetStatus", data);
 
       // Update Redux with the fetched status
-      dispatch(objectiveSlice.setFovX(data.FOV[0]*10)); //* 1000)); //TODO remove fov dummy data correction factor
-      dispatch(objectiveSlice.setFovY(data.FOV[1]*10));// * 1000)); //TODO remove fov dummy data correction factor
+      dispatch(objectiveSlice.setFovX(data.FOV[0]*1)); //* 1000)); //TODO remove fov dummy data correction factor
+      dispatch(objectiveSlice.setFovY(data.FOV[1]*1));// * 1000)); //TODO remove fov dummy data correction factor
 
       //TODO check if field exists
       dispatch(objectiveSlice.setPosX1(data.x1));
