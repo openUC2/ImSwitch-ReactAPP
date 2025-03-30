@@ -42,7 +42,7 @@ const JupyterExecutor = ({ hostIP, hostPort }) => {
           </Typography>
           {jupyterUrl && (
             <Button color="inherit" href={jupyterUrl} target="_blank">
-              Notebook-Link
+              Open Jupyter Lab
             </Button>
           )}
         </Toolbar>

@@ -26,7 +26,7 @@ export function calculateNeighborPointsSquare(
       const neighborX = squareX + i * squareWidth;
       const neighborY = squareY + j * squareHeight;
 
-      points.push({ x: neighborX, y: neighborY, iX: i, iY: j});
+      points.push({ x: neighborX, y: neighborY, iX: i, iY: j });
     }
   }
 
@@ -71,8 +71,7 @@ export function calculateNeighborPointsCircle(
       // Calculate the position for the neighboring point
       const neighborX = squareX + i * squareWidth;
       const neighborY = squareY + j * squareHeight;
-      points.push({ x: neighborX, y: neighborY, iX: i, iY: j});
-
+      points.push({ x: neighborX, y: neighborY, iX: i, iY: j });
     }
   }
 
@@ -207,11 +206,10 @@ export function isSquareInsideRect2(x, y, rasterSize, x1, y1, x2, y2) {
 
 //##################################################################################
 export const calcCenterPoint = (pointA, pointB) => {
-    const centerX = (pointA.x + pointB.x) / 2;
-    const centerY = (pointA.y + pointB.y) / 2;
-    return { x: centerX, y: centerY };
-  };
-
+  const centerX = (pointA.x + pointB.x) / 2;
+  const centerY = (pointA.y + pointB.y) / 2;
+  return { x: centerX, y: centerY };
+};
 
 //##################################################################################
 export function isLineIntersectingSquare(
@@ -303,76 +301,86 @@ export function isLineIntersectingSquare(
 
 //##################################################################################
 export const wellLayoutDefault = {
-    name: "Default",
-    unit: "um",
-    width: 120000,  // Standard width for 32-well plate
-    height: 80000,  // Standard height for 32-well plate
-    wells: [ ],
-  };
+  name: "Default",
+  unit: "um",
+  width: 120000, // Standard width for 32-well plate
+  height: 80000, // Standard height for 32-well plate
+  wells: [],
+};
 
-  export const wellLayoutDevelopment = {
-    name: "Development",
-    unit: "um",
-    width: 1000000,
-    height: 600000,
-    wells: [
-      { x: 200000, y: 200000, shape: "circle", radius: 50000, name:"A1" },
-      { x: 400000, y: 200000, shape: "circle", radius: 90000, name:"A2" },
-      { x: 600000, y: 200000, shape: "circle", radius: 90000, name:"A3" },
-      { x: 800000, y: 200000, shape: "circle", radius: 90000, name:"A4" },
-      { x: 200000, y: 400000, shape: "circle", radius: 90000, name:"B1" },
-      { x: 400000, y: 400000, shape: "circle", radius: 90000 },
-      {
-        x: 600000,
-        y: 400000,
-        shape: "rectangle",
-        width: 90000,
-        height: 180000,
-      },
-      {
-        x: 800000,
-        y: 400000,
-        shape: "rectangle",
-        width: 180000,
-        height: 180000,
-        name:"B4"
-      },
-    ],
-  };
+export const wellLayoutDevelopment = {
+  name: "Heidstar Histo 4 Slides",
+  unit: "um",
+  width: 170000,
+  height: 130000,
+  wells: [
+    {
+      x: 40000,
+      y: 67250,
+      shape: "rectangle",
+      width: 27000,
+      height: 74000,
+      name: "Slide1"
+    },
+    {
+      x: 40000+30000,
+      y: 67250,
+      shape: "rectangle",
+      width: 27000,
+      height: 74000,
+      name: "Slide2"
+    },
+    {
+      x: 40000+2*30000,
+      y: 67250,
+      shape: "rectangle",
+      width: 27000,
+      height: 74000,
+      name: "Slide3"
+    },
+    {
+      x: 40000+3*30000,
+      y: 67250,
+      shape: "rectangle",
+      width: 27000,
+      height: 74000,
+      name: "Slide4"
+    },
+  ],
+};
 
-  export const wellLayout32 = {
-    name: "Wellplate 32",
-    unit: "um",
-    width: 128000,
-    height: 86000,
-    wells: [
-        { "x": 15000, "y": 15000, "shape": "circle", "radius": 4500 },
-        { "x": 45000, "y": 15000, "shape": "circle", "radius": 4500 },
-        { "x": 75000, "y": 15000, "shape": "circle", "radius": 4500 },
-        { "x": 105000, "y": 15000, "shape": "circle", "radius": 4500 },
-        
-        { "x": 15000, "y": 30000, "shape": "circle", "radius": 4500 },
-        { "x": 45000, "y": 30000, "shape": "circle", "radius": 4500 },
-        { "x": 75000, "y": 30000, "shape": "circle", "radius": 4500 },
-        { "x": 105000, "y": 30000, "shape": "circle", "radius": 4500 },
-        
-        { "x": 15000, "y": 45000, "shape": "circle", "radius": 4500 },
-        { "x": 45000, "y": 45000, "shape": "circle", "radius": 4500 },
-        { "x": 75000, "y": 45000, "shape": "circle", "radius": 4500 },
-        { "x": 105000, "y": 45000, "shape": "circle", "radius": 4500 },
-        
-        { "x": 15000, "y": 60000, "shape": "circle", "radius": 4500 },
-        { "x": 45000, "y": 60000, "shape": "circle", "radius": 4500 },
-        { "x": 75000, "y": 60000, "shape": "circle", "radius": 4500 },
-        { "x": 105000, "y": 60000, "shape": "circle", "radius": 4500 },
-        
-        { "x": 15000, "y": 75000, "shape": "circle", "radius": 4500 },
-        { "x": 45000, "y": 75000, "shape": "circle", "radius": 4500 },
-        { "x": 75000, "y": 75000, "shape": "circle", "radius": 4500 },
-        { "x": 105000, "y": 75000, "shape": "circle", "radius": 4500 }
-    ]
-}
-;
+export const wellLayout32 = {
+  name: "Wellplate 32",
+  unit: "um",
+  width: 128000,
+  height: 86000,
+  wells: [
+    { x: 15000, y: 15000, shape: "circle", radius: 4500 },
+    { x: 45000, y: 15000, shape: "circle", radius: 4500 },
+    { x: 75000, y: 15000, shape: "circle", radius: 4500 },
+    { x: 105000, y: 15000, shape: "circle", radius: 4500 },
+
+    { x: 15000, y: 30000, shape: "circle", radius: 4500 },
+    { x: 45000, y: 30000, shape: "circle", radius: 4500 },
+    { x: 75000, y: 30000, shape: "circle", radius: 4500 },
+    { x: 105000, y: 30000, shape: "circle", radius: 4500 },
+
+    { x: 15000, y: 45000, shape: "circle", radius: 4500 },
+    { x: 45000, y: 45000, shape: "circle", radius: 4500 },
+    { x: 75000, y: 45000, shape: "circle", radius: 4500 },
+    { x: 105000, y: 45000, shape: "circle", radius: 4500 },
+
+    { x: 15000, y: 60000, shape: "circle", radius: 4500 },
+    { x: 45000, y: 60000, shape: "circle", radius: 4500 },
+    { x: 75000, y: 60000, shape: "circle", radius: 4500 },
+    { x: 105000, y: 60000, shape: "circle", radius: 4500 },
+
+    { x: 15000, y: 75000, shape: "circle", radius: 4500 },
+    { x: 45000, y: 75000, shape: "circle", radius: 4500 },
+    { x: 75000, y: 75000, shape: "circle", radius: 4500 },
+    { x: 105000, y: 75000, shape: "circle", radius: 4500 },
+  ],
+};
 
 export const histolayout = {
   name: "histolayout",
@@ -387,72 +395,68 @@ export const histolayout = {
       width: 24000,
       height: 100000,
       name: "A1",
-    }
-    ]
-}
-;
-
+    },
+  ],
+};
 
 export const wellLayout96 = {
-    name: "Wellplate 96",
-    unit: "um",
-    width: 128000,
-    height: 86000,
-    wells: [
-        { "x": 10667, "y": 10667, "shape": "circle", "radius": 4500 },
-        { "x": 21334, "y": 10667, "shape": "circle", "radius": 4500 },
-        { "x": 32001, "y": 10667, "shape": "circle", "radius": 4500 },
-        { "x": 42668, "y": 10667, "shape": "circle", "radius": 4500 },
-        { "x": 53335, "y": 10667, "shape": "circle", "radius": 4500 },
-        { "x": 64002, "y": 10667, "shape": "circle", "radius": 4500 },
-        { "x": 74669, "y": 10667, "shape": "circle", "radius": 4500 },
-        { "x": 85336, "y": 10667, "shape": "circle", "radius": 4500 },
-        
-        { "x": 10667, "y": 21334, "shape": "circle", "radius": 4500 },
-        { "x": 21334, "y": 21334, "shape": "circle", "radius": 4500 },
-        { "x": 32001, "y": 21334, "shape": "circle", "radius": 4500 },
-        { "x": 42668, "y": 21334, "shape": "circle", "radius": 4500 },
-        { "x": 53335, "y": 21334, "shape": "circle", "radius": 4500 },
-        { "x": 64002, "y": 21334, "shape": "circle", "radius": 4500 },
-        { "x": 74669, "y": 21334, "shape": "circle", "radius": 4500 },
-        { "x": 85336, "y": 21334, "shape": "circle", "radius": 4500 },
-        
-        { "x": 10667, "y": 32001, "shape": "circle", "radius": 4500 },
-        { "x": 21334, "y": 32001, "shape": "circle", "radius": 4500 },
-        { "x": 32001, "y": 32001, "shape": "circle", "radius": 4500 },
-        { "x": 42668, "y": 32001, "shape": "circle", "radius": 4500 },
-        { "x": 53335, "y": 32001, "shape": "circle", "radius": 4500 },
-        { "x": 64002, "y": 32001, "shape": "circle", "radius": 4500 },
-        { "x": 74669, "y": 32001, "shape": "circle", "radius": 4500 },
-        { "x": 85336, "y": 32001, "shape": "circle", "radius": 4500 },
-        
-        { "x": 10667, "y": 42668, "shape": "circle", "radius": 4500 },
-        { "x": 21334, "y": 42668, "shape": "circle", "radius": 4500 },
-        { "x": 32001, "y": 42668, "shape": "circle", "radius": 4500 },
-        { "x": 42668, "y": 42668, "shape": "circle", "radius": 4500 },
-        { "x": 53335, "y": 42668, "shape": "circle", "radius": 4500 },
-        { "x": 64002, "y": 42668, "shape": "circle", "radius": 4500 },
-        { "x": 74669, "y": 42668, "shape": "circle", "radius": 4500 },
-        { "x": 85336, "y": 42668, "shape": "circle", "radius": 4500 },
-        
-        { "x": 10667, "y": 53335, "shape": "circle", "radius": 4500 },
-        { "x": 21334, "y": 53335, "shape": "circle", "radius": 4500 },
-        { "x": 32001, "y": 53335, "shape": "circle", "radius": 4500 },
-        { "x": 42668, "y": 53335, "shape": "circle", "radius": 4500 },
-        { "x": 53335, "y": 53335, "shape": "circle", "radius": 4500 },
-        { "x": 64002, "y": 53335, "shape": "circle", "radius": 4500 },
-        { "x": 74669, "y": 53335, "shape": "circle", "radius": 4500 },
-        { "x": 85336, "y": 53335, "shape": "circle", "radius": 4500 },
-        
-        { "x": 10667, "y": 64002, "shape": "circle", "radius": 4500 },
-        { "x": 21334, "y": 64002, "shape": "circle", "radius": 4500 },
-        { "x": 32001, "y": 64002, "shape": "circle", "radius": 4500 },
-        { "x": 42668, "y": 64002, "shape": "circle", "radius": 4500 },
-        { "x": 53335, "y": 64002, "shape": "circle", "radius": 4500 },
-        { "x": 64002, "y": 64002, "shape": "circle", "radius": 4500 },
-        { "x": 74669, "y": 64002, "shape": "circle", "radius": 4500 },
-        { "x": 85336, "y": 64002, "shape": "circle", "radius": 4500 }
-    ]
-}
+  name: "Wellplate 96",
+  unit: "um",
+  width: 128000,
+  height: 86000,
+  wells: [
+    { x: 10667, y: 10667, shape: "circle", radius: 4500 },
+    { x: 21334, y: 10667, shape: "circle", radius: 4500 },
+    { x: 32001, y: 10667, shape: "circle", radius: 4500 },
+    { x: 42668, y: 10667, shape: "circle", radius: 4500 },
+    { x: 53335, y: 10667, shape: "circle", radius: 4500 },
+    { x: 64002, y: 10667, shape: "circle", radius: 4500 },
+    { x: 74669, y: 10667, shape: "circle", radius: 4500 },
+    { x: 85336, y: 10667, shape: "circle", radius: 4500 },
 
-;
+    { x: 10667, y: 21334, shape: "circle", radius: 4500 },
+    { x: 21334, y: 21334, shape: "circle", radius: 4500 },
+    { x: 32001, y: 21334, shape: "circle", radius: 4500 },
+    { x: 42668, y: 21334, shape: "circle", radius: 4500 },
+    { x: 53335, y: 21334, shape: "circle", radius: 4500 },
+    { x: 64002, y: 21334, shape: "circle", radius: 4500 },
+    { x: 74669, y: 21334, shape: "circle", radius: 4500 },
+    { x: 85336, y: 21334, shape: "circle", radius: 4500 },
+
+    { x: 10667, y: 32001, shape: "circle", radius: 4500 },
+    { x: 21334, y: 32001, shape: "circle", radius: 4500 },
+    { x: 32001, y: 32001, shape: "circle", radius: 4500 },
+    { x: 42668, y: 32001, shape: "circle", radius: 4500 },
+    { x: 53335, y: 32001, shape: "circle", radius: 4500 },
+    { x: 64002, y: 32001, shape: "circle", radius: 4500 },
+    { x: 74669, y: 32001, shape: "circle", radius: 4500 },
+    { x: 85336, y: 32001, shape: "circle", radius: 4500 },
+
+    { x: 10667, y: 42668, shape: "circle", radius: 4500 },
+    { x: 21334, y: 42668, shape: "circle", radius: 4500 },
+    { x: 32001, y: 42668, shape: "circle", radius: 4500 },
+    { x: 42668, y: 42668, shape: "circle", radius: 4500 },
+    { x: 53335, y: 42668, shape: "circle", radius: 4500 },
+    { x: 64002, y: 42668, shape: "circle", radius: 4500 },
+    { x: 74669, y: 42668, shape: "circle", radius: 4500 },
+    { x: 85336, y: 42668, shape: "circle", radius: 4500 },
+
+    { x: 10667, y: 53335, shape: "circle", radius: 4500 },
+    { x: 21334, y: 53335, shape: "circle", radius: 4500 },
+    { x: 32001, y: 53335, shape: "circle", radius: 4500 },
+    { x: 42668, y: 53335, shape: "circle", radius: 4500 },
+    { x: 53335, y: 53335, shape: "circle", radius: 4500 },
+    { x: 64002, y: 53335, shape: "circle", radius: 4500 },
+    { x: 74669, y: 53335, shape: "circle", radius: 4500 },
+    { x: 85336, y: 53335, shape: "circle", radius: 4500 },
+
+    { x: 10667, y: 64002, shape: "circle", radius: 4500 },
+    { x: 21334, y: 64002, shape: "circle", radius: 4500 },
+    { x: 32001, y: 64002, shape: "circle", radius: 4500 },
+    { x: 42668, y: 64002, shape: "circle", radius: 4500 },
+    { x: 53335, y: 64002, shape: "circle", radius: 4500 },
+    { x: 64002, y: 64002, shape: "circle", radius: 4500 },
+    { x: 74669, y: 64002, shape: "circle", radius: 4500 },
+    { x: 85336, y: 64002, shape: "circle", radius: 4500 },
+  ],
+};
