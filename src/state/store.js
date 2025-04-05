@@ -18,6 +18,7 @@ import parameterRangeReducer from "./slices/ParameterRangeSlice";
 import liveStreamReducer from "./slices/LiveStreamSlice";
 import tileStreamReducer from "./slices/TileStreamSlice";
 import objectiveReducer from "./slices/ObjectiveSlice";
+import LEDMatrixReducer from "./slices/LEDMatrixSlice";
 
 //#####################################################################################
 // Combine reducers
@@ -32,6 +33,7 @@ const rootReducer = combineReducers({
   wellSelectorState: wellSelectorReducer,
   objectiveState: objectiveReducer,
   position: positionReducer,
+  LEDMatrixState: LEDMatrixReducer,
 });
 
 //#####################################################################################

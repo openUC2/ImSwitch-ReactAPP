@@ -14,6 +14,8 @@ import ImJoyView from "./components/ImJoyView";
 import JupyterExecutor from "./components/JupyterExecutor";
 import { JupyterProvider } from "./context/JupyterContext";
 import UC2Controller from "./components/UC2Controller";
+import ExtendedLEDMatrixController from "./components/ExtendedLEDMatrixController";
+
 import theme from "./theme";
 import {
   Menu as MenuIcon,
@@ -531,6 +533,12 @@ function App() {
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "UC2" : ""} />
               </ListItem>
+              <ListItem button selected={selectedPlugin === "ExtendedLEDMatrix"} onClick={() => handlePluginChange("ExtendedLEDMatrix")}>
+                <ListItemIcon>
+                  <AirIcon />
+                </ListItemIcon>
+                <ListItemText primary={sidebarVisible ? "ExtendedLEDMatrix" : ""} />
+              </ListItem>
               <ListItem button onClick={() => handlePluginChange("Widgets")}>
                 <ListItemIcon>
                   <DevicesIcon />
@@ -671,6 +679,16 @@ function App() {
             {selectedPlugin === "UC2" && (
               <WidgetContextProvider>
                 <UC2Controller hostIP={hostIP} hostPort={apiPort} />
+              </WidgetContextProvider>
+            )}
+            {selectedPlugin === "ExtendedLEDMatrix" && (
+              <WidgetContextProvider>
+                <ExtendedLEDMatrixController
+                  hostIP={hostIP}
+                  hostPort={apiPort}
+                  layout={layout}
+                  onLayoutChange={(newLayout) => setLayout(newLayout)}
+                />
               </WidgetContextProvider>
             )}
             {selectedPlugin === "Sepmon" && (
