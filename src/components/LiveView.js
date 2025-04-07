@@ -579,7 +579,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
                       sx={{ flex: 1, mx: 2 }}
                     />
                     <Checkbox
-                      checked={checkedVal}
+                      //checked={checkedVal}
                       onChange={(e) => handleIlluminationCheckboxChange(e, index)}
                     />
                   </Box>
