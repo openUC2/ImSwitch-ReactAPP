@@ -5,7 +5,144 @@
  * WellSelectorUtils.isCircleInsideRect()
  */
 //##################################################################################
+export function calculateRasterRect(
+    center,
+    rasterWidth,
+    rasterHeight,
+    rectPlusX,
+    rectMinusX,
+    rectPlusY,
+    rectMinusY
+  ) {
+    if (rasterWidth <= 0 || rasterHeight <= 0) {
+        throw new Error("Raster width and height must be greater than 0.");
+      }
 
+
+    const rasters = [];
+  
+    const minX = center.x - rectMinusX;
+    const maxX = center.x + rectPlusX;
+    const minY = center.y - rectMinusY;
+    const maxY = center.y + rectPlusY;
+  
+    // Raster sind an ihrem Zentrum ausgerichtet:
+    const centerX = center.x;
+    const centerY = center.y;
+  
+    const visited = new Set();
+  
+    const toKey = (x, y) => `${x},${y}`;
+  
+    function rectsOverlap(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2) {
+      return !(bx2 <= ax1 || bx1 >= ax2 || by2 <= ay1 || by1 >= ay2);
+    }
+  
+    const queue = [{ x: centerX, y: centerY }];
+    const directions = [
+      { dx: rasterWidth, dy: 0 },
+      { dx: -rasterWidth, dy: 0 },
+      { dx: 0, dy: rasterHeight },
+      { dx: 0, dy: -rasterHeight }
+    ];
+  
+    while (queue.length > 0) {
+      const { x, y } = queue.shift();
+      const key = toKey(x, y);
+      if (visited.has(key)) continue;
+      visited.add(key);
+  
+      // Raster-Ecken berechnen
+      const rasterLeft = x - rasterWidth / 2;
+      const rasterRight = x + rasterWidth / 2;
+      const rasterTop = y - rasterHeight / 2;
+      const rasterBottom = y + rasterHeight / 2;
+  
+      if (
+        rectsOverlap(
+          minX, minY, maxX, maxY,
+          rasterLeft, rasterTop, rasterRight, rasterBottom
+        )
+      ) {
+        rasters.push({ x, y });
+  
+        for (const { dx, dy } of directions) {
+          const nx = x + dx;
+          const ny = y + dy;
+          const nkey = toKey(nx, ny);
+          if (!visited.has(nkey)) {
+            queue.push({ x: nx, y: ny });
+          }
+        }
+      }
+    }
+  
+    return rasters;
+  }
+  
+  
+//##################################################################################
+  export function calculateRasterOval(
+    center,
+    rasterWidth,
+    rasterHeight,
+    radiusX,
+    radiusY
+  ) {
+    const rasters = [];
+    
+    // Horizontal und vertikal Halbachsen (für das Oval)
+    const a = radiusX; // horizontale Halbachse (nach rechts)
+    const b = radiusY; // vertikale Halbachse (nach oben)
+  
+    // Visited Set, um Duplikate zu vermeiden
+    const visited = new Set();
+    const toKey = (x, y) => `${x},${y}`;
+  
+    // Funktion, um zu prüfen, ob ein Punkt (x, y) innerhalb des Ovals liegt
+    const isInsideOval = (x, y) => {
+      const dx = x - center.x;
+      const dy = y - center.y;
+      return (dx * dx) / (a * a) + (dy * dy) / (b * b) <= 1;
+    };
+  
+    // Queue für die Expansion, Startpunkt ist das Zentrum
+    const queue = [{ x: center.x, y: center.y }];
+    const directions = [
+      { dx: rasterWidth, dy: 0 },  // Rechts expandieren
+      { dx: -rasterWidth, dy: 0 }, // Links expandieren
+      { dx: 0, dy: rasterHeight }, // Oben expandieren
+      { dx: 0, dy: -rasterHeight } // Unten expandieren
+    ];
+  
+    while (queue.length > 0) {
+      const { x, y } = queue.shift();
+      const key = toKey(x, y);
+      if (visited.has(key)) continue;
+      visited.add(key);
+  
+      // Wenn das Raster innerhalb des Ovals liegt, füge es hinzu
+      if (isInsideOval(x, y)) {
+        rasters.push({ x, y });
+  
+        // Expansion in alle vier Richtungen
+        for (const { dx, dy } of directions) {
+          const nextX = x + dx;
+          const nextY = y + dy;
+          const nextKey = toKey(nextX, nextY);
+          if (!visited.has(nextKey)) {
+            queue.push({ x: nextX, y: nextY });
+          }
+        }
+      }
+    }
+  
+    return rasters;
+  }
+  
+  
+  
+  
 //##################################################################################
 export function calculateNeighborPointsSquare(
   squareX,
@@ -320,31 +457,31 @@ export const wellLayoutDevelopment = {
       shape: "rectangle",
       width: 27000,
       height: 74000,
-      name: "Slide1"
+      name: "Slide1",
     },
     {
-      x: 40000+30000,
+      x: 40000 + 30000,
       y: 67250,
       shape: "rectangle",
       width: 27000,
       height: 74000,
-      name: "Slide2"
+      name: "Slide2",
     },
     {
-      x: 40000+2*30000,
+      x: 40000 + 2 * 30000,
       y: 67250,
       shape: "rectangle",
       width: 27000,
       height: 74000,
-      name: "Slide3"
+      name: "Slide3",
     },
     {
-      x: 40000+3*30000,
+      x: 40000 + 3 * 30000,
       y: 67250,
       shape: "rectangle",
       width: 27000,
       height: 74000,
-      name: "Slide4"
+      name: "Slide4",
     },
   ],
 };

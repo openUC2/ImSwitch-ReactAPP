@@ -50,7 +50,7 @@ const PointListEditorComponent = () => {
   };
 
   //##################################################################################
-  const handlePositionChanged = (index, axis, value) => {
+  const handlePointChanged = (index, axis, value) => {
     // Handle input changes for x and y values
     const updatedPoints = experimentState.pointList.map((point, idx) => {
       if (idx === index) {
@@ -58,6 +58,7 @@ const PointListEditorComponent = () => {
       }
       return point;
     });
+
 
     // Update Redux state
     dispatch(experimentSlice.setPointList(updatedPoints));
@@ -154,7 +155,8 @@ const PointListEditorComponent = () => {
 
       {/* Add             <ExperimentComponent /> */}
       <ExperimentComponent />
-          
+      <h1> </h1>
+
       {/* Remove item button */}
       <div
         style={{
@@ -228,7 +230,7 @@ const PointListEditorComponent = () => {
                 className="drag-handle"
                 style={{
                   cursor: "move", // Change cursor to indicate draggable area // {item.name}
-                  width: "50px",
+                  width: "32px",
                 }}
               >
                 ≡{index}:
@@ -241,7 +243,7 @@ const PointListEditorComponent = () => {
                   type="text"
                   value={item.name}
                   onChange={(e) =>
-                    handlePositionChanged(index, "name", e.target.value)
+                    handlePointChanged(index, "name", e.target.value)
                   }
                   placeholder="name"
                   style={{ flex: 1 }} // Ensures inputs take equal space
@@ -255,11 +257,7 @@ const PointListEditorComponent = () => {
                   type="number"
                   value={item.x}
                   onChange={(e) =>
-                    handlePositionChanged(
-                      index,
-                      "x",
-                      parseFloat(e.target.value)
-                    )
+                    handlePointChanged(index, "x", parseFloat(e.target.value))
                   }
                   placeholder="X value"
                   style={{ flex: 1 }} // Ensures inputs take equal space
@@ -273,11 +271,7 @@ const PointListEditorComponent = () => {
                   type="number"
                   value={item.y}
                   onChange={(e) =>
-                    handlePositionChanged(
-                      index,
-                      "y",
-                      parseFloat(e.target.value)
-                    )
+                    handlePointChanged(index, "y", parseFloat(e.target.value))
                   }
                   placeholder="Y value"
                   style={{ flex: 1 }} // Ensures inputs take equal space
@@ -285,61 +279,132 @@ const PointListEditorComponent = () => {
               )}
 
               {/* Input for shape value */}
-              {viewMode == ViewMode.SHAPE && <div>S</div>}
               {viewMode == ViewMode.SHAPE && (
-                <FormControl>
-                  <Select
-                    sx={{ height: "32px" }}
-                    value={item.shape}
-                    onChange={(e) =>
-                      handlePositionChanged(index, "shape", e.target.value)
-                    }
-                  >
-                    <MenuItem value={Shape.EMPTY}>Off</MenuItem>
-                    <MenuItem value={Shape.RECTANGLE}>Rect</MenuItem>
-                    <MenuItem value={Shape.CIRCLE}>Circle</MenuItem>
-                  </Select>
-                </FormControl>
+                <>
+                  <div>S</div>
+                  <FormControl>
+                    <Select
+                      sx={{ height: "32px" }}
+                      value={item.shape}
+                      onChange={(e) =>
+                        handlePointChanged(index, "shape", e.target.value)
+                      }
+                    >
+                      <MenuItem value={Shape.EMPTY}>Off</MenuItem>
+                      <MenuItem value={Shape.RECTANGLE}>Rect</MenuItem>
+                      <MenuItem value={Shape.CIRCLE}>Circle</MenuItem>
+                    </Select>
+                  </FormControl>
+                </>
               )}
 
-              {/* Input for n value */}
-              {viewMode == ViewMode.SHAPE && item.shape != "" && <div>nX:</div>}
-              {viewMode == ViewMode.SHAPE && item.shape != "" && (
-                <Input
-                  type="number"
-                  value={item.neighborsX}
-                  min="0"
-                  max="1000"
-                  onChange={(e) =>
-                    handlePositionChanged(
-                      index,
-                      "neighborsX",
-                      parseInt(e.target.value, 10)
-                    )
-                  }
-                  placeholder="Y value"
-                  style={{ flex: 1 }} // Ensures inputs take equal space
-                />
-              )}
+              {/* Input for rect value */}
               {viewMode == ViewMode.SHAPE && item.shape == Shape.RECTANGLE && (
-                <div>nY:</div>
+                <>
+                  <div>±X:</div>
+                  <Input
+                    type="number"
+                    value={item.rectMinusX}
+                    min="-1000000"
+                    max="0"
+                    onChange={(e) =>{
+                      handlePointChanged(
+                        index,
+                        "rectMinusX",
+                        parseInt(e.target.value, 10)
+                      )
+                    }}
+                    placeholder="Y value"
+                    style={{ flex: 1 }} // Ensures inputs take equal space
+                  />
+                  <div></div>
+                  <Input
+                    type="number"
+                    value={item.rectPlusX}
+                    min="0"
+                    max="1000000"
+                    onChange={(e) => {
+                      handlePointChanged(
+                        index,
+                        "rectPlusX",
+                        parseInt(e.target.value, 10)
+                      );
+                    }}
+                    placeholder="Y value"
+                    style={{ flex: 1 }} // Ensures inputs take equal space
+                  />
+                  <div>±Y:</div>
+                  <Input
+                    type="number"
+                    value={item.rectMinusY}
+                    min="-1000000"
+                    max="0"
+                    onChange={(e) => {
+                      handlePointChanged(
+                        index,
+                        "rectMinusY",
+                        parseInt(e.target.value, 10)
+                      )
+                    }}
+                    placeholder="Y value"
+                    style={{ flex: 1 }} // Ensures inputs take equal space
+                  />
+                  <div></div>
+                  <Input
+                    type="number"
+                    value={item.rectPlusY}
+                    min="0"
+                    max="1000000"
+                    onChange={(e) =>{
+                      handlePointChanged(
+                        index,
+                        "rectPlusY",
+                        parseInt(e.target.value, 10)
+                      )
+                    }}
+                    placeholder="Y value"
+                    style={{ flex: 1 }} // Ensures inputs take equal space
+                  />
+                </>
               )}
-              {viewMode == ViewMode.SHAPE && item.shape == Shape.RECTANGLE && (
-                <Input
-                  type="number"
-                  value={item.neighborsY}
-                  min="0"
-                  max="1000"
-                  onChange={(e) =>
-                    handlePositionChanged(
-                      index,
-                      "neighborsY",
-                      parseInt(e.target.value, 10)
-                    )
-                  }
-                  placeholder="Y value"
-                  style={{ flex: 1 }} // Ensures inputs take equal space
-                />
+
+              
+              {/* Input for circle value */}
+              {viewMode == ViewMode.SHAPE && item.shape == Shape.CIRCLE && (
+                <>
+                  <div>rX:</div>
+                  <Input
+                    type="number"
+                    value={item.circleRadiusX}
+                    min="-1000000"
+                    max="0"
+                    onChange={(e) =>{
+                      handlePointChanged(
+                        index,
+                        "circleRadiusX",
+                        parseInt(e.target.value, 10)
+                      )
+                    }}
+                    placeholder="Y value"
+                    style={{ flex: 1 }} // Ensures inputs take equal space
+                  />
+                  <div>rY:</div>
+                  <Input
+                    type="number"
+                    value={item.circleRadiusY}
+                    min="-1000000"
+                    max="0"
+                    onChange={(e) => {
+                      handlePointChanged(
+                        index,
+                        "circleRadiusY",
+                        parseInt(e.target.value, 10)
+                      )
+                    }}
+                    placeholder="Y value"
+                    style={{ flex: 1 }} // Ensures inputs take equal space
+                  />
+                </>
               )}
 
               {/* dummy button*/}

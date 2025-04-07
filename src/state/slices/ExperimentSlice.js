@@ -17,20 +17,8 @@ const initialExperimentState = {
       { x: 800000, y: 200000, shape: "circle", radius: 90000 },
       { x: 200000, y: 400000, shape: "circle", radius: 90000 },
       { x: 400000, y: 400000, shape: "circle", radius: 90000, name: "A1" },
-      {
-        x: 600000,
-        y: 400000,
-        shape: "rectangle",
-        width: 90000,
-        height: 180000,
-      },
-      {
-        x: 800000,
-        y: 400000,
-        shape: "rectangle",
-        width: 180000,
-        height: 180000,
-      },
+      { x: 600000, y: 400000, shape: "rectangle", width: 90000, height: 180000, },
+      { x: 800000, y: 400000, shape: "rectangle", width: 180000, height: 180000, },
       */
     ],
   },
@@ -42,8 +30,12 @@ const initialExperimentState = {
       x: 100000,
       y: 100000,
       shape: "",
-      neighborsX: 0,
-      neighborsY: 0,
+      neighborsX: 0,//TODO deprecated
+      neighborsY: 0,//TODO deprecated
+      rectPlusX: 0,
+      rectMinusX: 0,
+      rectPlusY: 0,
+      rectMinusY: 0
     },
     */
   ],
@@ -154,15 +146,19 @@ const experimentSlice = createSlice({
       console.log("createPoint", action);
       const newPoint = {
         id: uuidv4(),
-        name: action.payload.name != null ? action.payload.name : "",
         x: action.payload.x,
         y: action.payload.y,
-        shape: action.payload.shape != null ? action.payload.shape : "",
-        neighborsX: action.payload.neighborsX != null ? action.payload.neighborsX : 0,
-        neighborsY: action.payload.neighborsY != null ? action.payload.neighborsY : 0,
+        name: (action.payload.name != null) ? (action.payload.name) : (""),
+        shape: (action.payload.shape != null) ? (action.payload.shape) : (""),
+        rectPlusX: (action.payload.rectPlusX != null) ? (action.payload.rectPlusX) : (0),
+        rectPlusY: (action.payload.rectPlusY != null) ? (action.payload.rectPlusY) : (0),
+        rectMinusX: (action.payload.rectMinusX != null) ? (action.payload.rectMinusX) : (0),
+        rectMinusY: (action.payload.rectMinusY != null) ? (action.payload.rectMinusY) : (0),
+        circleRadiusX: (action.payload.circleRadiusX != null) ? (action.payload.circleRadiusX) : (0),
+        circleRadiusY: (action.payload.circleRadiusY != null) ? (action.payload.circleRadiusY) : (0),
       };
       
-      console.log("createPoint newPoint", newPoint, action.payload.neighborsX);
+      console.log("createPoint newPoint", newPoint);
       state.pointList.push(newPoint);
     },
     addPoint: (state, action) => {
