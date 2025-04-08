@@ -381,36 +381,37 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
 
       //calc neighbors
       let neighborPointList = [];
-      if (itPoint.shape == "circle") {
+      if (itPoint.shape == Shape.CIRCLE) {
         //calc neighbors
-
-        const rasterCenterPx = { x: calcPhy2Px(itPoint.x), y: calcPhy2Px(itPoint.y) };
+        const rasterCenterPx = {
+          x: calcPhy2Px(itPoint.x),
+          y: calcPhy2Px(itPoint.y),
+        };
 
         neighborPointList = wsUtils.calculateRasterOval(
-            rasterCenterPx,
-            rasterWidthOverlapedPx,
-            rasterHeightOverlapedPx,
-            calcPhy2Px(itPoint.circleRadiusX),
-            calcPhy2Px(itPoint.circleRadiusY)
-        ); 
- 
-      } else if (itPoint.shape == "rectangle") {
+          rasterCenterPx,
+          rasterWidthOverlapedPx,
+          rasterHeightOverlapedPx,
+          calcPhy2Px(itPoint.circleRadiusX),
+          calcPhy2Px(itPoint.circleRadiusY)
+        );
+      } else if (itPoint.shape == Shape.RECTANGLE) {
         //calc neighbors
-
-        const rasterCenterPx = { x: calcPhy2Px(itPoint.x), y: calcPhy2Px(itPoint.y) };
+        const rasterCenterPx = {
+          x: calcPhy2Px(itPoint.x),
+          y: calcPhy2Px(itPoint.y),
+        };
 
         neighborPointList = wsUtils.calculateRasterRect(
-            rasterCenterPx,
-            rasterWidthOverlapedPx,
-            rasterHeightOverlapedPx,
-            calcPhy2Px(itPoint.rectPlusX),
-            calcPhy2Px(itPoint.rectMinusX),
-            calcPhy2Px(itPoint.rectPlusY),
-            calcPhy2Px(itPoint.rectMinusY)
-        ); 
+          rasterCenterPx,
+          rasterWidthOverlapedPx,
+          rasterHeightOverlapedPx,
+          calcPhy2Px(itPoint.rectPlusX),
+          calcPhy2Px(itPoint.rectMinusX),
+          calcPhy2Px(itPoint.rectPlusY),
+          calcPhy2Px(itPoint.rectMinusY)
+        );
       }
-
-      
 
       // draw the neighbors
       neighborPointList.forEach((point) => {
@@ -422,7 +423,7 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
           : Math.min(rasterHeightOverlapedPx, getRasterHeightAsPx());
         //const neighborWidth = Math.min(rasterWidthOverlaped, getRasterWidthAsPx());
         //const neighborHeight = Math.min(rasterHeightOverlaped, getRasterHeightAsPx());
-          ctx.strokeStyle = "lightgray";
+        ctx.strokeStyle = "lightgray";
         ctx.fillRect(
           point.x - neighborWidth / 2,
           point.y - neighborHeight / 2,
@@ -437,13 +438,43 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
         );
       });
 
+      //draw the point area shape
+      if (wellSelectorState.showShape) {
+        if (itPoint.shape == Shape.CIRCLE) {
+          // Draw circle
+          ctx.strokeStyle = "black";
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.ellipse(
+            calcPhy2Px(itPoint.x), // center x
+            calcPhy2Px(itPoint.y), // center y
+            calcPhy2Px(itPoint.circleRadiusX),
+            calcPhy2Px(itPoint.circleRadiusY),
+            0, // rotation
+            0, // start angle
+            2 * Math.PI // end angle
+          );
+          ctx.stroke();
+        } else if (itPoint.shape == Shape.RECTANGLE) {
+          // Draw rectangle
+          ctx.strokeStyle = "black";
+          ctx.lineWidth = 1;
+          ctx.strokeRect(
+            calcPhy2Px(itPoint.x - itPoint.rectMinusX),
+            calcPhy2Px(itPoint.y - itPoint.rectMinusY),
+            calcPhy2Px(itPoint.rectPlusX + itPoint.rectMinusX),
+            calcPhy2Px(itPoint.rectPlusY + itPoint.rectMinusY)
+          );
+        }
+      }
+
       // Draw center square
       ctx.strokeStyle = "black"; // Black color for the square's outline
       ctx.fillStyle = "rgba(0, 0, 0, 0.05)"; // Black color for the square's fill
       ctx.lineWidth = 1; // Line width for the square
       ctx.lineCap = "round"; // Rounded ends for lines
 
-      //handle state
+      // check if center square selected
       if (wellSelectorState.mode == Mode.SINGLE_SELECT) {
         //check if mouse down
         if (mouseDownFlag) {
@@ -857,20 +888,32 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
           if (
             isWellInsideSelection(well, mouseDownPosition, mouseMovePosition)
           ) {
-            dispatch(experimentSlice.createPoint({
-                    x: well.x,
-                    y: well.y,
-                    name: well.name,
-                    shape: well.shape,
-                    rectPlusX: (well.shape == Shape.RECTANGLE) ? (Math.round(well.width/2)) : (0),
-                    rectPlusY: (well.shape == Shape.RECTANGLE) ? (Math.round(well.height/2)) : (0),
-                    rectMinusX: (well.shape == Shape.RECTANGLE) ? (Math.round(well.width/2)) : (0),
-                    rectMinusY: (well.shape == Shape.RECTANGLE) ? (Math.round(well.height/2)) : (0),
-                    circleRadiusX: (well.shape == Shape.CIRCLE) ? (well.radius) : (0),
-                    circleRadiusY: (well.shape == Shape.CIRCLE) ? (well.radius) : (0),
-                  })); 
-
-            
+            dispatch(
+              experimentSlice.createPoint({
+                x: well.x,
+                y: well.y,
+                name: well.name,
+                shape: well.shape,
+                rectPlusX:
+                  well.shape == Shape.RECTANGLE
+                    ? Math.round(well.width / 2)
+                    : 0,
+                rectPlusY:
+                  well.shape == Shape.RECTANGLE
+                    ? Math.round(well.height / 2)
+                    : 0,
+                rectMinusX:
+                  well.shape == Shape.RECTANGLE
+                    ? Math.round(well.width / 2)
+                    : 0,
+                rectMinusY:
+                  well.shape == Shape.RECTANGLE
+                    ? Math.round(well.height / 2)
+                    : 0,
+                circleRadiusX: well.shape == Shape.CIRCLE ? well.radius : 0,
+                circleRadiusY: well.shape == Shape.CIRCLE ? well.radius : 0,
+              })
+            );
           }
         });
       }
@@ -919,15 +962,27 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
           const mouseMovePositionPhy = calcPxPoint2PhyPoint(mouseMovePosition);
 
           //calc area
-          const leftEdge = Math.min(mouseDownPositionPhy.x, mouseMovePositionPhy.x);
-          const rightEdge = Math.max(mouseDownPositionPhy.x, mouseMovePositionPhy.x);
-          const topEdge = Math.min(mouseDownPositionPhy.y, mouseMovePositionPhy.y);
-          const bottomEdge = Math.max(mouseDownPositionPhy.y, mouseMovePositionPhy.y);
-       
-          const xMinus = Math.round(centerPointPhy.x - leftEdge);   //Note: round value
-          const xPlus = Math.round(rightEdge - centerPointPhy.x);  
-          const yMinus = Math.round(centerPointPhy.y - topEdge);    
-          const yPlus = Math.round(bottomEdge - centerPointPhy.y); 
+          const leftEdge = Math.min(
+            mouseDownPositionPhy.x,
+            mouseMovePositionPhy.x
+          );
+          const rightEdge = Math.max(
+            mouseDownPositionPhy.x,
+            mouseMovePositionPhy.x
+          );
+          const topEdge = Math.min(
+            mouseDownPositionPhy.y,
+            mouseMovePositionPhy.y
+          );
+          const bottomEdge = Math.max(
+            mouseDownPositionPhy.y,
+            mouseMovePositionPhy.y
+          );
+
+          const xMinus = Math.round(centerPointPhy.x - leftEdge); //Note: round value
+          const xPlus = Math.round(rightEdge - centerPointPhy.x);
+          const yMinus = Math.round(centerPointPhy.y - topEdge);
+          const yPlus = Math.round(bottomEdge - centerPointPhy.y);
 
           //create point
           dispatch(
@@ -1050,6 +1105,11 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
       console.log("Mul key pressed", objectiveState);
       dispatch(objectiveSlice.setFovX(2500));
       dispatch(objectiveSlice.setFovY(1000));
+    }
+
+    if (event.key === "/") {
+      console.log(objectiveState.fovX);
+      console.log(objectiveState.fovY);
     }
 
     //TODO for test RM ME------------

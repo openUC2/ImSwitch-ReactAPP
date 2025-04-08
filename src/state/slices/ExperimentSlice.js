@@ -30,12 +30,12 @@ const initialExperimentState = {
       x: 100000,
       y: 100000,
       shape: "",
-      neighborsX: 0,//TODO deprecated
-      neighborsY: 0,//TODO deprecated
       rectPlusX: 0,
       rectMinusX: 0,
       rectPlusY: 0,
-      rectMinusY: 0
+      rectMinusY: 0,
+      circleRadiusX: 0,
+      circleRadiusY: 0
     },
     */
   ],

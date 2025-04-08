@@ -97,6 +97,11 @@ const WellSelectorComponent = () => {
   };
 
   //##################################################################################
+  const handleShowShapeChange = (event) => {
+    dispatch(wellSelectorSlice.setShowShape(event.target.checked));
+  };
+
+  //##################################################################################
   const handleLayoutChange = (event) => {
     console.log("handleLayoutChange");
     //select layout
@@ -222,6 +227,15 @@ const WellSelectorComponent = () => {
             onChange={handleShowOverlapChange}
           />
           show overlap
+        </label>
+
+        <label style={{ fontSize: "14px" }}>
+          <input
+            type="checkbox"
+            checked={wellSelectorState.showShape}
+            onChange={handleShowShapeChange}
+          />
+          show shape
         </label>
       </div>
 
