@@ -1,7 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-
-
 // Define the initial state
 const initialParameterRangeState = {
     illumination: ["a", "b", "c"],
@@ -12,7 +10,16 @@ const initialParameterRangeState = {
     autoFocusStepSize: { min: 0.1, max: 10 },
     zStack: { min: -10, max: 20 },
     zStackStepSize: { min: 0.1, max: 10 },
-    speed: [1,5,10,50,100,500,1000,10000,20000,100000]
+    speed: [1,5,10,50,100,500,1000,10000,20000,100000],
+    illuSources: [], // Array of illumination sources
+    illuSourceMinIntensities: [], // Array of minimum intensities for each illumination source
+    illuSourceMaxIntensities: [], // Array of maximum intensities for each illumination source
+    illuIntensities: [], // Array of intensities for each illumination source
+    exposureTimes: [], // Array of exposure times for each illumination source
+    gain: [], // Array of gain values for each illumination source
+    isDPCpossible: false, // Boolean indicating if DPC is possible
+    isDarkfieldpossible: false, // Boolean indicating if dark field is possible
+    
 };
 
 // Create slice
@@ -73,6 +80,30 @@ const parameterRangeSlice = createSlice({
       setSpeed: (state, action) => {
         state.speed = action.payload;
       },
+      setIlluSources: (state, action) => {
+        state.illuSources = action.payload;
+      },
+      setIlluSourceMinIntensities: (state, action) => {
+        state.illuSourceMinIntensities = action.payload;
+      },  
+      setIlluSourceMaxIntensities: (state, action) => {
+        state.illuSourceMaxIntensities = action.payload;
+      },
+      setIlluIntensities: (state, action) => {
+        state.illuIntensities = action.payload;
+      },
+      setExposureTimes: (state, action) => {
+        state.exposureTimes = action.payload;
+      },
+      setGain: (state, action) => {
+        state.gain = action.payload;
+      },
+      setIsDPCpossible: (state, action) => {
+        state.isDPCpossible = action.payload;
+      },
+      setIsDarkfieldpossible: (state, action) => {
+        state.isDarkfieldpossible = action.payload;
+      },
   },
 });
 
@@ -93,7 +124,15 @@ export const {
     setZStackMax,
     setZStackStepSizeMin,
     setZStackStepSizeMax,
-    setSpeed
+    setSpeed, 
+    setIlluSources,
+    setIlluSourceMinIntensities,
+    setIlluSourceMaxIntensities,
+    setIlluIntensities,
+    setExposureTimes,
+    setGain,
+    setIsDPCpossible,
+    setIsDarkfieldpossible,
   } = parameterRangeSlice.actions;
 
 // Selector helper
