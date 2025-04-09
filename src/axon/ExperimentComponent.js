@@ -90,6 +90,7 @@ const ExperimentComponent = () => {
         objectiveState.fovY * (1 - wellSelectorState.overlapHeight);
 
       if (itPoint.shape == Shape.CIRCLE) {
+        //circle shape
         point.neighborPointList = wsUtils.calculateRasterOval(
           itPoint,
           rasterWidthOverlaped,
@@ -97,7 +98,12 @@ const ExperimentComponent = () => {
           itPoint.circleRadiusX,
           itPoint.circleRadiusY
         );
+        //handle invalid area
+        if (point.neighborPointList.length == 0) {
+            point.neighborPointList = [{ x: itPoint.x, y: itPoint.y, iX: 0, iY: 0 }];
+        }
       } else if (itPoint.shape == Shape.RECTANGLE) {
+        //rect shape
         point.neighborPointList = wsUtils.calculateRasterRect(
           itPoint,
           rasterWidthOverlaped,
@@ -107,6 +113,11 @@ const ExperimentComponent = () => {
           itPoint.rectPlusY,
           itPoint.rectMinusY
         );
+      }
+      else
+      {
+        //no shape
+        point.neighborPointList = [{ x: itPoint.x, y: itPoint.y, iX: 0, iY: 0 }];
       }
 
       //append point
