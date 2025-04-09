@@ -84,6 +84,7 @@ import FlowStopController from "./components/FlowStopController";
 import SepMonController from "./components/SepmonController";
 
 // Define both light and dark themes
+
 const lightTheme = createTheme({
   palette: {
     mode: "light",
@@ -100,14 +101,16 @@ const lightTheme = createTheme({
           font-style: normal;
           font-display: swap;
           font-weight: 400;
-          src: local('Roboto'), local('Roboto-Regular'), url('/fonts/Roboto-Regular.ttf') format('truetype');
+          src: local('Roboto'),
+               url('/imswitch/fonts/Roboto-Regular.ttf') format('truetype');
         }
         @font-face {
           font-family: 'Roboto';
           font-style: normal;
           font-display: swap;
           font-weight: 700;
-          src: local('Roboto-Bold'), url('/fonts/Roboto-Bold.ttf') format('truetype');
+          src: local('Roboto Bold'),
+               url('/imswitch/fonts/Roboto-Bold.ttf') format('truetype');
         }
       `,
     },
@@ -145,20 +148,22 @@ const darkTheme = createTheme({
     },
     MuiCssBaseline: {
       styleOverrides: `
-        @font-face {
-          font-family: 'Roboto';
-          font-style: normal;
-          font-display: swap;
-          font-weight: 400;
-          src: local('Roboto'), local('Roboto-Regular'), url('/fonts/Roboto-Regular.ttf') format('truetype');
-        }
-        @font-face {
-          font-family: 'Roboto';
-          font-style: normal;
-          font-display: swap;
-          font-weight: 700;
-          src: local('Roboto-Bold'), url('/fonts/Roboto-Bold.ttf') format('truetype');
-        }
+      @font-face {
+        font-family: 'Roboto';
+        font-style: normal;
+        font-display: swap;
+        font-weight: 400;
+        src: local('Roboto'),
+             url('/imswitch/fonts/Roboto-Regular.ttf') format('truetype');
+      }
+      @font-face {
+        font-family: 'Roboto';
+        font-style: normal;
+        font-display: swap;
+        font-weight: 700;
+        src: local('Roboto Bold'),
+             url('/imswitch/fonts/Roboto-Bold.ttf') format('truetype');
+      }
       `,
     },
   },
