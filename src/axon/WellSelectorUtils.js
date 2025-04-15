@@ -451,7 +451,7 @@ export const wellLayoutDefault = {
 };
 
 export const wellLayoutDevelopment = {
-  name: "Heidstar Histo 4 Slides",
+  name: "Heidstar 4x Histosample",
   unit: "um",
   width: 170000,
   height: 130000,
@@ -487,6 +487,13 @@ export const wellLayoutDevelopment = {
       width: 27000,
       height: 74000,
       name: "Slide4",
+    },    
+    {
+      x: 40750,
+      y: 68000,
+      shape: "circle",
+      radius: 1000,
+      name: "calibration",
     },
   ],
 };

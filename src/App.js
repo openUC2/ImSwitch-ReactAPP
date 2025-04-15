@@ -15,6 +15,7 @@ import JupyterExecutor from "./components/JupyterExecutor";
 import { JupyterProvider } from "./context/JupyterContext";
 import UC2Controller from "./components/UC2Controller";
 import ExtendedLEDMatrixController from "./components/ExtendedLEDMatrixController";
+import StageOffsetCalibration from "./components/StageOffsetCalibrationController";
 
 import theme from "./theme";
 import {
@@ -532,6 +533,14 @@ function App() {
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "Sepmon" : ""} />
               </ListItem>
+              {/* StageOffsetCalibration */}
+              <ListItem button selected={selectedPlugin === "StageOffsetCalibration"} onClick={() => handlePluginChange("StageOffsetCalibration")}>
+                <ListItemIcon>
+                  <AirIcon />
+                </ListItemIcon>
+                <ListItemText primary={sidebarVisible ? "StageOffsetCalibration" : ""} />
+              </ListItem>
+              {/* UC2 */}
               <ListItem button selected={selectedPlugin === "UC2"} onClick={() => handlePluginChange("UC2")}>
                 <ListItemIcon>
                   <AirIcon />
@@ -679,6 +688,11 @@ function App() {
             {selectedPlugin === "FlowStop" && (
               <WidgetContextProvider>
                 <FlowStopController hostIP={hostIP} hostPort={apiPort} />
+              </WidgetContextProvider>
+            )}
+            {selectedPlugin === "StageOffsetCalibration" && (
+              <WidgetContextProvider>
+                <StageOffsetCalibration hostIP={hostIP} hostPort={apiPort} />
               </WidgetContextProvider>
             )}
             {selectedPlugin === "UC2" && (
