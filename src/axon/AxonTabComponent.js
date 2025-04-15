@@ -49,7 +49,7 @@ const AxonTabComponent = () => {
               "Shape",
               "Parameter",
               "Well Selector",
-              "Experiment",
+              //"Experiment",
               "Objective"
             ]}
           >
@@ -59,7 +59,7 @@ const AxonTabComponent = () => {
             <PointListShapeEditorComponent />
             <ParameterEditorComponent />
             <WellSelectorComponent />
-            <ExperimentComponent />
+            {/*<ExperimentComponent />*/}
             <ObjectiveController />
           </GenericTabBar>
         </div>

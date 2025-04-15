@@ -18,6 +18,7 @@ import apiExperimentControllerPauseWorkflow from "../backendapi/apiExperimentCon
 import apiExperimentControllerResumeExperiment from "../backendapi/apiExperimentControllerResumeExperiment.js";
 
 import fetchGetExperimentStatus from "../middleware/fetchExperimentControllerGetExperimentStatus.js";
+import { Shape } from "./WellSelectorCanvas.js";
 
 //##################################################################################
 // Enum-like object for status
@@ -88,23 +89,35 @@ const ExperimentComponent = () => {
       const rasterHeightOverlaped =
         objectiveState.fovY * (1 - wellSelectorState.overlapHeight);
 
-      if (itPoint.shape == "circle") {
-        point.neighborPointList = wsUtils.calculateNeighborPointsCircle(
-          itPoint.x,
-          itPoint.y,
+      if (itPoint.shape == Shape.CIRCLE) {
+        //circle shape
+        point.neighborPointList = wsUtils.calculateRasterOval(
+          itPoint,
           rasterWidthOverlaped,
           rasterHeightOverlaped,
-          itPoint.neighborsX
+          itPoint.circleRadiusX,
+          itPoint.circleRadiusY
         );
-      } else if (itPoint.shape == "rectangle") {
-        point.neighborPointList = wsUtils.calculateNeighborPointsSquare(
-          itPoint.x,
-          itPoint.y,
+        //handle invalid area
+        if (point.neighborPointList.length == 0) {
+            point.neighborPointList = [{ x: itPoint.x, y: itPoint.y, iX: 0, iY: 0 }];
+        }
+      } else if (itPoint.shape == Shape.RECTANGLE) {
+        //rect shape
+        point.neighborPointList = wsUtils.calculateRasterRect(
+          itPoint,
           rasterWidthOverlaped,
           rasterHeightOverlaped,
-          itPoint.neighborsX,
-          itPoint.neighborsY
+          itPoint.rectPlusX,
+          itPoint.rectMinusX,
+          itPoint.rectPlusY,
+          itPoint.rectMinusY
         );
+      }
+      else
+      {
+        //no shape
+        point.neighborPointList = [{ x: itPoint.x, y: itPoint.y, iX: 0, iY: 0 }];
       }
 
       //append point

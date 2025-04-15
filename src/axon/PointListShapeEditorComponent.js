@@ -8,34 +8,53 @@ import { Shape } from "./WellSelectorCanvas.js";
 
 //##################################################################################
 const PointListShapeEditorComponent = () => {
-  const Shape_Off = "off";//Note: MenuItems cant have emty value (""/Shape.EPMTY) as default value
+  const Shape_Off = "off"; //Note: MenuItems cant have emty value (""/Shape.EPMTY) as default value
   // States for shape, neighborsX, and neighborsY
   const [shape, setShape] = useState(Shape_Off);
-  const [neighborsX, setNeighborsX] = useState(0);
-  const [neighborsY, setNeighborsY] = useState(0);
+  const [rectPlusX, setRectPlusX] = useState(0);
+  const [rectMinusX, setRectMinusX] = useState(0);
+  const [rectPlusY, setRectPlusY] = useState(0);
+  const [rectMinusY, setRectMinusY] = useState(0);
+  const [circleRadiusX, setCircleRadiusX] = useState(0);
+  const [circleRadiusY, setCircleRadiusY] = useState(0);
 
   //redux dispatcher
-    const dispatch = useDispatch();
-  
-    // Access global Redux state
-    const experimentState = useSelector(experimentSlice.getExperimentState);
-    
+  const dispatch = useDispatch();
+
+  // Access global Redux state
+  const experimentState = useSelector(experimentSlice.getExperimentState);
 
   //##################################################################################
   const handleSetAllClick = () => {
     // Your logic here
-    console.log('Set All button clicked', experimentState);
+    console.log("Set All button clicked", experimentState);
 
-    const updatedPointList = experimentState.pointList.map((point) => ({
+    let updatedPointList = [];
+    if (shape == Shape_Off) {
+      updatedPointList = experimentState.pointList.map((point) => ({
         ...point,
         shape: shape,
-        neighborsX: neighborsX, 
-        neighborsY: neighborsY, 
       }));
-  
-      // Update the state with the modified list
-      dispatch(experimentSlice.setPointList(updatedPointList)); 
+    } else if (shape == Shape.RECTANGLE) {
+      updatedPointList = experimentState.pointList.map((point) => ({
+        ...point,
+        shape: shape,
+        rectPlusX: rectPlusX,
+        rectPlusY: rectPlusY,
+        rectMinusX: rectMinusX,
+        rectMinusY: rectMinusY,
+      }));
+    } else if (shape == Shape.CIRCLE) {
+      updatedPointList = experimentState.pointList.map((point) => ({
+        ...point,
+        shape: shape,
+        circleRadiusX: circleRadiusX,
+        circleRadiusY: circleRadiusY,
+      }));
+    }
 
+    // Update the state with the modified list
+    dispatch(experimentSlice.setPointList(updatedPointList));
   };
 
   //##################################################################################
@@ -58,7 +77,6 @@ const PointListShapeEditorComponent = () => {
           //border: "1px solid #cfc",
         }}
       >
-        
         <FormControl>
           <Select
             sx={{ height: "32px" }}
@@ -71,31 +89,76 @@ const PointListShapeEditorComponent = () => {
           </Select>
         </FormControl>
 
-              {shape != Shape_Off && <div>nX:</div>}
-              {shape != Shape_Off && (
-        <Input
-          type="number"
-          value={neighborsX}
-          min="0"
-          max="1000"
-          onChange={(e) => setNeighborsX(parseInt(e.target.value, 10))} // directly call setNeighborsX
-          placeholder="X value"
-        />
-    )}
-      {shape == Shape.RECTANGLE && (
-                <div>nY:</div>
-              )}
-              { shape == Shape.RECTANGLE && (
-               
-        <Input
-          type="number"
-          value={neighborsY}
-          min="0"
-          max="1000"
-          onChange={(e) => setNeighborsY(parseInt(e.target.value, 10))} // directly call setNeighborsY
-          placeholder="Y value"
-        />
-    )}
+        {/* Rect */}
+        {shape == Shape.RECTANGLE && (
+          <div>
+            <div>
+              -X: 
+              <Input
+                type="number"
+                value={rectMinusX}
+                min="-1000000"
+                max="0"
+                onChange={(e) => setRectMinusX(parseInt(e.target.value, 10))} // directly call setNeighborsX
+                placeholder="X value"
+              />
+              +X: 
+              <Input
+                type="number"
+                value={rectPlusX}
+                min="0"
+                max="1000000"
+                onChange={(e) => setRectPlusX(parseInt(e.target.value, 10))} // directly call setNeighborsY
+                placeholder="Y value"
+              />
+            </div>
+            <div>
+              -Y: 
+              <Input
+                type="number"
+                value={rectMinusY}
+                min="-1000000"
+                max="0"
+                onChange={(e) => setRectMinusY(parseInt(e.target.value, 10))} // directly call setNeighborsX
+                placeholder="X value"
+              />
+              +Y: 
+              <Input
+                type="number"
+                value={rectPlusY}
+                min="0"
+                max="1000000"
+                onChange={(e) => setRectPlusY(parseInt(e.target.value, 10))} // directly call setNeighborsY
+                placeholder="Y value"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Circle */}
+        {shape == Shape.CIRCLE && (
+          <>
+            <div>rX:</div>
+            <Input
+              type="number"
+              value={circleRadiusX}
+              min="-1000000"
+              max="0"
+              onChange={(e) => setCircleRadiusX(parseInt(e.target.value, 10))} // directly call setNeighborsX
+              placeholder="X value"
+            />
+            <div>rY:</div>
+            <Input
+              type="number"
+              value={circleRadiusY}
+              min="0"
+              max="1000000"
+              onChange={(e) => setCircleRadiusY(parseInt(e.target.value, 10))} // directly call setNeighborsY
+              placeholder="Y value"
+            />
+          </>
+        )}
+
         <Button variant="contained" onClick={handleSetAllClick}>
           Set All
         </Button>

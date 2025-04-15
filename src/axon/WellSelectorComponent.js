@@ -97,6 +97,11 @@ const WellSelectorComponent = () => {
   };
 
   //##################################################################################
+  const handleShowShapeChange = (event) => {
+    dispatch(wellSelectorSlice.setShowShape(event.target.checked));
+  };
+
+  //##################################################################################
   const handleLayoutChange = (event) => {
     console.log("handleLayoutChange");
     //select layout
@@ -105,7 +110,7 @@ const WellSelectorComponent = () => {
     //check defaults
     if (event.target.value === "Default") {
       wellLayout = wsUtils.wellLayoutDefault;
-    } else if (event.target.value === "Development") {
+    } else if (event.target.value === "Heidstar 4x Histosample") {
       wellLayout = wsUtils.wellLayoutDevelopment;
     } else if (event.target.value === "histolayout") {
       wellLayout = wsUtils.histolayout;
@@ -166,7 +171,7 @@ const WellSelectorComponent = () => {
             </MenuItem>
             {/* hard coded layouts */}
             <MenuItem value="Default">Default</MenuItem>
-            <MenuItem value="Development">Development</MenuItem>
+            <MenuItem value="Heidstar 4x Histosample">Development</MenuItem>
             <MenuItem value="Wellplate 32">Wellplate 32</MenuItem>
             <MenuItem value="Wellplate 96">Wellplate 96</MenuItem>
             <MenuItem value="histolayout">histolayout</MenuItem>
@@ -222,6 +227,15 @@ const WellSelectorComponent = () => {
             onChange={handleShowOverlapChange}
           />
           show overlap
+        </label>
+
+        <label style={{ fontSize: "14px" }}>
+          <input
+            type="checkbox"
+            checked={wellSelectorState.showShape}
+            onChange={handleShowShapeChange}
+          />
+          show shape
         </label>
       </div>
 

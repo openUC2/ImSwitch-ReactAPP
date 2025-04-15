@@ -15,6 +15,7 @@ import JupyterExecutor from "./components/JupyterExecutor";
 import { JupyterProvider } from "./context/JupyterContext";
 import UC2Controller from "./components/UC2Controller";
 import ExtendedLEDMatrixController from "./components/ExtendedLEDMatrixController";
+import StageOffsetCalibration from "./components/StageOffsetCalibrationController";
 
 import theme from "./theme";
 import {
@@ -84,6 +85,7 @@ import FlowStopController from "./components/FlowStopController";
 import SepMonController from "./components/SepmonController";
 
 // Define both light and dark themes
+
 const lightTheme = createTheme({
   palette: {
     mode: "light",
@@ -100,14 +102,16 @@ const lightTheme = createTheme({
           font-style: normal;
           font-display: swap;
           font-weight: 400;
-          src: local('Roboto'), local('Roboto-Regular'), url('/fonts/Roboto-Regular.ttf') format('truetype');
+          src: local('Roboto'),
+               url('/imswitch/fonts/Roboto-Regular.ttf') format('truetype');
         }
         @font-face {
           font-family: 'Roboto';
           font-style: normal;
           font-display: swap;
           font-weight: 700;
-          src: local('Roboto-Bold'), url('/fonts/Roboto-Bold.ttf') format('truetype');
+          src: local('Roboto Bold'),
+               url('/imswitch/fonts/Roboto-Bold.ttf') format('truetype');
         }
       `,
     },
@@ -145,20 +149,22 @@ const darkTheme = createTheme({
     },
     MuiCssBaseline: {
       styleOverrides: `
-        @font-face {
-          font-family: 'Roboto';
-          font-style: normal;
-          font-display: swap;
-          font-weight: 400;
-          src: local('Roboto'), local('Roboto-Regular'), url('/fonts/Roboto-Regular.ttf') format('truetype');
-        }
-        @font-face {
-          font-family: 'Roboto';
-          font-style: normal;
-          font-display: swap;
-          font-weight: 700;
-          src: local('Roboto-Bold'), url('/fonts/Roboto-Bold.ttf') format('truetype');
-        }
+      @font-face {
+        font-family: 'Roboto';
+        font-style: normal;
+        font-display: swap;
+        font-weight: 400;
+        src: local('Roboto'),
+             url('/imswitch/fonts/Roboto-Regular.ttf') format('truetype');
+      }
+      @font-face {
+        font-family: 'Roboto';
+        font-style: normal;
+        font-display: swap;
+        font-weight: 700;
+        src: local('Roboto Bold'),
+             url('/imswitch/fonts/Roboto-Bold.ttf') format('truetype');
+      }
       `,
     },
   },
@@ -527,6 +533,14 @@ function App() {
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "Sepmon" : ""} />
               </ListItem>
+              {/* StageOffsetCalibration */}
+              <ListItem button selected={selectedPlugin === "StageOffsetCalibration"} onClick={() => handlePluginChange("StageOffsetCalibration")}>
+                <ListItemIcon>
+                  <AirIcon />
+                </ListItemIcon>
+                <ListItemText primary={sidebarVisible ? "StageOffsetCalibration" : ""} />
+              </ListItem>
+              {/* UC2 */}
               <ListItem button selected={selectedPlugin === "UC2"} onClick={() => handlePluginChange("UC2")}>
                 <ListItemIcon>
                   <AirIcon />
@@ -674,6 +688,11 @@ function App() {
             {selectedPlugin === "FlowStop" && (
               <WidgetContextProvider>
                 <FlowStopController hostIP={hostIP} hostPort={apiPort} />
+              </WidgetContextProvider>
+            )}
+            {selectedPlugin === "StageOffsetCalibration" && (
+              <WidgetContextProvider>
+                <StageOffsetCalibration hostIP={hostIP} hostPort={apiPort} />
               </WidgetContextProvider>
             )}
             {selectedPlugin === "UC2" && (

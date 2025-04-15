@@ -5,7 +5,8 @@ const initialWellSelectorState = {
   mode: 'single',          // string: could be 'default', 'select', 'edit', etc.
   overlapWidth: 0.0,          // float: size of the overlap between the rasters
   overlapHeight: 0.0,          // float: size of the overlap between the rasters
-  showOverlap: true,          // bool: show overlap or not 
+  showOverlap: false,          // bool: show overlap or not 
+  showShape: false,          // bool: show shape or not
   cameraTargetPosition: { x: 0.0, y: 0.0 },          // float: x position of the camera target 
   savedBoundingBox: null,          // object: bounding box of the selected wells
 };
@@ -38,6 +39,14 @@ const wellSelectorSlice = createSlice({
         console.log("setShowOverlap");
         state.showOverlap = action.payload;	
     },
+    setShowOverlap: (state, action) => {
+        console.log("setShowOverlap");
+        state.showOverlap = action.payload;	
+    },
+    setShowShape: (state, action) => {
+        console.log("setShowShape");
+        state.showShape = action.payload;	
+    },
     setCameraTargetPosition: (state, action) => {
         console.log("setCameraTargetPosition");
         state.cameraTargetPosition = action.payload;	
@@ -58,6 +67,7 @@ export const {
   setOverlapWidth,
   setOverlapHeight,
   setShowOverlap,
+  setShowShape,
   setCameraTargetPosition,
   resetState,
   setSavedBoundingBox
