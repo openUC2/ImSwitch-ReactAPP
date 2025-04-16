@@ -13,6 +13,8 @@ import {
 import { green, red } from "@mui/material/colors";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
+import VtkViewer from "./VtkViewer.js"; // Assuming you have a VtkViewer component
+import ErrorBoundary from "./ErrorBoundary";
 
 const TabPanel = (props) => {
   const { children, value, index, ...other } = props;
@@ -110,6 +112,7 @@ const LightsheetController = ({ hostIP, hostPort }) => {
       >
         <Tab label="Scanning Parameters" />
         <Tab label="View Latest Stack" />
+        <Tab label="VTK Viewer" />
       </Tabs>
 
       <TabPanel value={tabIndex} index={0}>
@@ -171,6 +174,14 @@ const LightsheetController = ({ hostIP, hostPort }) => {
             >
               Start Scanning
             </Button>
+            {isRunning ? (
+              <CheckCircleIcon style={{ color: green[500], marginLeft: 10 }} />
+            ) : (
+              <CancelIcon style={{ color: red[500], marginLeft: 10 }} />
+            )}
+            <Typography variant="body2" style={{ marginLeft: 10 }}>
+              {isRunning ? "Scanning in progress..." : "Ready to scan"}
+            </Typography>
           </Grid>
         </Grid>
       </TabPanel>
@@ -193,6 +204,14 @@ const LightsheetController = ({ hostIP, hostPort }) => {
           </Grid>
         </Grid>
       </TabPanel>
+
+      <TabPanel value={tabIndex} index={2}>
+        <ErrorBoundary>
+            VTK Viewer
+            <VtkViewer tifUrl={`${hostIP}:${hostPort}/LightsheetController/getLatestLightsheetStackAsTif`} />
+        </ErrorBoundary>
+    </TabPanel>
+
     </Paper>
   );
 };
