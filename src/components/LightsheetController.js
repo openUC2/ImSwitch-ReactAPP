@@ -192,14 +192,29 @@ const LightsheetController = ({ hostIP, hostPort }) => {
             <Button
               variant="contained"
               color="primary"
+              // Use the hostIP and hostPort instead of hard-coded "localhost"
               onClick={() =>
                 window.open(
-                  "https://kitware.github.io/itk-vtk-viewer/app/?rotate=false&fileToLoad=https://localhost:8001/LightsheetController/getLatestLightsheetStackAsTif",
+                  `https://kitware.github.io/itk-vtk-viewer/app/?rotate=false&fileToLoad=${hostIP}:${hostPort}/LightsheetController/getLatestLightsheetStackAsTif`,
                   "_blank"
                 )
               }
             >
-              Open Lightsheet Stack Viewer (TIF stack to VTK Viewer - needs internet)
+              Open Lightsheet Stack Viewer (TIF stack to VTK Viewer - needs
+              internet)
+            </Button>
+            // add button for downloading the tif 
+            <Button
+            variant="contained"
+            color="primary"
+            onClick={() =>
+              window.open(
+                `${hostIP}:${hostPort}/LightsheetController/getLatestLightsheetStackAsTif`,
+                "_blank"
+              )
+            }
+            >
+              Download Latest Lightsheet Stack (TIF)
             </Button>
           </Grid>
         </Grid>
@@ -207,11 +222,12 @@ const LightsheetController = ({ hostIP, hostPort }) => {
 
       <TabPanel value={tabIndex} index={2}>
         <ErrorBoundary>
-            VTK Viewer
-            <VtkViewer tifUrl={`${hostIP}:${hostPort}/LightsheetController/getLatestLightsheetStackAsTif`} />
+          VTK Viewer
+          <VtkViewer
+            tifUrl={`${hostIP}:${hostPort}/LightsheetController/getLatestLightsheetStackAsTif`}
+          />
         </ErrorBoundary>
-    </TabPanel>
-
+      </TabPanel>
     </Paper>
   );
 };
