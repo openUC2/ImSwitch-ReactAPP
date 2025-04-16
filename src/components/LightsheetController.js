@@ -188,7 +188,7 @@ const LightsheetController = ({ hostIP, hostPort }) => {
                 )
               }
             >
-              Open Lightsheet Stack Viewer
+              Open Lightsheet Stack Viewer (TIF stack to VTK Viewer - needs internet)
             </Button>
           </Grid>
         </Grid>
