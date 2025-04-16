@@ -27,6 +27,7 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
   const [manualOffsetY, setManualOffsetY] = useState("");
   const [imageUrls, setImageUrls] = useState({}); // For live images from socket
   const [detectors, setDetectors] = useState([]);
+  const [reloadTrigger, setReloadTrigger] = useState(0); // State to trigger reload
 
   // Fetch the list of detectors from the server
   useEffect(() => {
@@ -53,12 +54,12 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
         const offsetXData = await fetch(
           `${hostIP}:${hostPort}/PositionerController/getStageOffsetAxis?axis=X`
         ).then((res) => res.json());
-        setLoadedOffsetX(offsetXData.stageOffset ?? "");
+        setLoadedOffsetX(offsetXData ?? "");
 
         const offsetYData = await fetch(
           `${hostIP}:${hostPort}/PositionerController/getStageOffsetAxis?axis=Y`
         ).then((res) => res.json());
-        setLoadedOffsetY(offsetYData.stageOffset ?? "");
+        setLoadedOffsetY(offsetYData ?? "");
 
         // Current Positions
         const posData = await fetch(
@@ -73,7 +74,7 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
       }
     };
     fetchAll();
-  }, [hostIP, hostPort]);
+  }, [hostIP, hostPort, reloadTrigger]);
 
   // Auto-calc offset from current vs target
   useEffect(() => {
@@ -149,6 +150,7 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
       `${hostIP}:${hostPort}/PositionerController/setStageOffsetAxis?knownOffset=${offset}&axis=${axis}`
     )
       .then((res) => res.json())
+      .then(() => setReloadTrigger((prev) => prev + 1)) // Trigger reload
       .catch(console.error);
   };
 
@@ -158,6 +160,7 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
       `${hostIP}:${hostPort}/PositionerController/setStageOffsetAxis?knownPosition=${knownPos}&currentPosition=${currPos}&axis=${axis}`
     )
       .then((res) => res.json())
+      .then(() => setReloadTrigger((prev) => prev + 1)) // Trigger reload
       .catch(console.error);
   };
 
@@ -167,6 +170,7 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
       `${hostIP}:${hostPort}/PositionerController/setStageOffsetAxis?knownPosition=${knownPos}&axis=${axis}`
     )
       .then((res) => res.json())
+      .then(() => setReloadTrigger((prev) => prev + 1)) // Trigger reload
       .catch(console.error);
   };
 
