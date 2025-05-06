@@ -18,6 +18,8 @@ const fetchObjectiveControllerGetStatus = (dispatch) => {
       dispatch(objectiveSlice.setPixelSize(data.pixelsize)); 
       dispatch(objectiveSlice.setPosZ1(data.z1));
       dispatch(objectiveSlice.setPosZ2(data.z2));
+      dispatch(objectiveSlice.setMagnification(data.magnification))
+      dispatch(objectiveSlice.setNA(data.NA))
   
       //TODO add more objective results
       /*reposne: 

@@ -69,6 +69,10 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
           setCurrentX(posData.ESP32Stage.X);
           setCurrentY(posData.ESP32Stage.Y);
         }
+        else if (posData.VirtualStage) {
+          setCurrentX(posData.VirtualStage.X);
+          setCurrentY(posData.VirtualStage.Y);
+        }
       } catch (error) {
         console.error(error);
       }
@@ -138,6 +142,10 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
         if (data.ESP32Stage) {
           setCurrentX(data.ESP32Stage.X);
           setCurrentY(data.ESP32Stage.Y);
+        }
+        else if (data.VirtualStage) {
+          setCurrentX(data.VirtualStage.X);
+          setCurrentY(data.VirtualStage.Y);
         }
       })
       .catch(console.error);

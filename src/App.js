@@ -1,4 +1,5 @@
-import React, { useRef, useState, useEffect } from "react";
+/* global __webpack_init_sharing__, __webpack_share_scopes__ */
+import React, { Suspense, useEffect, useState, lazy } from "react";
 import LiveView from "./components/LiveView";
 import SocketView from "./components/SocketView";
 import HistoScanController from "./components/HistoScanController";
@@ -28,6 +29,7 @@ import {
   SettingsOverscanSharp as SettingsOverscanSharpIcon,
   AccessTime as AccessTimeIcon,
 } from "@mui/icons-material";
+import * as Icons from "@mui/icons-material";
 import WifiSharpIcon from "@mui/icons-material/WifiSharp";
 import ThreeDRotationIcon from "@mui/icons-material/ThreeDRotation";
 import AirIcon from "@mui/icons-material/Air";
@@ -370,6 +372,104 @@ function App() {
     setSelectedPlugin(plugin);
   };
 
+  /*
+  PLUGIN LOADING from ImSwitch
+  */
+  function loadRemote({ remote, scope, exposed }) {
+    console.log("Initializing loadRemote:", { remote, scope, exposed });
+    const url = `${hostIP}:${apiPort}${remote}`;
+    console.log("Remote URL:", url);
+
+    return new Promise((resolve, reject) => {
+      if (!document.querySelector(`script[data-mf="${scope}"]`)) {
+        const el = document.createElement("script");
+        el.src = url;
+        el.dataset.mf = scope;
+        el.onload = init;
+        el.onerror = (error) => {
+          console.error("Failed to load remote script:", error);
+          reject(error);
+        };
+        document.head.appendChild(el);
+      } else {
+        init();
+      }
+
+      async function init() {
+        try {
+          // Ensure Webpack sharing is initialized
+          if (typeof __webpack_init_sharing__ === "function") {
+            await __webpack_init_sharing__("default");
+          } else {
+            throw new Error("__webpack_init_sharing__ is not defined");
+          }
+
+          const container = window[scope];
+          if (!container) {
+            throw new Error(`Container for scope "${scope}" not found`);
+          }
+
+          await container.init(__webpack_share_scopes__.default);
+
+          const factory = await container.get(
+            exposed.startsWith("./") ? exposed : `./${exposed}`
+          );
+          const module = factory();
+          if (!module.default) {
+            throw new Error(
+              "Module does not export a default React component."
+            );
+          }
+          resolve(module.default);
+        } catch (error) {
+          console.error("Error during module initialization:", error);
+          reject(error);
+        }
+      }
+    });
+  }
+
+  function usePluginWidgets() {
+    const [widgets, setWidgets] = useState([]);
+
+    useEffect(() => {
+      const fetchPlugins = async () => {
+        try {
+          // Construct the API URL dynamically using hostIP and apiPort
+          const apiUrl = `${hostIP}:${apiPort}/plugins`;
+
+          // Fetch the plugin data
+          const response = await fetch(apiUrl);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch plugins: ${response.statusText}`);
+          }
+
+          // Access the plugins array from the data object
+          const data = await response.json();
+          const plugins = data.plugins;
+
+          // Map the plugin data to widgets
+          const widgetsData = await Promise.all(
+            plugins.map(async (m) => ({
+              name: m.name,
+              Component: lazy(() => loadRemote(m)), // Wrap loadRemote with lazy
+            }))
+          );
+
+          // Update the widgets state
+          setWidgets(widgetsData);
+        } catch (error) {
+          console.error("Error loading plugins:", error);
+        }
+      };
+
+      fetchPlugins();
+    }, [hostIP, apiPort]); // Re-run if hostIP or apiPort changes
+
+    return widgets;
+  }
+  const plugins = usePluginWidgets();
+
   return (
     <ThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
       <WebSocketHandler />
@@ -423,17 +523,22 @@ function App() {
             {/* Sidebar content */}
             <List>
               {/* LiveView */}
-              <ListItem button 
-              selected={selectedPlugin === "LiveView"}
-              onClick={() => handlePluginChange("LiveView")}>
+              <ListItem
+                button
+                selected={selectedPlugin === "LiveView"}
+                onClick={() => handlePluginChange("LiveView")}
+              >
                 <ListItemIcon>
                   <DashboardIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "Live View" : ""} />
               </ListItem>
               {/* WellPlate */}
-              <ListItem button 
-              selected={selectedPlugin === "WellPlate"} onClick={() => handlePluginChange("WellPlate")}>
+              <ListItem
+                button
+                selected={selectedPlugin === "WellPlate"}
+                onClick={() => handlePluginChange("WellPlate")}
+              >
                 <ListItemIcon>
                   <SettingsOverscanSharpIcon />
                 </ListItemIcon>
@@ -452,7 +557,11 @@ function App() {
                 <ListItemText primary={sidebarVisible ? "File Manager" : ""} />
               </ListItem>
               {/* HistoScan */}
-              <ListItem button selected={selectedPlugin === "HistoScan"} onClick={() => handlePluginChange("HistoScan")}>
+              <ListItem
+                button
+                selected={selectedPlugin === "HistoScan"}
+                onClick={() => handlePluginChange("HistoScan")}
+              >
                 <ListItemIcon>
                   <SettingsOverscanSharpIcon />
                 </ListItemIcon>
@@ -485,101 +594,171 @@ function App() {
                 />
               </ListItem>
               {/* Blockly */}
-              <ListItem button selected={selectedPlugin === "Blockly"} onClick={() => handlePluginChange("Blockly")}>
+              <ListItem
+                button
+                selected={selectedPlugin === "Blockly"}
+                onClick={() => handlePluginChange("Blockly")}
+              >
                 <ListItemIcon>
                   <SettingsIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "Blockly" : ""} />
               </ListItem>
               {/* Timelapse */}
-              <ListItem button selected={selectedPlugin === "Timelapse"} onClick={() => handlePluginChange("Timelapse")}>
+              <ListItem
+                button
+                selected={selectedPlugin === "Timelapse"}
+                onClick={() => handlePluginChange("Timelapse")}
+              >
                 <ListItemIcon>
                   <AccessTimeIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "Timelapse" : ""} />
               </ListItem>
               {/* Objective */}
-              <ListItem button selected={selectedPlugin === "Objective"} onClick={() => handlePluginChange("Objective")}>
+              <ListItem
+                button
+                selected={selectedPlugin === "Objective"}
+                onClick={() => handlePluginChange("Objective")}
+              >
                 <ListItemIcon>
                   <ZoomOutMapIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "Objective" : ""} />
               </ListItem>
               {/* SocketView */}
-              <ListItem button selected={selectedPlugin === "SocketView"} onClick={() => handlePluginChange("SocketView")}>
+              <ListItem
+                button
+                selected={selectedPlugin === "SocketView"}
+                onClick={() => handlePluginChange("SocketView")}
+              >
                 <ListItemIcon>
                   <CommentIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "SocketView" : ""} />
               </ListItem>
               {/* Lightsheet */}
-              <ListItem button  selected={selectedPlugin === "Lightsheet"} onClick={() => handlePluginChange("Lightsheet")}>
+              <ListItem
+                button
+                selected={selectedPlugin === "Lightsheet_"}
+                onClick={() => handlePluginChange("Lightsheet_")}
+              >
                 <ListItemIcon>
                   <ThreeDRotationIcon />
                 </ListItemIcon>
-                <ListItemText primary={sidebarVisible ? "Lightsheet" : ""} />
+                <ListItemText primary={sidebarVisible ? "Lightsheet_" : ""} />
               </ListItem>
               {/* FlowStop */}
-              <ListItem button selected={selectedPlugin === "FlowStop"} onClick={() => handlePluginChange("FlowStop")}>
+              <ListItem
+                button
+                selected={selectedPlugin === "FlowStop"}
+                onClick={() => handlePluginChange("FlowStop")}
+              >
                 <ListItemIcon>
                   <AirIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "FlowStop" : ""} />
               </ListItem>
               {/* Widgets */}
-              <ListItem button selected={selectedPlugin === "Sepmon"} onClick={() => handlePluginChange("Sepmon")}>
+              <ListItem
+                button
+                selected={selectedPlugin === "Sepmon"}
+                onClick={() => handlePluginChange("Sepmon")}
+              >
                 <ListItemIcon>
                   <AirIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "Sepmon" : ""} />
               </ListItem>
               {/* StageOffsetCalibration */}
-              <ListItem button selected={selectedPlugin === "StageOffsetCalibration"} onClick={() => handlePluginChange("StageOffsetCalibration")}>
+              <ListItem
+                button
+                selected={selectedPlugin === "StageOffsetCalibration"}
+                onClick={() => handlePluginChange("StageOffsetCalibration")}
+              >
                 <ListItemIcon>
                   <AirIcon />
                 </ListItemIcon>
-                <ListItemText primary={sidebarVisible ? "StageOffsetCalibration" : ""} />
+                <ListItemText
+                  primary={sidebarVisible ? "StageOffsetCalibration" : ""}
+                />
               </ListItem>
               {/* UC2 */}
-              <ListItem button selected={selectedPlugin === "UC2"} onClick={() => handlePluginChange("UC2")}>
+              <ListItem
+                button
+                selected={selectedPlugin === "UC2"}
+                onClick={() => handlePluginChange("UC2")}
+              >
                 <ListItemIcon>
                   <AirIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "UC2" : ""} />
               </ListItem>
-              <ListItem button selected={selectedPlugin === "ExtendedLEDMatrix"} onClick={() => handlePluginChange("ExtendedLEDMatrix")}>
+              <ListItem
+                button
+                selected={selectedPlugin === "ExtendedLEDMatrix"}
+                onClick={() => handlePluginChange("ExtendedLEDMatrix")}
+              >
                 <ListItemIcon>
                   <AirIcon />
                 </ListItemIcon>
-                <ListItemText primary={sidebarVisible ? "ExtendedLEDMatrix" : ""} />
+                <ListItemText
+                  primary={sidebarVisible ? "ExtendedLEDMatrix" : ""}
+                />
               </ListItem>
               <ListItem button onClick={() => handlePluginChange("Widgets")}>
                 <ListItemIcon>
                   <DevicesIcon />
                 </ListItemIcon>
-                <ListItemText selected={selectedPlugin === "Widgets"} primary={sidebarVisible ? "Widgets" : ""} />
+                <ListItemText
+                  selected={selectedPlugin === "Widgets"}
+                  primary={sidebarVisible ? "Widgets" : ""}
+                />
               </ListItem>
               {/* Connections */}
-              <ListItem button selected={selectedPlugin === "Connectoins"}  onClick={handleOpenDialog}>
+              <ListItem
+                button
+                selected={selectedPlugin === "Connectoins"}
+                onClick={handleOpenDialog}
+              >
                 <ListItemIcon>
                   <WifiSharpIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "Connections" : ""} />
               </ListItem>
               {/* About */}
-              <ListItem button selected={selectedPlugin === "About"} onClick={() => handlePluginChange("About")}>
+              <ListItem
+                button
+                selected={selectedPlugin === "About"}
+                onClick={() => handlePluginChange("About")}
+              >
                 <ListItemIcon>
                   <InfoIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "About" : ""} />
               </ListItem>
               {/* ImJoy */}
-              <ListItem button selected={selectedPlugin === "ImJoy"} onClick={() => handlePluginChange("ImJoy")}>
+              <ListItem
+                button
+                selected={selectedPlugin === "ImJoy"}
+                onClick={() => handlePluginChange("ImJoy")}
+              >
                 <ListItemIcon>
                   <BuildIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "Fiji" : ""} />
               </ListItem>
+              {/* Plugins */}
+              {plugins.map((p) => (
+                <ListItem
+                  button
+                  onClick={() => setSelectedPlugin(p.name)}
+                  key={p.name}
+                >
+                  <ListItemIcon>{React.createElement(BuildIcon)}</ListItemIcon>
+                  <ListItemText primary={sidebarVisible ? p.name : ""} />
+                </ListItem>
+              ))}
 
               {/* Add a minimize/maximize button */}
               <ListItem
@@ -600,8 +779,10 @@ function App() {
             sx={{ flexGrow: 1, p: 3, marginTop: "64px" }} // Push content below AppBar
           >
             {selectedPlugin === "WellPlate" && <AxonTabComponent />}
-            {selectedPlugin === "LiveView" && (
-              <LiveWidgetProvider>
+            <Box
+              sx={{ display: selectedPlugin === "LiveView" ? "block" : "none" }}
+            >
+<LiveWidgetProvider>
                 <LiveView
                   hostIP={hostIP}
                   hostPort={apiPort}
@@ -610,7 +791,7 @@ function App() {
                   onImageUpdate={(img) => setSharedImage(img)}
                 />
               </LiveWidgetProvider>
-            )}
+            </Box>
             <Box
               sx={{ display: selectedPlugin === "ImJoy" ? "block" : "none" }}
             >
@@ -680,10 +861,18 @@ function App() {
                 </div>
               </div>
             )}
-            {selectedPlugin === "Lightsheet" && (
+            {selectedPlugin === "Lightsheet_" && (
               <WidgetContextProvider>
                 <LightsheetController hostIP={hostIP} hostPort={apiPort} />
               </WidgetContextProvider>
+            )}
+            {plugins.map(
+              (p) =>
+                selectedPlugin === p.name && (
+                  <Suspense fallback={<div>loading…</div>} key={p.name}>
+                    <p.Component hostIP={hostIP} hostPort={apiPort} />
+                  </Suspense>
+                )
             )}
             {selectedPlugin === "FlowStop" && (
               <WidgetContextProvider>

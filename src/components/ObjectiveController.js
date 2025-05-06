@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Paper, Grid, Button, Typography, TextField } from "@mui/material";
 import { useWebSocket } from "../context/WebSocketContext";
-
+import LiveViewControlWrapper from "../axon/LiveViewControlWrapper";
 import * as objectiveSlice from "../state/slices/ObjectiveSlice.js";
 
 import apiPositionerControllerMovePositioner from "../backendapi/apiPositionerControllerMovePositioner.js";
@@ -26,18 +26,10 @@ const ExtendedObjectiveController = ({ hostIP, hostPort }) => {
   ////const State = useSelector(Slice.getState);
 
   //states
-  ///const [currentObjective, setCurrentObjective] = useState(null);//TODO replace with objectiveState.currentObjective
-  ///const [objectiveName, setObjectiveName] = useState("");//TODO replace with objectiveState.objectivName
-  ///const [pixelsize, setPixelsize] = useState(null);//TODO replace with objectiveState.pixelsize
-  ///const [NA, setNA] = useState(null);//TODO replace with objectiveState.NA
-  ///const [magnification, setMagnification] = useState(null);//TODO replace with objectiveState.magnification
-
+  const [currentA, setCurrentA] = useState("");
+  const [currentZ, setCurrentZ] = useState("");
   const [imageUrls, setImageUrls] = useState({});
   const [detectors, setDetectors] = useState([]);
-
-  // Objective positions (x1/x2) from backend status
-  ///const [posX1, setPosX1] = useState(null);//TODO replace with objectiveState.posX1
-  ///const [posX2, setPosX2] = useState(null);//TODO replace with objectiveState.posX2
 
   // Manual input fields for positions
   const [manualX1, setManualX1] = useState("");
@@ -239,8 +231,14 @@ const ExtendedObjectiveController = ({ hostIP, hostPort }) => {
     apiPositionerControllerGetPositions()
       .then((data) => {
         // Handle success response
-        const currentA = data.ESP32Stage.A; //TODO this is hardcoded.
-        const currentZ = data.ESP32Stage.Z; //TODO this is hardcoded.
+        if (data.ESP32Stage) {
+          setCurrentZ(data.ESP32Stage.Z);
+          setCurrentA(data.ESP32Stage.A);
+        }
+        else if (data.VirtualStage) {
+          setCurrentZ(data.VirtualStage.Z);
+          setCurrentA(data.VirtualStage.A);
+        }
         if (which === "x1") {
           handleSetX1(currentA);
         } else if (which === "x2") {
@@ -285,7 +283,7 @@ const ExtendedObjectiveController = ({ hostIP, hostPort }) => {
         {/* Calibration and Switching */}
         <Grid item xs={12}>
           <Button variant="contained" color="primary" onClick={handleCalibrate}>
-            Calibrate Objective
+            Calibrate/Home Objective
           </Button>
           <Button variant="outlined" onClick={refreshStatus}>
             Refresh Positions
@@ -293,20 +291,8 @@ const ExtendedObjectiveController = ({ hostIP, hostPort }) => {
         </Grid>
         <Grid item xs={2}>
           <Typography variant="h6">Detectors</Typography>
-          {imageUrls[detectors[0]] ? (
-            <img
-              src={imageUrls[detectors[0]]}
-              alt={detectors[0]}
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "contain",
-              }}
-            />
-          ) : (
-            <Typography>No image from socket</Typography>
-          )}
-        </Grid>
+          <LiveViewControlWrapper />
+          </Grid>
 
         {/* Objective Lens Movement */}
         <Grid item xs={12}>

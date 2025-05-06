@@ -15,6 +15,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
 import VtkViewer from "./VtkViewer.js"; // Assuming you have a VtkViewer component
 import ErrorBoundary from "./ErrorBoundary";
+import LiveViewControlWrapper from "../axon/LiveViewControlWrapper";
 
 const TabPanel = (props) => {
   const { children, value, index, ...other } = props;
@@ -118,6 +119,7 @@ const LightsheetController = ({ hostIP, hostPort }) => {
       <TabPanel value={tabIndex} index={0}>
         <Grid container spacing={2}>
           <Grid item xs={12}>
+            <LiveViewControlWrapper />
             <TextField
               label="Min Position"
               value={minPos}

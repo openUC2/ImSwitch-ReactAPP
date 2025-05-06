@@ -8,8 +8,6 @@ import * as positionSlice from "../state/slices/PositionSlice.js";
 import * as objectiveSlice from "../state/slices/ObjectiveSlice.js";
 
 import * as wsUtils from "./WellSelectorUtils.js";
-
-import apiistoScanControllerGetHistoStatus from "../backendapi/apiHistoScanControllerGetHistoStatus.js";
 import apiPositionerControllerMovePositioner from "../backendapi/apiPositionerControllerMovePositioner.js";
 
 import fetchObjectiveControllerGetStatus from "../middleware/fetchObjectiveControllerGetStatus.js";
