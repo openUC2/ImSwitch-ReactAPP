@@ -43,7 +43,7 @@ const initialExperimentState = {
     illumination: "Brightfield",
     brightfield: false,
     darkfield: false,
-    laserWaveLength: 0,
+    illuminationIntensity: 0,
     differentialPhaseContrast: false,
     timeLapsePeriod: 0.1,
     numberOfImages: 1,
@@ -81,9 +81,9 @@ const experimentSlice = createSlice({
       console.log("setDarkfield");
       state.parameterValue.darkfield = action.payload;
     },
-    setLaserWaveLength: (state, action) => {
-      console.log("setLaserWaveLength");
-      state.parameterValue.laserWaveLength = action.payload;
+    setilluminationIntensity: (state, action) => {
+      console.log("setilluminationIntensity");
+      state.parameterValue.illuminationIntensity = action.payload;
     },
     setDifferentialPhaseContrast: (state, action) => {
       console.log("setDifferentialPhaseContrast");
@@ -197,7 +197,7 @@ export const {
   setIllumination,
   setBrightfield,
   setDarkfield,
-  setLaserWaveLength,
+  setilluminationIntensity,
   setDifferentialPhaseContrast,
   setTimeLapsePeriod,
   setNumberOfImages,

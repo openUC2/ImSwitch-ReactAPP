@@ -148,17 +148,17 @@ const ParameterEditorComponent = () => {
             <td style={tdStyle}>Laser</td>
             <td style={tdStyle}>
               <NativeSelect
-                value={parameterValue.laserWaveLength}
+                value={parameterValue.illuminationIntensity}
                 onChange={(e) =>
                   dispatch(
-                    experimentSlice.setLaserWaveLength(Number(e.target.value))
+                    experimentSlice.setilluminationIntensity(Number(e.target.value))
                   )
                 }
                 style={selectStyle}
               >
-                {parameterRange.laserWaveLength.map((wavelength) => (
-                  <option key={wavelength} value={wavelength}>
-                    {wavelength} nm
+                {parameterRange.illuminationIntensity.map((intensity) => (
+                  <option key={intensity} value={intensity}>
+                    {intensity} mW
                   </option>
                 ))}
               </NativeSelect>

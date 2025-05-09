@@ -3,7 +3,7 @@ import { createSlice } from "@reduxjs/toolkit";
 // Define the initial state
 const initialParameterRangeState = {
     illumination: ["a", "b", "c"],
-    laserWaveLength: [10, 20, 30],
+    illuminationIntensity: [10, 20, 30],
     timeLapsePeriod: { min: 0, max: 1000 },
     numberOfImages: { min: 1, max: 1000 },
     autoFocus: { min: 1, max: 1000 },
@@ -38,8 +38,8 @@ const parameterRangeSlice = createSlice({
       setIllumination: (state, action) => {
         state.illumination = action.payload;
       },
-      setLaserWaveLength: (state, action) => {
-        state.laserWaveLength = action.payload;
+      setilluminationIntensity: (state, action) => {
+        state.illuminationIntensity = action.payload;
       },
       setTimeLapsePeriodMin: (state, action) => {
         state.timeLapsePeriod.min = action.payload;
@@ -111,7 +111,7 @@ const parameterRangeSlice = createSlice({
 export const {  
     resetState,
     setIllumination,
-    setLaserWaveLength,
+    setilluminationIntensity,
     setTimeLapsePeriodMin,
     setTimeLapsePeriodMax,
     setNumberOfImagesMin,
