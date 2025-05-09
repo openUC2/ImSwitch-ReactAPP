@@ -1,26 +1,22 @@
-// craco.config.js
-const { ModuleFederationPlugin } = require("webpack").container;
+const { ModuleFederationPlugin } = require('webpack').container;
 
 module.exports = {
   webpack: {
     configure: (config) => {
-      // --- add ModuleFederationPlugin ----------------------------
+      config.output.publicPath = '/imswitch';
+
       config.plugins.push(
         new ModuleFederationPlugin({
-          name: "imswitch_host",      // arbitrary
-          filename: "remoteEntry.js", // host’s own (mostly empty) container
-          remotes: {},                // we load remotes at runtime
-          exposes: {},                // nothing to expose from the host yet
+          name: 'host_app',
           shared: {
-            react:        { singleton: true, eager: true },
-            "react-dom":  { singleton: true, eager: true },
-            // add MUI / emotion etc. if you use them in host & remotes
+            react:            { singleton: true, eager: true, requiredVersion: false },
+            'react-dom':      { singleton: true, eager: true, requiredVersion: false },
+            'react/jsx-runtime': { singleton: true, eager: true, requiredVersion: false },
           },
         })
       );
-      // ------------------------------------------------------------
+
       return config;
     },
   },
 };
-

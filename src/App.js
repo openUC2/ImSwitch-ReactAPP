@@ -392,6 +392,12 @@ function App() {
       async function init() {
         try {
           await __webpack_init_sharing__("default");
+
+          // Check if the scope is loaded
+          if (!window[scope]) {
+            console.error(`Scope '${scope}' not found on window. Make sure the script is loaded correctly.`);
+            return;
+          }
           const container = window[scope];
           await container.init(__webpack_share_scopes__.default);
   
@@ -434,6 +440,8 @@ function App() {
               Component: lazy(() => loadRemote(m)), // Wrap loadRemote with lazy
             }))
           );
+
+          
 
           // Update the widgets state
           setWidgets(widgetsData);
