@@ -9,8 +9,8 @@ const fetchExperimentControllerGetCurrentExperimentParams = (dispatch) => {
     .then((data) => {
       console.log("fetchExperimentControllerGetCurrentExperimentParams", data);
       //update redux states 
-      dispatch(parameterRangeSlice.setIllumination(data.illuminationSources || []));
-      dispatch(parameterRangeSlice.setilluminationIntensity(data.illuminationIntensitys || []));
+      dispatch(parameterRangeSlice.setIllumination(data.illuSources || []));
+      dispatch(parameterRangeSlice.setilluminationIntensity(data.illuIntensities || []));
       dispatch(parameterRangeSlice.setTimeLapsePeriodMin(data.timeLapsePeriodMin || 0));
       dispatch(parameterRangeSlice.setTimeLapsePeriodMax(data.timeLapsePeriodMax || 0));
       dispatch(parameterRangeSlice.setNumberOfImagesMin(data.numberOfImagesMin || 1));

@@ -100,7 +100,7 @@ const ParameterEditorComponent = () => {
             <td style={tdStyle}>General</td>
             <td style={tdStyle}>Illumination</td>
             <td style={tdStyle}>
-              <NativeSelect
+            <NativeSelect
                 value={parameterValue.illumination}
                 onChange={(e) =>
                   dispatch(experimentSlice.setIllumination(e.target.value))
@@ -113,6 +113,27 @@ const ParameterEditorComponent = () => {
                   </option>
                 ))}
               </NativeSelect>
+            <td style={tdStyle}>
+              <div style={{ position: "relative", width: "100%" }}>
+                <span style={valueSpanStyle}>
+                  {parameterValue.illuminationIntensity} mW
+                </span>
+                <input // TODO: THis is not yet ready for multiple illumination types 
+                  type="range"
+                  value={parameterValue.illuminationIntensity}
+                  min={0} // TODO: HARDCODEDD.. parameterRange.illuSourceMinIntensities} 
+                  max={1023} // TODO: HARDCODEDD.. parameterRange.illuSourceMaxIntensities} 
+                  step="1"
+                  onChange={(e) =>
+                    dispatch(
+                      experimentSlice.setilluminationIntensity(Number(e.target.value))
+                    )
+                  }
+                  style={{ width: "100%" }}
+                />
+              </div>
+            </td>
+
             </td>
           </tr>
           <tr>
@@ -141,27 +162,6 @@ const ParameterEditorComponent = () => {
                 }
                 style={{ ...inputStyle, ...checkboxStyle }}
               />
-            </td>
-          </tr>
-          <tr>
-            <td style={tdStyle}></td>
-            <td style={tdStyle}>Laser</td>
-            <td style={tdStyle}>
-              <NativeSelect
-                value={parameterValue.illuminationIntensity}
-                onChange={(e) =>
-                  dispatch(
-                    experimentSlice.setilluminationIntensity(Number(e.target.value))
-                  )
-                }
-                style={selectStyle}
-              >
-                {parameterRange.illuminationIntensity.map((intensity) => (
-                  <option key={intensity} value={intensity}>
-                    {intensity} mW
-                  </option>
-                ))}
-              </NativeSelect>
             </td>
           </tr>
           <tr>
@@ -218,7 +218,7 @@ const ParameterEditorComponent = () => {
                   value={parameterValue.timeLapsePeriod}
                   min={parameterRange.timeLapsePeriod.min}
                   max={parameterRange.timeLapsePeriod.max}
-                  step="0.1"
+                  step="1"
                   onChange={(e) =>
                     dispatch(
                       experimentSlice.setTimeLapsePeriod(Number(e.target.value))
@@ -269,7 +269,7 @@ const ParameterEditorComponent = () => {
                   value={parameterValue.autoFocusMin}
                   min={parameterRange.autoFocus.min}
                   max={parameterRange.autoFocus.max}
-                  step="0.1"
+                  step="1"
                   onChange={(e) =>
                     dispatch(
                       experimentSlice.setAutoFocusMin(Number(e.target.value))
@@ -292,7 +292,7 @@ const ParameterEditorComponent = () => {
                   value={parameterValue.autoFocusMax}
                   min={parameterRange.autoFocus.min}
                   max={parameterRange.autoFocus.max}
-                  step="0.1"
+                  step="1"
                   onChange={(e) =>
                     dispatch(
                       experimentSlice.setAutoFocusMax(Number(e.target.value))
@@ -315,7 +315,7 @@ const ParameterEditorComponent = () => {
                   value={parameterValue.autoFocusStepSize}
                   min={parameterRange.autoFocusStepSize.min}
                   max={parameterRange.autoFocusStepSize.max}
-                  step="0.1"
+                  step="1"
                   onChange={(e) =>
                     dispatch(
                       experimentSlice.setAutoFocusStepSize(
@@ -343,7 +343,7 @@ const ParameterEditorComponent = () => {
                   value={parameterValue.zStackMin}
                   min={parameterRange.zStack.min}
                   max={parameterRange.zStack.max}
-                  step="0.1"
+                  step="1"
                   onChange={(e) =>
                     dispatch(
                       experimentSlice.setZStackMin(Number(e.target.value))
@@ -364,7 +364,7 @@ const ParameterEditorComponent = () => {
                   value={parameterValue.zStackMax}
                   min={parameterRange.zStack.min}
                   max={parameterRange.zStack.max}
-                  step="0.1"
+                  step="1"
                   onChange={(e) =>
                     dispatch(
                       experimentSlice.setZStackMax(Number(e.target.value))
@@ -387,7 +387,7 @@ const ParameterEditorComponent = () => {
                   value={parameterValue.zStackStepSize}
                   min={parameterRange.zStackStepSize.min}
                   max={parameterRange.zStackStepSize.max}
-                  step="0.1"
+                  step="1"
                   onChange={(e) =>
                     dispatch(
                       experimentSlice.setZStackStepSize(Number(e.target.value))

@@ -8,7 +8,7 @@ import WebSocketComponent from "./WebSocketComponent";
 import LiveViewComponent from "./LiveViewComponent";
 import PositionControllerComponent from "./PositionControllerComponent";
 import PositionViewComponent from "./PositionViewComponent";
-import ParameterEditorComponent from "./ParameterEditorComponent";
+import ParameterEditorWrapper from "./ParameterEditorWrapper";
 import ExperimentComponent from "./ExperimentComponent";
 import ObjectiveController from "../components/ObjectiveController";
 import ResizablePanel from "./ResizablePanel"; //<ResizablePanel></ResizablePanel> performace issues :/
@@ -30,7 +30,7 @@ const AxonTabComponent = () => {
           >
             <WellSelectorComponent />
             <LiveViewControlWrapper />
-            <ParameterEditorComponent />
+            <ParameterEditorWrapper />
 
             <PointListEditorComponent />
             <div style={{ display: "flex" }}>
@@ -57,7 +57,7 @@ const AxonTabComponent = () => {
             <TileViewComponent />
             <PointListEditorComponent />
             <PointListShapeEditorComponent />
-            <ParameterEditorComponent />
+            <ParameterEditorWrapper />
             <WellSelectorComponent />
             {/*<ExperimentComponent />*/}
             <ObjectiveController />
