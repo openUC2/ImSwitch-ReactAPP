@@ -8,84 +8,62 @@ function XYZControls({ hostIP, hostPort }) {
   const [positions, setPositions] = useState({});
   const socket = useWebSocket();
 
+  /* --- websocket updates --- */
   useEffect(() => {
     if (!socket) return;
-
-    const handleSignal = (data) => {
+    const handler = (data) => {
       try {
-        const jdata = JSON.parse(data);
-        if (jdata.name === "sigUpdateMotorPosition") {
-          const parsedArgs = jdata.args.p0;
-          const positionerKeys = Object.keys(parsedArgs);  
-
-          if (positionerKeys.length > 0) {
-            const key = positionerKeys[0];
-            const correctedPositions = parsedArgs[key];
-
-            setPositions((prevPositions) => ({
-              ...prevPositions,
-              ...correctedPositions,
-            }));
-          }
+        const j = JSON.parse(data);
+        if (j.name === "sigUpdateMotorPosition") {
+          const p = j.args.p0;
+          const first = Object.keys(p)[0];
+          if (first) setPositions((s) => ({ ...s, ...p[first] }));
         }
-      } catch (error) {
-        console.error("Error parsing signal data:", error);
+      } catch (e) {
+        console.error(e);
       }
     };
-
-    socket.on("signal", handleSignal);
-    return () => {
-      socket.off("signal", handleSignal);
-    };
+    socket.on("signal", handler);
+    return () => socket.off("signal", handler);
   }, [socket]);
 
-  const getPositionerName = async () => {
-    try {
-      const response = await fetch(
-        `${hostIP}:${hostPort}/PositionerController/getPositionerNames`
-      );
-      const data = await response.json();
-      setPositionerName(data[0]);
-    } catch (error) {
-      console.error("Error fetching positioner name:", error);
-    }
-  };
-
-  const fetchPositions = async () => {
-    try {
-      const response = await fetch(
-        `${hostIP}:${hostPort}/PositionerController/getPositionerPositions`
-      );
-      const data = await response.json();
-
-      if (data[positionerName]) {
-        setPositions(data[positionerName]);
-      }
-    } catch (error) {
-      console.error("Error fetching positioner positions:", error);
-    }
-  };
-
+  /* --- initial fetches --- */
   useEffect(() => {
-    getPositionerName();
+    (async () => {
+      try {
+        const r = await fetch(`${hostIP}:${hostPort}/PositionerController/getPositionerNames`);
+        const d = await r.json();
+        setPositionerName(d[0]);
+      } catch (e) {
+        console.error(e);
+      }
+    })();
   }, [hostIP, hostPort]);
 
   useEffect(() => {
-    if (positionerName) {
-      fetchPositions();
-    }
-  }, [positionerName]);
+    if (!positionerName) return;
+    (async () => {
+      try {
+        const r = await fetch(`${hostIP}:${hostPort}/PositionerController/getPositionerPositions`);
+        const d = await r.json();
+        if (d[positionerName]) setPositions(d[positionerName]);
+      } catch (e) {
+        console.error(e);
+      }
+    })();
+  }, [positionerName, hostIP, hostPort]);
 
+  /* --- layout: stack controllers vertically --- */
   return (
-    <Grid container spacing={10}>
-      {Object.keys(positions).map((axisLabel) => (
-        <Grid item xs={3} key={axisLabel}>
+    <Grid container direction="column" spacing={2}>
+      {Object.keys(positions).map((axis) => (
+        <Grid item key={axis}>
           <AxisControl
-            axisLabel={axisLabel}
+            axisLabel={axis}
             hostIP={hostIP}
             hostPort={hostPort}
             positionerName={positionerName}
-            mPosition={positions[axisLabel]}
+            mPosition={positions[axis]}
           />
         </Grid>
       ))}

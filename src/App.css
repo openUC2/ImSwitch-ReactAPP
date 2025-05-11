@@ -36,3 +36,13 @@
     transform: rotate(360deg);
   }
 }
+
+.MuiButton-root {
+  font-size: 0.65rem;
+  line-height: 1;
+}
+
+.MuiInputBase-input {
+  font-size: 0.7rem;
+  padding: 4px 6px;
+}
