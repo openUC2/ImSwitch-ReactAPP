@@ -7,6 +7,7 @@ import LargeFovScanController from "./components/OpenLayers";
 import TimelapseController from "./components/TimelapseController";
 import ObjectiveController from "./components/ObjectiveController.js";
 import AboutPage from "./components/AboutPage";
+import SystemSettings from "./components/SystemSettings";
 import { LiveWidgetProvider } from "./context/LiveWidgetContext"; // Import the context provider
 import Tab_Widgets from "./components/Tab_Widgets";
 import LightsheetController from "./components/LightsheetController";
@@ -377,42 +378,44 @@ function App() {
   */
   function loadRemote({ remote, scope, exposed }) {
     const url = `${hostIP}:${apiPort}${remote}`;
-  
+
     return new Promise((resolve, reject) => {
       if (!document.querySelector(`script[data-mf="${scope}"]`)) {
         const el = document.createElement("script");
-        el.src = url; el.dataset.mf = scope;
-        el.onload  = init;
+        el.src = url;
+        el.dataset.mf = scope;
+        el.onload = init;
         el.onerror = reject;
         document.head.appendChild(el);
       } else {
         init();
       }
-  
+
       async function init() {
         try {
           await __webpack_init_sharing__("default");
 
           // Check if the scope is loaded
           if (!window[scope]) {
-            console.error(`Scope '${scope}' not found on window. Make sure the script is loaded correctly.`);
+            console.error(
+              `Scope '${scope}' not found on window. Make sure the script is loaded correctly.`
+            );
             return;
           }
           const container = window[scope];
           await container.init(__webpack_share_scopes__.default);
-  
+
           const factory = await container.get(
             exposed.startsWith("./") ? exposed : `./${exposed}`
           );
           const module = factory();
-          resolve({ default: module.default || module });   // <-- important
+          resolve({ default: module.default || module }); // <-- important
         } catch (e) {
           reject(e);
         }
       }
     });
   }
-  
 
   function usePluginWidgets() {
     const [widgets, setWidgets] = useState([]);
@@ -440,8 +443,6 @@ function App() {
               Component: lazy(() => loadRemote(m)), // Wrap loadRemote with lazy
             }))
           );
-
-          
 
           // Update the widgets state
           setWidgets(widgetsData);
@@ -724,6 +725,18 @@ function App() {
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "About" : ""} />
               </ListItem>
+              {/* System Settings */}
+              <ListItem
+                button
+                selected={selectedPlugin === "SystemSettings"}
+                onClick={() => handlePluginChange("SystemSettings")}
+              >
+                <ListItemIcon>
+                  <SettingsIcon />
+                </ListItemIcon>
+                <ListItemText primary={sidebarVisible ? "Settings" : ""} />
+              </ListItem>
+
               {/* ImJoy */}
               <ListItem
                 button
@@ -769,7 +782,7 @@ function App() {
             <Box
               sx={{ display: selectedPlugin === "LiveView" ? "block" : "none" }}
             >
-<LiveWidgetProvider>
+              <LiveWidgetProvider>
                 <LiveView
                   hostIP={hostIP}
                   hostPort={apiPort}
@@ -823,6 +836,9 @@ function App() {
               <ObjectiveController hostIP={hostIP} hostPort={apiPort} />
             )}
             {selectedPlugin === "About" && <AboutPage />}
+            {selectedPlugin === "SystemSettings" && (
+              <SystemSettings hostIP={hostIP} hostPort={apiPort} />
+            )}
             {selectedPlugin === "FileManager" && (
               <div className="app">
                 <div className="file-manager-container">
