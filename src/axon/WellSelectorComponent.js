@@ -150,11 +150,20 @@ const WellSelectorComponent = () => {
 
   //##################################################################################
   return (
-    <div style={{ border: "1px solid #eee", padding: "10px" }}>
-      {/* PARAMETER */}
-      <div style={{ marginBottom: "10px" }}>
+    <div style={{ border: "0px solid #eee", padding: "10px" }}>
+      
         {/* LAYOUT */}
+            {/* WellSelectorComponent with mode passed as prop width: "100%", height: "100%", display: "block"*/}
+            <WellSelectorCanvas ref={childRef} style={{}} />
 
+{/* PARAMETER*/}
+{/* Add a little spacer between the wellselector and layout */}
+<div style={{ height: "16px" }} />
+
+{/* PARAMETER */}
+{/* Add a little spacer between the wellselector and layout */}
+<div style={{ marginBottom: "15px" }}>
+<div/>
         <FormControl>
           <InputLabel>Layout</InputLabel>
           <Select
@@ -287,8 +296,6 @@ const WellSelectorComponent = () => {
         </ButtonGroup>
       </div>
 
-      {/* WellSelectorComponent with mode passed as prop width: "100%", height: "100%", display: "block"*/}
-      <WellSelectorCanvas ref={childRef} style={{}} />
       <InfoPopup ref={infoPopupRef}/>
     </div>
   );

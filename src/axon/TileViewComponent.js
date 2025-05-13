@@ -10,7 +10,7 @@ const TileViewComponent = () => {
   const tileStreamState = useSelector(tileViewSlice.getTileStreamState);
 
   return (
-    <div style={{ border: "1px solid white" }}>
+    <div style={{ border: "0px solid white" }}>
       {/* Conditionally render image or canvas based on whether the hardwareState.liveViewImage is available */}
       {tileStreamState?.tileViewImage ? (
         <img

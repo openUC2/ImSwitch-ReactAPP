@@ -73,7 +73,6 @@ const ParameterEditorComponent = () => {
   return (
     <div
       style={{
-        border: "1px solid #eee",
         textAlign: "left",
         padding: "10px",
         margin: "0px",

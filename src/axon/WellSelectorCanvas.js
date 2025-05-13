@@ -1209,7 +1209,6 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
       ref={parentRef}
       style={{
         position: "relative",
-        border: "1px solid #eee", //TODO RM ME
         overflow: "hidden",
         //background: "black",
         //width: "100%",

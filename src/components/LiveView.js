@@ -1,12 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  Box,
-  Checkbox,
-  FormControlLabel,
-  Tabs,
-  Tab,
-  Typography,
-} from "@mui/material";
+import { Box, Checkbox, FormControlLabel, Tabs, Tab, Typography, TextField, Button } from "@mui/material";
 import { Bar } from "react-chartjs-2";
 import XYZControls from "./XYZControls";
 import AutofocusController from "./AutofocusController";
@@ -15,6 +8,7 @@ import StreamControls from "./StreamControls";
 import IlluminationController from "./IlluminationController";
 import ImageViewport from "./ImageViewport";
 import { useWebSocket } from "../context/WebSocketContext";
+import ObjectiveSwitcher from "./ObjectiveSwitcher";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -45,6 +39,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
   const [histogramActive, setHistogramActive] = useState(false);
   const [minVal, setMinVal] = useState(0);
   const [maxVal, setMaxVal] = useState(1023);
+  const [snapFileName, setSnapFileName] = useState("test");
 
   /* socket */
   useEffect(() => {
@@ -68,10 +63,10 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
   useEffect(() => {
     (async () => {
       try {
-        // English comment: 'getDetectorNames' must return something array-like
+        // 'getDetectorNames' must return something array-like
         const r = await fetch(`${hostIP}:${hostPort}/SettingsController/getDetectorNames`);
         const data = await r.json();
-        // English comment: Check if data is an array before setting state
+        // Check if data is an array before setting state
         if (Array.isArray(data)) {
           setDetectors(data);
         } else {
@@ -145,7 +140,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
     setIsStreamRunning(n);
   };
   const snap = async () =>
-    fetch(`${hostIP}:${hostPort}/RecordingController/snapImage?output=false&toList=true`).catch(
+    fetch(`${hostIP}:${hostPort}/RecordingController/snapImageToPath?fileName=${encodeURIComponent(snapFileName)}`).catch(
       () => {}
     );
   const startRec = async () => {
@@ -193,9 +188,11 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
         overflow: "hidden",
       }}
     >
-      {/* LEFT */}
+      {/* LEFT */}     
       <Box sx={{ width: "60%", height: "100%", p: 2, boxSizing: "border-box" }}>
-        <Box sx={{ display: "flex", gap: 1, mb: 2 }}>
+        {/* Snap controls with editable file name */}
+        <Box sx={{ display: "flex", gap: 1, mb: 2, alignItems: "center" }}>
+          {/* Keep StreamControls for other controls */}
           <StreamControls
             isStreamRunning={isStreamRunning}
             onToggleStream={toggleStream}
@@ -203,6 +200,8 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
             isRecording={isRecording}
             onStartRecord={startRec}
             onStopRecord={stopRec}
+            snapFileName={snapFileName}
+            setSnapFileName={setSnapFileName}
           />
         </Box>
 
@@ -260,6 +259,11 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
         <Box mb={3}>
           <Typography variant="h6">Illumination</Typography>
           <IlluminationController hostIP={hostIP} hostPort={hostPort} />
+        </Box>
+        
+        <Box mb={3}>
+          <Typography variant="h6">Objective</Typography>
+          <ObjectiveSwitcher hostIP={hostIP} hostPort={hostPort} />
         </Box>
       </Box>
     </Box>

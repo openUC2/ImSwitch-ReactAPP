@@ -1,4 +1,4 @@
-import { Grid } from "@mui/material";
+import { Box, Checkbox, Slider, Typography, Paper, Grid } from "@mui/material";
 import React, { useEffect, useState } from "react";
 import AxisControl from "./AxisControl";
 import { useWebSocket } from "../context/WebSocketContext";
@@ -55,6 +55,8 @@ function XYZControls({ hostIP, hostPort }) {
 
   /* --- layout: stack controllers vertically --- */
   return (
+        <Paper sx={{ p: 2 }}>
+
     <Grid container direction="column" spacing={2}>
       {Object.keys(positions).map((axis) => (
         <Grid item key={axis}>
@@ -68,6 +70,8 @@ function XYZControls({ hostIP, hostPort }) {
         </Grid>
       ))}
     </Grid>
+    </Paper>
+
   );
 }
 

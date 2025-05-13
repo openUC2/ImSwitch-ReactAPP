@@ -10,7 +10,7 @@ const LiveViewComponent = () => {
     const liveStreamState = useSelector(liveViewSlice.getLiveStreamState);
 
   return (
-    <div style={{ border: '1px solid white' }}>
+    <div style={{ border: '0px solid white' }}>
       {/* Conditionally render image or canvas based on whether the hardwareState.liveViewImage is available */}
       {liveStreamState.liveViewImage ? (
         <img src={`data:image/jpeg;base64,${liveStreamState.liveViewImage}`} alt="Base64 Image" style={{ width: '100%', height: 'auto' }}/>

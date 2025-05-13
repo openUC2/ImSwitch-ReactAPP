@@ -10,13 +10,14 @@ const AxisControl = ({
   axisLabel,      // "X", "Y", "Z" …
   hostIP,         // e.g. "http://192.168.4.10"
   hostPort,       // e.g. 8000
-  positionerName, // returned by backend
+  positionerName, // backend name
   mPosition,      // live position value
 }) => {
-  const [relStep, setRelStep]       = useState(1000);   // µm / encoder‑ticks
-  const [absTarget, setAbsTarget]   = useState(0);      // absolute position
+  const [relStep, setRelStep]     = useState(1000);
+  const [absTarget, setAbsTarget] = useState(0);
+  const [speed, setSpeed]         = useState(20000);
 
-  const w = 68;                                    // unified width in px
+  const w = 68;
   const txtStyle = { minWidth: w, width: w, p: 0 };
 
   const call = async (url) => {
@@ -25,29 +26,30 @@ const AxisControl = ({
 
   const base = `${hostIP}:${hostPort}/PositionerController`;
 
-  const moveRel  = (d)     => call(
-    `${base}/movePositioner?positionerName=${positionerName}` +
-    `&axis=${axisLabel}&dist=${d}&isAbsolute=false&isBlocking=false`
-  );
+  const moveRel = (d) =>
+    call(
+      `${base}/movePositioner?positionerName=${positionerName}` +
+      `&axis=${axisLabel}&dist=${d}&isAbsolute=false&isBlocking=false&speed=${speed}`
+    );
 
-  const moveAbs  = ()      => call(
-    `${base}/movePositioner?positionerName=${positionerName}` +
-    `&axis=${axisLabel}&dist=${absTarget}&isAbsolute=true&isBlocking=false`
-  );
+  const moveAbs = () =>
+    call(
+      `${base}/movePositioner?positionerName=${positionerName}` +
+      `&axis=${axisLabel}&dist=${absTarget}&isAbsolute=true&isBlocking=false&speed=${speed}`
+    );
 
-  const homeAxis = ()      => call(
-    `${base}/homeAxis?positionerName=${positionerName}` +
-    `&axis=${axisLabel}&isBlocking=false`
-  );
+  const homeAxis = () =>
+    call(
+      `${base}/homeAxis?positionerName=${positionerName}` +
+      `&axis=${axisLabel}&isBlocking=false`
+    );
 
   return (
     <Grid container direction="row" alignItems="center" spacing={1} wrap="nowrap">
-      {/* label */}
       <Grid item>
-        <Typography variant="subtitle2">{axisLabel} :</Typography>
+        <Typography variant="subtitle2">{axisLabel}</Typography>
       </Grid>
 
-      {/* live position – read‑only */}
       <Grid item>
         <TextField
           size="small"
@@ -57,8 +59,10 @@ const AxisControl = ({
           sx={txtStyle}
         />
       </Grid>
+      <Grid item>
+        <Typography variant="subtitle2">Steps: </Typography>
+      </Grid>
 
-      {/* relative step size */}
       <Grid item>
         <TextField
           size="small"
@@ -70,7 +74,21 @@ const AxisControl = ({
         />
       </Grid>
 
-      {/* relative motion */}
+      <Grid item>
+        <Typography variant="subtitle2">Speed: </Typography>
+      </Grid>
+
+      <Grid item>
+        <TextField
+          size="small"
+          variant="outlined"
+          type="number"
+          value={speed}
+          onChange={(e) => setSpeed(Number(e.target.value))}
+          sx={txtStyle}
+        />
+      </Grid>
+
       <Grid item>
         <Button
           size="small"
@@ -78,7 +96,7 @@ const AxisControl = ({
           sx={{ minWidth: w, p: "4px 0" }}
           onClick={() => moveRel(+relStep)}
         >
-          Forward
+          ←
         </Button>
       </Grid>
       <Grid item>
@@ -88,11 +106,14 @@ const AxisControl = ({
           sx={{ minWidth: w, p: "4px 0" }}
           onClick={() => moveRel(-relStep)}
         >
-          Backward
+          →
         </Button>
       </Grid>
 
-      {/* absolute target */}
+      <Grid item>
+        <Typography variant="subtitle2">Absolute: </Typography>
+      </Grid>
+
       <Grid item>
         <TextField
           size="small"
@@ -114,7 +135,6 @@ const AxisControl = ({
         </Button>
       </Grid>
 
-      {/* homing */}
       <Grid item>
         <Button
           size="small"

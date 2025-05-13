@@ -12,6 +12,7 @@ import ParameterEditorWrapper from "./ParameterEditorWrapper";
 import ExperimentComponent from "./ExperimentComponent";
 import ObjectiveController from "../components/ObjectiveController";
 import ResizablePanel from "./ResizablePanel"; //<ResizablePanel></ResizablePanel> performace issues :/
+import ObjectiveSwitcher from "../components/ObjectiveSwitcher";
 
 const AxonTabComponent = () => {
   return (
@@ -48,8 +49,6 @@ const AxonTabComponent = () => {
               "Points",
               "Shape",
               "Parameter",
-              "Well Selector",
-              //"Experiment",
               "Objective"
             ]}
           >
@@ -58,9 +57,8 @@ const AxonTabComponent = () => {
             <PointListEditorComponent />
             <PointListShapeEditorComponent />
             <ParameterEditorWrapper />
-            <WellSelectorComponent />
             {/*<ExperimentComponent />*/}
-            <ObjectiveController />
+            <ObjectiveSwitcher />
           </GenericTabBar>
         </div>
       </div>

@@ -143,7 +143,6 @@ const PointListEditorComponent = () => {
   return (
     <div
       style={{
-        border: "1px solid #eee",
         textAlign: "left",
         padding: "10px",
         margin: "0px",
@@ -212,7 +211,6 @@ const PointListEditorComponent = () => {
               key={item.id} //ReactSortable item key
               className="draggableItem"
               style={{
-                border: "1px solid #eee",
                 textAlign: "left",
                 padding: "4px",
                 margin: "0px",

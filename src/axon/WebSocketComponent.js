@@ -16,7 +16,7 @@ const WebSocketComponent = () => {
 
   //##################################################################################
   return (
-    <div style={{ border: "1px solid white", padding: "10px" }}>
+    <div style={{ border: "0px solid white", padding: "10px" }}>
       <table style={{ textAlign: "left" }}>
         <thead>
           <tr>

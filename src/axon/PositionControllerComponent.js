@@ -81,7 +81,6 @@ const PositionControllerComponent = () => {
       className="arrow-container"
       style={{
         padding: "10px",
-        border: "0px solid white",
         display: "flex",
         flexDirection: "column",
         gap: "4px",
