@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Paper, Grid, Button, Typography } from "@mui/material";
+import * as objectiveSlice from "../state/slices/ObjectiveSlice.js";
+import { useDispatch, useSelector } from "react-redux";
 
 // backend helpers (adjust import paths if different)
 import apiObjectiveControllerMoveToObjective from "../backendapi/apiObjectiveControllerMoveToObjective.js";
@@ -12,30 +14,14 @@ export default function ObjectiveSwitcher({ hostIP, hostPort }) {
   const [na, setNA]                   = useState(null);
   const [pixelsize, setPixelsize]     = useState(null);
 
-  /* --- fetch current objective on mount / when address changes --- */
-  useEffect(() => {
-    refreshInfo();
-  }, [hostIP, hostPort]);
-
-  const refreshInfo = async () => {
-    try {
-      const d = await apiObjectiveControllerGetCurrentObjective();
-      // expected order: [pixelsize, NA, magnification, objectiveName, slot]
-      setPixelsize(d[0]);
-      setNA(d[1]);
-      setMag(d[2]);
-      setName(d[3]);
-      setCurrentSlot(d[4]);
-    } catch (e) {
-      console.error("Failed to fetch current objective", e);
-    }
-  };
+    // Access global Redux state
+    const objectiveState = useSelector(objectiveSlice.getObjectiveState);
+  
 
   /* --- switcher --- */
   const switchTo = async (slot) => {
     try {
       await apiObjectiveControllerMoveToObjective(slot);
-      await refreshInfo();      // update UI
     } catch (e) {
       console.error(`Error switching to objective ${slot}`, e);
     }
@@ -49,13 +35,13 @@ export default function ObjectiveSwitcher({ hostIP, hostPort }) {
         <Grid item xs={12}>
           <Typography>
             Current:{" "}
-            {currentSlot != null ? `Slot ${currentSlot}` : "—"}{" "}
-            {name && `(${name})`}
+            {objectiveState.currentObjective != null ? `Slot ${objectiveState.currentObjective}` : "—"}{" "}
+            {objectiveState.objectivName && `(${objectiveState.objectivName})`}
           </Typography>
           <Typography sx={{ fontSize: "0.9rem" }}>
-            {magnification != null && `Mag: ${magnification}×  • `}
-            {na != null && `NA ${na}  • `}
-            {pixelsize != null && `Pixel ${pixelsize} µm`}
+            {objectiveState.magnification != null && `Mag: ${objectiveState.magnification}×  • `}
+            {objectiveState.NA != null && `NA ${objectiveState.NA}  • `}
+            {objectiveState.pixelsize != null && `Pixel ${objectiveState.pixelsize} µm`}
           </Typography>
         </Grid>
 

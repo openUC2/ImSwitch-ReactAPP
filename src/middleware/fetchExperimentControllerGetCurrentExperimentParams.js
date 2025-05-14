@@ -10,7 +10,7 @@ const fetchExperimentControllerGetCurrentExperimentParams = (dispatch) => {
       console.log("fetchExperimentControllerGetCurrentExperimentParams", data);
       //update redux states 
       dispatch(parameterRangeSlice.setIllumination(data.illuSources || []));
-      dispatch(parameterRangeSlice.setilluminationIntensity(data.illuIntensities || []));
+      dispatch(parameterRangeSlice.setIlluminationIntensities(data.illuIntensities || []));
       dispatch(parameterRangeSlice.setTimeLapsePeriodMin(data.timeLapsePeriodMin || 0));
       dispatch(parameterRangeSlice.setTimeLapsePeriodMax(data.timeLapsePeriodMax || 0));
       dispatch(parameterRangeSlice.setNumberOfImagesMin(data.numberOfImagesMin || 1));
@@ -31,7 +31,7 @@ const fetchExperimentControllerGetCurrentExperimentParams = (dispatch) => {
       dispatch(parameterRangeSlice.setIlluSourceMaxIntensities(data.illuSourceMaxIntensities || [1023]));
       dispatch(parameterRangeSlice.setIlluIntensities(data.illuIntensities || [0]));
       dispatch(parameterRangeSlice.setExposureTimes(data.exposureTimes || [0]));
-      dispatch(parameterRangeSlice.setGain(data.gain || [0]));
+      dispatch(parameterRangeSlice.setGains(data.gains || [0]));
       dispatch(parameterRangeSlice.setIsDPCpossible(data.isDPCpossible || false));
       dispatch(parameterRangeSlice.setIsDarkfieldpossible(data.isDarkfieldpossible || false));
     })

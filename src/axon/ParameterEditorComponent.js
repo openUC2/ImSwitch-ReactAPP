@@ -4,397 +4,301 @@ import { useDispatch, useSelector } from "react-redux";
 import * as experimentSlice from "../state/slices/ExperimentSlice.js";
 import * as parameterRangeSlice from "../state/slices/ParameterRangeSlice.js";
 
+import fetchExperimentControllerGetCurrentExperimentParams from "../middleware/fetchExperimentControllerGetCurrentExperimentParams.js";
 
-
-import fetchExperimentControllerGetCurrentExperimentParams from '../middleware/fetchExperimentControllerGetCurrentExperimentParams.js';  
-
-
-import { useTheme  } from "@mui/material/styles";
-import { FormControl, InputLabel, NativeSelect } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 
 //##################################################################################
-const ParameterEditorComponent = () => {
-  //theme
-  const theme = useTheme();
+//  ParameterEditorComponent – rewritten to satisfy requirements:
+//  1. Illumination sources as a check‑list (no dropdown)
+//  2. Per‑source intensity slider + per‑source gain & exposure number boxes
+//  3. Autofocus, timelapse, z‑stack numeric boxes instead of sliders
+//##################################################################################
 
-  // Accessing parameterValue and parameterRange in Redux store
+const ParameterEditorComponent = () => {
+  const theme = useTheme();
   const dispatch = useDispatch();
 
-  const parameterValue = useSelector(
-    (state) => state.experimentState.parameterValue
-  );
+  // current values
+  const parameterValue = useSelector((state) => state.experimentState.parameterValue);
   const parameterRange = useSelector(parameterRangeSlice.getParameterRangeState);
 
-  //##################################################################################
+  // ensure new arrays exist in experiment state (back‑compat)
+  const selectedSources = parameterValue.illumination || [];
+  const intensities      = parameterValue.illuIntensities || [];
+  const gains            = parameterValue.gains            || [];
+  const exposures        = parameterValue.exposureTimes    || [];
+
+  //################################################################################
   useEffect(() => {
-    //update on startup
     fetchExperimentControllerGetCurrentExperimentParams(dispatch);
-  }, []); // Empty dependency array means this runs once when the component mounts
+  }, []);
 
-  //##################################################################################
-  // Define common styles for td elements with reduced bottom padding and consistent input width
+  //################################################################################
   const tdStyle = {
-    paddingTop: "8px",
-    paddingRight: "8px",
-    paddingBottom: "4px", // Reduced bottom padding
-    paddingLeft: "8px",
-  };
-
-  const tdRowSpanStyle = {
-    ...tdStyle, // Inherit base styles
+    padding: "6px 8px",
     verticalAlign: "top",
   };
 
-  const inputStyle = {
-    width: "100%", // Make input fields take up full width of the cell
-    padding: "5px", // Add some padding for comfort
+  // -------- illumination helpers -------------------------------------------------
+  const toggleSource = (src) => {
+  let updated;
+  if (selectedSources.includes(src)) {
+    updated = selectedSources.filter((s) => s !== src);
+  } else {
+    updated = [...selectedSources, src];
+  }
+  dispatch(experimentSlice.setIllumination(updated));
+};
+
+  const setIntensity = (idx, value) => {
+    const arr = [...intensities];
+    arr[idx] = value;
+    dispatch(experimentSlice.setIlluminationIntensities(arr));
   };
 
-  const selectStyle = {
-    ...inputStyle, // Reuse inputStyle for select elements
+  const setGains = (idx, value) => {
+    const arr = [...gains];
+    arr[idx] = value;
+    dispatch(experimentSlice.setGains(arr));
   };
 
-  const checkboxStyle = {
-    marginLeft: "auto", // Align checkbox to the right
-    marginRight: "0", // Remove default left margin
+  const setExposure = (idx, value) => {
+    const arr = [...exposures];
+    arr[idx] = value;
+    dispatch(experimentSlice.setExposureTimes(arr));
   };
 
-  // Span style for the slider value
-  const valueSpanStyle = {
-    position: "absolute",
-    //top: '-25px',
-    //left: '50%',
-    transform: "translateX(-100%)",
-    fontSize: "14px",
-    //color: 'red',
-    //textShadow: '3px 3px 5px rgba(0, 0, 0, 0.9)'
-  };
-
+  //-----------------------------------------------------------------------
   return (
-    <div
-      style={{
-        textAlign: "left",
-        padding: "10px",
-        margin: "0px",
-        fontSize: "16px", // Apply reduced font size to the whole component
-      }}
-    >
-      <h4 style={{ margin: "0", padding: "0", fontSize: "30px" }}>
-        Parameter Editor
-      </h4>{" "}
-      {/* Smaller header font size */}
-      <table
-        style={{ width: "100%", borderCollapse: "collapse", marginTop: "10px" }}
-      >
+    <div style={{ textAlign: "left", padding: 10, fontSize: 16 }}>
+      <h4 style={{ margin: 0, fontSize: 30 }}>Parameter Editor</h4>
+
+      {/* ===================== GENERAL / ILLUMINATION ==================== */}
+      <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 10 }}>
         <thead>
           <tr style={{ borderBottom: "1px solid #ddd" }}>
-            <th style={{ textAlign: "left", padding: "8px" }}>Category</th>
-            <th style={{ textAlign: "left", padding: "8px" }}>Parameter</th>
-            <th style={{ textAlign: "left", padding: "8px" }}>Value</th>
+            <th style={tdStyle}>Category</th>
+            <th style={tdStyle}>Parameter</th>
+            <th style={tdStyle}>Value</th>
           </tr>
         </thead>
         <tbody>
-          {/* General Category (Illumination, Brightfield, etc.) */}
           <tr>
             <td style={tdStyle}>General</td>
-            <td style={tdStyle}>Illumination</td>
+            <td style={tdStyle}>Illumination Sources</td>
             <td style={tdStyle}>
-            <NativeSelect
-                value={parameterValue.illumination}
-                onChange={(e) =>
-                  dispatch(experimentSlice.setIllumination(e.target.value))
-                }
-                style={selectStyle}
-              >
-                {parameterRange.illumination.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </NativeSelect>
-            <td style={tdStyle}>
-              <div style={{ position: "relative", width: "100%" }}>
-                <span style={valueSpanStyle}>
-                  {parameterValue.illuminationIntensity} mW
-                </span>
-                <input // TODO: THis is not yet ready for multiple illumination types 
-                  type="range"
-                  value={parameterValue.illuminationIntensity}
-                  min={0} // TODO: HARDCODEDD.. parameterRange.illuSourceMinIntensities} 
-                  max={1023} // TODO: HARDCODEDD.. parameterRange.illuSourceMaxIntensities} 
-                  step="1"
-                  onChange={(e) =>
-                    dispatch(
-                      experimentSlice.setilluminationIntensity(Number(e.target.value))
-                    )
-                  }
-                  style={{ width: "100%" }}
-                />
-              </div>
+              {parameterRange.illuSources.map((src, idx) => (
+                <div key={src} style={{ display: "flex", alignItems: "center", marginBottom: 4 }}>
+                  <input
+                    type="checkbox"
+                    checked={selectedSources.includes(src)}
+                    onChange={() => toggleSource(src)}
+                    style={{ marginRight: 6 }}
+                  />
+                  <span style={{ flex: 1 }}>{src}</span>
+                </div>
+              ))}
             </td>
+          </tr>
 
-            </td>
-          </tr>
+          {parameterRange.illuSources.map((src, idx) => {
+            const minI = parameterRange.illuSourceMinIntensities[idx] || 0;
+            const maxI = parameterRange.illuSourceMaxIntensities[idx] || 1023;
+            return (
+              <tr key={`illu-${src}`} style={{ opacity: selectedSources.includes(src) ? 1 : 0.4 }}>
+                <td></td>
+                <td style={tdStyle}>{src} settings</td>
+                <td style={tdStyle}>
+                  {/* intensity slider */}
+                  <div style={{ marginBottom: 4 }}>
+                    <span style={{ marginRight: 6 }}>Intensity:</span>
+                    <input
+                      type="range"
+                      min={minI}
+                      max={maxI}
+                      step="1"
+                      value={intensities[idx] ?? minI}
+                      onChange={(e) => setIntensity(idx, Number(e.target.value))}
+                      disabled={!selectedSources.includes(src)}
+                      style={{ width: "60%" }}
+                    />
+                    <span style={{ marginLeft: 6 }}>{intensities[idx] ?? minI} mW</span>
+                  </div>
+
+                  {/* gain */}
+                  <div style={{ marginBottom: 4 }}>
+                    <span style={{ marginRight: 6 }}>Gain:</span>
+                    <input
+                      type="number"
+                      value={gains[idx] ?? 0}
+                      onChange={(e) => setGains(idx, Number(e.target.value))}
+                      style={{ width: 80 }}
+                      disabled={!selectedSources.includes(src)}
+                    />
+                  </div>
+
+                  {/* exposure */}
+                  <div>
+                    <span style={{ marginRight: 6 }}>Exposure (ms):</span>
+                    <input
+                      type="number"
+                      value={exposures[idx] ?? 0}
+                      onChange={(e) => setExposure(idx, Number(e.target.value))}
+                      style={{ width: 80 }}
+                      disabled={!selectedSources.includes(src)}
+                    />
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+
+          {/* ===================== SPEED ==================== */}
           <tr>
-            <td style={tdStyle}></td>
-            <td style={tdStyle}>Brightfield</td>
-            <td style={tdStyle}>
-              <input
-                type="checkbox"
-                checked={parameterValue.brightfield}
-                onChange={(e) =>
-                  dispatch(experimentSlice.setBrightfield(e.target.checked))
-                }
-                style={{ ...inputStyle, ...checkboxStyle }}
-              />
-            </td>
-          </tr>
-          <tr>
-            <td style={tdStyle}></td>
-            <td style={tdStyle}>Darkfield</td>
-            <td style={tdStyle}>
-              <input
-                type="checkbox"
-                checked={parameterValue.darkfield}
-                onChange={(e) =>
-                  dispatch(experimentSlice.setDarkfield(e.target.checked))
-                }
-                style={{ ...inputStyle, ...checkboxStyle }}
-              />
-            </td>
-          </tr>
-          <tr>
-            <td style={tdStyle}></td>
-            <td style={tdStyle}>DPC (Differential Phase Contrast)</td>
-            <td style={tdStyle}>
-              <input
-                type="checkbox"
-                checked={parameterValue.differentialPhaseContrast}
-                onChange={(e) =>
-                  dispatch(
-                    experimentSlice.setDifferentialPhaseContrast(
-                      e.target.checked
-                    )
-                  )
-                }
-                style={{ ...inputStyle, ...checkboxStyle }}
-              />
-            </td>
-          </tr>
-          <tr>
-            <td style={tdStyle}></td>
+            <td></td>
             <td style={tdStyle}>Speed</td>
             <td style={tdStyle}>
-            <NativeSelect
+              <select
                 value={parameterValue.speed}
-                onChange={(e) =>
-                  dispatch(experimentSlice.setSpeed(Number(e.target.value)))
-                }
-                style={selectStyle}
+                onChange={(e) => dispatch(experimentSlice.setSpeed(Number(e.target.value)))}
+                style={{ width: "100%", padding: 5 }}
               >
-                {parameterRange.speed.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
+                {parameterRange.speed.map((s) => (
+                  <option key={s} value={s}>{s}</option>
                 ))}
-              </NativeSelect>
+              </select>
             </td>
           </tr>
 
-          {/* Time-lapse Parameters */}
+          {/* ===================== TIME‑LAPSE ==================== */}
           <tr>
-            <td rowSpan="2" style={tdRowSpanStyle}>
-              Time-lapse
-            </td>
-            <td style={tdStyle}>Period</td>
+            <td rowSpan="2" style={tdStyle}>Time‑lapse</td>
+            <td style={tdStyle}>Period (s)</td>
             <td style={tdStyle}>
-              <div style={{ position: "relative", width: "100%" }}>
-                <span style={valueSpanStyle}>
-                  {parameterValue.timeLapsePeriod} s
-                </span>
-                <input
-                  type="range"
-                  value={parameterValue.timeLapsePeriod}
-                  min={parameterRange.timeLapsePeriod.min}
-                  max={parameterRange.timeLapsePeriod.max}
-                  step="1"
-                  onChange={(e) =>
-                    dispatch(
-                      experimentSlice.setTimeLapsePeriod(Number(e.target.value))
-                    )
-                  }
-                  style={{ width: "100%" }}
-                />
-              </div>
+              <input
+                type="number"
+                min={parameterRange.timeLapsePeriod.min}
+                max={parameterRange.timeLapsePeriod.max}
+                step="1"
+                value={parameterValue.timeLapsePeriod}
+                onChange={(e) => dispatch(experimentSlice.setTimeLapsePeriod(Number(e.target.value)))}
+                style={{ width: "100%", padding: 5 }}
+              />
             </td>
           </tr>
           <tr>
             <td style={tdStyle}>Number of Images</td>
             <td style={tdStyle}>
-              <div style={{ position: "relative", width: "100%" }}>
-                <span style={valueSpanStyle}>
-                  {parameterValue.numberOfImages}
-                </span>
-                <input
-                  type="range"
-                  value={parameterValue.numberOfImages}
-                  min={parameterRange.numberOfImages.min}
-                  max={parameterRange.numberOfImages.max}
-                  step="1"
-                  onChange={(e) =>
-                    dispatch(
-                      experimentSlice.setNumberOfImages(Number(e.target.value))
-                    )
-                  }
-                  style={{ width: "100%" }}
-                />
-              </div>
+              <input
+                type="number"
+                min={parameterRange.numberOfImages.min}
+                max={parameterRange.numberOfImages.max}
+                step="1"
+                value={parameterValue.numberOfImages}
+                onChange={(e) => dispatch(experimentSlice.setNumberOfImages(Number(e.target.value)))}
+                style={{ width: "100%", padding: 5 }}
+              />
             </td>
           </tr>
 
-          {/* Autofocus Parameters */}
+          {/* ===================== AUTOFOCUS ==================== */}
           <tr>
-            <td rowSpan="3" style={tdRowSpanStyle}>
-              Autofocus
+            <td rowSpan="4" style={tdStyle}>Autofocus</td>
+            <td style={tdStyle}>Enable</td>
+            <td style={tdStyle}>
+              <input
+                type="checkbox"
+                checked={parameterValue.autoFocus}
+                onChange={(e) => dispatch(experimentSlice.setAutoFocus(e.target.checked))}
+              />
             </td>
+          </tr>
+          <tr>
             <td style={tdStyle}>Min Focus Position</td>
             <td style={tdStyle}>
-              <div style={{ position: "relative", width: "100%" }}>
-                <span style={valueSpanStyle}>
-                  {parameterValue.autoFocusMin}
-                </span>
-                <input
-                  type="range"
-                  value={parameterValue.autoFocusMin}
-                  min={parameterRange.autoFocus.min}
-                  max={parameterRange.autoFocus.max}
-                  step="1"
-                  onChange={(e) =>
-                    dispatch(
-                      experimentSlice.setAutoFocusMin(Number(e.target.value))
-                    )
-                  }
-                  style={{ width: "100%" }}
-                />
-              </div>
+              <input
+                type="number"
+                min={parameterRange.autoFocus.min}
+                max={parameterRange.autoFocus.max}
+                step="1"
+                value={parameterValue.autoFocusMin}
+                onChange={(e) => dispatch(experimentSlice.setAutoFocusMin(Number(e.target.value)))}
+                style={{ width: "100%", padding: 5 }}
+              />
             </td>
           </tr>
           <tr>
             <td style={tdStyle}>Max Focus Position</td>
             <td style={tdStyle}>
-              <div style={{ position: "relative", width: "100%" }}>
-                <span style={valueSpanStyle}>
-                  {parameterValue.autoFocusMax}
-                </span>
-                <input
-                  type="range"
-                  value={parameterValue.autoFocusMax}
-                  min={parameterRange.autoFocus.min}
-                  max={parameterRange.autoFocus.max}
-                  step="1"
-                  onChange={(e) =>
-                    dispatch(
-                      experimentSlice.setAutoFocusMax(Number(e.target.value))
-                    )
-                  }
-                  style={{ width: "100%" }}
-                />
-              </div>
+              <input
+                type="number"
+                min={parameterRange.autoFocus.min}
+                max={parameterRange.autoFocus.max}
+                step="1"
+                value={parameterValue.autoFocusMax}
+                onChange={(e) => dispatch(experimentSlice.setAutoFocusMax(Number(e.target.value)))}
+                style={{ width: "100%", padding: 5 }}
+              />
             </td>
           </tr>
           <tr>
-            <td style={tdStyle}>Stepsize</td>
+            <td style={tdStyle}>Step Size</td>
             <td style={tdStyle}>
-              <div style={{ position: "relative", width: "100%" }}>
-                <span style={valueSpanStyle}>
-                  {parameterValue.autoFocusStepSize}
-                </span>
-                <input
-                  type="range"
-                  value={parameterValue.autoFocusStepSize}
-                  min={parameterRange.autoFocusStepSize.min}
-                  max={parameterRange.autoFocusStepSize.max}
-                  step="1"
-                  onChange={(e) =>
-                    dispatch(
-                      experimentSlice.setAutoFocusStepSize(
-                        Number(e.target.value)
-                      )
-                    )
-                  }
-                  style={{ width: "100%" }}
-                />
-              </div>
+              <input
+                type="number"
+                min={parameterRange.autoFocusStepSize.min}
+                max={parameterRange.autoFocusStepSize.max}
+                step="0.1"
+                value={parameterValue.autoFocusStepSize}
+                onChange={(e) => dispatch(experimentSlice.setAutoFocusStepSize(Number(e.target.value)))}
+                style={{ width: "100%", padding: 5 }}
+              />
             </td>
           </tr>
 
-          {/* Z-Stack Parameters */}
+          {/* ===================== Z‑STACK ==================== */}
           <tr>
-            <td rowSpan="3" style={tdRowSpanStyle}>
-              Z-Stack
-            </td>
+            <td rowSpan="3" style={tdStyle}>Z‑Stack</td>
             <td style={tdStyle}>Min Focus Position</td>
             <td style={tdStyle}>
-              <div style={{ position: "relative", width: "100%" }}>
-                <span style={valueSpanStyle}>{parameterValue.zStackMin}</span>
-                <input
-                  type="range"
-                  value={parameterValue.zStackMin}
-                  min={parameterRange.zStack.min}
-                  max={parameterRange.zStack.max}
-                  step="1"
-                  onChange={(e) =>
-                    dispatch(
-                      experimentSlice.setZStackMin(Number(e.target.value))
-                    )
-                  }
-                  style={{ width: "100%" }}
-                />
-              </div>
+              <input
+                type="number"
+                min={parameterRange.zStack.min}
+                max={parameterRange.zStack.max}
+                step="1"
+                value={parameterValue.zStackMin}
+                onChange={(e) => dispatch(experimentSlice.setZStackMin(Number(e.target.value)))}
+                style={{ width: "100%", padding: 5 }}
+              />
             </td>
           </tr>
           <tr>
             <td style={tdStyle}>Max Focus Position</td>
             <td style={tdStyle}>
-              <div style={{ position: "relative", width: "100%" }}>
-                <span style={valueSpanStyle}>{parameterValue.zStackMax}</span>
-                <input
-                  type="range"
-                  value={parameterValue.zStackMax}
-                  min={parameterRange.zStack.min}
-                  max={parameterRange.zStack.max}
-                  step="1"
-                  onChange={(e) =>
-                    dispatch(
-                      experimentSlice.setZStackMax(Number(e.target.value))
-                    )
-                  }
-                  style={{ width: "100%" }}
-                />
-              </div>
+              <input
+                type="number"
+                min={parameterRange.zStack.min}
+                max={parameterRange.zStack.max}
+                step="1"
+                value={parameterValue.zStackMax}
+                onChange={(e) => dispatch(experimentSlice.setZStackMax(Number(e.target.value)))}
+                style={{ width: "100%", padding: 5 }}
+              />
             </td>
           </tr>
           <tr>
-            <td style={tdStyle}>Stepsize</td>
+            <td style={tdStyle}>Step Size</td>
             <td style={tdStyle}>
-              <div style={{ position: "relative", width: "100%" }}>
-                <span style={valueSpanStyle}>
-                  {parameterValue.zStackStepSize}
-                </span>
-                <input
-                  type="range"
-                  value={parameterValue.zStackStepSize}
-                  min={parameterRange.zStackStepSize.min}
-                  max={parameterRange.zStackStepSize.max}
-                  step="1"
-                  onChange={(e) =>
-                    dispatch(
-                      experimentSlice.setZStackStepSize(Number(e.target.value))
-                    )
-                  }
-                  style={{ width: "100%" }}
-                />
-              </div>
+              <input
+                type="number"
+                min={parameterRange.zStackStepSize.min}
+                max={parameterRange.zStackStepSize.max}
+                step="0.1"
+                value={parameterValue.zStackStepSize}
+                onChange={(e) => dispatch(experimentSlice.setZStackStepSize(Number(e.target.value)))}
+                style={{ width: "100%", padding: 5 }}
+              />
             </td>
           </tr>
         </tbody>

@@ -40,10 +40,9 @@ const initialExperimentState = {
     */
   ],
   parameterValue: {
-    illumination: "Brightfield",
-    brightfield: false,
+    illumination: ["Brightfield"],
     darkfield: false,
-    illuminationIntensity: 0,
+    illuIntensities: 0,
     differentialPhaseContrast: false,
     timeLapsePeriod: 0.1,
     numberOfImages: 1,
@@ -55,7 +54,9 @@ const initialExperimentState = {
     zStackMin: 0.0,
     zStackMax: 0.0,
     zStackStepSize: 0.1,
-    speed: 0
+    speed: 0, 
+    gains: 0,
+    exposureTimes: 0,
   },
 };
 
@@ -73,17 +74,13 @@ const experimentSlice = createSlice({
       console.log("setIllumination", action.payload);
       state.parameterValue.illumination = action.payload;
     },
-    setBrightfield: (state, action) => {
-      console.log("setBrightfield");
-      state.parameterValue.brightfield = action.payload;
-    },
     setDarkfield: (state, action) => {
       console.log("setDarkfield");
       state.parameterValue.darkfield = action.payload;
     },
-    setilluminationIntensity: (state, action) => {
-      console.log("setilluminationIntensity");
-      state.parameterValue.illuminationIntensity = action.payload;
+    setIlluminationIntensities: (state, action) => {
+      console.log("setIlluminationIntensities");
+      state.parameterValue.illuIntensities = action.payload;
     },
     setDifferentialPhaseContrast: (state, action) => {
       console.log("setDifferentialPhaseContrast");
@@ -132,6 +129,14 @@ const experimentSlice = createSlice({
     setSpeed: (state, action) => {
         console.log("setSpeed");
         state.parameterValue.speed = action.payload;
+    },
+    setGains: (state, action) => {
+      console.log("setGains");
+      state.parameterValue.gains = action.payload;
+    },
+    setExposureTimes: (state, action) => {
+      console.log("setExposureTime");
+      state.parameterValue.exposureTime = action.payload;
     },
     //------------------------ generic
     updateParameter: (state, action) => {
@@ -195,9 +200,8 @@ export const {
   setWellLayout,
 
   setIllumination,
-  setBrightfield,
   setDarkfield,
-  setilluminationIntensity,
+  setIlluminationIntensities,
   setDifferentialPhaseContrast,
   setTimeLapsePeriod,
   setNumberOfImages,
@@ -210,6 +214,8 @@ export const {
   setZStackMax,
   setZStackStepSize,
   setSpeed,
+  setGains,
+  setExposureTimes,
 
   createPoint,
   addPoint,

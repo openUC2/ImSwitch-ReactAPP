@@ -3,7 +3,7 @@ import { createSlice } from "@reduxjs/toolkit";
 // Define the initial state
 const initialParameterRangeState = {
     illumination: ["a", "b", "c"],
-    illuminationIntensity: [10, 20, 30],
+    illuIntensities: [10, 20, 30],
     timeLapsePeriod: { min: 0, max: 1000 },
     numberOfImages: { min: 1, max: 1000 },
     autoFocus: { min: 1, max: 1000 },
@@ -16,7 +16,7 @@ const initialParameterRangeState = {
     illuSourceMaxIntensities: [], // Array of maximum intensities for each illumination source
     illuIntensities: [], // Array of intensities for each illumination source
     exposureTimes: [], // Array of exposure times for each illumination source
-    gain: [], // Array of gain values for each illumination source
+    gains: [], // Array of gain values for each illumination source
     isDPCpossible: false, // Boolean indicating if DPC is possible
     isDarkfieldpossible: false, // Boolean indicating if dark field is possible
     
@@ -38,8 +38,8 @@ const parameterRangeSlice = createSlice({
       setIllumination: (state, action) => {
         state.illumination = action.payload;
       },
-      setilluminationIntensity: (state, action) => {
-        state.illuminationIntensity = action.payload;
+      setIlluminationIntensities: (state, action) => {
+        state.illuIntensities = action.payload;
       },
       setTimeLapsePeriodMin: (state, action) => {
         state.timeLapsePeriod.min = action.payload;
@@ -95,8 +95,8 @@ const parameterRangeSlice = createSlice({
       setExposureTimes: (state, action) => {
         state.exposureTimes = action.payload;
       },
-      setGain: (state, action) => {
-        state.gain = action.payload;
+      setGains: (state, action) => {
+        state.gains = action.payload;
       },
       setIsDPCpossible: (state, action) => {
         state.isDPCpossible = action.payload;
@@ -111,7 +111,7 @@ const parameterRangeSlice = createSlice({
 export const {  
     resetState,
     setIllumination,
-    setilluminationIntensity,
+    setIlluminationIntensities,
     setTimeLapsePeriodMin,
     setTimeLapsePeriodMax,
     setNumberOfImagesMin,
@@ -130,7 +130,7 @@ export const {
     setIlluSourceMaxIntensities,
     setIlluIntensities,
     setExposureTimes,
-    setGain,
+    setGains,
     setIsDPCpossible,
     setIsDarkfieldpossible,
   } = parameterRangeSlice.actions;
