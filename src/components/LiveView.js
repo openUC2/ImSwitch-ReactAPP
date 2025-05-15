@@ -120,6 +120,19 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
     }
   }, [activeTab, detectors, hostIP, hostPort]);
 
+  /* check if stream is running */
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch(`${hostIP}:${hostPort}/ViewController/getLiveViewActive`);
+        if (r.status === 200) {
+          const data = await r.json();
+          setIsStreamRunning(data.active);
+        }
+      } catch {}
+    })();
+  }, [hostIP, hostPort]);
+
   /* handlers */
   const handleRangeChange = (e, v) => {
     setMinVal(v[0]);
