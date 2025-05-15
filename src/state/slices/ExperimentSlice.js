@@ -40,7 +40,7 @@ const initialExperimentState = {
     */
   ],
   parameterValue: {
-    illumination: ["Brightfield"],
+    illumination: [],
     darkfield: false,
     illuIntensities: 0,
     differentialPhaseContrast: false,
@@ -55,8 +55,8 @@ const initialExperimentState = {
     zStackMax: 0.0,
     zStackStepSize: 0.1,
     speed: 0, 
-    gains: 0,
-    exposureTimes: 0,
+    gains: [0],
+    exposureTimes: [0],
   },
 };
 
@@ -136,7 +136,7 @@ const experimentSlice = createSlice({
     },
     setExposureTimes: (state, action) => {
       console.log("setExposureTime");
-      state.parameterValue.exposureTime = action.payload;
+      state.parameterValue.exposureTimes = action.payload;
     },
     //------------------------ generic
     updateParameter: (state, action) => {

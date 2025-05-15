@@ -89,7 +89,7 @@ const parameterRangeSlice = createSlice({
       setIlluSourceMaxIntensities: (state, action) => {
         state.illuSourceMaxIntensities = action.payload;
       },
-      setIlluIntensities: (state, action) => {
+      setilluIntensities: (state, action) => {
         state.illuIntensities = action.payload;
       },
       setExposureTimes: (state, action) => {
@@ -128,7 +128,7 @@ export const {
     setIlluSources,
     setIlluSourceMinIntensities,
     setIlluSourceMaxIntensities,
-    setIlluIntensities,
+    setilluIntensities,
     setExposureTimes,
     setGains,
     setIsDPCpossible,

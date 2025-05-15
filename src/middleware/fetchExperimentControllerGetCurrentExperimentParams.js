@@ -29,7 +29,7 @@ const fetchExperimentControllerGetCurrentExperimentParams = (dispatch) => {
       dispatch(parameterRangeSlice.setIlluSources(data.illuSources || []));
       dispatch(parameterRangeSlice.setIlluSourceMinIntensities(data.illuSourceMinIntensities || [0]));
       dispatch(parameterRangeSlice.setIlluSourceMaxIntensities(data.illuSourceMaxIntensities || [1023]));
-      dispatch(parameterRangeSlice.setIlluIntensities(data.illuIntensities || [0]));
+      dispatch(parameterRangeSlice.setilluIntensities(data.illuIntensities || [0]));
       dispatch(parameterRangeSlice.setExposureTimes(data.exposureTimes || [0]));
       dispatch(parameterRangeSlice.setGains(data.gains || [0]));
       dispatch(parameterRangeSlice.setIsDPCpossible(data.isDPCpossible || false));
