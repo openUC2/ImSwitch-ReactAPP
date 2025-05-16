@@ -118,6 +118,8 @@ const WellSelectorComponent = () => {
       wellLayout = wsUtils.wellLayout32;
     } else if (event.target.value === "Wellplate 96") {
       wellLayout = wsUtils.wellLayout96;
+    } else if (event.target.value === "Ropod") {
+      wellLayout = wsUtils.ropodLayout;      
     } else {
       //donwload layout
       apiDownloadJson(event.target.value) // Pass the JSON file path
@@ -181,6 +183,7 @@ const WellSelectorComponent = () => {
             {/* hard coded layouts */}
             <MenuItem value="Default">Default</MenuItem>
             <MenuItem value="Heidstar 4x Histosample">Development</MenuItem>
+            <MenuItem value="Ropod">Ropod</MenuItem>
             <MenuItem value="Wellplate 32">Wellplate 32</MenuItem>
             <MenuItem value="Wellplate 96">Wellplate 96</MenuItem>
             <MenuItem value="histolayout">histolayout</MenuItem>

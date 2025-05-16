@@ -498,6 +498,38 @@ export const wellLayoutDevelopment = {
   ],
 };
 
+export const ropodLayout = {
+  name: "Ropod Layout",
+  unit: "um",
+  width: 170000,
+  height: 130000,
+  wells: [
+    {
+      x: 85000,
+      y: 46000,
+      shape: "rectangle",
+      width: 66600,
+      height: 24100,
+      name: "Slide1",
+    },
+    {
+      x: 85000,
+      y: 84000,
+      shape: "rectangle",
+      width: 66600,
+      height: 24100,
+      name: "Slide2",
+    },
+    {
+      x: 85000,
+      y: 65000,
+      shape: "circle",
+      radius: 1000,
+      name: "calibration",
+    },
+  ],
+};
+
 export const wellLayout32 = {
   name: "Wellplate 32",
   unit: "um",
