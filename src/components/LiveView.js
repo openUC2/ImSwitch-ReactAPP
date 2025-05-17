@@ -40,6 +40,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
   const [minVal, setMinVal] = useState(0);
   const [maxVal, setMaxVal] = useState(1023);
   const [snapFileName, setSnapFileName] = useState("test");
+  const [compressionRate, setCompressionRate] = useState(80);
 
   /* socket */
   useEffect(() => {
@@ -133,6 +134,38 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
     })();
   }, [hostIP, hostPort]);
 
+
+
+  // English comment: Fetch the current compression rate from backend once
+  useEffect(() => {
+    const fetchCompressionRate = async () => {
+      try {
+        const res = await fetch("https://localhost:8001/SettingsController/getDetectorGlobalParameters");
+        if (res.ok) {
+          const data = await res.json();
+          if (typeof data.compressionlevel === "number") {
+            setCompressionRate(data.compressionlevel);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch compression rate:", err);
+      }
+    };
+    fetchCompressionRate();
+  }, []);
+
+  // English comment: Update local state and backend whenever the user changes the rate
+  const handleCompressionChange = async (e) => {
+    const val = Number(e.target.value);
+    setCompressionRate(val);
+    try {
+      await fetch(`https://localhost:8001/SettingsController/setDetectorCompressionrate?compressionrate=${val}`);
+    } catch (err) {
+      console.error("Failed to set compression rate:", err);
+    }
+  };
+
+
   /* handlers */
   const handleRangeChange = (e, v) => {
     setMinVal(v[0]);
@@ -215,6 +248,8 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
             onStopRecord={stopRec}
             snapFileName={snapFileName}
             setSnapFileName={setSnapFileName}
+            compressionRate={compressionRate}
+            setCompressionRate={handleCompressionChange}
           />
         </Box>
 

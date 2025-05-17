@@ -183,7 +183,7 @@ const WellSelectorComponent = () => {
             {/* hard coded layouts */}
             <MenuItem value="Default">Default</MenuItem>
             <MenuItem value="Heidstar 4x Histosample">Development</MenuItem>
-            <MenuItem value="Ropod">Ropod</MenuItem>
+            <MenuItem value="Ropod">Ropod</MenuItem>  
             <MenuItem value="Wellplate 32">Wellplate 32</MenuItem>
             <MenuItem value="Wellplate 96">Wellplate 96</MenuItem>
             <MenuItem value="histolayout">histolayout</MenuItem>

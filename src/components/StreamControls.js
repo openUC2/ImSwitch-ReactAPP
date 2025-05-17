@@ -17,6 +17,8 @@ export default function StreamControls({
   onStopRecord,
   snapFileName,
   setSnapFileName,
+  compressionRate, 
+  setCompressionRate,
 }) {
   // English comment: Render stream controls with editable image name and icon buttons
   return (
@@ -29,6 +31,16 @@ export default function StreamControls({
       >
         {isStreamRunning ? <Stop /> : <PlayArrow />}
       </IconButton>
+
+            <TextField
+        label="Compression Rate"
+        type="number"
+        size="small"
+        value={compressionRate}
+        onChange={setCompressionRate}
+        sx={{ width: 120 }}
+      />
+
       {/* English comment: Editable image name field */}
       <TextField
         label="Image Name"
