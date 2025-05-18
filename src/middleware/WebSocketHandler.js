@@ -3,6 +3,7 @@ import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import * as connectionSettingsSlice from "../state/slices/ConnectionSettingsSlice.js";
 import * as webSocketSlice from "../state/slices/WebSocketSlice.js";
+import * as experimentStateSlice from "../state/slices/ExperimentStateSlice.js";
 import * as liveStreamSlice from "../state/slices/LiveStreamSlice.js";
 import * as tileStreamSlice from "../state/slices/TileStreamSlice.js";
 import * as positionSlice from "../state/slices/PositionSlice.js";
@@ -71,7 +72,27 @@ const WebSocketHandler = () => {
         */
           //----------------------------------------------
         }
-      } else if (dataJson.name == "sigExperimentImageUpdate") {
+      } else if (
+        dataJson.name == "sigExperimentWorkflowUpdate") {
+          //Args: {"arg0":{"status":"completed","step_id":0,"name":"Move to point 0","total_step_number":2424}}
+          console.log("sigExperimentWorkflowUpdate", dataJson);
+          
+          dispatch(
+            experimentStateSlice.setStatus(dataJson.args.arg0.status)
+          );
+          dispatch(
+            experimentStateSlice.setStepID(dataJson.args.arg0.step_id)
+          );
+          dispatch(
+            experimentStateSlice.setStepName(dataJson.args.arg0.name)
+          );
+          dispatch(
+            experimentStateSlice.setTotalSteps(
+              dataJson.args.arg0.total_step_number
+            )
+          );
+        }
+      else if (dataJson.name == "sigExperimentImageUpdate") {
         console.log("sigExperimentImageUpdate", dataJson);
 
         // update from tiled view

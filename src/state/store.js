@@ -19,6 +19,7 @@ import liveStreamReducer from "./slices/LiveStreamSlice";
 import tileStreamReducer from "./slices/TileStreamSlice";
 import objectiveReducer from "./slices/ObjectiveSlice";
 import LEDMatrixReducer from "./slices/LEDMatrixSlice";
+import experimentStateReducer from "./slices/ExperimentStateSlice";
 
 //#####################################################################################
 // Combine reducers
@@ -34,6 +35,7 @@ const rootReducer = combineReducers({
   objectiveState: objectiveReducer,
   position: positionReducer,
   LEDMatrixState: LEDMatrixReducer,
+  experimentWorkflowState: experimentStateReducer,
 });
 
 //#####################################################################################

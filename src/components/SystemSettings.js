@@ -29,7 +29,7 @@ export default function SystemSettings({ hostIP, hostPort }) {
     const intervalId = setInterval(async () => {
       try {
         const res = await fetch(`${base}/isImSwitchRunning`);
-        // English comment: We assume the endpoint returns JSON like { running: true }
+        // We assume the endpoint returns JSON like { running: true }
         const data = await res.json();
         setIsImSwitchRunning(data.running);
       } catch (error) {
@@ -49,7 +49,7 @@ export default function SystemSettings({ hostIP, hostPort }) {
     return () => clearInterval(intervalId);
   }, []);
 
-  // English comment: Fetches the disk usage from the server
+  // Fetches the disk usage from the server
   const fetchDiskUsage = async () => {
     try {
       const response = await fetch(`${base}/getDiskUsage`);
@@ -126,7 +126,7 @@ export default function SystemSettings({ hostIP, hostPort }) {
         </Box>
       </Box>
       <Box mb={2}>
-        {/* English comment: Display the current ImSwitch running status */}
+        {/* Display the current ImSwitch running status */}
         <Typography variant="body1">
           ImSwitch is {isImSwitchRunning ? "running" : "not running"}
         </Typography>

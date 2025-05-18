@@ -17,13 +17,13 @@ export default function StreamControls({
   onStopRecord,
   snapFileName,
   setSnapFileName,
-  compressionRate, 
+  compressionRate,
   setCompressionRate,
 }) {
-  // English comment: Render stream controls with editable image name and icon buttons
+  // Render stream controls with editable image name and icon buttons
   return (
     <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-      {/* English comment: Stream toggle icon button */}
+      {/* Stream toggle icon button */}
       <Typography variant="h6">Stream</Typography>
       <IconButton
         color={isStreamRunning ? "secondary" : "primary"}
@@ -32,7 +32,7 @@ export default function StreamControls({
         {isStreamRunning ? <Stop /> : <PlayArrow />}
       </IconButton>
 
-            <TextField
+      <TextField
         label="Compression Rate"
         type="number"
         size="small"
@@ -41,7 +41,7 @@ export default function StreamControls({
         sx={{ width: 120 }}
       />
 
-      {/* English comment: Editable image name field */}
+      {/* Editable image name field */}
       <TextField
         label="Image Name"
         size="small"
@@ -49,13 +49,15 @@ export default function StreamControls({
         onChange={(e) => setSnapFileName(e.target.value)}
         sx={{ width: 180 }}
       />
-      {/* English comment: Snap icon button */}
+      {/* Snap icon button */}
       <IconButton color="primary" onClick={onSnap}>
         <CameraAlt />
       </IconButton>
-      {/* English comment: Record icon buttons */}
+      {/* Record icon buttons */}
       {!isRecording ? (
-        <IconButton color="secondary" onClick={onStartRecord}
+        <IconButton
+          color="secondary"
+          onClick={onStartRecord}
           sx={{
             animation: isRecording ? "blinker 1s linear infinite" : "none",
             "@keyframes blinker": {

@@ -53,10 +53,10 @@ export default function IlluminationController({ hostIP, hostPort }) {
               key={l.name}
               sx={{ display: "flex", alignItems: "center", gap: 2 }}
             >
-              {/* English comment: Laser name */}
+              {/* Laser name */}
               <Typography sx={{ minWidth: 80 }}>{l.name}</Typography>
 
-              {/* English comment: Fill available space with slider */}
+              {/* Fill available space with slider */}
               <Slider
                 value={l.value}
                 min={0}
@@ -65,10 +65,10 @@ export default function IlluminationController({ hostIP, hostPort }) {
                 sx={{ flex: 1 }}
               />
 
-              {/* English comment: Current slider value */}
+              {/* Current slider value */}
               <Typography sx={{ mx: 1 }}>{l.value}</Typography>
 
-              {/* English comment: Active checkbox */}
+              {/* Active checkbox */}
               <Checkbox
                 checked={l.active}
                 onChange={(e) => setLaserActive(idx, e.target.checked)}

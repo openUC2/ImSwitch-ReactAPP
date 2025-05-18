@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
-import { Button, ButtonGroup, Snackbar } from "@mui/material";
+import { Button, ButtonGroup, Snackbar, LinearProgress } from "@mui/material";
 
 import * as wsUtils from "./WellSelectorUtils.js";
 
@@ -9,6 +9,7 @@ import InfoPopup from "./InfoPopup.js";
 
 import * as experimentSlice from "../state/slices/ExperimentSlice.js";
 import * as experimentStatusSlice from "../state/slices/ExperimentStatusSlice.js";
+import * as experimentStateSlice from "../state/slices/ExperimentStateSlice.js";
 import * as wellSelectorSlice from "../state/slices/WellSelectorSlice.js";
 import * as objectiveSlice from "../state/slices/ObjectiveSlice.js";
 
@@ -37,8 +38,16 @@ const ExperimentComponent = () => {
   //redux dispatcher
   const dispatch = useDispatch();
 
+  // helper for the workflow step state udpates 
+  const [cachedStepId, setCachedStepId] = useState(0);
+  const [cachedTotalSteps, setCachedTotalSteps] = useState(undefined);
+  const [cachedStepName, setCachedStepName] = useState("");
+
+
   // Access global Redux state
   const experimentState = useSelector(experimentSlice.getExperimentState);
+  const experimentWorkflowState = useSelector(experimentStateSlice.getExperimentState);
+
   const experimentStatusState = useSelector(
     experimentStatusSlice.getExperimentStatusState
   );
@@ -230,6 +239,29 @@ const ExperimentComponent = () => {
     return experimentStatusState.status !== Status.IDLE;
   };
 
+    useEffect(() => {
+    if (experimentWorkflowState.totalSteps !== undefined) {
+      setCachedTotalSteps(experimentWorkflowState.totalSteps);
+    }
+    if (experimentWorkflowState.stepId !== undefined) {
+      setCachedStepId(experimentWorkflowState.stepId);
+    }
+    if (experimentWorkflowState.stepName) {
+      setCachedStepName(experimentWorkflowState.stepName);
+    }
+  }, [
+    experimentWorkflowState.totalSteps,
+    experimentWorkflowState.stepId,
+    experimentWorkflowState.stepName,
+  ]);
+
+  // Calculate progress percentage if we have valid totalSteps
+  const progress =
+    cachedTotalSteps && cachedTotalSteps > 0
+      ? Math.floor((cachedStepId / cachedTotalSteps) * 100)
+      : 0;
+
+
   //##################################################################################
   return (
     <div
@@ -276,6 +308,33 @@ const ExperimentComponent = () => {
         >
           Stop
         </Button>
+
+        {/* Display the step name (fixed width) and loading bar with percentage */}
+        <span style={{ marginLeft: 10, display: "inline-flex", alignItems: "center" }}>
+          <div
+            style={{
+              width: "140px",      // Fixed width for the step name
+              overflow: "hidden",  // Hide overflow if name is longer
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              marginRight: "8px",
+            }}
+            title={cachedStepName}
+          >
+            {cachedStepName}
+          </div>
+
+          {/* Only show loading bar if totalSteps is present */}
+          {cachedTotalSteps && cachedTotalSteps > 0 && (
+            <>
+              <div style={{ width: "100px", marginRight: "8px" }}>
+                <LinearProgress variant="determinate" value={progress} />
+              </div>
+              <span>{progress}%</span>
+            </>
+          )}
+        </span>
+
       </ButtonGroup>
 
       {/* Header 

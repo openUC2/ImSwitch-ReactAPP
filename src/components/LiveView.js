@@ -136,7 +136,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
 
 
 
-  // English comment: Fetch the current compression rate from backend once
+  // Fetch the current compression rate from backend once
   useEffect(() => {
     const fetchCompressionRate = async () => {
       try {
@@ -154,7 +154,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
     fetchCompressionRate();
   }, []);
 
-  // English comment: Update local state and backend whenever the user changes the rate
+  // Update local state and backend whenever the user changes the rate
   const handleCompressionChange = async (e) => {
     const val = Number(e.target.value);
     setCompressionRate(val);
