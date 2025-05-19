@@ -9,14 +9,24 @@ import apiObjectiveControllerGetCurrentObjective from "../backendapi/apiObjectiv
 
 export default function ObjectiveSwitcher({ hostIP, hostPort }) {
   const [currentSlot, setCurrentSlot] = useState(null);     // 1 or 2
-  const [name, setName]               = useState("");
-  const [magnification, setMag]       = useState(null);
-  const [na, setNA]                   = useState(null);
-  const [pixelsize, setPixelsize]     = useState(null);
+  const [magnifications, setMagnifications] = useState({ 1: null, 2: null }); // Magnifications for each slot
 
     // Access global Redux state
     const objectiveState = useSelector(objectiveSlice.getObjectiveState);
   
+      // Fetch magnifications for each slot (example logic, adjust as needed)
+  useEffect(() => {
+    const fetchMagnifications = async () => {
+      try {
+        const mag1 = await apiObjectiveControllerGetCurrentObjective(1);
+        const mag2 = await apiObjectiveControllerGetCurrentObjective(2);
+        setMagnifications({ 1: mag1[1], 2: mag2[1]});
+      } catch (e) {
+        console.error("Error fetching magnifications", e);
+      }
+    };
+    fetchMagnifications();
+  }, []);
 
   /* --- switcher --- */
   const switchTo = async (slot) => {
@@ -54,7 +64,9 @@ export default function ObjectiveSwitcher({ hostIP, hostPort }) {
                 color={currentSlot === 1 ? "secondary" : "primary"}
                 onClick={() => switchTo(1)}
               >
-                Switch to Objective 1
+                 Switch to Objective 1{" "}
+                  {magnifications[1] != null && `(Mag: ${magnifications[1]}×)`}
+
               </Button>
             </Grid>
             <Grid item>
@@ -63,7 +75,9 @@ export default function ObjectiveSwitcher({ hostIP, hostPort }) {
                 color={currentSlot === 2 ? "secondary" : "primary"}
                 onClick={() => switchTo(2)}
               >
-                Switch to Objective 2
+                Switch to Objective 1{" "}
+                {magnifications[2] != null && `(Mag: ${magnifications[2]}×)`}
+
               </Button>
             </Grid>
           </Grid>

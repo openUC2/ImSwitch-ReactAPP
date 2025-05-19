@@ -29,6 +29,17 @@ const ParameterEditorComponent = () => {
   const gains            = parameterValue.gains            || [];
   const exposures        = parameterValue.exposureTimes    || [];
 
+  // Initialize missing values with zero for all illumination sources
+const initializedIntensities = parameterRange.illuSources.map(
+  (_, idx) => intensities[idx] ?? 0
+);
+const initializedGains = parameterRange.illuSources.map(
+  (_, idx) => gains[idx] ?? 0
+);
+const initializedExposures = parameterRange.illuSources.map(
+  (_, idx) => exposures[idx] ?? 0
+);
+
   //################################################################################
   useEffect(() => {
     fetchExperimentControllerGetCurrentExperimentParams(dispatch);
@@ -118,12 +129,12 @@ const ParameterEditorComponent = () => {
                       min={minI}
                       max={maxI}
                       step="1"
-                      value={intensities[idx] ?? minI}
+                      value={initializedIntensities[idx] ?? minI}
                       onChange={(e) => setIntensity(idx, Number(e.target.value))}
                       disabled={!selectedSources.includes(src)}
                       style={{ width: "60%" }}
                     />
-                    <span style={{ marginLeft: 6 }}>{intensities[idx] ?? minI} mW</span>
+                    <span style={{ marginLeft: 6 }}>{initializedIntensities[idx] ?? minI} mW</span>
                   </div>
 
                   {/* gain */}
@@ -131,7 +142,7 @@ const ParameterEditorComponent = () => {
                     <span style={{ marginRight: 6 }}>Gain:</span>
                     <input
                       type="number"
-                      value={gains[idx] ?? 0}
+                      value={initializedGains[idx] ?? 0}
                       onChange={(e) => setGains(idx, Number(e.target.value))}
                       style={{ width: 80 }}
                       disabled={!selectedSources.includes(src)}
@@ -143,7 +154,7 @@ const ParameterEditorComponent = () => {
                     <span style={{ marginRight: 6 }}>Exposure (ms):</span>
                     <input
                       type="number"
-                      value={exposures[idx] ?? 0}
+                      value={initializedExposures[idx] ?? 0}
                       onChange={(e) => setExposure(idx, Number(e.target.value))}
                       style={{ width: 80 }}
                       disabled={!selectedSources.includes(src)}
