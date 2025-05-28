@@ -34,6 +34,7 @@ const fetchExperimentControllerGetCurrentExperimentParams = (dispatch) => {
       dispatch(parameterRangeSlice.setGains(data.gains || [0]));
       dispatch(parameterRangeSlice.setIsDPCpossible(data.isDPCpossible || false));
       dispatch(parameterRangeSlice.setIsDarkfieldpossible(data.isDarkfieldpossible || false));
+
     })
     .catch((err) => {
       console.error("Failed to fetch experiment parameters", err);

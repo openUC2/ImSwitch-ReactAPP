@@ -19,7 +19,7 @@ const initialParameterRangeState = {
     gains: [], // Array of gain values for each illumination source
     isDPCpossible: false, // Boolean indicating if DPC is possible
     isDarkfieldpossible: false, // Boolean indicating if dark field is possible
-    
+    performanceMode: false 
 };
 
 // Create slice
@@ -104,6 +104,9 @@ const parameterRangeSlice = createSlice({
       setIsDarkfieldpossible: (state, action) => {
         state.isDarkfieldpossible = action.payload;
       },
+      setPerformanceMode: (state, action) => {
+        state.performanceMode = action.payload; // Set performance mode
+      },
   },
 });
 
@@ -133,6 +136,7 @@ export const {
     setGains,
     setIsDPCpossible,
     setIsDarkfieldpossible,
+    setPerformanceMode,
   } = parameterRangeSlice.actions;
 
 // Selector helper

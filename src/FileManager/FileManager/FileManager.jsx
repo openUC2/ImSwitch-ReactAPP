@@ -37,6 +37,7 @@ const FileManager = ({
   acceptedFileTypes,
   height = "600px",
   width = "100%",
+  initialPath = "/",
 }) => {
   const triggerAction = useTriggerAction();
   const { containerRef, colSizes, isDragging, handleMouseMove, handleMouseUp, handleMouseDown } =
@@ -50,7 +51,7 @@ const FileManager = ({
     >
       <Loader isLoading={isLoading} />
       <FilesProvider filesData={files} onError={onError}>
-        <FileNavigationProvider>
+        <FileNavigationProvider initialPath={initialPath}>
           <SelectionProvider onDownload={onDownload}>
             <ClipBoardProvider onPaste={onPaste}>
               <LayoutProvider layout={layout}>

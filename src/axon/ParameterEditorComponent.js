@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 
 import * as experimentSlice from "../state/slices/ExperimentSlice.js";
 import * as parameterRangeSlice from "../state/slices/ParameterRangeSlice.js";
+import { FormControlLabel, Switch } from "@mui/material";
 
 import fetchExperimentControllerGetCurrentExperimentParams from "../middleware/fetchExperimentControllerGetCurrentExperimentParams.js";
 
@@ -39,11 +40,20 @@ const initializedGains = parameterRange.illuSources.map(
 const initializedExposures = parameterRange.illuSources.map(
   (_, idx) => exposures[idx] ?? 0
 );
+const initializedPerformanceMode = parameterValue.performanceMode || false;
 
   //################################################################################
   useEffect(() => {
     fetchExperimentControllerGetCurrentExperimentParams(dispatch);
   }, []);
+
+    useEffect(() => {
+    const initArr = parameterRange.illuSources.map((_, idx) => intensities[idx] ?? 0);
+    // Only dispatch if there's at least one undefined replaced by zero
+    if (JSON.stringify(intensities) !== JSON.stringify(initArr)) {
+      dispatch(experimentSlice.setIlluminationIntensities(initArr));
+    }
+  }, [parameterRange.illuSources, intensities, dispatch]);
 
   //################################################################################
   const tdStyle = {
@@ -80,6 +90,9 @@ const initializedExposures = parameterRange.illuSources.map(
     dispatch(experimentSlice.setExposureTimes(arr));
   };
 
+  const setPerformanceMode = (mode) => {
+    dispatch(experimentSlice.setPerformanceMode(mode));
+  };
   //-----------------------------------------------------------------------
   return (
     <div style={{ textAlign: "left", padding: 10, fontSize: 16 }}>
@@ -160,6 +173,21 @@ const initializedExposures = parameterRange.illuSources.map(
                       disabled={!selectedSources.includes(src)}
                     />
                   </div>
+
+                  {/* Performance mode toggle */}
+                  <div>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={parameterValue.performanceMode}
+                        onChange={(e) => {
+                            setPerformanceMode(e.target.checked);
+                        }}
+                      />
+                    }
+                  label="Performance Mode"
+                /> 
+                    </div>
                 </td>
               </tr>
             );

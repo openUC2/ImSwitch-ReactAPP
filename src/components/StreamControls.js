@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, IconButton, TextField, Typography } from "@mui/material";
+import { Box, IconButton, TextField, Typography, Button } from "@mui/material";
 import {
   PlayArrow,
   Stop,
@@ -19,6 +19,8 @@ export default function StreamControls({
   setSnapFileName,
   compressionRate,
   setCompressionRate,
+  onGoToImage,
+  lastSnapPath,
 }) {
   // Render stream controls with editable image name and icon buttons
   return (
@@ -53,6 +55,13 @@ export default function StreamControls({
       <IconButton color="primary" onClick={onSnap}>
         <CameraAlt />
       </IconButton>
+      <Button 
+        variant="outlined" 
+        disabled={!lastSnapPath}
+        onClick={onGoToImage}
+      >
+        Go to image
+      </Button>      
       {/* Record icon buttons */}
       {!isRecording ? (
         <IconButton

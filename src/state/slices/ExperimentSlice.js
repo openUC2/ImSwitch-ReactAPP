@@ -57,6 +57,7 @@ const initialExperimentState = {
     speed: 0, 
     gains: [0],
     exposureTimes: [0],
+    performanceMode: false
   },
 };
 
@@ -146,6 +147,10 @@ const experimentSlice = createSlice({
         state.parameterValue[key] = value;
       }
     },
+    setPerformanceMode: (state, action) => {
+      console.log("setPerformanceMode", action.payload);
+      state.parameterValue.performanceMode = action.payload;
+    },
     //------------------------ points
     createPoint: (state, action) => {
       console.log("createPoint", action);
@@ -216,7 +221,7 @@ export const {
   setSpeed,
   setGains,
   setExposureTimes,
-
+  setPerformanceMode,
   createPoint,
   addPoint,
   removePoint,

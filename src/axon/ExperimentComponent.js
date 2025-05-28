@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
-import { Button, ButtonGroup, Snackbar, LinearProgress } from "@mui/material";
+import { Button, ButtonGroup, LinearProgress } from "@mui/material";
 
 import * as wsUtils from "./WellSelectorUtils.js";
 
@@ -308,6 +308,7 @@ const ExperimentComponent = () => {
         >
           Stop
         </Button>
+
 
         {/* Display the step name (fixed width) and loading bar with percentage */}
         <span style={{ marginLeft: 10, display: "inline-flex", alignItems: "center" }}>

@@ -91,7 +91,7 @@ const PointListEditorComponent = () => {
       axis: "X",
       dist: x,
       isAbsolute: true,
-      speed: 15000,
+      speed: 20000,
     })
       .then((positionerResponse) => {
         console.log(
@@ -111,7 +111,7 @@ const PointListEditorComponent = () => {
       axis: "Y",
       dist: y,
       isAbsolute: true,
-      speed: 15000,
+      speed: 20000,
     })
       .then((positionerResponse) => {
         console.log(

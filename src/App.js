@@ -18,6 +18,7 @@ import { JupyterProvider } from "./context/JupyterContext";
 import UC2Controller from "./components/UC2Controller";
 import ExtendedLEDMatrixController from "./components/ExtendedLEDMatrixController";
 import StageOffsetCalibration from "./components/StageOffsetCalibrationController";
+import DetectorTriggerController from "./components/DetectorTriggerController";
 
 import theme from "./theme";
 import {
@@ -202,6 +203,7 @@ function App() {
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true); // State to toggle between light and dark themes
   const [sharedImage, setSharedImage] = useState(null);
+  const [fileManagerInitialPath, setFileManagerInitialPath] = useState("/");
   const [layout, setLayout] = useState([
     { i: "widget1", x: 0, y: 0, w: 2, h: 2 },
     { i: "widget2", x: 2, y: 0, w: 2, h: 2 },
@@ -238,6 +240,7 @@ function App() {
   const handleFileUploading = (file, parentFolder) => ({
     parentId: parentFolder?._id,
   });
+
   const handleFileUploaded = (response) => {
     const uploadedFile = JSON.parse(response);
     setFiles((prev) => [...prev, uploadedFile]);
@@ -339,6 +342,18 @@ function App() {
     let port = event.target.value.trim();
     setApiPort(port);
   };
+
+  // handle default filemanager path change 
+const handleFileManagerInitialPathChange = (event) => {
+  // English comment: store the desired path
+  const path = event;
+  setFileManagerInitialPath(path);
+  setTimeout(() => {
+    handleRefresh();
+  }, 2000);
+  setFileManagerInitialPath(path);
+  setSelectedPlugin("FileManager"); 
+};
 
   // Handle changes to the port
   const handlehostIPChange = (event) => {
@@ -684,6 +699,18 @@ function App() {
               </ListItem>
               <ListItem
                 button
+                selected={selectedPlugin === "DetectorTrigger"}
+                onClick={() => handlePluginChange("DetectorTrigger")}
+              >
+                <ListItemIcon>
+                  <AirIcon />
+                </ListItemIcon>
+                <ListItemText
+                  primary={sidebarVisible ? "DetectorTrigger" : ""}
+                />
+              </ListItem>
+              <ListItem
+                button
                 selected={selectedPlugin === "ExtendedLEDMatrix"}
                 onClick={() => handlePluginChange("ExtendedLEDMatrix")}
               >
@@ -789,6 +816,8 @@ function App() {
                   drawerWidth={drawerWidth}
                   // pass down a setter or context for the image if needed
                   onImageUpdate={(img) => setSharedImage(img)}
+                  setSelectedPlugin={setSelectedPlugin}
+                  setFileManagerInitialPath={handleFileManagerInitialPathChange} // pass function
                 />
               </LiveWidgetProvider>
             </Box>
@@ -860,6 +889,7 @@ function App() {
                     maxFileSize={10485760}
                     filePreviewPath={`${hostIP}:${apiPort}/`}
                     acceptedFileTypes=".txt, .png, .jpg, .jpeg, .pdf, .doc, .docx, .exe, .js, .csv"
+                    initialPath={fileManagerInitialPath} // TODO: THIS IS REALLY HACKY!
                   />
                 </div>
               </div>
@@ -890,6 +920,11 @@ function App() {
             {selectedPlugin === "UC2" && (
               <WidgetContextProvider>
                 <UC2Controller hostIP={hostIP} hostPort={apiPort} />
+              </WidgetContextProvider>
+            )}
+            {selectedPlugin === "DetectorTrigger" && (
+              <WidgetContextProvider>
+                <DetectorTriggerController hostIP={hostIP} hostPort={apiPort} />
               </WidgetContextProvider>
             )}
             {selectedPlugin === "ExtendedLEDMatrix" && (

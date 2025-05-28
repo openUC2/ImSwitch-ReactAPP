@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Box, Checkbox, FormControlLabel, Tabs, Tab, Typography, TextField, Button } from "@mui/material";
+import {
+  Box,
+  Checkbox,
+  FormControlLabel,
+  Tabs,
+  Tab,
+  Typography
+} from "@mui/material";
 import { Bar } from "react-chartjs-2";
 import XYZControls from "./XYZControls";
 import AutofocusController from "./AutofocusController";
@@ -9,6 +16,8 @@ import IlluminationController from "./IlluminationController";
 import ImageViewport from "./ImageViewport";
 import { useWebSocket } from "../context/WebSocketContext";
 import ObjectiveSwitcher from "./ObjectiveSwitcher";
+import DetectorTriggerController from "./DetectorTriggerController";
+
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -19,11 +28,18 @@ import {
   Legend,
 } from "chart.js";
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 const appBarHeight = 64;
 
-export default function LiveView({ hostIP, hostPort, drawerWidth }) {
+export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManagerInitialPath }) {
   const socket = useWebSocket();
 
   const [detectors, setDetectors] = useState([]);
@@ -39,7 +55,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
   const [histogramActive, setHistogramActive] = useState(false);
   const [minVal, setMinVal] = useState(0);
   const [maxVal, setMaxVal] = useState(1023);
-  const [snapFileName, setSnapFileName] = useState("test");
+  const [lastSnapPath, setLastSnapPath] = useState("");
   const [compressionRate, setCompressionRate] = useState(80);
 
   /* socket */
@@ -49,7 +65,10 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
       const j = JSON.parse(d);
       if (j.name === "sigUpdateImage") {
         const det = j.detectorname;
-        setImageUrls((p) => ({ ...p, [det]: `data:image/jpeg;base64,${j.image}` }));
+        setImageUrls((p) => ({
+          ...p,
+          [det]: `data:image/jpeg;base64,${j.image}`,
+        }));
         if (j.pixelsize) setPixelSize(j.pixelsize);
       } else if (j.name === "sigHistogramComputed") {
         setHistogramX(j.args.p0);
@@ -65,7 +84,9 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
     (async () => {
       try {
         // 'getDetectorNames' must return something array-like
-        const r = await fetch(`${hostIP}:${hostPort}/SettingsController/getDetectorNames`);
+        const r = await fetch(
+          `${hostIP}:${hostPort}/SettingsController/getDetectorNames`
+        );
         const data = await r.json();
         // Check if data is an array before setting state
         if (Array.isArray(data)) {
@@ -85,7 +106,9 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
   useEffect(() => {
     (async () => {
       try {
-        const r = await fetch(`${hostIP}:${hostPort}/HistogrammController/histogrammActive`);
+        const r = await fetch(
+          `${hostIP}:${hostPort}/HistogrammController/histogrammActive`
+        );
         setHistogramActive(r.status !== 404);
       } catch {
         setHistogramActive(false);
@@ -97,7 +120,9 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
   useEffect(() => {
     (async () => {
       try {
-        const r = await fetch(`${hostIP}:${hostPort}/HistogrammController/minmaxvalues`);
+        const r = await fetch(
+          `${hostIP}:${hostPort}/HistogrammController/minmaxvalues`
+        );
         if (!r.ok) return;
         const d = await r.json();
         setMinVal(d.minVal);
@@ -125,7 +150,9 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
   useEffect(() => {
     (async () => {
       try {
-        const r = await fetch(`${hostIP}:${hostPort}/ViewController/getLiveViewActive`);
+        const r = await fetch(
+          `${hostIP}:${hostPort}/ViewController/getLiveViewActive`
+        );
         if (r.status === 200) {
           const data = await r.json();
           setIsStreamRunning(data.active);
@@ -134,13 +161,13 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
     })();
   }, [hostIP, hostPort]);
 
-
-
   // Fetch the current compression rate from backend once
   useEffect(() => {
     const fetchCompressionRate = async () => {
       try {
-        const res = await fetch("https://localhost:8001/SettingsController/getDetectorGlobalParameters");
+        const res = await fetch(
+          "https://localhost:8001/SettingsController/getDetectorGlobalParameters"
+        );
         if (res.ok) {
           const data = await res.json();
           if (typeof data.compressionlevel === "number") {
@@ -159,12 +186,13 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
     const val = Number(e.target.value);
     setCompressionRate(val);
     try {
-      await fetch(`https://localhost:8001/SettingsController/setDetectorCompressionrate?compressionrate=${val}`);
+      await fetch(
+        `https://localhost:8001/SettingsController/setDetectorCompressionrate?compressionrate=${val}`
+      );
     } catch (err) {
       console.error("Failed to set compression rate:", err);
     }
   };
-
 
   /* handlers */
   const handleRangeChange = (e, v) => {
@@ -181,21 +209,37 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
   const toggleStream = async () => {
     const n = !isStreamRunning;
     try {
-      await fetch(`${hostIP}:${hostPort}/ViewController/setLiveViewActive?active=${n}`);
+      await fetch(
+        `${hostIP}:${hostPort}/ViewController/setLiveViewActive?active=${n}`
+      );
     } catch {}
     setIsStreamRunning(n);
   };
-  const snap = async () =>
-    fetch(`${hostIP}:${hostPort}/RecordingController/snapImageToPath?fileName=${encodeURIComponent(snapFileName)}`).catch(
-      () => {}
+  async function snap() {
+    // English comment: Example fetch for snapping an image
+    const response = await fetch(
+      "https://localhost:8001/RecordingController/snapImageToPath?fileName=test"
     );
+    const data = await response.json();
+    // data.relativePath might be "recordings/2025_05_20-11-12-44_PM"
+    setLastSnapPath(`/${data.relativePath}`); // prepend slash
+  }
+  function handleGoToImage() {
+    if (lastSnapPath) {
+      setFileManagerInitialPath(lastSnapPath);
+    }
+  }
   const startRec = async () => {
     setIsRecording(true);
-    fetch(`${hostIP}:${hostPort}/RecordingController/startRecording?mSaveFormat=4`).catch(() => {});
+    fetch(
+      `${hostIP}:${hostPort}/RecordingController/startRecording?mSaveFormat=4`
+    ).catch(() => {});
   };
   const stopRec = async () => {
     setIsRecording(false);
-    fetch(`${hostIP}:${hostPort}/RecordingController/stopRecording`).catch(() => {});
+    fetch(`${hostIP}:${hostPort}/RecordingController/stopRecording`).catch(
+      () => {}
+    );
   };
   const moveStage = async (dir) => {
     const map = {
@@ -218,7 +262,10 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
-    plugins: { legend: { display: false }, title: { display: true, text: "Histogram" } },
+    plugins: {
+      legend: { display: false },
+      title: { display: true, text: "Histogram" },
+    },
     scales: { x: { max: 1024 }, y: { beginAtZero: true } },
   };
 
@@ -234,7 +281,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
         overflow: "hidden",
       }}
     >
-      {/* LEFT */}     
+      {/* LEFT */}
       <Box sx={{ width: "60%", height: "100%", p: 2, boxSizing: "border-box" }}>
         {/* Snap controls with editable file name */}
         <Box sx={{ display: "flex", gap: 1, mb: 2, alignItems: "center" }}>
@@ -246,8 +293,8 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
             isRecording={isRecording}
             onStartRecord={startRec}
             onStopRecord={stopRec}
-            snapFileName={snapFileName}
-            setSnapFileName={setSnapFileName}
+            onGoToImage={handleGoToImage}
+            lastSnapPath={lastSnapPath}
             compressionRate={compressionRate}
             setCompressionRate={handleCompressionChange}
           />
@@ -258,13 +305,20 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
         {histogramActive && (
           <FormControlLabel
             control={
-              <Checkbox checked={showHistogram} onChange={(e) => setShowHistogram(e.target.checked)} />
+              <Checkbox
+                checked={showHistogram}
+                onChange={(e) => setShowHistogram(e.target.checked)}
+              />
             }
             label="Show Histogram Overlay"
           />
         )}
 
-        <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)} sx={{ mt: 2 }}>
+        <Tabs
+          value={activeTab}
+          onChange={(_, v) => setActiveTab(v)}
+          sx={{ mt: 2 }}
+        >
           {detectors.map((d) => (
             <Tab key={d} label={d} />
           ))}
@@ -308,10 +362,15 @@ export default function LiveView({ hostIP, hostPort, drawerWidth }) {
           <Typography variant="h6">Illumination</Typography>
           <IlluminationController hostIP={hostIP} hostPort={hostPort} />
         </Box>
-        
+
         <Box mb={3}>
           <Typography variant="h6">Objective</Typography>
           <ObjectiveSwitcher hostIP={hostIP} hostPort={hostPort} />
+        </Box>
+
+        <Box mb={3}>
+          <Typography variant="h6">Detector Trigger</Typography>
+          <DetectorTriggerController hostIP={hostIP} hostPort={hostPort} />
         </Box>
       </Box>
     </Box>
