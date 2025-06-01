@@ -1,4 +1,5 @@
 import React, { useContext, useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { MCTContext } from "../context/MCTContext";
 import {
   Paper,
@@ -10,7 +11,7 @@ import {
   Button,
   Typography,
 } from "@mui/material";
-import { useWidgetContext } from "../context/WidgetContext";
+import * as widgetSlice from "../state/slices/WidgetSlice.js";
 //import { useWebSocket } from "../context/useWebSocket";
 
 
@@ -59,7 +60,9 @@ const MCTController = ({ hostIP, hostPort }) => {
     setIsRunning,
   } = useContext(MCTContext);
 
-  const widgetCtx = useWidgetContext();
+  // Redux dispatcher and state
+  const dispatch = useDispatch();
+  const widgetState = useSelector(widgetSlice.getWidgetState);
 
   /*
   useEffect(() => {

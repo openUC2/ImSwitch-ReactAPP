@@ -8,7 +8,6 @@ import TimelapseController from "./components/TimelapseController";
 import ObjectiveController from "./components/ObjectiveController.js";
 import AboutPage from "./components/AboutPage";
 import SystemSettings from "./components/SystemSettings";
-import { LiveWidgetProvider } from "./context/LiveWidgetContext"; // Import the context provider
 import Tab_Widgets from "./components/Tab_Widgets";
 import LightsheetController from "./components/LightsheetController";
 import BlocklyController from "./components/BlocklyController";
@@ -82,7 +81,6 @@ import {
   TextField,
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-import { WidgetContextProvider } from "./context/WidgetContext";
 import CommentIcon from "@mui/icons-material/Comment";
 import ZoomOutMapIcon from "@mui/icons-material/ZoomOutMap";
 import FlowStopController from "./components/FlowStopController";
@@ -809,7 +807,7 @@ const handleFileManagerInitialPathChange = (event) => {
             <Box
               sx={{ display: selectedPlugin === "LiveView" ? "block" : "none" }}
             >
-              <LiveWidgetProvider>
+              
                 <LiveView
                   hostIP={hostIP}
                   hostPort={apiPort}
@@ -819,7 +817,7 @@ const handleFileManagerInitialPathChange = (event) => {
                   setSelectedPlugin={setSelectedPlugin}
                   setFileManagerInitialPath={handleFileManagerInitialPathChange} // pass function
                 />
-              </LiveWidgetProvider>
+              
             </Box>
             <Box
               sx={{ display: selectedPlugin === "ImJoy" ? "block" : "none" }}
@@ -831,9 +829,9 @@ const handleFileManagerInitialPathChange = (event) => {
               />
             </Box>
             {selectedPlugin === "HistoScan" && (
-              <WidgetContextProvider>
+              
                 <HistoScanController hostIP={hostIP} hostPort={apiPort} />
-              </WidgetContextProvider>
+              
             )}
             {selectedPlugin === "JupyteNotebook" && (
               <JupyterProvider>
@@ -841,17 +839,17 @@ const handleFileManagerInitialPathChange = (event) => {
               </JupyterProvider>
             )}
             {selectedPlugin === "Infinity Scanning" && (
-              <WidgetContextProvider>
+              
                 <LargeFovScanController hostIP={hostIP} hostPort={apiPort} />
-              </WidgetContextProvider>
+              
             )}
             {selectedPlugin === "Blockly" && (
-              <WidgetContextProvider>
+              
                 <BlocklyController />
-              </WidgetContextProvider>
+              
             )}
             {selectedPlugin === "Timelapse" && (
-              <WidgetContextProvider>
+              
                 <MCTProvider>
                   <TimelapseController
                     hostIP={hostIP}
@@ -859,7 +857,7 @@ const handleFileManagerInitialPathChange = (event) => {
                     title="Timelapse"
                   />
                 </MCTProvider>
-              </WidgetContextProvider>
+              
             )}
             {selectedPlugin === "Objective" && (
               <ObjectiveController hostIP={hostIP} hostPort={apiPort} />
@@ -895,9 +893,9 @@ const handleFileManagerInitialPathChange = (event) => {
               </div>
             )}
             {selectedPlugin === "Lightsheet_" && (
-              <WidgetContextProvider>
+              
                 <LightsheetController hostIP={hostIP} hostPort={apiPort} />
-              </WidgetContextProvider>
+              
             )}
             {plugins.map(
               (p) =>
@@ -908,52 +906,52 @@ const handleFileManagerInitialPathChange = (event) => {
                 )
             )}
             {selectedPlugin === "FlowStop" && (
-              <WidgetContextProvider>
+              
                 <FlowStopController hostIP={hostIP} hostPort={apiPort} />
-              </WidgetContextProvider>
+              
             )}
             {selectedPlugin === "StageOffsetCalibration" && (
-              <WidgetContextProvider>
+              
                 <StageOffsetCalibration hostIP={hostIP} hostPort={apiPort} />
-              </WidgetContextProvider>
+              
             )}
             {selectedPlugin === "UC2" && (
-              <WidgetContextProvider>
+              
                 <UC2Controller hostIP={hostIP} hostPort={apiPort} />
-              </WidgetContextProvider>
+              
             )}
             {selectedPlugin === "DetectorTrigger" && (
-              <WidgetContextProvider>
+              
                 <DetectorTriggerController hostIP={hostIP} hostPort={apiPort} />
-              </WidgetContextProvider>
+              
             )}
             {selectedPlugin === "ExtendedLEDMatrix" && (
-              <WidgetContextProvider>
+              
                 <ExtendedLEDMatrixController
                   hostIP={hostIP}
                   hostPort={apiPort}
                   layout={layout}
                   onLayoutChange={(newLayout) => setLayout(newLayout)}
                 />
-              </WidgetContextProvider>
+              
             )}
             {selectedPlugin === "Sepmon" && (
-              <WidgetContextProvider>
+              
                 <SepMonController hostIP={hostIP} hostPort={apiPort} />
-              </WidgetContextProvider>
+              
             )}
             {selectedPlugin === "SocketView" && (
               <SocketView hostIP={hostIP} hostPort={websocketPort} />
             )}
             {selectedPlugin === "Widgets" && (
-              <WidgetContextProvider>
+              
                 <Tab_Widgets
                   hostIP={hostIP}
                   hostPort={apiPort}
                   layout={layout}
                   onLayoutChange={(newLayout) => setLayout(newLayout)}
                 />
-              </WidgetContextProvider>
+              
             )}
           </Box>
 
