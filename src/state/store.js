@@ -20,6 +20,8 @@ import tileStreamReducer from "./slices/TileStreamSlice";
 import objectiveReducer from "./slices/ObjectiveSlice";
 import LEDMatrixReducer from "./slices/LEDMatrixSlice";
 import experimentStateReducer from "./slices/ExperimentStateSlice";
+import liveViewReducer from "./slices/LiveViewSlice";
+import histoScanReducer from "./slices/HistoScanSlice";
 
 //#####################################################################################
 // Combine reducers
@@ -36,6 +38,8 @@ const rootReducer = combineReducers({
   position: positionReducer,
   LEDMatrixState: LEDMatrixReducer,
   experimentWorkflowState: experimentStateReducer,
+  liveViewState: liveViewReducer,
+  histoScanState: histoScanReducer,
 });
 
 //#####################################################################################

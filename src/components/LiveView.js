@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   Box,
   Checkbox,
@@ -17,6 +18,7 @@ import ImageViewport from "./ImageViewport";
 import { useWebSocket } from "../context/WebSocketContext";
 import ObjectiveSwitcher from "./ObjectiveSwitcher";
 import DetectorTriggerController from "./DetectorTriggerController";
+import * as liveViewSlice from "../state/slices/LiveViewSlice.js";
 
 import {
   Chart as ChartJS,
@@ -40,14 +42,23 @@ ChartJS.register(
 const appBarHeight = 64;
 
 export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManagerInitialPath }) {
+  // Redux dispatcher
+  const dispatch = useDispatch();
+  
+  // Access global Redux state
+  const liveViewState = useSelector(liveViewSlice.getLiveViewState);
+  
   const socket = useWebSocket();
 
-  const [detectors, setDetectors] = useState([]);
-  const [activeTab, setActiveTab] = useState(0);
-  const [imageUrls, setImageUrls] = useState({});
-  const [pollImageUrl, setPollImageUrl] = useState(null);
-  const [pixelSize, setPixelSize] = useState(null);
-  const [isStreamRunning, setIsStreamRunning] = useState(false);
+  // Use Redux state instead of local state
+  const detectors = liveViewState.detectors;
+  const activeTab = liveViewState.activeTab;
+  const imageUrls = liveViewState.imageUrls;
+  const pollImageUrl = liveViewState.pollImageUrl;
+  const pixelSize = liveViewState.pixelSize;
+  const isStreamRunning = liveViewState.isStreamRunning;
+  
+  // Keep some local state for now (these may need their own slices later)
   const [isRecording, setIsRecording] = useState(false);
   const [showHistogram, setShowHistogram] = useState(false);
   const [histogramX, setHistogramX] = useState([]);
@@ -65,11 +76,11 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
       const j = JSON.parse(d);
       if (j.name === "sigUpdateImage") {
         const det = j.detectorname;
-        setImageUrls((p) => ({
-          ...p,
+        dispatch(liveViewSlice.setImageUrls({
+          ...imageUrls,
           [det]: `data:image/jpeg;base64,${j.image}`,
         }));
-        if (j.pixelsize) setPixelSize(j.pixelsize);
+        if (j.pixelsize) dispatch(liveViewSlice.setPixelSize(j.pixelsize));
       } else if (j.name === "sigHistogramComputed") {
         setHistogramX(j.args.p0);
         setHistogramY(j.args.p1);
@@ -90,14 +101,14 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
         const data = await r.json();
         // Check if data is an array before setting state
         if (Array.isArray(data)) {
-          setDetectors(data);
+          dispatch(liveViewSlice.setDetectors(data));
         } else {
           console.error("getDetectorNames returned non-array:", data);
-          setDetectors([]);
+          dispatch(liveViewSlice.setDetectors([]));
         }
       } catch (error) {
         console.error("Failed to fetch detectors:", error);
-        setDetectors([]);
+        dispatch(liveViewSlice.setDetectors([]));
       }
     })();
   }, [hostIP, hostPort]);
@@ -139,7 +150,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
           const res = await fetch(
             `${hostIP}:${hostPort}/HistoScanController/getPreviewCameraImage?resizeFactor=1`
           );
-          if (res.ok) setPollImageUrl(URL.createObjectURL(await res.blob()));
+          if (res.ok) dispatch(liveViewSlice.setPollImageUrl(URL.createObjectURL(await res.blob())));
         } catch {}
       }, 1000);
       return () => clearInterval(id);
@@ -155,7 +166,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
         );
         if (r.status === 200) {
           const data = await r.json();
-          setIsStreamRunning(data.active);
+          dispatch(liveViewSlice.setIsStreamRunning(data.active));
         }
       } catch {}
     })();
@@ -213,7 +224,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
         `${hostIP}:${hostPort}/ViewController/setLiveViewActive?active=${n}`
       );
     } catch {}
-    setIsStreamRunning(n);
+    dispatch(liveViewSlice.setIsStreamRunning(n));
   };
   async function snap() {
     // English comment: Example fetch for snapping an image
@@ -316,7 +327,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
 
         <Tabs
           value={activeTab}
-          onChange={(_, v) => setActiveTab(v)}
+          onChange={(_, v) => dispatch(liveViewSlice.setActiveTab(v))}
           sx={{ mt: 2 }}
         >
           {detectors.map((d) => (

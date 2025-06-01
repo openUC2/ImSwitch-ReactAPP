@@ -25,17 +25,15 @@ const ExtendedObjectiveController = ({ hostIP, hostPort }) => {
   const objectiveState = useSelector(objectiveSlice.getObjectiveState);
   ////const State = useSelector(Slice.getState);
 
-  //states
-  const [currentA, setCurrentA] = useState("");
-  const [currentZ, setCurrentZ] = useState("");
-  const [imageUrls, setImageUrls] = useState({});
-  const [detectors, setDetectors] = useState([]);
-
-  // Manual input fields for positions
-  const [manualX1, setManualX1] = useState("");
-  const [manualX2, setManualX2] = useState("");
-  const [manualZ1, setManualZ1] = useState("");
-  const [manualZ2, setManualZ2] = useState("");
+  // Access state from Redux instead of local state
+  const currentA = objectiveState.currentA;
+  const currentZ = objectiveState.currentZ;
+  const imageUrls = objectiveState.imageUrls;
+  const detectors = objectiveState.detectors;
+  const manualX1 = objectiveState.manualX1;
+  const manualX2 = objectiveState.manualX2;
+  const manualZ1 = objectiveState.manualZ1;
+  const manualZ2 = objectiveState.manualZ2;
 
   const socket = useWebSocket(); //TODO remove
 
@@ -59,7 +57,7 @@ const ExtendedObjectiveController = ({ hostIP, hostPort }) => {
           //console.log(imageUrls);
           const detectorName = jdata.detectorname;
           const imgSrc = `data:image/jpeg;base64,${jdata.image}`;
-          setImageUrls((prev) => ({ ...prev, [detectorName]: imgSrc }));
+          dispatch(objectiveSlice.setImageUrls({ ...imageUrls, [detectorName]: imgSrc }));
           if (jdata.pixelsize) {
             console.log(
               "TODO change ExtendedObjectiveController setPixelSize call"
@@ -86,7 +84,7 @@ const ExtendedObjectiveController = ({ hostIP, hostPort }) => {
     // Get detector names
     apiSettingsControllerGetDetectorNames()
       .then((data) => {
-        setDetectors(data);
+        dispatch(objectiveSlice.setDetectors(data));
       })
       .catch((err) => {
         console.log("Failed to fetch detector names", err); // Handle the error
@@ -232,12 +230,12 @@ const ExtendedObjectiveController = ({ hostIP, hostPort }) => {
       .then((data) => {
         // Handle success response
         if (data.ESP32Stage) {
-          setCurrentZ(data.ESP32Stage.Z);
-          setCurrentA(data.ESP32Stage.A);
+          dispatch(objectiveSlice.setCurrentZ(data.ESP32Stage.Z));
+          dispatch(objectiveSlice.setCurrentA(data.ESP32Stage.A));
         }
         else if (data.VirtualStage) {
-          setCurrentZ(data.VirtualStage.Z);
-          setCurrentA(data.VirtualStage.A);
+          dispatch(objectiveSlice.setCurrentZ(data.VirtualStage.Z));
+          dispatch(objectiveSlice.setCurrentA(data.VirtualStage.A));
         }
         if (which === "x1") {
           handleSetX1(currentA);
@@ -349,7 +347,7 @@ const ExtendedObjectiveController = ({ hostIP, hostPort }) => {
               <TextField
                 label="Set X1"
                 value={manualX1}
-                onChange={(e) => setManualX1(e.target.value)}
+                onChange={(e) => dispatch(objectiveSlice.setManualX1(e.target.value))}
                 size="small"
               />
             </Grid>
@@ -398,7 +396,7 @@ const ExtendedObjectiveController = ({ hostIP, hostPort }) => {
               <TextField
                 label="Set X2"
                 value={manualX2}
-                onChange={(e) => setManualX2(e.target.value)}
+                onChange={(e) => dispatch(objectiveSlice.setManualX2(e.target.value))}
                 size="small"
               />
             </Grid>
@@ -447,7 +445,7 @@ const ExtendedObjectiveController = ({ hostIP, hostPort }) => {
               <TextField
                 label="Set Z1"
                 value={manualZ1}
-                onChange={(e) => setManualZ1(e.target.value)}
+                onChange={(e) => dispatch(objectiveSlice.setManualZ1(e.target.value))}
                 size="small"
               />
             </Grid>
@@ -486,7 +484,7 @@ const ExtendedObjectiveController = ({ hostIP, hostPort }) => {
               <TextField
                 label="Set Z2"
                 value={manualZ2}
-                onChange={(e) => setManualZ2(e.target.value)}
+                onChange={(e) => dispatch(objectiveSlice.setManualZ2(e.target.value))}
                 size="small"
               />
             </Grid>

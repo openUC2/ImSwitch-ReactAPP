@@ -17,6 +17,16 @@ const initialObjectiveState = {
   posZ2: 0,
   magnification1: 0,
   magnification2: 0,
+  
+  // Additional state for ObjectiveController
+  currentA: "",
+  currentZ: "",
+  imageUrls: {},
+  detectors: [],
+  manualX1: "",
+  manualX2: "",
+  manualZ1: "",
+  manualZ2: "",
 };
 
 // Create slice
@@ -76,6 +86,32 @@ const objectiveSlice = createSlice({
       console.log("setPosZ2", action.payload);
       state.posZ2 = action.payload;
     },
+    
+    // New reducers for ObjectiveController state
+    setCurrentA: (state, action) => {
+      state.currentA = action.payload;
+    },
+    setCurrentZ: (state, action) => {
+      state.currentZ = action.payload;
+    },
+    setImageUrls: (state, action) => {
+      state.imageUrls = action.payload;
+    },
+    setDetectors: (state, action) => {
+      state.detectors = action.payload;
+    },
+    setManualX1: (state, action) => {
+      state.manualX1 = action.payload;
+    },
+    setManualX2: (state, action) => {
+      state.manualX2 = action.payload;
+    },
+    setManualZ1: (state, action) => {
+      state.manualZ1 = action.payload;
+    },
+    setManualZ2: (state, action) => {
+      state.manualZ2 = action.payload;
+    },
 
     resetState: (state) => {
       console.log("resetState");
@@ -99,6 +135,14 @@ export const {
   setPosX2,
   setPosZ1,
   setPosZ2,
+  setCurrentA,
+  setCurrentZ,
+  setImageUrls,
+  setDetectors,
+  setManualX1,
+  setManualX2,
+  setManualZ1,
+  setManualZ2,
   resetState,
 } = objectiveSlice.actions;
 
