@@ -55,8 +55,8 @@ const initialExperimentState = {
     zStackMax: 0.0,
     zStackStepSize: 0.1,
     speed: 0, 
-    gains: [0],
-    exposureTimes: [0],
+    gains: 0,
+    exposureTimes: 0,
     performanceMode: false
   },
 };
