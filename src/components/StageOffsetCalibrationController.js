@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   Paper,
   TextField,
@@ -9,25 +10,29 @@ import {
   CardContent,
 } from "@mui/material";
 import { useWebSocket } from "../context/WebSocketContext";
-import { useDispatch } from "react-redux";
+import * as stageOffsetCalibrationSlice from "../state/slices/StageOffsetCalibrationSlice.js";
 
 const StageOffsetCalibration = ({ hostIP, hostPort }) => {
   const socket = useWebSocket(); 
-  const dispatch = useDispatch(); // If needed for pixel size, etc.
-
-  const [currentX, setCurrentX] = useState("");
-  const [currentY, setCurrentY] = useState("");
-  const [targetX, setTargetX] = useState("");
-  const [targetY, setTargetY] = useState("");
-  const [calculatedOffsetX, setCalculatedOffsetX] = useState("");
-  const [calculatedOffsetY, setCalculatedOffsetY] = useState("");
-  const [loadedOffsetX, setLoadedOffsetX] = useState("");
-  const [loadedOffsetY, setLoadedOffsetY] = useState("");
-  const [manualOffsetX, setManualOffsetX] = useState("");
-  const [manualOffsetY, setManualOffsetY] = useState("");
-  const [imageUrls, setImageUrls] = useState({}); // For live images from socket
-  const [detectors, setDetectors] = useState([]);
-  const [reloadTrigger, setReloadTrigger] = useState(0); // State to trigger reload
+  const dispatch = useDispatch();
+  
+  // Access global Redux state
+  const stageOffsetState = useSelector(stageOffsetCalibrationSlice.getStageOffsetCalibrationState);
+  
+  // Use Redux state instead of local useState
+  const currentX = stageOffsetState.currentX;
+  const currentY = stageOffsetState.currentY;
+  const targetX = stageOffsetState.targetX;
+  const targetY = stageOffsetState.targetY;
+  const calculatedOffsetX = stageOffsetState.calculatedOffsetX;
+  const calculatedOffsetY = stageOffsetState.calculatedOffsetY;
+  const loadedOffsetX = stageOffsetState.loadedOffsetX;
+  const loadedOffsetY = stageOffsetState.loadedOffsetY;
+  const manualOffsetX = stageOffsetState.manualOffsetX;
+  const manualOffsetY = stageOffsetState.manualOffsetY;
+  const imageUrls = stageOffsetState.imageUrls;
+  const detectors = stageOffsetState.detectors;
+  const reloadTrigger = stageOffsetState.reloadTrigger;
 
   // Fetch the list of detectors from the server
   useEffect(() => {
@@ -37,14 +42,14 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
           `${hostIP}:${hostPort}/SettingsController/getDetectorNames`
         );
         const data = await response.json();
-        setDetectors(data || []); // Set detectors or default to an empty array
+        dispatch(stageOffsetCalibrationSlice.setDetectors(data || [])); // Set detectors or default to an empty array
       } catch (error) {
         console.error("Error fetching detector names:", error);
       }
     };
 
     fetchDetectorNames();
-  }, [hostIP, hostPort]);
+  }, [hostIP, hostPort, dispatch]);
 
   // Retrieve offsets + current position on first load
   useEffect(() => {
@@ -54,24 +59,24 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
         const offsetXData = await fetch(
           `${hostIP}:${hostPort}/PositionerController/getStageOffsetAxis?axis=X`
         ).then((res) => res.json());
-        setLoadedOffsetX(offsetXData ?? "");
+        dispatch(stageOffsetCalibrationSlice.setLoadedOffsetX(offsetXData ?? ""));
 
         const offsetYData = await fetch(
           `${hostIP}:${hostPort}/PositionerController/getStageOffsetAxis?axis=Y`
         ).then((res) => res.json());
-        setLoadedOffsetY(offsetYData ?? "");
+        dispatch(stageOffsetCalibrationSlice.setLoadedOffsetY(offsetYData ?? ""));
 
         // Current Positions
         const posData = await fetch(
           `${hostIP}:${hostPort}/PositionerController/getPositionerPositions`
         ).then((res) => res.json());
         if (posData.ESP32Stage) {
-          setCurrentX(posData.ESP32Stage.X);
-          setCurrentY(posData.ESP32Stage.Y);
+          dispatch(stageOffsetCalibrationSlice.setCurrentX(posData.ESP32Stage.X));
+          dispatch(stageOffsetCalibrationSlice.setCurrentY(posData.ESP32Stage.Y));
         }
         else if (posData.VirtualStage) {
-          setCurrentX(posData.VirtualStage.X);
-          setCurrentY(posData.VirtualStage.Y);
+          dispatch(stageOffsetCalibrationSlice.setCurrentX(posData.VirtualStage.X));
+          dispatch(stageOffsetCalibrationSlice.setCurrentY(posData.VirtualStage.Y));
         }
       } catch (error) {
         console.error(error);
@@ -85,9 +90,9 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
     const cX = parseFloat(currentX);
     const tX = parseFloat(targetX);
     if (!isNaN(cX) && !isNaN(tX)) {
-      setCalculatedOffsetX(tX - cX);
+      dispatch(stageOffsetCalibrationSlice.setCalculatedOffsetX(tX - cX));
     } else {
-      setCalculatedOffsetX("");
+      dispatch(stageOffsetCalibrationSlice.setCalculatedOffsetX(""));
     }
   }, [currentX, targetX]);
 
@@ -95,9 +100,9 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
     const cY = parseFloat(currentY);
     const tY = parseFloat(targetY);
     if (!isNaN(cY) && !isNaN(tY)) {
-      setCalculatedOffsetY(tY - cY);
+      dispatch(stageOffsetCalibrationSlice.setCalculatedOffsetY(tY - cY));
     } else {
-      setCalculatedOffsetY("");
+      dispatch(stageOffsetCalibrationSlice.setCalculatedOffsetY(""));
     }
   }, [currentY, targetY]);
 
@@ -110,7 +115,10 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
         if (jdata.name === "sigUpdateImage") {
           const detectorName = jdata.detectorname;
           const imgSrc = `data:image/jpeg;base64,${jdata.image}`;
-          setImageUrls((prev) => ({ ...prev, [detectorName]: imgSrc }));
+          dispatch(stageOffsetCalibrationSlice.updateImageUrl({
+            detector: detectorName,
+            url: imgSrc
+          }));
           if (jdata.pixelsize) {
             // If needed: dispatch(objectiveSlice.setPixelSize(jdata.pixelsize));
           }
@@ -140,12 +148,12 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
       .then((res) => res.json())
       .then((data) => {
         if (data.ESP32Stage) {
-          setCurrentX(data.ESP32Stage.X);
-          setCurrentY(data.ESP32Stage.Y);
+          dispatch(stageOffsetCalibrationSlice.setCurrentX(data.ESP32Stage.X));
+          dispatch(stageOffsetCalibrationSlice.setCurrentY(data.ESP32Stage.Y));
         }
         else if (data.VirtualStage) {
-          setCurrentX(data.VirtualStage.X);
-          setCurrentY(data.VirtualStage.Y);
+          dispatch(stageOffsetCalibrationSlice.setCurrentX(data.VirtualStage.X));
+          dispatch(stageOffsetCalibrationSlice.setCurrentY(data.VirtualStage.Y));
         }
       })
       .catch(console.error);
@@ -158,7 +166,7 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
       `${hostIP}:${hostPort}/PositionerController/setStageOffsetAxis?knownOffset=${offset}&axis=${axis}`
     )
       .then((res) => res.json())
-      .then(() => setReloadTrigger((prev) => prev + 1)) // Trigger reload
+      .then(() => dispatch(stageOffsetCalibrationSlice.incrementReloadTrigger())) // Trigger reload
       .catch(console.error);
   };
 
@@ -168,7 +176,7 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
       `${hostIP}:${hostPort}/PositionerController/setStageOffsetAxis?knownPosition=${knownPos}&currentPosition=${currPos}&axis=${axis}`
     )
       .then((res) => res.json())
-      .then(() => setReloadTrigger((prev) => prev + 1)) // Trigger reload
+      .then(() => dispatch(stageOffsetCalibrationSlice.incrementReloadTrigger())) // Trigger reload
       .catch(console.error);
   };
 
@@ -178,7 +186,7 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
       `${hostIP}:${hostPort}/PositionerController/setStageOffsetAxis?knownPosition=${knownPos}&axis=${axis}`
     )
       .then((res) => res.json())
-      .then(() => setReloadTrigger((prev) => prev + 1)) // Trigger reload
+      .then(() => dispatch(stageOffsetCalibrationSlice.incrementReloadTrigger())) // Trigger reload
       .catch(console.error);
   };
 
@@ -298,7 +306,7 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
                   <TextField
                     label="Current X"
                     value={currentX}
-                    onChange={(e) => setCurrentX(e.target.value)}
+                    onChange={(e) => dispatch(stageOffsetCalibrationSlice.setCurrentX(e.target.value))}
                     fullWidth
                   />
                 </Grid>
@@ -306,7 +314,7 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
                   <TextField
                     label="Current Y"
                     value={currentY}
-                    onChange={(e) => setCurrentY(e.target.value)}
+                    onChange={(e) => dispatch(stageOffsetCalibrationSlice.setCurrentY(e.target.value))}
                     fullWidth
                   />
                 </Grid>
@@ -314,7 +322,7 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
                   <TextField
                     label="Target X"
                     value={targetX}
-                    onChange={(e) => setTargetX(e.target.value)}
+                    onChange={(e) => dispatch(stageOffsetCalibrationSlice.setTargetX(e.target.value))}
                     fullWidth
                   />
                 </Grid>
@@ -322,7 +330,7 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
                   <TextField
                     label="Target Y"
                     value={targetY}
-                    onChange={(e) => setTargetY(e.target.value)}
+                    onChange={(e) => dispatch(stageOffsetCalibrationSlice.setTargetY(e.target.value))}
                     fullWidth
                   />
                 </Grid>
@@ -370,7 +378,7 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
                   <TextField
                     label="Manual Offset X"
                     value={manualOffsetX}
-                    onChange={(e) => setManualOffsetX(e.target.value)}
+                    onChange={(e) => dispatch(stageOffsetCalibrationSlice.setManualOffsetX(e.target.value))}
                     fullWidth
                   />
                 </Grid>
@@ -378,7 +386,7 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
                   <TextField
                     label="Manual Offset Y"
                     value={manualOffsetY}
-                    onChange={(e) => setManualOffsetY(e.target.value)}
+                    onChange={(e) => dispatch(stageOffsetCalibrationSlice.setManualOffsetY(e.target.value))}
                     fullWidth
                   />
                 </Grid>
