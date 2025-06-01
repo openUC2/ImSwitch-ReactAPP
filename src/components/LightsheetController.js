@@ -1,5 +1,6 @@
 // src/components/LightsheetController.js
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   Paper,
   Tabs,
@@ -16,6 +17,7 @@ import CancelIcon from "@mui/icons-material/Cancel";
 import VtkViewer from "./VtkViewer.js"; // Assuming you have a VtkViewer component
 import ErrorBoundary from "./ErrorBoundary";
 import LiveViewControlWrapper from "../axon/LiveViewControlWrapper";
+import * as lightsheetSlice from "../state/slices/LightsheetSlice.js";
 
 const TabPanel = (props) => {
   const { children, value, index, ...other } = props;
@@ -34,15 +36,22 @@ const TabPanel = (props) => {
 };
 
 const LightsheetController = ({ hostIP, hostPort }) => {
-  const [tabIndex, setTabIndex] = useState(0);
-  const [minPos, setMinPos] = useState(0);
-  const [maxPos, setMaxPos] = useState(1000);
-  const [speed, setSpeed] = useState(1000);
-  const [axis, setAxis] = useState("A");
-  const [illuSource, setIlluSource] = useState(-1);
-  const [illuValue, setIlluValue] = useState(512);
-  const [vtkImagePrimary, setVtkImagePrimary] = useState(null);
-  const [isRunning, setIsRunning] = useState(false);
+  // Redux dispatcher
+  const dispatch = useDispatch();
+  
+  // Access global Redux state
+  const lightsheetState = useSelector(lightsheetSlice.getLightsheetState);
+  
+  // Use Redux state instead of local useState
+  const tabIndex = lightsheetState.tabIndex;
+  const minPos = lightsheetState.minPos;
+  const maxPos = lightsheetState.maxPos;
+  const speed = lightsheetState.speed;
+  const axis = lightsheetState.axis;
+  const illuSource = lightsheetState.illuSource;
+  const illuValue = lightsheetState.illuValue;
+  const vtkImagePrimary = lightsheetState.vtkImagePrimary;
+  const isRunning = lightsheetState.isRunning;
 
   useEffect(() => {
     const fetchLatestImagePath = async () => {
@@ -56,7 +65,7 @@ const LightsheetController = ({ hostIP, hostPort }) => {
             const medImgReader = new MedImgReader();
             const itkImage = await medImgReader.readImage(data.filepath);
             const vtkImage = await medImgReader.convertToVtkImage(itkImage);
-            setVtkImagePrimary(vtkImage);
+            dispatch(lightsheetSlice.setVtkImagePrimary(vtkImage));
             */
         }
       } catch (error) {
@@ -75,7 +84,7 @@ const LightsheetController = ({ hostIP, hostPort }) => {
           `${hostIP}:${hostPort}/LightsheetController/getIsLightsheetRunning`
         );
         const data = await response.json();
-        setIsRunning(data.isRunning); // Update the isRunning state based on the response
+        dispatch(lightsheetSlice.setIsRunning(data.isRunning)); // Update the isRunning state based on the response
       } catch (error) {
         console.error("Error checking lightsheet status:", error);
       }
@@ -95,13 +104,13 @@ const LightsheetController = ({ hostIP, hostPort }) => {
       .then((response) => response.json())
       .then((data) => {
         console.log(data);
-        setIsRunning(true);
+        dispatch(lightsheetSlice.setIsRunning(true));
       })
       .catch((error) => console.error("Error:", error));
   };
 
   const handleTabChange = (event, newValue) => {
-    setTabIndex(newValue);
+    dispatch(lightsheetSlice.setTabIndex(newValue));
   };
 
   return (
@@ -123,7 +132,7 @@ const LightsheetController = ({ hostIP, hostPort }) => {
             <TextField
               label="Min Position"
               value={minPos}
-              onChange={(e) => setMinPos(e.target.value)}
+              onChange={(e) => dispatch(lightsheetSlice.setMinPos(e.target.value))}
               fullWidth
             />
           </Grid>
@@ -131,7 +140,7 @@ const LightsheetController = ({ hostIP, hostPort }) => {
             <TextField
               label="Max Position"
               value={maxPos}
-              onChange={(e) => setMaxPos(e.target.value)}
+              onChange={(e) => dispatch(lightsheetSlice.setMaxPos(e.target.value))}
               fullWidth
             />
           </Grid>
@@ -139,7 +148,7 @@ const LightsheetController = ({ hostIP, hostPort }) => {
             <TextField
               label="Speed"
               value={speed}
-              onChange={(e) => setSpeed(e.target.value)}
+              onChange={(e) => dispatch(lightsheetSlice.setSpeed(e.target.value))}
               fullWidth
             />
           </Grid>
@@ -147,7 +156,7 @@ const LightsheetController = ({ hostIP, hostPort }) => {
             <TextField
               label="Axis"
               value={axis}
-              onChange={(e) => setAxis(e.target.value)}
+              onChange={(e) => dispatch(lightsheetSlice.setAxis(e.target.value))}
               fullWidth
             />
           </Grid>
@@ -155,7 +164,7 @@ const LightsheetController = ({ hostIP, hostPort }) => {
             <TextField
               label="Illumination Source"
               value={illuSource}
-              onChange={(e) => setIlluSource(e.target.value)}
+              onChange={(e) => dispatch(lightsheetSlice.setIlluSource(e.target.value))}
               fullWidth
             />
           </Grid>
@@ -163,7 +172,7 @@ const LightsheetController = ({ hostIP, hostPort }) => {
             <TextField
               label="Illumination Value"
               value={illuValue}
-              onChange={(e) => setIlluValue(e.target.value)}
+              onChange={(e) => dispatch(lightsheetSlice.setIlluValue(e.target.value))}
               fullWidth
             />
           </Grid>

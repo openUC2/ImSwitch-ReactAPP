@@ -27,6 +27,7 @@ import lepmonReducer from "./slices/LepmonSlice";
 import uc2Reducer from "./slices/UC2Slice";
 import stageOffsetCalibrationReducer from "./slices/StageOffsetCalibrationSlice";
 import flowStopReducer from "./slices/FlowStopSlice";
+import lightsheetReducer from "./slices/LightsheetSlice";
 
 //#####################################################################################
 // Combine reducers
@@ -50,6 +51,7 @@ const rootReducer = combineReducers({
   uc2State: uc2Reducer,
   stageOffsetCalibration: stageOffsetCalibrationReducer,
   flowStop: flowStopReducer,
+  lightsheet: lightsheetReducer,
 });
 
 //#####################################################################################
