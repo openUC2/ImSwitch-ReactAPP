@@ -8,10 +8,6 @@ const initialLiveViewState = {
   pollImageUrl: null,
   pixelSize: null,
   isStreamRunning: false,
-  
-  // Widget-related state
-  sliderValue: 0,
-  generic: { init: "init" },
 };
 
 // Create slice
@@ -37,19 +33,6 @@ const liveViewSlice = createSlice({
     setIsStreamRunning: (state, action) => {
       state.isStreamRunning = action.payload;
     },
-    setSliderValue: (state, action) => {
-      state.sliderValue = action.payload;
-    },
-    setGeneric: (state, action) => {
-      state.generic = action.payload;
-    },
-    updateGeneric: (state, action) => {
-      const { key, value } = action.payload;
-      state.generic = {
-        ...state.generic,
-        [key]: value,
-      };
-    },
     resetState: (state) => {
       return initialLiveViewState;
     },
@@ -64,9 +47,6 @@ export const {
   setPollImageUrl,
   setPixelSize,
   setIsStreamRunning,
-  setSliderValue,
-  setGeneric,
-  updateGeneric,
   resetState,
 } = liveViewSlice.actions;
 

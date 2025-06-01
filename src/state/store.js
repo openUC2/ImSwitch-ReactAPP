@@ -22,6 +22,7 @@ import LEDMatrixReducer from "./slices/LEDMatrixSlice";
 import experimentStateReducer from "./slices/ExperimentStateSlice";
 import liveViewReducer from "./slices/LiveViewSlice";
 import histoScanReducer from "./slices/HistoScanSlice";
+import widgetReducer from "./slices/WidgetSlice";
 
 //#####################################################################################
 // Combine reducers
@@ -40,6 +41,7 @@ const rootReducer = combineReducers({
   experimentWorkflowState: experimentStateReducer,
   liveViewState: liveViewReducer,
   histoScanState: histoScanReducer,
+  widgetState: widgetReducer,
 });
 
 //#####################################################################################
