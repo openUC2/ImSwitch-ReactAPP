@@ -274,31 +274,31 @@ const MCTController = ({ hostIP, hostPort }) => {
         <Grid item xs={12}>
           <Typography>Intensity (Laser 1): {intensityLaser1}</Typography>
           <Slider
-            value={widgetCtx.sliderValue}
-            onChange={(e, value) => widgetCtx.setSliderValue(value)}
+            value={widgetState.sliderValue}
+            onChange={(e, value) => dispatch(widgetSlice.setSliderValue(value))}
             max={32767}
             step={1}
           />
         </Grid>
         <Grid item xs={12}>
           <Typography>
-            Intensity (Laser 2): {widgetCtx.generic["slider2"]}
+            Intensity (Laser 2): {widgetState.generic["slider2"] || 0}
           </Typography>
           <Slider
-            value={widgetCtx.generic["slider2"]}
-            onChange={(e, value) => widgetCtx.handleGeneric(["slider2", value])}
+            value={widgetState.generic["slider2"] || 0}
+            onChange={(e, value) => dispatch(widgetSlice.updateGeneric({ key: "slider2", value }))}
             max={32767}
             step={1}
           />
         </Grid>
         <Grid item xs={12}>
           <Typography>
-            Intensity (LED): {widgetCtx.generic["intensity"]}
+            Intensity (LED): {widgetState.generic["intensity"] || 0}
           </Typography>
           <Slider
-            value={widgetCtx.generic["intensity"]}
+            value={widgetState.generic["intensity"] || 0}
             onChange={(e, value) =>
-              widgetCtx.handleGeneric(["intensity", value])
+              dispatch(widgetSlice.updateGeneric({ key: "intensity", value }))
             }
             max={255}
             step={1}
