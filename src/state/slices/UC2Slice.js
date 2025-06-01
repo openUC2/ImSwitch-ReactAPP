@@ -92,6 +92,9 @@ const uc2Slice = createSlice({
     setOverwriteFile: (state, action) => {
       state.overwriteFile = action.payload;
     },
+    setSerialLog: (state, action) => {
+      state.serialLog = action.payload;
+    },
 
     // Reset actions
     resetFileOperations: (state) => {
@@ -127,6 +130,7 @@ export const {
   setRestartAfterSave,
   setOverwriteFile,
   resetFileOperations,
+  setSerialLog
 } = uc2Slice.actions;
 
 // Export selector

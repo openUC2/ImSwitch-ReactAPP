@@ -235,7 +235,7 @@ const UC2Controller = ({ hostIP, hostPort }) => {
     const url = `${hostIP}:${hostPort}/UC2ConfigController/writeSerial?payload=${encodeURIComponent(serialPayload)}`;
     fetch(url, { method: "GET" })
       .then((response) => response.json())
-      .then(() => setSerialLog((prev) => [...prev, `Sent: ${serialPayload}`]))
+      .then(() => uc2Slice.setSerialLog((prev) => [...prev, `Sent: ${serialPayload}`]))
       .catch((error) => console.error("Error sending serial:", error));
   };
 
