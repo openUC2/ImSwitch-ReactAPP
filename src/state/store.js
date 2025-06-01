@@ -24,6 +24,7 @@ import liveViewReducer from "./slices/LiveViewSlice";
 import histoScanReducer from "./slices/HistoScanSlice";
 import widgetReducer from "./slices/WidgetSlice";
 import lepmonReducer from "./slices/LepmonSlice";
+import uc2Reducer from "./slices/UC2Slice";
 
 //#####################################################################################
 // Combine reducers
@@ -44,6 +45,7 @@ const rootReducer = combineReducers({
   histoScanState: histoScanReducer,
   widgetState: widgetReducer,
   lepmonState: lepmonReducer,
+  uc2State: uc2Reducer,
 });
 
 //#####################################################################################

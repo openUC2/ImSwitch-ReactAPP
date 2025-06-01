@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   Paper,
   Tabs,
@@ -25,6 +26,7 @@ import { JsonEditor } from "json-edit-react";
 import AceEditor from "react-ace";
 import "ace-builds/src-noconflict/mode-json";
 import "ace-builds/src-noconflict/theme-github";
+import * as uc2Slice from "../state/slices/UC2Slice.js";
 
 const TabPanel = ({ children, value, index, ...other }) => (
   <div
@@ -43,28 +45,29 @@ const goToWebsite = () => {
 };
 
 const UC2Controller = ({ hostIP, hostPort }) => {
-  const [tabIndex, setTabIndex] = useState(0);
-  const [availableSetups, setAvailableSetups] = useState([]);
-  const [selectedSetup, setSelectedSetup] = useState("");
-  const [isDialogOpen, setIsDialogOpen] = useState(false); // State for the confirmation dialog
-  const [restartSoftware, setRestartSoftware] = useState(false); // State for the switch
-  const [serialPayload, setSerialPayload] = useState("");
-  const [serialLog, setSerialLog] = useState([]);
-  const [uc2Connected, setUc2Connected] = useState(false);
-
-  // For config editing
-  const [selectedFileForEdit, setSelectedFileForEdit] = useState("");
-  // If we're loading an existing file, we use json-edit-react
-  const [editorJson, setEditorJson] = useState(null);
-  // If we're creating a new file, we use AceEditor
-  const [editorJsonText, setEditorJsonText] = useState("");
-  // Flag to toggle between json-edit-react (false) and Ace (true)
-  const [useAceEditor, setUseAceEditor] = useState(false);
-
-  const [newFileName, setNewFileName] = useState("");
-  const [setAsCurrentConfig, setSetAsCurrentConfig] = useState(true);
-  const [restartAfterSave, setRestartAfterSave] = useState(false);
-  const [overwriteFile, setOverwriteFile] = useState(false);
+  // Redux dispatcher
+  const dispatch = useDispatch();
+  
+  // Access global Redux state
+  const uc2State = useSelector(uc2Slice.getUc2State);
+  
+  // Use Redux state instead of local useState
+  const tabIndex = uc2State.tabIndex;
+  const availableSetups = uc2State.availableSetups;
+  const selectedSetup = uc2State.selectedSetup;
+  const isDialogOpen = uc2State.isDialogOpen;
+  const restartSoftware = uc2State.restartSoftware;
+  const serialPayload = uc2State.serialPayload;
+  const serialLog = uc2State.serialLog;
+  const uc2Connected = uc2State.uc2Connected;
+  const selectedFileForEdit = uc2State.selectedFileForEdit;
+  const editorJson = uc2State.editorJson;
+  const editorJsonText = uc2State.editorJsonText;
+  const useAceEditor = uc2State.useAceEditor;
+  const newFileName = uc2State.newFileName;
+  const setAsCurrentConfig = uc2State.setAsCurrentConfig;
+  const restartAfterSave = uc2State.restartAfterSave;
+  const overwriteFile = uc2State.overwriteFile;
 
   const socket = useWebSocket();
 
@@ -74,9 +77,9 @@ const UC2Controller = ({ hostIP, hostPort }) => {
       try {
         const jdata = JSON.parse(data);
         if (jdata.name === "sigUC2SerialReadMessage") {
-          setSerialLog((prev) => [...prev, jdata.args?.p0 || ""]);
+          dispatch(uc2Slice.addSerialLogEntry(jdata.args?.p0 || ""));
         } else if (jdata.name === "sigUC2SerialWriteMessage") {
-          setSerialLog((prev) => [...prev, `Write Message: ${jdata.args?.p0 || ""}`]);
+          dispatch(uc2Slice.addSerialLogEntry(`Write Message: ${jdata.args?.p0 || ""}`));
         }
       } catch (error) {
         console.error("Error parsing signal data:", error);
@@ -86,20 +89,20 @@ const UC2Controller = ({ hostIP, hostPort }) => {
     return () => {
       socket.off("signal", handleSignal);
     };
-  }, [socket]);
+  }, [socket, dispatch]);
 
   useEffect(() => {
     fetchAvailableSetups();
-  }, []);
+  }, [dispatch]);
 
   useEffect(() => {
     const checkConnection = () => {
       fetch(`${hostIP}:${hostPort}/UC2ConfigController/is_connected`)
         .then((res) => res.json())
         .then((data) => {
-          setUc2Connected(data === true);
+          dispatch(uc2Slice.setUc2Connected(data === true));
         })
-        .catch(() => setUc2Connected(false));
+        .catch(() => dispatch(uc2Slice.setUc2Connected(false)));
     };
     checkConnection();
     const intervalId = setInterval(checkConnection, 5000);
@@ -107,7 +110,7 @@ const UC2Controller = ({ hostIP, hostPort }) => {
   }, [hostIP, hostPort]);
 
   const handleTabChange = (event, newValue) => {
-    setTabIndex(newValue);
+    dispatch(uc2Slice.setTabIndex(newValue));
   };
 
   const fetchAvailableSetups = () => {
@@ -115,13 +118,13 @@ const UC2Controller = ({ hostIP, hostPort }) => {
     fetch(url)
       .then((response) => response.json())
       .then((data) => {
-        setAvailableSetups(data.available_setups || []);
+        dispatch(uc2Slice.setAvailableSetups(data.available_setups || []));
       })
       .catch((error) => console.error("Error fetching setups:", error));
   };
 
   const handleSetupChange = (event) => {
-    setSelectedSetup(event.target.value);
+    dispatch(uc2Slice.setSelectedSetup(event.target.value));
   };
 
   const reconnect = () => {
@@ -152,20 +155,20 @@ const UC2Controller = ({ hostIP, hostPort }) => {
       .then((response) => response.json())
       .then((data) => {
         console.log("Setup selected:", data);
-        setIsDialogOpen(true); // Open the confirmation dialog
+        dispatch(uc2Slice.setIsDialogOpen(true)); // Open the confirmation dialog
       })
       .catch((error) => console.error("Error setting setup:", error));
   };
 
   const handleDialogClose = () => {
-    setIsDialogOpen(false); // Close the dialog
+    dispatch(uc2Slice.setIsDialogOpen(false)); // Close the dialog
   };
 
   const handleNewConfig = () => {
-    setUseAceEditor(true);
-    setEditorJson(null);
-    setEditorJsonText("{\n  \n}");
-    setSelectedFileForEdit("");
+    dispatch(uc2Slice.setUseAceEditor(true));
+    dispatch(uc2Slice.setEditorJson(null));
+    dispatch(uc2Slice.setEditorJsonText("{\n  \n}"));
+    dispatch(uc2Slice.setSelectedFileForEdit(""));
   };
 
   const handleLoadSetupFile = () => {
@@ -173,14 +176,14 @@ const UC2Controller = ({ hostIP, hostPort }) => {
       alert("Please select a file to load.");
       return;
     }
-    setUseAceEditor(false);
+    dispatch(uc2Slice.setUseAceEditor(false));
     const url = `${hostIP}:${hostPort}/UC2ConfigController/readSetupFile?setupFileName=${encodeURIComponent(
       selectedFileForEdit
     )}`;
     fetch(url)
       .then((res) => res.json())
       .then((data) => {
-        setEditorJson(data);
+        dispatch(uc2Slice.setEditorJson(data));
       })
       .catch((error) => console.error("Error loading setup file:", error));
   };
@@ -314,7 +317,7 @@ const UC2Controller = ({ hostIP, hostPort }) => {
               control={
                 <Switch
                   checked={restartSoftware}
-                  onChange={(e) => setRestartSoftware(e.target.checked)}
+                  onChange={(e) => dispatch(uc2Slice.setRestartSoftware(e.target.checked))}
                 />
               }
               label="Restart Software After Setup"
@@ -352,7 +355,7 @@ const UC2Controller = ({ hostIP, hostPort }) => {
           multiline
           rows={4}
           value={serialPayload}
-          onChange={(e) => setSerialPayload(e.target.value)}
+          onChange={(e) => dispatch(uc2Slice.setSerialPayload(e.target.value))}
           style={{ marginBottom: "20px" }}
         />
         <Button variant="contained" onClick={handleSendSerial}>
@@ -388,7 +391,7 @@ const UC2Controller = ({ hostIP, hostPort }) => {
             <Select
               labelId="editor-select-label"
               value={selectedFileForEdit}
-              onChange={(e) => setSelectedFileForEdit(e.target.value)}
+              onChange={(e) => dispatch(uc2Slice.setSelectedFileForEdit(e.target.value))}
             >
               {availableSetups.map((setup, index) => (
                 <MenuItem key={index} value={setup}>
@@ -417,7 +420,7 @@ const UC2Controller = ({ hostIP, hostPort }) => {
                 mode="json"
                 setOptions={{ useWorker: false }}
                 theme="github"
-                onChange={(value) => setEditorJsonText(value)}
+                onChange={(value) => dispatch(uc2Slice.setEditorJsonText(value))}
                 value={editorJsonText}
                 name="jsonEditor"
                 editorProps={{ $blockScrolling: true }}
@@ -431,7 +434,7 @@ const UC2Controller = ({ hostIP, hostPort }) => {
               <div style={{ height: "400px", overflow: "auto", border: "1px solid #ccc" }}>
                 <JsonEditor
                   data={editorJson}
-                  setData={setEditorJson}
+                  setData={(data) => dispatch(uc2Slice.setEditorJson(data))}
                 />
               </div>
             </>
@@ -445,14 +448,14 @@ const UC2Controller = ({ hostIP, hostPort }) => {
             label="Save As Filename"
             fullWidth
             value={newFileName}
-            onChange={(e) => setNewFileName(e.target.value)}
+            onChange={(e) => dispatch(uc2Slice.setNewFileName(e.target.value))}
             style={{ marginBottom: "20px" }}
           />
           <FormControlLabel
             control={
               <Checkbox
                 checked={setAsCurrentConfig}
-                onChange={(e) => setSetAsCurrentConfig(e.target.checked)}
+                onChange={(e) => dispatch(uc2Slice.setSetAsCurrentConfig(e.target.checked))}
               />
             }
             label="Set as Current Config"
@@ -461,7 +464,7 @@ const UC2Controller = ({ hostIP, hostPort }) => {
             control={
               <Checkbox
                 checked={restartAfterSave}
-                onChange={(e) => setRestartAfterSave(e.target.checked)}
+                onChange={(e) => dispatch(uc2Slice.setRestartAfterSave(e.target.checked))}
               />
             }
             label="Restart After Save"
@@ -470,7 +473,7 @@ const UC2Controller = ({ hostIP, hostPort }) => {
             control={
               <Checkbox
                 checked={overwriteFile}
-                onChange={(e) => setOverwriteFile(e.target.checked)}
+                onChange={(e) => dispatch(uc2Slice.setOverwriteFile(e.target.checked))}
               />
             }
             label="Overwrite if exists"
