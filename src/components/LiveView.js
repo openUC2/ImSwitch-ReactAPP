@@ -54,7 +54,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
   const [histogramY, setHistogramY] = useState([]);
   const [histogramActive, setHistogramActive] = useState(false);
   const [minVal, setMinVal] = useState(0);
-  const [maxVal, setMaxVal] = useState(1023);
+  const [maxVal, setMaxVal] = useState(255);
   const [lastSnapPath, setLastSnapPath] = useState("");
   const [compressionRate, setCompressionRate] = useState(80);
 
@@ -199,12 +199,10 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
     setMinVal(v[0]);
     setMaxVal(v[1]);
   };
+  // Note: Backend intensity scaling removed - now handled in frontend
   const handleRangeCommit = async (e, v) => {
-    try {
-      await fetch(
-        `${hostIP}:${hostPort}/SettingsController/setDetectorPreviewMinMaxValue?minValue=${v[0]}&maxValue=${v[1]}`
-      );
-    } catch {}
+    // Frontend-only intensity scaling - no backend call needed
+    console.log("Intensity range updated in frontend:", v);
   };
   const toggleStream = async () => {
     const n = !isStreamRunning;
@@ -266,7 +264,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
       legend: { display: false },
       title: { display: true, text: "Histogram" },
     },
-    scales: { x: { max: 1024 }, y: { beginAtZero: true } },
+    scales: { x: { max: 255 }, y: { beginAtZero: true } },
   };
 
   return (
