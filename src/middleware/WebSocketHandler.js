@@ -59,6 +59,11 @@ const WebSocketHandler = () => {
         //update redux state
         if (dataJson.detectorname) {
           dispatch(liveStreamSlice.setLiveViewImage(dataJson.image));
+          
+          // Update pixel size if available
+          if (dataJson.pixelsize) {
+            dispatch(liveStreamSlice.setPixelSize(dataJson.pixelsize));
+          }
 
           /*
         sigUpdateImage: 
