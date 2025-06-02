@@ -807,7 +807,6 @@ const handleFileManagerInitialPathChange = (event) => {
             <Box
               sx={{ display: selectedPlugin === "LiveView" ? "block" : "none" }}
             >
-              
                 <LiveView
                   hostIP={hostIP}
                   hostPort={apiPort}

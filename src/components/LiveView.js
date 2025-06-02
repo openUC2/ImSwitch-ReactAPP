@@ -19,7 +19,27 @@ import { useWebSocket } from "../context/WebSocketContext";
 import ObjectiveSwitcher from "./ObjectiveSwitcher";
 import DetectorTriggerController from "./DetectorTriggerController";
 import * as liveViewSlice from "../state/slices/LiveViewSlice.js";
+import LiveViewControlWrapper from "../axon/LiveViewControlWrapper.js";
 
+/*
+<ImageViewport
+            detectors={detectors}
+            activeTab={activeTab}
+            imageUrls={imageUrls}
+            pollImageUrl={pollImageUrl}
+            showHistogram={showHistogram}
+            histogramActive={histogramActive}
+            histogramX={histogramX}
+            histogramY={histogramY}
+            histogramData={histogramData}
+            chartOptions={chartOptions}
+            pixelSize={pixelSize}
+            minVal={minVal}
+            maxVal={maxVal}
+            onRangeChange={handleRangeChange}
+            onRangeCommit={handleRangeCommit}
+            onMove={moveStage}
+          />*/
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -334,24 +354,8 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
         </Tabs>
 
         <Box sx={{ width: "100%", height: "calc(100% - 140px)", mt: 1 }}>
-          <ImageViewport
-            detectors={detectors}
-            activeTab={activeTab}
-            imageUrls={imageUrls}
-            pollImageUrl={pollImageUrl}
-            showHistogram={showHistogram}
-            histogramActive={histogramActive}
-            histogramX={histogramX}
-            histogramY={histogramY}
-            histogramData={histogramData}
-            chartOptions={chartOptions}
-            pixelSize={pixelSize}
-            minVal={minVal}
-            maxVal={maxVal}
-            onRangeChange={handleRangeChange}
-            onRangeCommit={handleRangeCommit}
-            onMove={moveStage}
-          />
+          <LiveViewControlWrapper/>
+          
         </Box>
       </Box>
 
