@@ -60,8 +60,17 @@ const LiveViewComponent = () => {
       if (liveStreamState.liveViewImage) {
         const img = new Image();
         img.onload = () => {
-          applyIntensityScaling(img, liveStreamState.minVal, liveStreamState.maxVal);
-          setImageLoaded(true);
+          try {
+            applyIntensityScaling(img, liveStreamState.minVal, liveStreamState.maxVal);
+            setImageLoaded(true);
+          } catch (error) {
+            console.error('Error applying intensity scaling:', error);
+            setImageLoaded(false);
+          }
+        };
+        img.onerror = () => {
+          console.error('Error loading image');
+          setImageLoaded(false);
         };
         img.src = `data:image/jpeg;base64,${liveStreamState.liveViewImage}`;
       }
