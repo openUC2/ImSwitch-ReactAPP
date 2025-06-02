@@ -20,6 +20,14 @@ import tileStreamReducer from "./slices/TileStreamSlice";
 import objectiveReducer from "./slices/ObjectiveSlice";
 import LEDMatrixReducer from "./slices/LEDMatrixSlice";
 import experimentStateReducer from "./slices/ExperimentStateSlice";
+import liveViewReducer from "./slices/LiveViewSlice";
+import histoScanReducer from "./slices/HistoScanSlice";
+import widgetReducer from "./slices/WidgetSlice";
+import lepmonReducer from "./slices/LepmonSlice";
+import uc2Reducer from "./slices/UC2Slice";
+import stageOffsetCalibrationReducer from "./slices/StageOffsetCalibrationSlice";
+import flowStopReducer from "./slices/FlowStopSlice";
+import lightsheetReducer from "./slices/LightsheetSlice";
 
 //#####################################################################################
 // Combine reducers
@@ -36,6 +44,14 @@ const rootReducer = combineReducers({
   position: positionReducer,
   LEDMatrixState: LEDMatrixReducer,
   experimentWorkflowState: experimentStateReducer,
+  liveViewState: liveViewReducer,
+  histoScanState: histoScanReducer,
+  widgetState: widgetReducer,
+  lepmonState: lepmonReducer,
+  uc2State: uc2Reducer,
+  stageOffsetCalibration: stageOffsetCalibrationReducer,
+  flowStop: flowStopReducer,
+  lightsheet: lightsheetReducer,
 });
 
 //#####################################################################################

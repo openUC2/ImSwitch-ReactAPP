@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { Paper, Tabs, Tab, Box, Typography, Button, Grid } from "@mui/material";
-import { LiveWidgetContext } from "../context/LiveWidgetContext";
+import * as widgetSlice from "../state/slices/WidgetSlice.js";
 
 
 
@@ -25,7 +26,9 @@ const LiveViewController = ({ hostIP, hostPort, WindowTitle }) => {
   const [streamUrl, setStreamUrl] = useState(""); // State for live stream URL
   const videoRef = useRef(null);
 
-  const mProvider = LiveWidgetContext
+  // Redux dispatcher and state
+  const dispatch = useDispatch();
+  const widgetState = useSelector(widgetSlice.getWidgetState);
 
   useEffect(() => {
     // Simulate setting the stream URL (replace with actual logic to fetch stream URL)

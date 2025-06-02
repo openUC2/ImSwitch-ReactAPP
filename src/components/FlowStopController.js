@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   Paper,
   Tabs,
@@ -14,6 +15,7 @@ import { green, red } from "@mui/material/colors";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
 import { useWebSocket } from "../context/WebSocketContext";
+import * as flowStopSlice from "../state/slices/FlowStopSlice.js";
 
 const TabPanel = (props) => {
   const { children, value, index, ...other } = props;
@@ -32,18 +34,24 @@ const TabPanel = (props) => {
 };
 
 const FlowStopController = ({ hostIP, hostPort, WindowTitle }) => {
-  const [tabIndex, setTabIndex] = useState(0);
-  const [timeStamp, setTimeStamp] = useState("0");
-  const [experimentName, setExperimentName] = useState("Test");
-  const [experimentDescription, setExperimentDescription] =
-    useState("Some description");
-  const [uniqueId, setUniqueId] = useState(1);
-  const [numImages, setNumImages] = useState(10);
-  const [volumePerImage, setVolumePerImage] = useState(1000);
-  const [timeToStabilize, setTimeToStabilize] = useState(0.5);
-  const [pumpSpeed, setPumpSpeed] = useState(10000);
-  const [isRunning, setIsRunning] = useState(false);
-  const [currentImageCount, setCurrentImageCount] = useState(0);
+  // Redux dispatcher
+  const dispatch = useDispatch();
+  
+  // Access global Redux state
+  const flowStopState = useSelector(flowStopSlice.getFlowStopState);
+  
+  // Use Redux state instead of local useState
+  const tabIndex = flowStopState.tabIndex;
+  const timeStamp = flowStopState.timeStamp;
+  const experimentName = flowStopState.experimentName;
+  const experimentDescription = flowStopState.experimentDescription;
+  const uniqueId = flowStopState.uniqueId;
+  const numImages = flowStopState.numImages;
+  const volumePerImage = flowStopState.volumePerImage;
+  const timeToStabilize = flowStopState.timeToStabilize;
+  const pumpSpeed = flowStopState.pumpSpeed;
+  const isRunning = flowStopState.isRunning;
+  const currentImageCount = flowStopState.currentImageCount;
   const socket = useWebSocket();
 
   useEffect(() => {
@@ -53,8 +61,8 @@ const FlowStopController = ({ hostIP, hostPort, WindowTitle }) => {
           `${hostIP}:${hostPort}/FlowStopController/getStatus`
         );
         const data = await response.json();
-        setIsRunning(data[0]);
-        setCurrentImageCount(data[1]);
+        dispatch(flowStopSlice.setIsRunning(data[0]));
+        dispatch(flowStopSlice.setCurrentImageCount(data[1]));
       } catch (error) {
         //console.error('Error fetching status:', error);
       }
@@ -66,14 +74,14 @@ const FlowStopController = ({ hostIP, hostPort, WindowTitle }) => {
           `${hostIP}:${hostPort}/FlowStopController/getExperimentParameters`
         );
         const data = await response.json();
-        setTimeStamp(data.timeStamp);
-        setExperimentName(data.experimentName);
-        setExperimentDescription("Add some description here");
-        setUniqueId(parseFloat(data.uniqueId, 1));
-        setNumImages(parseFloat(data.numImages, -1));
-        setVolumePerImage(parseFloat(data.volumePerImage, 1000));
-        setTimeToStabilize(parseFloat(data.timeToStabilize, 1));
-        setPumpSpeed(parseFloat(data.pumpSpeed, 1000));
+        dispatch(flowStopSlice.setTimeStamp(data.timeStamp));
+        dispatch(flowStopSlice.setExperimentName(data.experimentName));
+        dispatch(flowStopSlice.setExperimentDescription("Add some description here"));
+        dispatch(flowStopSlice.setUniqueId(parseFloat(data.uniqueId, 1)));
+        dispatch(flowStopSlice.setNumImages(parseFloat(data.numImages, -1)));
+        dispatch(flowStopSlice.setVolumePerImage(parseFloat(data.volumePerImage, 1000)));
+        dispatch(flowStopSlice.setTimeToStabilize(parseFloat(data.timeToStabilize, 1)));
+        dispatch(flowStopSlice.setPumpSpeed(parseFloat(data.pumpSpeed, 1000)));
       } catch (error) {
         console.error("Error fetching experiment parameters:", error);
       }
@@ -90,10 +98,10 @@ const FlowStopController = ({ hostIP, hostPort, WindowTitle }) => {
     socket.on("signal", (data) => {
       const jdata = JSON.parse(data);
       if (jdata.name === "sigImagesTaken") {
-          setCurrentImageCount(jdata.args.p0);
+          dispatch(flowStopSlice.setCurrentImageCount(jdata.args.p0));
         }
       if (jdata.name === "sigIsRunning") {
-        setIsRunning(jdata.args.p0);
+        dispatch(flowStopSlice.setIsRunning(jdata.args.p0));
       }
     });
     // Clean up the chart on component unmount
@@ -113,7 +121,7 @@ const FlowStopController = ({ hostIP, hostPort, WindowTitle }) => {
       .then((response) => response.json())
       .then((data) => {
         console.log(data);
-        setIsRunning(true);
+        dispatch(flowStopSlice.setIsRunning(true));
       })
       .catch((error) => console.error("Error:", error));
   };
@@ -125,13 +133,13 @@ const FlowStopController = ({ hostIP, hostPort, WindowTitle }) => {
       .then((response) => response.json())
       .then((data) => {
         console.log(data);
-        setIsRunning(false);
+        dispatch(flowStopSlice.setIsRunning(false));
       })
       .catch((error) => console.error("Error:", error));
   };
 
   const handleTabChange = (event, newValue) => {
-    setTabIndex(newValue);
+    dispatch(flowStopSlice.setTabIndex(newValue));
   };
 
   return (
@@ -162,7 +170,7 @@ const FlowStopController = ({ hostIP, hostPort, WindowTitle }) => {
               style={{ marginBottom: "20px" }}
               label="Time Stamp Name"
               value={timeStamp}
-              onChange={(e) => setTimeStamp(e.target.value)}
+              onChange={(e) => dispatch(flowStopSlice.setTimeStamp(e.target.value))}
               fullWidth
             />
           </Grid>
@@ -171,7 +179,7 @@ const FlowStopController = ({ hostIP, hostPort, WindowTitle }) => {
               style={{ marginBottom: "20px" }}
               label="Experiment Name"
               value={experimentName}
-              onChange={(e) => setExperimentName(e.target.value)}
+              onChange={(e) => dispatch(flowStopSlice.setExperimentName(e.target.value))}
               fullWidth
             />
           </Grid>
@@ -180,7 +188,7 @@ const FlowStopController = ({ hostIP, hostPort, WindowTitle }) => {
               style={{ marginBottom: "20px" }}
               label="Experiment Description"
               value={experimentDescription}
-              onChange={(e) => setExperimentDescription(e.target.value)}
+              onChange={(e) => dispatch(flowStopSlice.setExperimentDescription(e.target.value))}
               fullWidth
             />
           </Grid>
@@ -189,7 +197,7 @@ const FlowStopController = ({ hostIP, hostPort, WindowTitle }) => {
               style={{ marginBottom: "20px" }}
               label="Volume Per Image"
               value={volumePerImage}
-              onChange={(e) => setVolumePerImage(e.target.value)}
+              onChange={(e) => dispatch(flowStopSlice.setVolumePerImage(e.target.value))}
               fullWidth
             />
           </Grid>
@@ -198,7 +206,7 @@ const FlowStopController = ({ hostIP, hostPort, WindowTitle }) => {
               style={{ marginBottom: "20px" }}
               label="Time to stabilize"
               value={timeToStabilize}
-              onChange={(e) => setTimeToStabilize(e.target.value)}
+              onChange={(e) => dispatch(flowStopSlice.setTimeToStabilize(e.target.value))}
               fullWidth
             />
           </Grid>
@@ -207,7 +215,7 @@ const FlowStopController = ({ hostIP, hostPort, WindowTitle }) => {
               style={{ marginBottom: "20px" }}
               label="Pump Speed"
               value={pumpSpeed}
-              onChange={(e) => setPumpSpeed(e.target.value)}
+              onChange={(e) => dispatch(flowStopSlice.setPumpSpeed(e.target.value))}
               fullWidth
             />
           </Grid>
@@ -216,7 +224,7 @@ const FlowStopController = ({ hostIP, hostPort, WindowTitle }) => {
               style={{ marginBottom: "20px" }}
               label="Number of Images"
               value={numImages}
-              onChange={(e) => setNumImages(e.target.value)}
+              onChange={(e) => dispatch(flowStopSlice.setNumImages(e.target.value))}
               fullWidth
             />
           </Grid>
