@@ -160,6 +160,9 @@ const LiveViewComponent = () => {
     const scaleBarPixelsDisplay = scaleBarPixelsOriginal * displayScale; // Adjust for display scaling
     const scaleBarMicrons = liveStreamState.pixelSize ? (scaleBarPixelsOriginal * liveStreamState.pixelSize).toFixed(2) : null;
     
+    // Check if scale bar would be too small to see (less than 10 pixels)
+    const scaleBarTooSmall = scaleBarPixelsDisplay < 10;
+    
     // For development/testing - show a scale bar even without pixelSize data
     const showFallbackScaleBar = process.env.NODE_ENV === 'development' && !scaleBarMicrons && displayScale > 0;
 
@@ -196,14 +199,26 @@ const LiveViewComponent = () => {
         >
           <Box
             sx={{ 
-              width: `${scaleBarPixelsDisplay}px`, 
+              width: `${Math.max(10, scaleBarPixelsDisplay)}px`, 
               height: "4px", 
-              backgroundColor: "white", 
+              backgroundColor: scaleBarTooSmall ? "orange" : "white", 
               border: "1px solid black",
+              boxShadow: "0 0 3px rgba(0,0,0,0.8)",
               mr: 2 
             }}
           />
-          <Typography variant="body2">{scaleBarMicrons} µm</Typography>
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              color: scaleBarTooSmall ? "orange" : "#fff",
+              textShadow: "1px 1px 2px rgba(0,0,0,0.8)",
+              backgroundColor: "rgba(0,0,0,0.5)",
+              px: 1,
+              borderRadius: 1
+            }}
+          >
+            {scaleBarMicrons} µm{scaleBarTooSmall ? ' (approx)' : ''}
+          </Typography>
         </Box>
       )}
       
@@ -252,6 +267,9 @@ const LiveViewComponent = () => {
           <div>displayScale: {displayScale}</div>
           <div>scaleBarMicrons: {scaleBarMicrons || 'null'}</div>
           <div>scaleBarPixelsDisplay: {scaleBarPixelsDisplay}</div>
+          <div>scaleBarPixelsOriginal: {scaleBarPixelsOriginal}</div>
+          <div>scaleBarTooSmall: {scaleBarTooSmall ? 'true' : 'false'}</div>
+          <div>imageLoaded: {imageLoaded ? 'true' : 'false'}</div>
         </Box>
       )}
 
