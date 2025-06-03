@@ -14,7 +14,6 @@ import AutofocusController from "./AutofocusController";
 import DetectorParameters from "./DetectorParameters";
 import StreamControls from "./StreamControls";
 import IlluminationController from "./IlluminationController";
-import ImageViewport from "./ImageViewport";
 import { useWebSocket } from "../context/WebSocketContext";
 import ObjectiveSwitcher from "./ObjectiveSwitcher";
 import DetectorTriggerController from "./DetectorTriggerController";
