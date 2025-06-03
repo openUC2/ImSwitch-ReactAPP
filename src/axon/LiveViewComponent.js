@@ -11,12 +11,15 @@ const LiveViewComponent = () => {
     const liveStreamState = useSelector(liveViewSlice.getLiveStreamState);
 
     const canvasRef = useRef(null);
+    const containerRef = useRef(null);
     const [imageLoaded, setImageLoaded] = useState(false);
+    const [displayScale, setDisplayScale] = useState(1);
 
     // Apply intensity scaling to the image using canvas
     const applyIntensityScaling = useCallback((image, minVal, maxVal) => {
       const canvas = canvasRef.current;
-      if (!canvas || !image) return;
+      const container = containerRef.current;
+      if (!canvas || !image || !container) return;
 
       const ctx = canvas.getContext('2d');
       canvas.width = image.width;
@@ -25,12 +28,19 @@ const LiveViewComponent = () => {
       // Draw the original image
       ctx.drawImage(image, 0, 0);
 
+      // Calculate display scale factor for scale bar
+      // Since we're setting canvas width to 100% and height to auto,
+      // the scale is based on the container width vs image width
+      const containerRect = container.getBoundingClientRect();
+      const scale = containerRect.width / image.width;
+      setDisplayScale(scale);
+
       // Get image data for pixel manipulation
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const data = imageData.data;
 
       // Apply intensity scaling
-      const scale = 255 / (maxVal - minVal);
+      const scaleIntensity = 255 / (maxVal - minVal);
       for (let i = 0; i < data.length; i += 4) {
         // For each pixel (RGBA)
         const r = data[i];
@@ -41,7 +51,7 @@ const LiveViewComponent = () => {
         const gray = 0.299 * r + 0.587 * g + 0.114 * b;
         
         // Apply intensity scaling
-        let scaledGray = (gray - minVal) * scale;
+        let scaledGray = (gray - minVal) * scaleIntensity;
         scaledGray = Math.max(0, Math.min(255, scaledGray));
 
         // Apply back to RGB channels
@@ -82,20 +92,21 @@ const LiveViewComponent = () => {
       dispatch(liveViewSlice.setMaxVal(newValue[1]));
     };
 
-    // Calculate scale bar dimensions
-    const scaleBarPx = 50;
-    const scaleBarMicrons = liveStreamState.pixelSize ? (scaleBarPx * liveStreamState.pixelSize).toFixed(2) : null;
+    // Calculate scale bar dimensions  
+    const scaleBarPixelsOriginal = 50; // 50 pixels in the original image
+    const scaleBarPixelsDisplay = scaleBarPixelsOriginal * displayScale; // Adjust for display scaling
+    const scaleBarMicrons = liveStreamState.pixelSize ? (scaleBarPixelsOriginal * liveStreamState.pixelSize).toFixed(2) : null;
 
   return (
-    <Box sx={{ position: "relative", width: "100%", height: "100%" }}>
+    <Box ref={containerRef} sx={{ position: "relative", width: "100%", height: "100%" }}>
       {/* Canvas for intensity-scaled image */}
       {liveStreamState.liveViewImage ? (
         <canvas
           ref={canvasRef}
           style={{ 
             width: '100%', 
-            height: '100%',
-            objectFit: 'contain',
+            height: 'auto',
+            maxHeight: '100%',
             display: imageLoaded ? 'block' : 'none'
           }}
         />
@@ -106,7 +117,7 @@ const LiveViewComponent = () => {
       )}
 
       {/* Scale bar */}
-      {scaleBarMicrons && (
+      {scaleBarMicrons && displayScale > 0 && (
         <Box
           sx={{
             position: "absolute",
@@ -120,7 +131,7 @@ const LiveViewComponent = () => {
           }}
         >
           <Box
-            sx={{ width: `${scaleBarPx}px`, height: "10px", backgroundColor: "white", mr: 2 }}
+            sx={{ width: `${scaleBarPixelsDisplay}px`, height: "10px", backgroundColor: "white", mr: 2 }}
           />
           <Typography variant="body2">{scaleBarMicrons} µm</Typography>
         </Box>
