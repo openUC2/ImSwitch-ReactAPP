@@ -195,7 +195,13 @@ const LiveViewComponent = () => {
           }}
         >
           <Box
-            sx={{ width: `${scaleBarPixelsDisplay}px`, height: "10px", backgroundColor: "white", mr: 2 }}
+            sx={{ 
+              width: `${scaleBarPixelsDisplay}px`, 
+              height: "4px", 
+              backgroundColor: "white", 
+              border: "1px solid black",
+              mr: 2 
+            }}
           />
           <Typography variant="body2">{scaleBarMicrons} µm</Typography>
         </Box>
@@ -216,7 +222,13 @@ const LiveViewComponent = () => {
           }}
         >
           <Box
-            sx={{ width: `${scaleBarPixelsDisplay}px`, height: "10px", backgroundColor: "yellow", mr: 2 }}
+            sx={{ 
+              width: `${scaleBarPixelsDisplay}px`, 
+              height: "4px", 
+              backgroundColor: "yellow", 
+              border: "1px solid black",
+              mr: 2 
+            }}
           />
           <Typography variant="body2">50px (no pixelSize)</Typography>
         </Box>
