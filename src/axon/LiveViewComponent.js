@@ -155,16 +155,9 @@ const LiveViewComponent = () => {
       dispatch(liveViewSlice.setMaxVal(newValue[1]));
     };
 
-    // Calculate scale bar dimensions  
-    const scaleBarPixelsOriginal = 50; // 50 pixels in the original image
-    const scaleBarPixelsDisplay = scaleBarPixelsOriginal * displayScale; // Adjust for display scaling
-    const scaleBarMicrons = liveStreamState.pixelSize ? (scaleBarPixelsOriginal * liveStreamState.pixelSize).toFixed(2) : null;
-    
-    // Check if scale bar would be too small to see (less than 10 pixels)
-    const scaleBarTooSmall = scaleBarPixelsDisplay < 10;
-    
-    // For development/testing - show a scale bar even without pixelSize data
-    const showFallbackScaleBar = process.env.NODE_ENV === 'development' && !scaleBarMicrons && displayScale > 0;
+    // Calculate scale bar dimensions - using original fixed styling
+    const scaleBarPx = 50;
+    const scaleBarMicrons = liveStreamState.pixelSize ? (scaleBarPx * liveStreamState.pixelSize).toFixed(2) : null;
 
   return (
     <Box ref={containerRef} sx={{ position: "relative", width: "100%", height: "100%" }}>
@@ -184,12 +177,12 @@ const LiveViewComponent = () => {
       )}
 
       {/* Scale bar */}
-      {scaleBarMicrons && displayScale > 0 && (
+      {scaleBarMicrons && (
         <Box
           sx={{
             position: "absolute",
-            bottom: 20,
-            left: "50%",
+            bottom: 100,
+            left: "60%",
             transform: "translateX(-50%)",
             color: "#fff",
             display: "flex",
@@ -198,81 +191,11 @@ const LiveViewComponent = () => {
           }}
         >
           <Box
-            sx={{ 
-              width: `${Math.max(10, scaleBarPixelsDisplay)}px`, 
-              height: "4px", 
-              backgroundColor: scaleBarTooSmall ? "orange" : "white", 
-              border: "1px solid black",
-              boxShadow: "0 0 3px rgba(0,0,0,0.8)",
-              mr: 2 
-            }}
+            sx={{ width: `${scaleBarPx}px`, height: "10px", backgroundColor: "white", mr: 2 }}
           />
-          <Typography 
-            variant="body2" 
-            sx={{ 
-              color: scaleBarTooSmall ? "orange" : "#fff",
-              textShadow: "1px 1px 2px rgba(0,0,0,0.8)",
-              backgroundColor: "rgba(0,0,0,0.5)",
-              px: 1,
-              borderRadius: 1
-            }}
-          >
-            {scaleBarMicrons} µm{scaleBarTooSmall ? ' (approx)' : ''}
-          </Typography>
+          <Typography variant="body2">{scaleBarMicrons} µm</Typography>
         </Box>
       )}
-      
-      {/* Fallback scale bar for development when no pixelSize data */}
-      {showFallbackScaleBar && (
-        <Box
-          sx={{
-            position: "absolute",
-            bottom: 20,
-            left: "50%",
-            transform: "translateX(-50%)",
-            color: "#fff",
-            display: "flex",
-            alignItems: "center",
-            zIndex: 4,
-          }}
-        >
-          <Box
-            sx={{ 
-              width: `${scaleBarPixelsDisplay}px`, 
-              height: "4px", 
-              backgroundColor: "yellow", 
-              border: "1px solid black",
-              mr: 2 
-            }}
-          />
-          <Typography variant="body2">50px (no pixelSize)</Typography>
-        </Box>
-      )}
-      
-      {/* Debug info for scale bar - remove in production */}
-      {process.env.NODE_ENV === 'development' && (
-        <Box
-          sx={{
-            position: "absolute",
-            top: 10,
-            left: 10,
-            color: "#fff",
-            backgroundColor: "rgba(0, 0, 0, 0.7)",
-            p: 1,
-            fontSize: '12px',
-            zIndex: 5,
-          }}
-        >
-          <div>pixelSize: {liveStreamState.pixelSize || 'null'}</div>
-          <div>displayScale: {displayScale}</div>
-          <div>scaleBarMicrons: {scaleBarMicrons || 'null'}</div>
-          <div>scaleBarPixelsDisplay: {scaleBarPixelsDisplay}</div>
-          <div>scaleBarPixelsOriginal: {scaleBarPixelsOriginal}</div>
-          <div>scaleBarTooSmall: {scaleBarTooSmall ? 'true' : 'false'}</div>
-          <div>imageLoaded: {imageLoaded ? 'true' : 'false'}</div>
-        </Box>
-      )}
-
       {/* Intensity scaling sliders */}
       <Box
         sx={{
