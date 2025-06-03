@@ -29,6 +29,12 @@ const LiveViewComponent = () => {
       const containerWidth = containerRect.width;
       const containerHeight = containerRect.height;
       
+      // Ensure container has valid dimensions
+      if (containerWidth === 0 || containerHeight === 0) {
+        console.warn('Container dimensions not available yet, skipping scale calculation');
+        return;
+      }
+      
       // Calculate scale to fit while maintaining aspect ratio
       const imageAspectRatio = image.width / image.height;
       const containerAspectRatio = containerWidth / containerHeight;
@@ -53,7 +59,8 @@ const LiveViewComponent = () => {
       ctx.drawImage(image, 0, 0);
 
       // Calculate display scale factor for scale bar based on actual display size
-      const scale = displayWidth / image.width;
+      // Add safeguard to prevent scale from being 0 or invalid
+      const scale = displayWidth > 0 && image.width > 0 ? displayWidth / image.width : 1;
       setDisplayScale(scale);
       
       // Set canvas style to maintain aspect ratio
@@ -152,6 +159,9 @@ const LiveViewComponent = () => {
     const scaleBarPixelsOriginal = 50; // 50 pixels in the original image
     const scaleBarPixelsDisplay = scaleBarPixelsOriginal * displayScale; // Adjust for display scaling
     const scaleBarMicrons = liveStreamState.pixelSize ? (scaleBarPixelsOriginal * liveStreamState.pixelSize).toFixed(2) : null;
+    
+    // For development/testing - show a scale bar even without pixelSize data
+    const showFallbackScaleBar = process.env.NODE_ENV === 'development' && !scaleBarMicrons && displayScale > 0;
 
   return (
     <Box ref={containerRef} sx={{ position: "relative", width: "100%", height: "100%" }}>
@@ -188,6 +198,48 @@ const LiveViewComponent = () => {
             sx={{ width: `${scaleBarPixelsDisplay}px`, height: "10px", backgroundColor: "white", mr: 2 }}
           />
           <Typography variant="body2">{scaleBarMicrons} µm</Typography>
+        </Box>
+      )}
+      
+      {/* Fallback scale bar for development when no pixelSize data */}
+      {showFallbackScaleBar && (
+        <Box
+          sx={{
+            position: "absolute",
+            bottom: 20,
+            left: "50%",
+            transform: "translateX(-50%)",
+            color: "#fff",
+            display: "flex",
+            alignItems: "center",
+            zIndex: 4,
+          }}
+        >
+          <Box
+            sx={{ width: `${scaleBarPixelsDisplay}px`, height: "10px", backgroundColor: "yellow", mr: 2 }}
+          />
+          <Typography variant="body2">50px (no pixelSize)</Typography>
+        </Box>
+      )}
+      
+      {/* Debug info for scale bar - remove in production */}
+      {process.env.NODE_ENV === 'development' && (
+        <Box
+          sx={{
+            position: "absolute",
+            top: 10,
+            left: 10,
+            color: "#fff",
+            backgroundColor: "rgba(0, 0, 0, 0.7)",
+            p: 1,
+            fontSize: '12px',
+            zIndex: 5,
+          }}
+        >
+          <div>pixelSize: {liveStreamState.pixelSize || 'null'}</div>
+          <div>displayScale: {displayScale}</div>
+          <div>scaleBarMicrons: {scaleBarMicrons || 'null'}</div>
+          <div>scaleBarPixelsDisplay: {scaleBarPixelsDisplay}</div>
         </Box>
       )}
 
