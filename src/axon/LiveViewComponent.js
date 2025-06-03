@@ -14,6 +14,7 @@ const LiveViewComponent = () => {
     const containerRef = useRef(null);
     const [imageLoaded, setImageLoaded] = useState(false);
     const [displayScale, setDisplayScale] = useState(1);
+    const [canvasStyle, setCanvasStyle] = useState({});
 
     // Apply intensity scaling to the image using canvas
     const applyIntensityScaling = useCallback((image, minVal, maxVal) => {
@@ -22,18 +23,48 @@ const LiveViewComponent = () => {
       if (!canvas || !image || !container) return;
 
       const ctx = canvas.getContext('2d');
+      
+      // Get container dimensions
+      const containerRect = container.getBoundingClientRect();
+      const containerWidth = containerRect.width;
+      const containerHeight = containerRect.height;
+      
+      // Calculate scale to fit while maintaining aspect ratio
+      const imageAspectRatio = image.width / image.height;
+      const containerAspectRatio = containerWidth / containerHeight;
+      
+      let displayWidth, displayHeight;
+      
+      if (imageAspectRatio > containerAspectRatio) {
+        // Image is wider than container - fit to width
+        displayWidth = containerWidth;
+        displayHeight = containerWidth / imageAspectRatio;
+      } else {
+        // Image is taller than container - fit to height
+        displayHeight = containerHeight;
+        displayWidth = containerHeight * imageAspectRatio;
+      }
+      
+      // Set canvas to image's natural size for processing
       canvas.width = image.width;
       canvas.height = image.height;
 
       // Draw the original image
       ctx.drawImage(image, 0, 0);
 
-      // Calculate display scale factor for scale bar
-      // Since we're setting canvas width to 100% and height to auto,
-      // the scale is based on the container width vs image width
-      const containerRect = container.getBoundingClientRect();
-      const scale = containerRect.width / image.width;
+      // Calculate display scale factor for scale bar based on actual display size
+      const scale = displayWidth / image.width;
       setDisplayScale(scale);
+      
+      // Set canvas style to maintain aspect ratio
+      setCanvasStyle({
+        width: `${displayWidth}px`,
+        height: `${displayHeight}px`,
+        maxWidth: '100%',
+        maxHeight: '100%',
+        display: 'block',
+        margin: '0 auto', // Center the canvas horizontally
+      });
 
       // Get image data for pixel manipulation
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -76,15 +107,40 @@ const LiveViewComponent = () => {
           } catch (error) {
             console.error('Error applying intensity scaling:', error);
             setImageLoaded(false);
+            setCanvasStyle({}); // Reset canvas style on error
           }
         };
         img.onerror = () => {
           console.error('Error loading image');
           setImageLoaded(false);
+          setCanvasStyle({}); // Reset canvas style on error
         };
         img.src = `data:image/jpeg;base64,${liveStreamState.liveViewImage}`;
+      } else {
+        setImageLoaded(false);
+        setCanvasStyle({}); // Reset canvas style when no image
       }
     }, [liveStreamState.liveViewImage, liveStreamState.minVal, liveStreamState.maxVal, applyIntensityScaling]);
+
+    // Handle container resize to maintain aspect ratio
+    useEffect(() => {
+      const container = containerRef.current;
+      if (!container) return;
+
+      const resizeObserver = new ResizeObserver(() => {
+        // Reprocess the image when container size changes
+        if (liveStreamState.liveViewImage && imageLoaded) {
+          const img = new Image();
+          img.onload = () => {
+            applyIntensityScaling(img, liveStreamState.minVal, liveStreamState.maxVal);
+          };
+          img.src = `data:image/jpeg;base64,${liveStreamState.liveViewImage}`;
+        }
+      });
+
+      resizeObserver.observe(container);
+      return () => resizeObserver.disconnect();
+    }, [liveStreamState.liveViewImage, liveStreamState.minVal, liveStreamState.maxVal, imageLoaded, applyIntensityScaling]);
 
     // Handle intensity range change
     const handleRangeChange = (event, newValue) => {
@@ -104,10 +160,8 @@ const LiveViewComponent = () => {
         <canvas
           ref={canvasRef}
           style={{ 
-            width: '100%', 
-            height: 'auto',
-            maxHeight: '100%',
-            display: imageLoaded ? 'block' : 'none'
+            ...canvasStyle,
+            display: imageLoaded ? canvasStyle.display : 'none'
           }}
         />
       ) : (
