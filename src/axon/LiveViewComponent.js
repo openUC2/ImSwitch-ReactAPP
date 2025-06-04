@@ -202,7 +202,7 @@ const LiveViewComponent = () => {
               width: `${Math.max(10, scaleBarPixelsDisplay)}px`, 
               height: "4px", 
               backgroundColor: scaleBarTooSmall ? "orange" : "white", 
-              border: "1px solid black",
+              border: "6px solid black",
               boxShadow: "0 0 3px rgba(0,0,0,0.8)",
               mr: 2 
             }}

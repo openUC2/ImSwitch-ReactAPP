@@ -1,5 +1,6 @@
 import LiveViewControlWrapper from "./LiveViewControlWrapper";
 import TileViewComponent from "./TileViewComponent";
+import ZarrTileViewController from "./ZarrTileView";
 import GenericTabBar from "./GenericTabBar";
 import WellSelectorComponent from "./WellSelectorComponent";
 import PointListEditorComponent from "./PointListEditorComponent";
@@ -53,7 +54,7 @@ const AxonTabComponent = () => {
             ]}
           >
             <LiveViewControlWrapper />
-            <TileViewComponent />
+            <ZarrTileViewController/>
             <PointListEditorComponent />
             <PointListShapeEditorComponent />
             <ParameterEditorWrapper />

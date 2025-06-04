@@ -8,6 +8,7 @@ import * as liveStreamSlice from "../state/slices/LiveStreamSlice.js";
 import * as tileStreamSlice from "../state/slices/TileStreamSlice.js";
 import * as positionSlice from "../state/slices/PositionSlice.js";
 import * as objectiveSlice from "../state/slices/ObjectiveSlice.js";
+import * as omeZarrSlice from "../state/slices/OmeZarrTileStreamSlice.js";
 
 import { io } from "socket.io-client";
 
@@ -45,6 +46,7 @@ const WebSocketHandler = () => {
       dispatch(webSocketSlice.setConnected(true));
     });
 
+    // Listen to signals
     socket.on("signal", (data) => {
       //console.log('WebSocket signal', data);
       //update redux state
@@ -153,7 +155,13 @@ const WebSocketHandler = () => {
           console.error("sigUpdateMotorPosition", error);
         }
         //----------------------------------------------
-      } else {
+      } else if (dataJson.name == "sigUpdateOMEZarrStore") {
+        console.log("sigUpdateOMEZarrStore", dataJson);
+        //update redux state
+        dispatch(omeZarrSlice.setZarrUrl(dataJson.args.p0));
+        dispatch(omeZarrSlice.tileArrived());
+      }
+      else {
         //console.warn("WebSocket: Unhandled signal from socket:", dataJson.name);
         //console.warn(dataJson);
       }
