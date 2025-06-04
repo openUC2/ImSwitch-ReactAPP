@@ -6,7 +6,7 @@ import * as liveViewSlice from "../state/slices/LiveStreamSlice.js";
 const LiveViewComponent = () => {
     // redux dispatcher
     const dispatch = useDispatch();
-  
+
     // Access global Redux state
     const liveStreamState = useSelector(liveViewSlice.getLiveStreamState);
 
@@ -23,24 +23,24 @@ const LiveViewComponent = () => {
       if (!canvas || !image || !container) return;
 
       const ctx = canvas.getContext('2d');
-      
+
       // Get container dimensions
       const containerRect = container.getBoundingClientRect();
       const containerWidth = containerRect.width;
       const containerHeight = containerRect.height;
-      
+
       // Ensure container has valid dimensions
       if (containerWidth === 0 || containerHeight === 0) {
         console.warn('Container dimensions not available yet, skipping scale calculation');
         return;
       }
-      
+
       // Calculate scale to fit while maintaining aspect ratio
       const imageAspectRatio = image.width / image.height;
       const containerAspectRatio = containerWidth / containerHeight;
-      
+
       let displayWidth, displayHeight;
-      
+
       if (imageAspectRatio > containerAspectRatio) {
         // Image is wider than container - fit to width
         displayWidth = containerWidth;
@@ -50,7 +50,7 @@ const LiveViewComponent = () => {
         displayHeight = containerHeight;
         displayWidth = containerHeight * imageAspectRatio;
       }
-      
+
       // Set canvas to image's natural size for processing
       canvas.width = image.width;
       canvas.height = image.height;
@@ -62,7 +62,7 @@ const LiveViewComponent = () => {
       // Add safeguard to prevent scale from being 0 or invalid
       const scale = displayWidth > 0 && image.width > 0 ? displayWidth / image.width : 1;
       setDisplayScale(scale);
-      
+
       // Set canvas style to maintain aspect ratio
       setCanvasStyle({
         width: `${displayWidth}px`,
@@ -84,10 +84,10 @@ const LiveViewComponent = () => {
         const r = data[i];
         const g = data[i + 1];
         const b = data[i + 2];
-        
+
         // Convert to grayscale for intensity scaling
         const gray = 0.299 * r + 0.587 * g + 0.114 * b;
-        
+
         // Apply intensity scaling
         let scaledGray = (gray - minVal) * scaleIntensity;
         scaledGray = Math.max(0, Math.min(255, scaledGray));
@@ -155,16 +155,9 @@ const LiveViewComponent = () => {
       dispatch(liveViewSlice.setMaxVal(newValue[1]));
     };
 
-    // Calculate scale bar dimensions  
-    const scaleBarPixelsOriginal = 50; // 50 pixels in the original image
-    const scaleBarPixelsDisplay = scaleBarPixelsOriginal * displayScale; // Adjust for display scaling
-    const scaleBarMicrons = liveStreamState.pixelSize ? (scaleBarPixelsOriginal * liveStreamState.pixelSize).toFixed(2) : null;
-    
-    // Check if scale bar would be too small to see (less than 10 pixels)
-    const scaleBarTooSmall = scaleBarPixelsDisplay < 10;
-    
-    // For development/testing - show a scale bar even without pixelSize data
-    const showFallbackScaleBar = process.env.NODE_ENV === 'development' && !scaleBarMicrons && displayScale > 0;
+    // Calculate scale bar dimensions - using original fixed styling
+    const scaleBarPx = 50;
+    const scaleBarMicrons = liveStreamState.pixelSize ? (scaleBarPx * liveStreamState.pixelSize).toFixed(2) : null;
 
   return (
     <Box ref={containerRef} sx={{ position: "relative", width: "100%", height: "100%" }}>
@@ -172,7 +165,7 @@ const LiveViewComponent = () => {
       {liveStreamState.liveViewImage ? (
         <canvas
           ref={canvasRef}
-          style={{ 
+          style={{
             ...canvasStyle,
             display: imageLoaded ? canvasStyle.display : 'none'
           }}
@@ -184,12 +177,12 @@ const LiveViewComponent = () => {
       )}
 
       {/* Scale bar */}
-      {scaleBarMicrons && displayScale > 0 && (
+      {scaleBarMicrons && (
         <Box
           sx={{
             position: "absolute",
-            bottom: 20,
-            left: "50%",
+            bottom: 100,
+            left: "60%",
             transform: "translateX(-50%)",
             color: "#fff",
             display: "flex",
@@ -198,81 +191,11 @@ const LiveViewComponent = () => {
           }}
         >
           <Box
-            sx={{ 
-              width: `${Math.max(10, scaleBarPixelsDisplay)}px`, 
-              height: "4px", 
-              backgroundColor: scaleBarTooSmall ? "orange" : "white", 
-              border: "6px solid black",
-              boxShadow: "0 0 3px rgba(0,0,0,0.8)",
-              mr: 2 
-            }}
+            sx={{ width: `${scaleBarPx}px`, height: "10px", backgroundColor: "white", mr: 2 }}
           />
-          <Typography 
-            variant="body2" 
-            sx={{ 
-              color: scaleBarTooSmall ? "orange" : "#fff",
-              textShadow: "1px 1px 2px rgba(0,0,0,0.8)",
-              backgroundColor: "rgba(0,0,0,0.5)",
-              px: 1,
-              borderRadius: 1
-            }}
-          >
-            {scaleBarMicrons} µm{scaleBarTooSmall ? ' (approx)' : ''}
-          </Typography>
+          <Typography variant="body2">{scaleBarMicrons} µm</Typography>
         </Box>
       )}
-      
-      {/* Fallback scale bar for development when no pixelSize data */}
-      {showFallbackScaleBar && (
-        <Box
-          sx={{
-            position: "absolute",
-            bottom: 20,
-            left: "50%",
-            transform: "translateX(-50%)",
-            color: "#fff",
-            display: "flex",
-            alignItems: "center",
-            zIndex: 4,
-          }}
-        >
-          <Box
-            sx={{ 
-              width: `${scaleBarPixelsDisplay}px`, 
-              height: "4px", 
-              backgroundColor: "yellow", 
-              border: "1px solid black",
-              mr: 2 
-            }}
-          />
-          <Typography variant="body2">50px (no pixelSize)</Typography>
-        </Box>
-      )}
-      
-      {/* Debug info for scale bar - remove in production */}
-      {process.env.NODE_ENV === 'development' && (
-        <Box
-          sx={{
-            position: "absolute",
-            top: 10,
-            left: 10,
-            color: "#fff",
-            backgroundColor: "rgba(0, 0, 0, 0.7)",
-            p: 1,
-            fontSize: '12px',
-            zIndex: 5,
-          }}
-        >
-          <div>pixelSize: {liveStreamState.pixelSize || 'null'}</div>
-          <div>displayScale: {displayScale}</div>
-          <div>scaleBarMicrons: {scaleBarMicrons || 'null'}</div>
-          <div>scaleBarPixelsDisplay: {scaleBarPixelsDisplay}</div>
-          <div>scaleBarPixelsOriginal: {scaleBarPixelsOriginal}</div>
-          <div>scaleBarTooSmall: {scaleBarTooSmall ? 'true' : 'false'}</div>
-          <div>imageLoaded: {imageLoaded ? 'true' : 'false'}</div>
-        </Box>
-      )}
-
       {/* Intensity scaling sliders */}
       <Box
         sx={{
