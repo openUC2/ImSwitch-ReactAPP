@@ -1005,7 +1005,7 @@ const BlocklyController = () => {
         )}
         
         {status === "running" && (
-          <>
+          <React.Fragment>
             <button 
               onClick={handlePauseWorkflow}
               disabled={isPausing}
@@ -1021,11 +1021,11 @@ const BlocklyController = () => {
             >
               {isStopping ? "Stopping..." : "Stop Workflow"}
             </button>
-          </>
+          </React.Fragment>
         )}
         
         {status === "paused" && (
-          <>
+          <React.Fragment>
             <button 
               onClick={handleResumeWorkflow}
               disabled={isResuming}
@@ -1041,7 +1041,7 @@ const BlocklyController = () => {
             >
               {isStopping ? "Stopping..." : "Stop Workflow"}
             </button>
-          </>
+          </React.Fragment>
         )}
       </div>
     );
