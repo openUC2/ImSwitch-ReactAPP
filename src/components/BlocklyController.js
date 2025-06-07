@@ -1,13 +1,36 @@
 import React, { useState, useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
 import "./blockly/customblocks";
 import Blockly from "blockly";
 import { javascriptGenerator } from "blockly/javascript";
 import { BlocklyWorkspace } from "react-blockly";
-import { PureComponent } from "react";
 import "./blockly/style.css";
 import DarkTheme from '@blockly/theme-dark';
 
 import JSONGenerator from "./blockly/jsonGenerator"; // <-- our custom JSON generator
+
+// Import workflow APIs
+import apiExperimentControllerUploadWorkflow from "../backendapi/apiExperimentControllerUploadWorkflow";
+import apiExperimentControllerStartWorkflow from "../backendapi/apiExperimentControllerStartWorkflow";
+import apiExperimentControllerStopWorkflow from "../backendapi/apiExperimentControllerStopWorkflow";
+import apiExperimentControllerPauseWorkflow from "../backendapi/apiExperimentControllerPauseWorkflow";
+import apiExperimentControllerResumeWorkflow from "../backendapi/apiExperimentControllerResumeWorkflow";
+import apiExperimentControllerGetWorkflowStatus from "../backendapi/apiExperimentControllerGetWorkflowStatus";
+
+// Import workflow state actions
+import {
+  setWorkflowJson,
+  setWorkflowStatus,
+  setWorkflowError,
+  clearWorkflowError,
+  setIsGeneratingJson,
+  setIsUploading,
+  setIsStarting,
+  setIsStopping,
+  setIsPausing,
+  setIsResuming,
+  getWorkflowState,
+} from "../state/slices/WorkflowSlice";
 
 const initialXml = '<xml xmlns="http://www.w3.org/1999/xhtml"></xml>';
 const toolbox = {
@@ -793,65 +816,284 @@ const toolbox = {
           {
             kind: "block",
             type: "move_stage_block"
+          },
+          {
+            kind: "block",
+            type: "set_exposure_time_block"
+          },
+          {
+            kind: "block",
+            type: "set_gain_block"
+          },
+          {
+            kind: "block",
+            type: "save_image_block"
+          },
+          {
+            kind: "block",
+            type: "autofocus_block"
           }
         ]
       }
   ]
 };
 
-class BlocklyController extends PureComponent {
-    constructor(props) {
-      super(props);
-      this.state = {
-        xml: "",
-        code: "" // We'll store JSON code here instead of JS code
-      };
+const BlocklyController = () => {
+  // Redux hooks
+  const dispatch = useDispatch();
+  const workflowState = useSelector(getWorkflowState);
+  
+  // Local state
+  const [xml, setXml] = useState("");
+
+  // Generate JSON from workspace
+  const handleGenerateJson = async () => {
+    try {
+      dispatch(setIsGeneratingJson(true));
+      dispatch(clearWorkflowError());
+      
+      const workspace = Blockly.getMainWorkspace();
+      const jsonCode = JSONGenerator.workspaceToCode(workspace);
+      console.log("Generated workflow JSON:", jsonCode);
+      
+      dispatch(setWorkflowJson(jsonCode));
+    } catch (error) {
+      console.error("Error generating JSON:", error);
+      dispatch(setWorkflowError("Failed to generate workflow JSON"));
+    } finally {
+      dispatch(setIsGeneratingJson(false));
     }
-
-    handleGenerateJson = () => {
-        // Use our custom JSON generator to produce the final JSON
-        const workspace = Blockly.getMainWorkspace();
-        const jsonCode = JSONGenerator.workspaceToCode(workspace);
-        console.log(jsonCode);
-        this.setState({ code: jsonCode });
-      };
-
-      handleXmlChange = (xml) => {
-        this.setState({ xml });
-      };
-
-  handleWorkspaceChange = (workspace) => {
-    const jsCode = Blockly.JavaScript.workspaceToCode(workspace);
-    this.state({ jsCode });
   };
 
-  
-  render() {
+  // Upload workflow to backend
+  const handleUploadWorkflow = async () => {
+    if (!workflowState.workflowJson) {
+      dispatch(setWorkflowError("No workflow JSON to upload. Please generate workflow first."));
+      return;
+    }
+
+    try {
+      dispatch(setIsUploading(true));
+      dispatch(clearWorkflowError());
+      
+      const workflowData = JSON.parse(workflowState.workflowJson);
+      const response = await apiExperimentControllerUploadWorkflow(workflowData);
+      console.log("Workflow uploaded successfully:", response);
+      
+      dispatch(setWorkflowStatus("uploaded"));
+    } catch (error) {
+      console.error("Error uploading workflow:", error);
+      dispatch(setWorkflowError("Failed to upload workflow"));
+    } finally {
+      dispatch(setIsUploading(false));
+    }
+  };
+
+  // Start workflow execution
+  const handleStartWorkflow = async () => {
+    try {
+      dispatch(setIsStarting(true));
+      dispatch(clearWorkflowError());
+      
+      const response = await apiExperimentControllerStartWorkflow();
+      console.log("Workflow started:", response);
+      
+      dispatch(setWorkflowStatus("running"));
+    } catch (error) {
+      console.error("Error starting workflow:", error);
+      dispatch(setWorkflowError("Failed to start workflow"));
+    } finally {
+      dispatch(setIsStarting(false));
+    }
+  };
+
+  // Stop workflow execution
+  const handleStopWorkflow = async () => {
+    try {
+      dispatch(setIsStopping(true));
+      dispatch(clearWorkflowError());
+      
+      const response = await apiExperimentControllerStopWorkflow();
+      console.log("Workflow stopped:", response);
+      
+      dispatch(setWorkflowStatus("stopped"));
+    } catch (error) {
+      console.error("Error stopping workflow:", error);
+      dispatch(setWorkflowError("Failed to stop workflow"));
+    } finally {
+      dispatch(setIsStopping(false));
+    }
+  };
+
+  // Pause workflow execution
+  const handlePauseWorkflow = async () => {
+    try {
+      dispatch(setIsPausing(true));
+      dispatch(clearWorkflowError());
+      
+      const response = await apiExperimentControllerPauseWorkflow();
+      console.log("Workflow paused:", response);
+      
+      dispatch(setWorkflowStatus("paused"));
+    } catch (error) {
+      console.error("Error pausing workflow:", error);
+      dispatch(setWorkflowError("Failed to pause workflow"));
+    } finally {
+      dispatch(setIsPausing(false));
+    }
+  };
+
+  // Resume workflow execution
+  const handleResumeWorkflow = async () => {
+    try {
+      dispatch(setIsResuming(true));
+      dispatch(clearWorkflowError());
+      
+      const response = await apiExperimentControllerResumeWorkflow();
+      console.log("Workflow resumed:", response);
+      
+      dispatch(setWorkflowStatus("running"));
+    } catch (error) {
+      console.error("Error resuming workflow:", error);
+      dispatch(setWorkflowError("Failed to resume workflow"));
+    } finally {
+      dispatch(setIsResuming(false));
+    }
+  };
+
+  // Handle XML changes in workspace
+  const handleXmlChange = (xmlValue) => {
+    setXml(xmlValue);
+  };
+
+  // Auto-generate JSON when workspace changes (optional)
+  useEffect(() => {
+    // You can enable auto-generation here if desired
+    // handleGenerateJson();
+  }, [xml]);
+
+  // Render control buttons based on workflow status
+  const renderControlButtons = () => {
+    const { status, isUploading, isStarting, isStopping, isPausing, isResuming } = workflowState;
+    
     return (
-      <div className="container">
-        <h1>Create your Workflow</h1>
-        <button onClick={this.handleGenerateJson}>Generate Workflow JSON</button>
-        <BlocklyWorkspace
-          className="blockly_container"
-          initialXml={initialXml}
-          toolboxConfiguration={toolbox}
-          workspaceConfiguration={{
-            grid: {
-              spacing: 20,
-              length: 3,
-              colour: "#ccc",
-              snap: true
-            },
-            theme: DarkTheme
-          }}
-          onXmlChange={this.handleXmlChange}
-        />
-        <pre style={{ backgroundColor: "#272822", color: "#fff", padding: "1rem" }}>
-          {this.state.code}
-        </pre>
+      <div style={{ display: "flex", gap: "10px", marginBottom: "10px", flexWrap: "wrap" }}>
+        <button 
+          onClick={handleGenerateJson}
+          disabled={workflowState.isGeneratingJson}
+          style={{ backgroundColor: "#4CAF50", color: "white", padding: "8px 16px", border: "none", borderRadius: "4px" }}
+        >
+          {workflowState.isGeneratingJson ? "Generating..." : "Generate Workflow JSON"}
+        </button>
+        
+        <button 
+          onClick={handleUploadWorkflow}
+          disabled={!workflowState.workflowJson || isUploading}
+          style={{ backgroundColor: "#2196F3", color: "white", padding: "8px 16px", border: "none", borderRadius: "4px" }}
+        >
+          {isUploading ? "Uploading..." : "Upload Workflow"}
+        </button>
+        
+        {(status === "idle" || status === "uploaded" || status === "stopped") && (
+          <button 
+            onClick={handleStartWorkflow}
+            disabled={isStarting}
+            style={{ backgroundColor: "#FF9800", color: "white", padding: "8px 16px", border: "none", borderRadius: "4px" }}
+          >
+            {isStarting ? "Starting..." : "Start Workflow"}
+          </button>
+        )}
+        
+        {status === "running" && (
+          <>
+            <button 
+              onClick={handlePauseWorkflow}
+              disabled={isPausing}
+              style={{ backgroundColor: "#FF5722", color: "white", padding: "8px 16px", border: "none", borderRadius: "4px" }}
+            >
+              {isPausing ? "Pausing..." : "Pause Workflow"}
+            </button>
+            
+            <button 
+              onClick={handleStopWorkflow}
+              disabled={isStopping}
+              style={{ backgroundColor: "#f44336", color: "white", padding: "8px 16px", border: "none", borderRadius: "4px" }}
+            >
+              {isStopping ? "Stopping..." : "Stop Workflow"}
+            </button>
+          </>
+        )}
+        
+        {status === "paused" && (
+          <>
+            <button 
+              onClick={handleResumeWorkflow}
+              disabled={isResuming}
+              style={{ backgroundColor: "#4CAF50", color: "white", padding: "8px 16px", border: "none", borderRadius: "4px" }}
+            >
+              {isResuming ? "Resuming..." : "Resume Workflow"}
+            </button>
+            
+            <button 
+              onClick={handleStopWorkflow}
+              disabled={isStopping}
+              style={{ backgroundColor: "#f44336", color: "white", padding: "8px 16px", border: "none", borderRadius: "4px" }}
+            >
+              {isStopping ? "Stopping..." : "Stop Workflow"}
+            </button>
+          </>
+        )}
       </div>
     );
-  }
-}
+  };
+
+  return (
+    <div className="container">
+      <h1>Create your Workflow</h1>
+      
+      {/* Status Display */}
+      <div style={{ marginBottom: "10px" }}>
+        <strong>Status: </strong>
+        <span style={{ 
+          color: workflowState.status === "running" ? "green" : 
+                workflowState.status === "error" ? "red" : 
+                workflowState.status === "paused" ? "orange" : "black" 
+        }}>
+          {workflowState.status}
+        </span>
+        {workflowState.error && (
+          <div style={{ color: "red", marginTop: "5px" }}>
+            Error: {workflowState.error}
+          </div>
+        )}
+      </div>
+
+      {/* Control Buttons */}
+      {renderControlButtons()}
+      
+      {/* Blockly Workspace */}
+      <BlocklyWorkspace
+        className="blockly_container"
+        initialXml={initialXml}
+        toolboxConfiguration={toolbox}
+        workspaceConfiguration={{
+          grid: {
+            spacing: 20,
+            length: 3,
+            colour: "#ccc",
+            snap: true
+          },
+          theme: DarkTheme
+        }}
+        onXmlChange={handleXmlChange}
+      />
+      
+      {/* JSON Output */}
+      <pre style={{ backgroundColor: "#272822", color: "#fff", padding: "1rem", marginTop: "10px" }}>
+        {workflowState.workflowJson || "No workflow JSON generated yet."}
+      </pre>
+    </div>
+  );
+};
 
 export default BlocklyController;
