@@ -28,6 +28,7 @@ import uc2Reducer from "./slices/UC2Slice";
 import stageOffsetCalibrationReducer from "./slices/StageOffsetCalibrationSlice";
 import flowStopReducer from "./slices/FlowStopSlice";
 import lightsheetReducer from "./slices/LightsheetSlice";
+import zarrinitialZarrReducer from "./slices/OmeZarrTileStreamSlice";
 
 //#####################################################################################
 // Combine reducers
@@ -52,6 +53,7 @@ const rootReducer = combineReducers({
   stageOffsetCalibration: stageOffsetCalibrationReducer,
   flowStop: flowStopReducer,
   lightsheet: lightsheetReducer,
+  omeZarrState: zarrinitialZarrReducer
 });
 
 //#####################################################################################

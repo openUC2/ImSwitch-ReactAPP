@@ -4,6 +4,39 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 
 This is a first attempt to control an ImSwitch-controlled microscope using the browser using WebRTC implemented in AIORTC.
 
+## Frontend Intensity Scaling
+
+The application now includes frontend intensity scaling capabilities:
+
+- **LiveViewControlWrapper**: Unified image viewer component with frontend intensity scaling
+- **Canvas-based processing**: 8-bit JPEG images are processed in the frontend using Canvas API
+- **Real-time scaling**: Intensity range sliders (0-255) for immediate visual feedback
+- **Scale bar overlay**: Displays actual measurements when pixel size is available
+- **Position control overlay**: Integrated stage movement controls
+
+### Usage Example
+
+```javascript
+import React from 'react';
+import { Provider } from 'react-redux';
+import store from '../state/store';
+import LiveViewControlWrapper from './axon/LiveViewControlWrapper';
+
+function App() {
+  return (
+    <Provider store={store}>
+      <LiveViewControlWrapper />
+    </Provider>
+  );
+}
+```
+
+The component includes:
+- Frontend intensity scaling (eliminates backend processing)
+- Overlay intensity sliders on the right side
+- Scale bar showing measurements in micrometers
+- Position controls for stage movement
+
 # Showcase
 
 ![](./IMAGES/screencast_2.gif)

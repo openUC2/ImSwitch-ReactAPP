@@ -14,12 +14,31 @@ import AutofocusController from "./AutofocusController";
 import DetectorParameters from "./DetectorParameters";
 import StreamControls from "./StreamControls";
 import IlluminationController from "./IlluminationController";
-import ImageViewport from "./ImageViewport";
 import { useWebSocket } from "../context/WebSocketContext";
 import ObjectiveSwitcher from "./ObjectiveSwitcher";
 import DetectorTriggerController from "./DetectorTriggerController";
 import * as liveViewSlice from "../state/slices/LiveViewSlice.js";
+import LiveViewControlWrapper from "../axon/LiveViewControlWrapper.js";
 
+/*
+<ImageViewport
+            detectors={detectors}
+            activeTab={activeTab}
+            imageUrls={imageUrls}
+            pollImageUrl={pollImageUrl}
+            showHistogram={showHistogram}
+            histogramActive={histogramActive}
+            histogramX={histogramX}
+            histogramY={histogramY}
+            histogramData={histogramData}
+            chartOptions={chartOptions}
+            pixelSize={pixelSize}
+            minVal={minVal}
+            maxVal={maxVal}
+            onRangeChange={handleRangeChange}
+            onRangeCommit={handleRangeCommit}
+            onMove={moveStage}
+          />*/
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -65,7 +84,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
   const [histogramY, setHistogramY] = useState([]);
   const [histogramActive, setHistogramActive] = useState(false);
   const [minVal, setMinVal] = useState(0);
-  const [maxVal, setMaxVal] = useState(1023);
+  const [maxVal, setMaxVal] = useState(255);
   const [lastSnapPath, setLastSnapPath] = useState("");
   const [compressionRate, setCompressionRate] = useState(80);
 
@@ -210,12 +229,10 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
     setMinVal(v[0]);
     setMaxVal(v[1]);
   };
+  // Note: Backend intensity scaling removed - now handled in frontend
   const handleRangeCommit = async (e, v) => {
-    try {
-      await fetch(
-        `${hostIP}:${hostPort}/SettingsController/setDetectorPreviewMinMaxValue?minValue=${v[0]}&maxValue=${v[1]}`
-      );
-    } catch {}
+    // Frontend-only intensity scaling - no backend call needed
+    console.log("Intensity range updated in frontend:", v);
   };
   const toggleStream = async () => {
     const n = !isStreamRunning;
@@ -277,7 +294,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
       legend: { display: false },
       title: { display: true, text: "Histogram" },
     },
-    scales: { x: { max: 1024 }, y: { beginAtZero: true } },
+    scales: { x: { max: 255 }, y: { beginAtZero: true } },
   };
 
   return (
@@ -336,24 +353,8 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
         </Tabs>
 
         <Box sx={{ width: "100%", height: "calc(100% - 140px)", mt: 1 }}>
-          <ImageViewport
-            detectors={detectors}
-            activeTab={activeTab}
-            imageUrls={imageUrls}
-            pollImageUrl={pollImageUrl}
-            showHistogram={showHistogram}
-            histogramActive={histogramActive}
-            histogramX={histogramX}
-            histogramY={histogramY}
-            histogramData={histogramData}
-            chartOptions={chartOptions}
-            pixelSize={pixelSize}
-            minVal={minVal}
-            maxVal={maxVal}
-            onRangeChange={handleRangeChange}
-            onRangeCommit={handleRangeCommit}
-            onMove={moveStage}
-          />
+          <LiveViewControlWrapper/>
+          
         </Box>
       </Box>
 

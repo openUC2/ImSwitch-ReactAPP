@@ -108,7 +108,7 @@ export default function ImageViewport({
           onChange={onRangeChange}
           onChangeCommitted={onRangeCommit}
           min={0}
-          max={1024}
+          max={255}
           valueLabelDisplay="on"
           valueLabelFormat={(v, i) => (i ? `Max: ${v}` : `Min: ${v}`)}
           sx={{ height: "60%", mr: 1 }}
