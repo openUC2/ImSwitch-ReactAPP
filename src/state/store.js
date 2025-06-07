@@ -29,6 +29,7 @@ import stageOffsetCalibrationReducer from "./slices/StageOffsetCalibrationSlice"
 import flowStopReducer from "./slices/FlowStopSlice";
 import lightsheetReducer from "./slices/LightsheetSlice";
 import stresstestReducer from "./slices/StresstestSlice";
+import workflowReducer from "./slices/WorkflowSlice";
 
 //#####################################################################################
 // Combine reducers
@@ -54,6 +55,7 @@ const rootReducer = combineReducers({
   flowStop: flowStopReducer,
   lightsheet: lightsheetReducer,
   stresstestState: stresstestReducer,
+  workflowState: workflowReducer,
 });
 
 //#####################################################################################
@@ -68,7 +70,8 @@ const persistConfig = {
     "experimentState",
     "wellSelectorState",
     "positionState",
-  ],  
+    "workflowState",
+  ],
   //blacklist: ['webSocketState'],  // Do not persist these
 };
 
