@@ -6,11 +6,11 @@ import PositionControllerComponent from "./PositionControllerComponent";
  
  
  
-const LiveViewControlWrapper = () => {
+const LiveViewControlWrapper = ({ usePixelPerfectScaling = false }) => {
   return ( 
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
         <div style={{ position: "relative", top: "0px", left: "0px", zIndex: 1, width: "100%", height: "100%" }}>
-        <LiveViewComponent />
+        <LiveViewComponent usePixelPerfectScaling={usePixelPerfectScaling} />
         </div>
         <div style={{ position: "absolute", bottom: "200px", left: "0px", zIndex: 2, }}>
         <PositionControllerComponent />
