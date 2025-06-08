@@ -5,6 +5,7 @@ import { useTheme } from "@mui/material/styles";
 
 import * as experimentSlice from "../state/slices/ExperimentSlice.js";
 import * as parameterRangeSlice from "../state/slices/ParameterRangeSlice.js";
+import * as connectionSettingsSlice from "../state/slices/ConnectionSettingsSlice.js";
 import fetchExperimentControllerGetCurrentExperimentParams from "../middleware/fetchExperimentControllerGetCurrentExperimentParams.js";
 
 const ParameterEditorComponent = () => {
@@ -14,6 +15,7 @@ const ParameterEditorComponent = () => {
   // read parameter & range from Redux
   const parameterValue = useSelector((state) => state.experimentState.parameterValue);
   const parameterRange = useSelector(parameterRangeSlice.getParameterRangeState);
+  const connectionSettingsState = useSelector(connectionSettingsSlice.getConnectionSettingsState);
 
   // fallback arrays
   const intensities = parameterValue.illuIntensities || [];
@@ -66,10 +68,24 @@ const ParameterEditorComponent = () => {
   }, [parameterRange.illuSources, intensities, dispatch]);
 
   // helper functions for intensities, gains, exposures
-  const setIntensity = (idx, value) => {
+  const setIntensity = async (idx, value) => {
     const arr = [...intensities];
     arr[idx] = value;
     dispatch(experimentSlice.setIlluminationIntensities(arr));
+    
+    // Also update backend immediately for real-time feedback
+    const laserName = parameterRange.illuSources[idx];
+    if (laserName && connectionSettingsState.ip && connectionSettingsState.apiPort) {
+      try {
+        const encodedLaserName = encodeURIComponent(laserName);
+        await fetch(
+          `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/LaserController/setLaserValue?laserName=${encodedLaserName}&value=${value}`
+        );
+      } catch (error) {
+        console.error("Failed to update laser intensity in backend:", error);
+        // Continue without blocking UI - backend update is optional for better UX
+      }
+    }
   };
 
   const setGains = (idx, value) => {
