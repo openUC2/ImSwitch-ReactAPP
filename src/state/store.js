@@ -54,7 +54,7 @@ const rootReducer = combineReducers({
   stageOffsetCalibration: stageOffsetCalibrationReducer,
   flowStop: flowStopReducer,
   lightsheet: lightsheetReducer,
-  omeZarrState: zarrinitialZarrReducer
+  omeZarrState: zarrinitialZarrReducer,
   stresstestState: stresstestReducer,
 });
 

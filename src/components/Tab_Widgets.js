@@ -8,7 +8,6 @@ import MCTController from './MCTController';
 import { MCTProvider } from '../context/MCTContext'; // Import the context provider
 import UC2Controller from './UC2Controller';
 import AutofocusController from './AutofocusController';
-import LiveViewController from './LiveViewController';
 import StresstestController from './StresstestController';
 import './Tab_Widgets.css'; // Import the CSS file
 
