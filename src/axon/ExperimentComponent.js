@@ -20,7 +20,7 @@ import apiExperimentControllerResumeExperiment from "../backendapi/apiExperiment
 
 import fetchGetExperimentStatus from "../middleware/fetchExperimentControllerGetExperimentStatus.js";
 import { Shape } from "./WellSelectorCanvas.js";
-
+import * as connectionSettingsSlice from "../state/slices/ConnectionSettingsSlice.js";
 //##################################################################################
 // Enum-like object for status
 const Status = Object.freeze({
@@ -38,15 +38,23 @@ const ExperimentComponent = () => {
   //redux dispatcher
   const dispatch = useDispatch();
 
-  // helper for the workflow step state udpates 
+  // Access global Redux state
+  const connectionSettingsState = useSelector(
+    connectionSettingsSlice.getConnectionSettingsState
+  );
+  // local state to enalbe open in VTK Viewer
+  const [enableViewer, setEnableViewer] = useState(false);
+
+  // helper for the workflow step state udpates
   const [cachedStepId, setCachedStepId] = useState(0);
   const [cachedTotalSteps, setCachedTotalSteps] = useState(undefined);
   const [cachedStepName, setCachedStepName] = useState("");
 
-
   // Access global Redux state
   const experimentState = useSelector(experimentSlice.getExperimentState);
-  const experimentWorkflowState = useSelector(experimentStateSlice.getExperimentState);
+  const experimentWorkflowState = useSelector(
+    experimentStateSlice.getExperimentState
+  );
 
   const experimentStatusState = useSelector(
     experimentStatusSlice.getExperimentStatusState
@@ -109,7 +117,9 @@ const ExperimentComponent = () => {
         );
         //handle invalid area
         if (point.neighborPointList.length == 0) {
-            point.neighborPointList = [{ x: itPoint.x, y: itPoint.y, iX: 0, iY: 0 }];
+          point.neighborPointList = [
+            { x: itPoint.x, y: itPoint.y, iX: 0, iY: 0 },
+          ];
         }
       } else if (itPoint.shape == Shape.RECTANGLE) {
         //rect shape
@@ -122,11 +132,11 @@ const ExperimentComponent = () => {
           itPoint.rectPlusY,
           itPoint.rectMinusY
         );
-      }
-      else
-      {
+      } else {
         //no shape
-        point.neighborPointList = [{ x: itPoint.x, y: itPoint.y, iX: 0, iY: 0 }];
+        point.neighborPointList = [
+          { x: itPoint.x, y: itPoint.y, iX: 0, iY: 0 },
+        ];
       }
 
       //append point
@@ -147,6 +157,8 @@ const ExperimentComponent = () => {
         console.log("apiStartWellplateExperiment", data);
         //set state
         dispatch(experimentStatusSlice.setStatus(Status.RUNNING));
+        // enable VTK Viewer
+        setEnableViewer(true);
         //set popup
         infoPopupRef.current.showMessage("Experiment started...");
       })
@@ -158,6 +170,28 @@ const ExperimentComponent = () => {
       });
   };
 
+  const handleOpenVTKViewer = () => {
+    console.log("Fetching last OME-Zarr path to open in VTK viewer");
+    //    setfullURL(${omeZarrState.zarrUrl}`); // Switch to https if needed
+
+    fetch(
+      `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/ExperimentController/getLastScanAsOMEZARR`
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        // English comment: 'data' should contain the relative path like "/recordings/...ome.zarr"
+        const lastZarrPath = data || "";
+        // English comment: build the final URL for VTK viewer
+        const viewerURL = `https://kitware.github.io/itk-vtk-viewer/app/?rotate=false&fileToLoad=${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/data${lastZarrPath}`;
+        window.open(viewerURL, "_blank");
+      })
+      .catch((err) => {
+        console.error("Failed to fetch the last OME-Zarr path:", err);
+        infoPopupRef.current.showMessage(
+          "Failed to open last OME-Zarr in viewer"
+        );
+      });
+  };
   //##################################################################################
   const handlePause = () => {
     console.log("Experiment paused");
@@ -239,7 +273,7 @@ const ExperimentComponent = () => {
     return experimentStatusState.status !== Status.IDLE;
   };
 
-    useEffect(() => {
+  useEffect(() => {
     if (experimentWorkflowState.totalSteps !== undefined) {
       setCachedTotalSteps(experimentWorkflowState.totalSteps);
     }
@@ -260,7 +294,6 @@ const ExperimentComponent = () => {
     cachedTotalSteps && cachedTotalSteps > 0
       ? Math.floor((cachedStepId / cachedTotalSteps) * 100)
       : 0;
-
 
   //##################################################################################
   return (
@@ -309,13 +342,26 @@ const ExperimentComponent = () => {
           Stop
         </Button>
 
+        <Button
+          variant="contained"
+          onClick={handleOpenVTKViewer}
+          disabled={!enableViewer}
+        >
+          Open VTK Viewer
+        </Button>
 
         {/* Display the step name (fixed width) and loading bar with percentage */}
-        <span style={{ marginLeft: 10, display: "inline-flex", alignItems: "center" }}>
+        <span
+          style={{
+            marginLeft: 10,
+            display: "inline-flex",
+            alignItems: "center",
+          }}
+        >
           <div
             style={{
-              width: "140px",      // Fixed width for the step name
-              overflow: "hidden",  // Hide overflow if name is longer
+              width: "140px", // Fixed width for the step name
+              overflow: "hidden", // Hide overflow if name is longer
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
               marginRight: "8px",
@@ -335,7 +381,6 @@ const ExperimentComponent = () => {
             </>
           )}
         </span>
-
       </ButtonGroup>
 
       {/* Header 
