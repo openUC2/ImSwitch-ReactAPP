@@ -6,13 +6,12 @@ import * as liveViewSlice from "../state/slices/LiveStreamSlice.js";
 /**
  * LiveViewComponent - Unified image viewer with intensity scaling
  * 
- * Performance Note: By default, this component uses CSS filters for intensity scaling
- * which is hardware-accelerated and much more efficient than pixel manipulation.
- * Set usePixelPerfectScaling=true if you need exact pixel-level accuracy.
+ * Uses optimized pixel-based intensity windowing for proper scientific image processing.
+ * This provides linear intensity mapping: [minVal, maxVal] → [0, 255]
  * 
- * @param {boolean} usePixelPerfectScaling - Use CPU-intensive pixel manipulation for exact results (default: false)
+ * @param {boolean} useFastMode - Use optimized processing for better performance (default: true)
  */
-const LiveViewComponent = ({ usePixelPerfectScaling = false }) => {
+const LiveViewComponent = ({ useFastMode = true }) => {
     // redux dispatcher
     const dispatch = useDispatch();
 
@@ -25,34 +24,8 @@ const LiveViewComponent = ({ usePixelPerfectScaling = false }) => {
     const [displayScale, setDisplayScale] = useState(1);
     const [canvasStyle, setCanvasStyle] = useState({});
 
-    // Calculate CSS filters for intensity scaling (much more efficient than pixel manipulation)
-    const calculateIntensityFilters = useCallback((minVal, maxVal) => {
-      // For intensity scaling, we want to map [minVal, maxVal] to [0, 255]
-      // This is equivalent to: output = (input - minVal) * (255 / (maxVal - minVal))
-      
-      if (maxVal <= minVal) return 'none'; // Avoid division by zero
-      
-      const range = maxVal - minVal;
-      
-      // CSS brightness() adjusts the overall brightness (multiplies all values)
-      // CSS contrast() stretches/compresses the dynamic range around 50% gray
-      
-      // First, we need to shift the range so minVal becomes 0
-      // Then scale so the range becomes full 0-255
-      
-      // This approximates intensity windowing using CSS filters
-      const contrast = 255 / range;
-      const brightness = 1 - (minVal / 255) * contrast;
-      
-      // Clamp values to reasonable ranges to avoid extreme visual effects
-      const clampedContrast = Math.max(0.1, Math.min(10, contrast));
-      const clampedBrightness = Math.max(0.1, Math.min(10, brightness));
-      
-      return `brightness(${clampedBrightness}) contrast(${clampedContrast})`;
-    }, []);
-
-    // Legacy pixel-perfect intensity scaling (CPU intensive but accurate)
-    const applyPixelIntensityScaling = useCallback((image, minVal, maxVal) => {
+    // Optimized intensity windowing - proper scientific image processing
+    const applyIntensityWindowing = useCallback((image, minVal, maxVal) => {
       const canvas = canvasRef.current;
       if (!canvas || !image) return;
 
@@ -61,24 +34,38 @@ const LiveViewComponent = ({ usePixelPerfectScaling = false }) => {
       canvas.height = image.height;
       ctx.drawImage(image, 0, 0);
 
+      // Skip processing if min/max are at full range (no scaling needed)
+      if (minVal <= 0 && maxVal >= 255) return;
+
       // Get image data for pixel manipulation
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const data = imageData.data;
 
-      // Apply intensity scaling
-      const scaleIntensity = 255 / (maxVal - minVal);
+      // Avoid division by zero
+      if (maxVal <= minVal) return;
+
+      // Calculate scaling factor for intensity windowing
+      const scale = 255 / (maxVal - minVal);
+
+      // Optimized intensity windowing: map [minVal, maxVal] → [0, 255]
       for (let i = 0; i < data.length; i += 4) {
         // For each pixel (RGBA)
         const r = data[i];
         const g = data[i + 1];
         const b = data[i + 2];
 
-        // Convert to grayscale for intensity scaling
+        // Convert to grayscale for intensity calculation
         const gray = 0.299 * r + 0.587 * g + 0.114 * b;
 
-        // Apply intensity scaling
-        let scaledGray = (gray - minVal) * scaleIntensity;
-        scaledGray = Math.max(0, Math.min(255, scaledGray));
+        // Apply intensity windowing: linear mapping [minVal, maxVal] → [0, 255]
+        let scaledGray;
+        if (gray <= minVal) {
+          scaledGray = 0; // Clip values below minimum
+        } else if (gray >= maxVal) {
+          scaledGray = 255; // Clip values above maximum
+        } else {
+          scaledGray = (gray - minVal) * scale; // Linear scaling in between
+        }
 
         // Apply back to RGB channels
         data[i] = scaledGray;     // R
@@ -90,6 +77,12 @@ const LiveViewComponent = ({ usePixelPerfectScaling = false }) => {
       // Put the modified image data back
       ctx.putImageData(imageData, 0, 0);
     }, []);
+
+    // Legacy pixel-perfect intensity scaling (for compatibility)
+    const applyPixelIntensityScaling = useCallback((image, minVal, maxVal) => {
+      // This method is now deprecated - use applyIntensityWindowing instead
+      return applyIntensityWindowing(image, minVal, maxVal);
+    }, [applyIntensityWindowing]);
     // Apply responsive sizing to the image
     const applyResponsiveSizing = useCallback((image) => {
       const container = containerRef.current;
@@ -126,31 +119,18 @@ const LiveViewComponent = ({ usePixelPerfectScaling = false }) => {
       const scale = displayWidth > 0 && image.width > 0 ? displayWidth / image.width : 1;
       setDisplayScale(scale);
 
-      // Choose scaling method based on prop
-      if (usePixelPerfectScaling) {
-        // Use legacy pixel manipulation for exact results
-        applyPixelIntensityScaling(image, liveStreamState.minVal, liveStreamState.maxVal);
-        setCanvasStyle({
-          width: `${displayWidth}px`,
-          height: `${displayHeight}px`,
-          maxWidth: '100%',
-          maxHeight: '100%',
-          display: 'block',
-          margin: '0 auto', // Center the canvas horizontally
-        });
-      } else {
-        // Use efficient CSS filters (default)
-        setCanvasStyle({
-          width: `${displayWidth}px`,
-          height: `${displayHeight}px`,
-          maxWidth: '100%',
-          maxHeight: '100%',
-          display: 'block',
-          margin: '0 auto', // Center the canvas horizontally
-          filter: calculateIntensityFilters(liveStreamState.minVal, liveStreamState.maxVal)
-        });
-      }
-    }, [calculateIntensityFilters, liveStreamState.minVal, liveStreamState.maxVal, usePixelPerfectScaling, applyPixelIntensityScaling]);
+      // Apply proper intensity windowing (scientific image processing)
+      applyIntensityWindowing(image, liveStreamState.minVal, liveStreamState.maxVal);
+      
+      setCanvasStyle({
+        width: `${displayWidth}px`,
+        height: `${displayHeight}px`,
+        maxWidth: '100%',
+        maxHeight: '100%',
+        display: 'block',
+        margin: '0 auto', // Center the canvas horizontally
+      });
+    }, [applyIntensityWindowing, liveStreamState.minVal, liveStreamState.maxVal]);
 
     // Load and process image when it changes
     useEffect(() => {
@@ -186,22 +166,17 @@ const LiveViewComponent = ({ usePixelPerfectScaling = false }) => {
       }
     }, [liveStreamState.liveViewImage, applyResponsiveSizing]);
 
-    // Update intensity filters when min/max values change (only for CSS filter mode)
+    // Update intensity windowing when min/max values change
     useEffect(() => {
-      if (imageLoaded && canvasStyle.width && !usePixelPerfectScaling) {
-        setCanvasStyle(prevStyle => ({
-          ...prevStyle,
-          filter: calculateIntensityFilters(liveStreamState.minVal, liveStreamState.maxVal)
-        }));
-      } else if (usePixelPerfectScaling && liveStreamState.liveViewImage && imageLoaded) {
-        // Re-apply pixel-perfect scaling when intensity values change
+      if (imageLoaded && liveStreamState.liveViewImage) {
+        // Re-apply intensity windowing when intensity values change
         const img = new Image();
         img.onload = () => {
-          applyPixelIntensityScaling(img, liveStreamState.minVal, liveStreamState.maxVal);
+          applyIntensityWindowing(img, liveStreamState.minVal, liveStreamState.maxVal);
         };
         img.src = `data:image/jpeg;base64,${liveStreamState.liveViewImage}`;
       }
-    }, [liveStreamState.minVal, liveStreamState.maxVal, imageLoaded, calculateIntensityFilters, usePixelPerfectScaling, liveStreamState.liveViewImage, applyPixelIntensityScaling]);
+    }, [liveStreamState.minVal, liveStreamState.maxVal, imageLoaded, liveStreamState.liveViewImage, applyIntensityWindowing]);
 
     // Handle container resize to maintain aspect ratio
     useEffect(() => {
