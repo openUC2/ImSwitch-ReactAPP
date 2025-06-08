@@ -246,7 +246,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
   async function snap() {
     // English comment: Example fetch for snapping an image
     const response = await fetch(
-      "https://localhost:8001/RecordingController/snapImageToPath?fileName=test"
+      `${hostIP}:${hostPort}/RecordingController/snapImageToPath?fileName=openUC2_snapshot`
     );
     const data = await response.json();
     // data.relativePath might be "recordings/2025_05_20-11-12-44_PM"

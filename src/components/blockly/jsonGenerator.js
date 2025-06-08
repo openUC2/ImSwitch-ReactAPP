@@ -115,6 +115,94 @@ JSONGenerator["move_stage_block"] = function (block) {
   return JSON.stringify(step) + ",";
 };
 
+// for the set_exposure_time_block
+JSONGenerator["set_exposure_time_block"] = function (block) {
+  const exposureTime = block.getFieldValue("EXPOSURE_TIME");
+  const channel = block.getFieldValue("CHANNEL");
+  const stepId = block.id;
+
+  const step = {
+    id: stepId,
+    stepName: "Set Exposure Time",
+    mainFuncName: "set_exposure_time",
+    mainParams: {
+      exposure_time: parseFloat(exposureTime),
+      channel: channel,
+    },
+    preFuncs: [],
+    preParams: {},
+    postFuncs: [],
+    postParams: {},
+  };
+
+  return JSON.stringify(step) + ",";
+};
+
+// for the set_gain_block
+JSONGenerator["set_gain_block"] = function (block) {
+  const gain = block.getFieldValue("GAIN");
+  const channel = block.getFieldValue("CHANNEL");
+  const stepId = block.id;
+
+  const step = {
+    id: stepId,
+    stepName: "Set Gain",
+    mainFuncName: "set_gain",
+    mainParams: {
+      gain: parseFloat(gain),
+      channel: channel,
+    },
+    preFuncs: [],
+    preParams: {},
+    postFuncs: [],
+    postParams: {},
+  };
+
+  return JSON.stringify(step) + ",";
+};
+
+// for the save_image_block
+JSONGenerator["save_image_block"] = function (block) {
+  const filename = block.getFieldValue("FILENAME");
+  const stepId = block.id;
+
+  const step = {
+    id: stepId,
+    stepName: "Save Image",
+    mainFuncName: "save_image",
+    mainParams: {
+      filename: filename,
+    },
+    preFuncs: [],
+    preParams: {},
+    postFuncs: [],
+    postParams: {},
+  };
+
+  return JSON.stringify(step) + ",";
+};
+
+// for the autofocus_block
+JSONGenerator["autofocus_block"] = function (block) {
+  const channel = block.getFieldValue("CHANNEL");
+  const stepId = block.id;
+
+  const step = {
+    id: stepId,
+    stepName: "Autofocus",
+    mainFuncName: "autofocus",
+    mainParams: {
+      channel: channel,
+    },
+    preFuncs: [],
+    preParams: {},
+    postFuncs: [],
+    postParams: {},
+  };
+
+  return JSON.stringify(step) + ",";
+};
+
 /*
 Loop stuff
 */
@@ -181,70 +269,43 @@ JSONGenerator["math_number"] = function (block) {
 };
 
 // 4) Example “acquire_frame_block”
-JSONGenerator["acquire_frame_block"] = function (block) {
-  const channel = block.getFieldValue("CHANNEL");
+// Note: acquire_frame_block is already defined above
+
+JSONGenerator['controls_for'] = function(block) {
+  // For now, we'll flatten for loops - this would need more complex handling
+  // to properly support variable iterations in the backend
+  const variable = block.getFieldValue('VAR') || 'i';
+  const fromBlock = block.getInputTargetBlock('FROM');
+  const toBlock = block.getInputTargetBlock('TO');
+  const byBlock = block.getInputTargetBlock('BY');
+  
+  // Get numeric values from the connected blocks
+  const fromValue = fromBlock ? this.blockToCode(fromBlock).replace(/,$/, '') : '1';
+  const toValue = toBlock ? this.blockToCode(toBlock).replace(/,$/, '') : '10';
+  const byValue = byBlock ? this.blockToCode(byBlock).replace(/,$/, '') : '1';
+  
   const step = {
     id: block.id,
-    stepName: "Acquire Frame",
-    mainFuncName: "acquire_frame",
-    mainParams: { channel },
+    stepName: "For Loop",
+    mainFuncName: "for_loop",
+    mainParams: {
+      variable: variable,
+      from: parseInt(fromValue) || 1,
+      to: parseInt(toValue) || 10,
+      by: parseInt(byValue) || 1
+    },
     preFuncs: [],
     preParams: {},
     postFuncs: [],
     postParams: {},
   };
+  
   return JSON.stringify(step) + ",";
 };
 
-JSONGenerator['controls_for'] = function(block) {
-  // Ihren Code-Generator hier hinzufügen
-  return {
-    type: 'controls_for',
-    variable: block.getFieldValue('VAR'),
-    from: block.getFieldValue('FROM'),
-    to: block.getFieldValue('TO'),
-    by: block.getFieldValue('BY')
-  };
-};
-
 /**
- * Finally, the top-level workspaceToCode for your generator:
- * - It collects top blocks, traverses them, and produces one big JSON array: { steps: [...] }
- */
-JSONGenerator.workspaceToCode = function (workspace) {
-  const topBlocks = workspace.getTopBlocks(true);
-
-  let bigJsonString = "";
-  for (const block of topBlocks) {
-    bigJsonString += this.blockToCode(block);
-  }
-
-  // We have comma-separated JSON objects. Let's split by commas, parse them carefully.
-  // An easier approach: accumulate them in an array manually. But let's do a quick parse here:
-  let steps = [];
-  // Quick split on commas
-  let tokens = bigJsonString.split(/,(?![^[]*\]|[^"]*")/).map((t) => t.trim());
-  // Filter out empty lines
-  tokens = tokens.filter((x) => x.length > 0);
-
-  tokens.forEach((token) => {
-    try {
-      const obj = JSON.parse(token);
-      steps.push(obj);
-    } catch (err) {
-      // might fail if token is incomplete
-    }
-  });
-
-  // we have to soround the steps with the steps key: {"steps": [ ... ]}
-  steps = {"steps": [steps]};
-  return JSON.stringify({ steps }, null, 2);
-};
-
-/**
- * Now we override workspaceToCode (or a similar function) to do a top-level
- * traversal that concatenates these JSON strings, parses them, and
- * wraps them in {"steps": [ ... ]}.
+ * Top-level workspaceToCode for the JSON generator:
+ * - Collects top blocks, traverses them, and produces a JSON array: { steps: [...] }
  */
 JSONGenerator.workspaceToCode = function (workspace) {
   // Get top blocks
@@ -262,8 +323,7 @@ JSONGenerator.workspaceToCode = function (workspace) {
 
     if (code) {
       try {
-        // parse the returned string into an object but only after sorounding it with the steps 
-        code = `{"steps": [${code}]}`;
+        // Parse the returned JSON string into an object
         const stepObj = JSON.parse(code);
         steps.push(stepObj);
       } catch (err) {
@@ -278,12 +338,12 @@ JSONGenerator.workspaceToCode = function (workspace) {
     }
   };
 
-  // walk each top block
+  // Walk each top block
   for (const block of topBlocks) {
     traverseBlock(block);
   }
 
-  // Return the final JSON
+  // Return the final JSON in the expected format
   return JSON.stringify({ steps }, null, 2);
 };
 

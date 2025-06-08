@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Box, Typography, Button } from "@mui/material";
 
-const ImJoyView = ({ hostIP, hostPort }) => {
+const ImJoyView = ({ hostIP, hostPort, sharedImage }) => {
   const [imjoyAPI, setImjoyAPI] = useState(null);
 
   useEffect(() => {
@@ -35,6 +35,12 @@ const ImJoyView = ({ hostIP, hostPort }) => {
     };
   }, []);
 
+  useEffect(() => {
+    if (sharedImage && imjoyAPI) {
+      handleOpenSharedImage();
+    }
+  }, [sharedImage, imjoyAPI]);
+
   const handleSnapAndSend = async () => {
     if (!imjoyAPI) return;
     try {
@@ -55,6 +61,27 @@ const ImJoyView = ({ hostIP, hostPort }) => {
       await ij.viewImage(arrayBuffer, { name: "snapped-image.jpeg" });
     } catch (error) {
       console.error("Error snapping/sending:", error);
+    }
+  };
+
+  const handleOpenSharedImage = async () => {
+    if (!imjoyAPI || !sharedImage) return;
+    try {
+      const response = await fetch(sharedImage.url);
+      const arrayBuffer = await response.arrayBuffer();
+      let ij = await imjoyAPI.getWindow("ImageJ.JS");
+      if (!ij) {
+        ij = await imjoyAPI.createWindow({
+          src: "https://ij.imjoy.io",
+          name: "ImageJ.JS",
+          fullscreen: true,
+        });
+      } else {
+        await ij.show();
+      }
+      await ij.viewImage(arrayBuffer, { name: sharedImage.name });
+    } catch (error) {
+      console.error("Error opening shared image:", error);
     }
   };
 

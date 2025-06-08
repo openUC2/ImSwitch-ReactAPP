@@ -7,6 +7,7 @@ import { combineReducers } from "redux";
 import storage from "redux-persist/lib/storage";
 import storageSession from "redux-persist/lib/storage/session";
 
+
 // Import slices
 import connectionSettingsReducer from "./slices/ConnectionSettingsSlice";
 import webSocketReducer from "./slices/WebSocketSlice";
@@ -30,6 +31,7 @@ import flowStopReducer from "./slices/FlowStopSlice";
 import lightsheetReducer from "./slices/LightsheetSlice";
 import zarrinitialZarrReducer from "./slices/OmeZarrTileStreamSlice";
 import stresstestReducer from "./slices/StresstestSlice";
+import workflowReducer from "./slices/WorkflowSlice";
 
 //#####################################################################################
 // Combine reducers
@@ -56,6 +58,7 @@ const rootReducer = combineReducers({
   lightsheet: lightsheetReducer,
   omeZarrState: zarrinitialZarrReducer,
   stresstestState: stresstestReducer,
+  workflowState: workflowReducer,
 });
 
 //#####################################################################################
@@ -70,7 +73,8 @@ const persistConfig = {
     "experimentState",
     "wellSelectorState",
     "positionState",
-  ],  
+    "workflowState",
+  ],
   //blacklist: ['webSocketState'],  // Do not persist these
 };
 

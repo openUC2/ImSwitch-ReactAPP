@@ -46,11 +46,11 @@ const FileItem = ({
     clipBoard.files.find((f) => f.name === file.name && f.path === file.path);
 
   const handleFileAccess = () => {
-    onFileOpen(file);
     if (file.isDirectory) {
       setCurrentPath(file.path);
       setSelectedFiles([]);
     } else {
+      onFileOpen(file);
       enableFilePreview && triggerAction.show("previewFile");
     }
   };
