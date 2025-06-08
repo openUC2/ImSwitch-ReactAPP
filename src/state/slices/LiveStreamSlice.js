@@ -3,6 +3,9 @@ import { createSlice } from "@reduxjs/toolkit";
 // Define the initial state
 const initialLiveStreamState = {
   liveViewImage: "",
+  minVal: 0,
+  maxVal: 255,
+  pixelSize: null,
 };
 
 // Create slice
@@ -16,6 +19,17 @@ const liveStreamSlice = createSlice({
       state.liveViewImage = action.payload;
     },
 
+    setMinVal: (state, action) => {
+      state.minVal = action.payload;
+    },
+
+    setMaxVal: (state, action) => {
+      state.maxVal = action.payload;
+    },
+
+    setPixelSize: (state, action) => {
+      state.pixelSize = action.payload;
+    },
 
     resetState: (state) => {
       console.log("resetState");
@@ -27,6 +41,9 @@ const liveStreamSlice = createSlice({
 // Export actions from slice
 export const {
   setLiveViewImage,
+  setMinVal,
+  setMaxVal,
+  setPixelSize,
   resetState,
 } = liveStreamSlice.actions;
 

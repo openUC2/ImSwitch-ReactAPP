@@ -190,6 +190,20 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
       .catch(console.error);
   };
 
+  const resetStageOffsets = (axis) => {
+    fetch(
+      `${hostIP}:${hostPort}/PositionerController/resetStageOffsetAxis?axis=${axis}`
+    )
+      .then((res) => res.json())
+      .then(() => {
+        dispatch(stageOffsetCalibrationSlice.setCalculatedOffsetX(0));
+        dispatch(stageOffsetCalibrationSlice.setCalculatedOffsetY(0));
+        dispatch(stageOffsetCalibrationSlice.setLoadedOffsetX(0));
+        dispatch(stageOffsetCalibrationSlice.setLoadedOffsetY(0));
+        dispatch(stageOffsetCalibrationSlice.incrementReloadTrigger()); // Trigger reload
+      })
+      .catch(console.error);
+  }
   return (
     <Paper style={{ padding: "20px", margin: "20px" }}>
       <Grid container spacing={3}>
@@ -420,6 +434,15 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
                   >
                     Submit Known Position
                   </Button>
+
+                                    <Button
+                    variant="outlined"
+                    color="error"
+                    onClick={() => resetStageOffsets("X")}
+                    style={{ marginLeft: 8 }}
+                  >
+                    Reset X Offsets
+                  </Button>
                 </Grid>
 
                 {/* Y axis submission */}
@@ -451,6 +474,16 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
                   >
                     Submit Known Position
                   </Button>
+
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    onClick={() => resetStageOffsets("Y")}
+                    style={{ marginLeft: 8 }}
+                  >
+                    Reset Y Offsets
+                  </Button>
+                  
                 </Grid>
               </Grid>
             </CardContent>

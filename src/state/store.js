@@ -7,6 +7,7 @@ import { combineReducers } from "redux";
 import storage from "redux-persist/lib/storage";
 import storageSession from "redux-persist/lib/storage/session";
 
+
 // Import slices
 import connectionSettingsReducer from "./slices/ConnectionSettingsSlice";
 import webSocketReducer from "./slices/WebSocketSlice";
@@ -28,6 +29,7 @@ import uc2Reducer from "./slices/UC2Slice";
 import stageOffsetCalibrationReducer from "./slices/StageOffsetCalibrationSlice";
 import flowStopReducer from "./slices/FlowStopSlice";
 import lightsheetReducer from "./slices/LightsheetSlice";
+import zarrinitialZarrReducer from "./slices/OmeZarrTileStreamSlice";
 import stresstestReducer from "./slices/StresstestSlice";
 import workflowReducer from "./slices/WorkflowSlice";
 
@@ -54,6 +56,7 @@ const rootReducer = combineReducers({
   stageOffsetCalibration: stageOffsetCalibrationReducer,
   flowStop: flowStopReducer,
   lightsheet: lightsheetReducer,
+  omeZarrState: zarrinitialZarrReducer,
   stresstestState: stresstestReducer,
   workflowState: workflowReducer,
 });
