@@ -358,11 +358,11 @@ const handleFileManagerInitialPathChange = (event) => {
   // English comment: store the desired path
   const path = event;
   setFileManagerInitialPath(path);
+  setSelectedPlugin("FileManager"); 
+  // Trigger refresh after a short delay to ensure the path change is processed
   setTimeout(() => {
     handleRefresh();
-  }, 2000);
-  setFileManagerInitialPath(path);
-  setSelectedPlugin("FileManager"); 
+  }, 100);
 };
 
   // Handle changes to the port
