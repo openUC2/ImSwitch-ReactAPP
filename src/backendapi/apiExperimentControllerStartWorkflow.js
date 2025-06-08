@@ -4,7 +4,7 @@ import createAxiosInstance from "./createAxiosInstance";
 const apiExperimentControllerStartWorkflow = async () => {
   try {
     const axiosInstance = createAxiosInstance(); // Create Axios instance
-    const response = await axiosInstance.get("/ExperimentController/startWorkflow"); // Send GET request
+    const response = await axiosInstance.post("/WorkflowController/start_workflow_api"); // Send GET request // TODO: needs UID from uploaded protocol 
     return response.data; // Return the data from the response
   } catch (error) {
     console.error("Error starting workflow:", error);

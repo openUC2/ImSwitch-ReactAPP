@@ -4,7 +4,7 @@ import createAxiosInstance from "./createAxiosInstance";
 const apiExperimentControllerUploadWorkflow = async (workflowJson) => {
   try {
     const axiosInstance = createAxiosInstance(); // Create Axios instance
-    const response = await axiosInstance.post("/ExperimentController/uploadWorkflow", workflowJson, {
+    const response = await axiosInstance.post("/WorkflowController/uploadWorkflow", workflowJson, {
       headers: {
         'Content-Type': 'application/json'
       }
