@@ -18,6 +18,7 @@ import UC2Controller from "./components/UC2Controller";
 import ExtendedLEDMatrixController from "./components/ExtendedLEDMatrixController";
 import StageOffsetCalibration from "./components/StageOffsetCalibrationController";
 import DetectorTriggerController from "./components/DetectorTriggerController";
+import StresstestController from "./components/StresstestController";
 
 import theme from "./theme";
 import {
@@ -568,6 +569,17 @@ const handleFileManagerInitialPathChange = (event) => {
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "HistoScan" : ""} />
               </ListItem>
+              {/* Stresstest */}
+              <ListItem
+                button
+                selected={selectedPlugin === "Stresstest"}
+                onClick={() => handlePluginChange("Stresstest")}
+              >
+                <ListItemIcon>
+                  <SettingsOverscanSharpIcon />
+                </ListItemIcon>
+                <ListItemText primary={sidebarVisible ? "Stresstest" : ""} />
+              </ListItem>
               {/* JupyteNotebook */}
               <ListItem
                 button
@@ -827,10 +839,11 @@ const handleFileManagerInitialPathChange = (event) => {
                 sharedImage={sharedImage}
               />
             </Box>
-            {selectedPlugin === "HistoScan" && (
-              
+            {selectedPlugin === "HistoScan" && (  
                 <HistoScanController hostIP={hostIP} hostPort={apiPort} />
-              
+            )}
+            {selectedPlugin === "Stresstest" && (
+              <StresstestController hostIP={hostIP} hostPort={apiPort} />
             )}
             {selectedPlugin === "JupyteNotebook" && (
               <JupyterProvider>

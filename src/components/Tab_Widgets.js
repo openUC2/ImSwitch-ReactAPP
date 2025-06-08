@@ -8,6 +8,8 @@ import MCTController from './MCTController';
 import { MCTProvider } from '../context/MCTContext'; // Import the context provider
 import UC2Controller from './UC2Controller';
 import AutofocusController from './AutofocusController';
+import LiveViewController from './LiveViewController';
+import StresstestController from './StresstestController';
 import './Tab_Widgets.css'; // Import the CSS file
 
 const Tab_Widgets = ({ hostIP, hostPort }) => {
@@ -26,6 +28,9 @@ const Tab_Widgets = ({ hostIP, hostPort }) => {
       </Grid>
       <Grid item xs={12} sm={6} md={4} className="grid-item">
         <HistoScanController hostIP={hostIP} hostPort={hostPort} title="HistoScan" />
+      </Grid>
+      <Grid item xs={12} sm={6} md={4} className="grid-item">
+        <StresstestController hostIP={hostIP} hostPort={hostPort} WindowTitle="Stresstest" />
       </Grid>      
     </Grid>
   );

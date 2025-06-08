@@ -29,6 +29,7 @@ import stageOffsetCalibrationReducer from "./slices/StageOffsetCalibrationSlice"
 import flowStopReducer from "./slices/FlowStopSlice";
 import lightsheetReducer from "./slices/LightsheetSlice";
 import zarrinitialZarrReducer from "./slices/OmeZarrTileStreamSlice";
+import stresstestReducer from "./slices/StresstestSlice";
 
 //#####################################################################################
 // Combine reducers
@@ -54,6 +55,7 @@ const rootReducer = combineReducers({
   flowStop: flowStopReducer,
   lightsheet: lightsheetReducer,
   omeZarrState: zarrinitialZarrReducer
+  stresstestState: stresstestReducer,
 });
 
 //#####################################################################################
