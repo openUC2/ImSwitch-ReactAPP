@@ -359,10 +359,8 @@ const handleFileManagerInitialPathChange = (event) => {
   const path = event;
   setFileManagerInitialPath(path);
   setSelectedPlugin("FileManager"); 
-  // Trigger refresh after a short delay to ensure the path change is processed
-  setTimeout(() => {
-    handleRefresh();
-  }, 100);
+  // Refresh immediately since FileNavigationProvider now handles path changes properly
+  handleRefresh();
 };
 
   // Handle changes to the port
