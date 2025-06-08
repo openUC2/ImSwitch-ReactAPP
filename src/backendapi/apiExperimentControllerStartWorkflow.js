@@ -5,7 +5,7 @@ const apiExperimentControllerStartWorkflow = async (workflowUid) => {
   try {
     const axiosInstance = createAxiosInstance(); // Create Axios instance
     const requestBody = {
-      workflow_uid: workflowUid // Use the UID from uploaded protocol
+      workflow_id: workflowUid // Use the UID from uploaded protocol
     };
     const response = await axiosInstance.post("/WorkflowController/start_workflow_api", requestBody, {
       headers: {

@@ -882,8 +882,8 @@ const BlocklyController = () => {
       console.log("Workflow uploaded successfully:", response);
       
       // Store the UID from the response
-      if (response && response.uid) {
-        dispatch(setWorkflowUid(response.uid));
+      if (response && response.workflow_id) {
+        dispatch(setWorkflowUid(response.workflow_id));
       }
       
       dispatch(setWorkflowStatus("uploaded"));
