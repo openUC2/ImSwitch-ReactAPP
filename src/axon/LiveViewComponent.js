@@ -1,7 +1,27 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useDispatch, useSelector } from "react-redux";
 import { Box, Slider, Typography } from "@mui/material";
+import { Bar } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
 import * as liveViewSlice from "../state/slices/LiveStreamSlice.js";
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 /**
  * LiveViewComponent - Unified image viewer with intensity scaling
@@ -208,6 +228,31 @@ const LiveViewComponent = ({ useFastMode = true }) => {
     const scaleBarPx = 50;
     const scaleBarMicrons = liveStreamState.pixelSize ? (scaleBarPx * liveStreamState.pixelSize).toFixed(2) : null;
 
+    // Prepare histogram data for chart.js
+    const histogramData = {
+      labels: liveStreamState.histogramX,
+      datasets: [{ 
+        label: "Histogram", 
+        data: liveStreamState.histogramY, 
+        borderWidth: 1,
+        backgroundColor: 'rgba(75, 192, 192, 0.6)',
+        borderColor: 'rgba(75, 192, 192, 1)',
+      }],
+    };
+    
+    const chartOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        title: { display: true, text: "Histogram", color: '#fff' },
+      },
+      scales: { 
+        x: { max: 255, ticks: { color: '#fff' } }, 
+        y: { beginAtZero: true, ticks: { color: '#fff' } }
+      },
+    };
+
   return (
     <Box ref={containerRef} sx={{ position: "relative", width: "100%", height: "100%" }}>
       {/* Canvas for intensity-scaled image */}
@@ -277,6 +322,25 @@ const LiveViewComponent = ({ useFastMode = true }) => {
           Intensity
         </Typography>
       </Box>
+
+      {/* Histogram Overlay */}
+      {liveStreamState.showHistogram && liveStreamState.histogramX.length > 0 && liveStreamState.histogramY.length > 0 && (
+        <Box
+          sx={{
+            position: "absolute",
+            top: 10,
+            left: 10,
+            width: 200,
+            height: 200,
+            backgroundColor: "rgba(0,0,0,0.7)",
+            zIndex: 5,
+            p: 1,
+            borderRadius: 1,
+          }}
+        >
+          <Bar data={histogramData} options={chartOptions} />
+        </Box>
+      )}
     </Box>
   );
 };

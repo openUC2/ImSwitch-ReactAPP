@@ -6,6 +6,10 @@ const initialLiveStreamState = {
   minVal: 0,
   maxVal: 255,
   pixelSize: null,
+  // Histogram data
+  histogramX: [],
+  histogramY: [],
+  showHistogram: false,
 };
 
 // Create slice
@@ -31,6 +35,15 @@ const liveStreamSlice = createSlice({
       state.pixelSize = action.payload;
     },
 
+    setHistogramData: (state, action) => {
+      state.histogramX = action.payload.x;
+      state.histogramY = action.payload.y;
+    },
+
+    setShowHistogram: (state, action) => {
+      state.showHistogram = action.payload;
+    },
+
     resetState: (state) => {
       console.log("resetState");
       return { ...initialLiveStreamState }; // Reset to initial state
@@ -44,6 +57,8 @@ export const {
   setMinVal,
   setMaxVal,
   setPixelSize,
+  setHistogramData,
+  setShowHistogram,
   resetState,
 } = liveStreamSlice.actions;
 
