@@ -9,6 +9,7 @@ const initialWorkflowState = {
   // Workflow content
   currentWorkflow: null, // Current workflow JSON
   workflowJson: "", // Generated JSON string
+  workflowUid: null, // UID returned from upload
   
   // UI state
   isGeneratingJson: false,
@@ -51,6 +52,9 @@ const workflowSlice = createSlice({
     },
     setWorkflowJson: (state, action) => {
       state.workflowJson = action.payload;
+    },
+    setWorkflowUid: (state, action) => {
+      state.workflowUid = action.payload;
     },
     
     // UI state actions
@@ -119,6 +123,7 @@ export const {
   clearWorkflowError,
   setCurrentWorkflow,
   setWorkflowJson,
+  setWorkflowUid,
   setIsGeneratingJson,
   setIsUploading,
   setIsStarting,

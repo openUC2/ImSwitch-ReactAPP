@@ -4,7 +4,7 @@ import createAxiosInstance from "./createAxiosInstance";
 const apiExperimentControllerResumeWorkflow = async () => {
   try {
     const axiosInstance = createAxiosInstance(); // Create Axios instance
-    const response = await axiosInstance.get("/ExperimentController/resumeWorkflow"); // Send GET request
+    const response = await axiosInstance.get("/WorkflowController/resume_workflow"); // Send GET request
     return response.data; // Return the data from the response
   } catch (error) {
     console.error("Error resuming workflow:", error);

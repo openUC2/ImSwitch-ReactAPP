@@ -20,6 +20,7 @@ import apiExperimentControllerGetWorkflowStatus from "../backendapi/apiExperimen
 // Import workflow state actions
 import {
   setWorkflowJson,
+  setWorkflowUid,
   setWorkflowStatus,
   setWorkflowError,
   clearWorkflowError,
@@ -880,6 +881,11 @@ const BlocklyController = () => {
       const response = await apiExperimentControllerUploadWorkflow(workflowData);
       console.log("Workflow uploaded successfully:", response);
       
+      // Store the UID from the response
+      if (response && response.uid) {
+        dispatch(setWorkflowUid(response.uid));
+      }
+      
       dispatch(setWorkflowStatus("uploaded"));
     } catch (error) {
       console.error("Error uploading workflow:", error);
@@ -891,11 +897,16 @@ const BlocklyController = () => {
 
   // Start workflow execution
   const handleStartWorkflow = async () => {
+    if (!workflowState.workflowUid) {
+      dispatch(setWorkflowError("No workflow UID available. Please upload workflow first."));
+      return;
+    }
+
     try {
       dispatch(setIsStarting(true));
       dispatch(clearWorkflowError());
       
-      const response = await apiExperimentControllerStartWorkflow();
+      const response = await apiExperimentControllerStartWorkflow(workflowState.workflowUid);
       console.log("Workflow started:", response);
       
       dispatch(setWorkflowStatus("running"));
@@ -994,7 +1005,7 @@ const BlocklyController = () => {
           {isUploading ? "Uploading..." : "Upload Workflow"}
         </button>
         
-        {(status === "idle" || status === "uploaded" || status === "stopped") && (
+        {(status === "idle" || status === "uploaded" || status === "stopped") && workflowState.workflowUid && (
           <button 
             onClick={handleStartWorkflow}
             disabled={isStarting}

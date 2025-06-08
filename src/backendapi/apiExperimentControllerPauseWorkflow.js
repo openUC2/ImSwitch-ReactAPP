@@ -4,7 +4,7 @@ import createAxiosInstance from "./createAxiosInstance";
 const apiExperimentControllerPauseWorkflow = async () => {
   try {
     const axiosInstance = createAxiosInstance(); // Create Axios instance
-    const response = await axiosInstance.get("/ExperimentController/pauseWorkflow"); // Send GET request
+    const response = await axiosInstance.get("/WorkflowController/pause_workflow"); // Send GET request
     return response.data; // Return the data from the response
   } catch (error) {
     console.error("Error pausing workflow:", error);

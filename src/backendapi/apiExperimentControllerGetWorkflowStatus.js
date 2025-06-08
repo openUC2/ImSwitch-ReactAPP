@@ -4,7 +4,7 @@ import createAxiosInstance from "./createAxiosInstance";
 const apiExperimentControllerGetWorkflowStatus = async () => {
   try {
     const axiosInstance = createAxiosInstance(); // Create Axios instance
-    const response = await axiosInstance.get("/ExperimentController/getWorkflowStatus"); // Send GET request
+    const response = await axiosInstance.get("/WorkflowController/getWorkflowStatus"); // Send GET request
     return response.data; // Return the data from the response
   } catch (error) {
     console.error("Error getting workflow status:", error);
