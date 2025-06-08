@@ -29,6 +29,16 @@ export const FileNavigationProvider = ({ children, initialPath }) => {
     }
   }, [initialPath, files]);
 
+  // Handle changes to initialPath after initial mount
+  useEffect(() => {
+    if (isMountRef.current && Array.isArray(files) && files.length > 0 && initialPath) {
+      const pathExists = files.some((file) => file.path === initialPath);
+      if (pathExists && currentPath !== initialPath) {
+        setCurrentPath(initialPath);
+      }
+    }
+  }, [initialPath, files, currentPath]);
+
   return (
     <FileNavigationContext.Provider
       value={{

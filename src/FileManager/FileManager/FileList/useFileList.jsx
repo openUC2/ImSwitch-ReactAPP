@@ -2,7 +2,7 @@ import { BiRename, BiSelectMultiple } from "react-icons/bi";
 import { BsCopy, BsFolderPlus, BsGrid, BsScissors } from "react-icons/bs";
 import { FaListUl, FaRegFile, FaRegPaste } from "react-icons/fa6";
 import { FiRefreshCw } from "react-icons/fi";
-import { MdOutlineDelete, MdOutlineFileDownload, MdOutlineFileUpload } from "react-icons/md";
+import { MdOutlineDelete, MdOutlineFileDownload, MdOutlineFileUpload, MdOpenWith } from "react-icons/md";
 import { PiFolderOpen } from "react-icons/pi";
 import { useClipBoard } from "../../contexts/ClipboardContext";
 import { useEffect, useState } from "react";
@@ -11,8 +11,19 @@ import { useLayout } from "../../contexts/LayoutContext";
 import { useFileNavigation } from "../../contexts/FileNavigationContext";
 import { duplicateNameHandler } from "../../utils/duplicateNameHandler";
 import { validateApiCallback } from "../../utils/validateApiCallback";
+import { getFileExtension } from "../../utils/getFileExtension";
 
-const useFileList = (onRefresh, enableFilePreview, triggerAction) => {
+// Image extensions supported by ImJoy
+const imjoyImageExtensions = ["jpg", "jpeg", "png", "gif", "tif", "tiff", "bmp"];
+
+// Helper function to check if a file can be opened with ImJoy
+const canOpenWithImJoy = (file) => {
+  if (!file || file.isDirectory) return false;
+  const extension = getFileExtension(file.name)?.toLowerCase();
+  return imjoyImageExtensions.includes(extension);
+};
+
+const useFileList = (onRefresh, enableFilePreview, triggerAction, onFileOpen) => {
   const [selectedFileIndexes, setSelectedFileIndexes] = useState([]);
   const [visible, setVisible] = useState(false);
   const [isSelectionCtx, setIsSelectionCtx] = useState(false);
@@ -33,6 +44,13 @@ const useFileList = (onRefresh, enableFilePreview, triggerAction) => {
       setSelectedFiles([]);
     } else {
       enableFilePreview && triggerAction.show("previewFile");
+    }
+    setVisible(false);
+  };
+
+  const handleOpenWithImJoy = () => {
+    if (lastSelectedFile && !lastSelectedFile.isDirectory && onFileOpen) {
+      onFileOpen(lastSelectedFile);
     }
     setVisible(false);
   };
@@ -138,6 +156,13 @@ const useFileList = (onRefresh, enableFilePreview, triggerAction) => {
       title: "Open",
       icon: lastSelectedFile?.isDirectory ? <PiFolderOpen size={20} /> : <FaRegFile size={16} />,
       onClick: handleFileOpen,
+      divider: true,
+    },
+    {
+      title: "Open with ImJoy",
+      icon: <MdOpenWith size={18} />,
+      onClick: handleOpenWithImJoy,
+      hidden: !canOpenWithImJoy(lastSelectedFile) || selectedFiles.length > 1,
       divider: true,
     },
     {

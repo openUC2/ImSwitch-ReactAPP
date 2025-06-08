@@ -277,6 +277,16 @@ function App() {
 
   const handleRefresh = () => getFiles();
 
+  const handleOpenWithImJoy = (file) => {
+    const fileUrl = `${hostIP}:${apiPort}/FileManager/download/${file.path}`;
+    setSharedImage({
+      url: fileUrl,
+      name: file.name,
+    });
+    // Switch to ImJoy tab
+    setSelectedPlugin("ImJoy");
+  };
+
   /*
   On Value Changes
   */
@@ -319,6 +329,7 @@ function App() {
   useEffect(() => {
     api.defaults.baseURL = `${hostIP}:${apiPort}/FileManager`;
     handleRefresh();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hostIP, apiPort]);
 
   // Dialog handlers for the URL / Port settings
@@ -347,11 +358,9 @@ const handleFileManagerInitialPathChange = (event) => {
   // English comment: store the desired path
   const path = event;
   setFileManagerInitialPath(path);
-  setTimeout(() => {
-    handleRefresh();
-  }, 2000);
-  setFileManagerInitialPath(path);
   setSelectedPlugin("FileManager"); 
+  // Refresh immediately since FileNavigationProvider now handles path changes properly
+  handleRefresh();
 };
 
   // Handle changes to the port
@@ -893,6 +902,7 @@ const handleFileManagerInitialPathChange = (event) => {
                     onPaste={handlePaste}
                     onRename={handleRename}
                     onDownload={handleDownload}
+                    onFileOpen={handleOpenWithImJoy}
                     onDelete={handleDelete}
                     onRefresh={handleRefresh}
                     layout="grid"
