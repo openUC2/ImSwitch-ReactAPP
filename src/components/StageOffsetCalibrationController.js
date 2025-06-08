@@ -196,10 +196,10 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
     )
       .then((res) => res.json())
       .then(() => {
-        dispatch(stageOffsetCalibrationSlice.setCalculatedOffsetX(""));
-        dispatch(stageOffsetCalibrationSlice.setCalculatedOffsetY(""));
-        dispatch(stageOffsetCalibrationSlice.setLoadedOffsetX(""));
-        dispatch(stageOffsetCalibrationSlice.setLoadedOffsetY(""));
+        dispatch(stageOffsetCalibrationSlice.setCalculatedOffsetX(0));
+        dispatch(stageOffsetCalibrationSlice.setCalculatedOffsetY(0));
+        dispatch(stageOffsetCalibrationSlice.setLoadedOffsetX(0));
+        dispatch(stageOffsetCalibrationSlice.setLoadedOffsetY(0));
         dispatch(stageOffsetCalibrationSlice.incrementReloadTrigger()); // Trigger reload
       })
       .catch(console.error);
