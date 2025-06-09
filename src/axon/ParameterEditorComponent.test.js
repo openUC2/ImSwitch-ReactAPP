@@ -6,9 +6,20 @@ import ParameterEditorComponent from './ParameterEditorComponent';
 import experimentReducer from '../state/slices/ExperimentSlice';
 import parameterRangeReducer from '../state/slices/ParameterRangeSlice';
 import connectionSettingsReducer from '../state/slices/ConnectionSettingsSlice';
+import fetchExperimentControllerGetCurrentExperimentParams from '../middleware/fetchExperimentControllerGetCurrentExperimentParams';
+import fetchLaserControllerCurrentValues from '../middleware/fetchLaserControllerCurrentValues';
 
 // Mock fetch to test backend calls
 global.fetch = jest.fn();
+
+// Mock the middleware functions
+jest.mock('../middleware/fetchExperimentControllerGetCurrentExperimentParams', () => 
+  jest.fn(() => Promise.resolve())
+);
+
+jest.mock('../middleware/fetchLaserControllerCurrentValues', () => 
+  jest.fn(() => Promise.resolve())
+);
 
 // Create a mock store for testing
 const createMockStore = (initialState = {}) => {
@@ -47,6 +58,8 @@ const createMockStore = (initialState = {}) => {
 describe('ParameterEditorComponent', () => {
   beforeEach(() => {
     fetch.mockClear();
+    fetchExperimentControllerGetCurrentExperimentParams.mockClear();
+    fetchLaserControllerCurrentValues.mockClear();
   });
 
   test('renders parameter editor with illumination sources', () => {
@@ -144,5 +157,79 @@ describe('ParameterEditorComponent', () => {
     await new Promise(resolve => setTimeout(resolve, 100));
     
     expect(fetch).not.toHaveBeenCalled();
+  });
+
+  test('fetches experiment parameters on component mount', () => {
+    const store = createMockStore();
+    
+    render(
+      <Provider store={store}>
+        <ParameterEditorComponent />
+      </Provider>
+    );
+    
+    expect(fetchExperimentControllerGetCurrentExperimentParams).toHaveBeenCalledWith(
+      expect.any(Function) // dispatch function
+    );
+  });
+
+  test('fetches laser intensity values when laser sources are available', async () => {
+    const store = createMockStore();
+    
+    render(
+      <Provider store={store}>
+        <ParameterEditorComponent />
+      </Provider>
+    );
+    
+    // Should call the middleware with dispatch, connection settings, and laser sources
+    await waitFor(() => {
+      expect(fetchLaserControllerCurrentValues).toHaveBeenCalledWith(
+        expect.any(Function), // dispatch function
+        expect.objectContaining({
+          ip: 'https://localhost',
+          apiPort: 8001,
+        }), // connection settings
+        ['Laser1', 'Laser2'] // laser sources
+      );
+    });
+  });
+
+  test('does not fetch laser values when connection settings are missing', () => {
+    const store = createMockStore({
+      connectionSettingsState: {
+        ip: '',
+        apiPort: null,
+        websocketPort: 8002,
+      },
+    });
+    
+    render(
+      <Provider store={store}>
+        <ParameterEditorComponent />
+      </Provider>
+    );
+    
+    // Should not call the laser values middleware without proper connection settings
+    expect(fetchLaserControllerCurrentValues).not.toHaveBeenCalled();
+  });
+
+  test('does not fetch laser values when no laser sources are available', () => {
+    const store = createMockStore({
+      parameterRangeState: {
+        illuSources: [], // No laser sources
+        illuSourceMinIntensities: [],
+        illuSourceMaxIntensities: [],
+      },
+    });
+    
+    render(
+      <Provider store={store}>
+        <ParameterEditorComponent />
+      </Provider>
+    );
+    
+    // Should not call the laser values middleware without laser sources
+    expect(fetchLaserControllerCurrentValues).not.toHaveBeenCalled();
   });
 });

@@ -7,6 +7,7 @@ import * as experimentSlice from "../state/slices/ExperimentSlice.js";
 import * as parameterRangeSlice from "../state/slices/ParameterRangeSlice.js";
 import * as connectionSettingsSlice from "../state/slices/ConnectionSettingsSlice.js";
 import fetchExperimentControllerGetCurrentExperimentParams from "../middleware/fetchExperimentControllerGetCurrentExperimentParams.js";
+import fetchLaserControllerCurrentValues from "../middleware/fetchLaserControllerCurrentValues.js";
 
 const ParameterEditorComponent = () => {
   const theme = useTheme();
@@ -40,6 +41,13 @@ const ParameterEditorComponent = () => {
   useEffect(() => {
     fetchExperimentControllerGetCurrentExperimentParams(dispatch);
   }, [dispatch]);
+
+  // fetch current laser intensity values from backend when laser sources are available
+  useEffect(() => {
+    if (parameterRange.illuSources.length > 0 && connectionSettingsState.ip && connectionSettingsState.apiPort) {
+      fetchLaserControllerCurrentValues(dispatch, connectionSettingsState, parameterRange.illuSources);
+    }
+  }, [dispatch, parameterRange.illuSources, connectionSettingsState.ip, connectionSettingsState.apiPort]);
 
   // ensure intensities array size matches available sources
   useEffect(() => { // TODO: This should be done in the fetch middleware I guess? @marco
