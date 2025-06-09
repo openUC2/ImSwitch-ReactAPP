@@ -167,7 +167,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
         }
       } catch {}
     })();
-  }, [hostIP, hostPort]);
+  }, [hostIP, hostPort, activeTab, dispatch]);
 
   // Fetch the current compression rate from backend once
   useEffect(() => {
