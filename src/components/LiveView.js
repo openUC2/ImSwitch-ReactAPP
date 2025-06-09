@@ -8,7 +8,6 @@ import {
   Tab,
   Typography
 } from "@mui/material";
-import { Bar } from "react-chartjs-2";
 import XYZControls from "./XYZControls";
 import AutofocusController from "./AutofocusController";
 import DetectorParameters from "./DetectorParameters";
@@ -18,6 +17,7 @@ import { useWebSocket } from "../context/WebSocketContext";
 import ObjectiveSwitcher from "./ObjectiveSwitcher";
 import DetectorTriggerController from "./DetectorTriggerController";
 import * as liveViewSlice from "../state/slices/LiveViewSlice.js";
+import * as liveStreamSlice from "../state/slices/LiveStreamSlice.js";
 import LiveViewControlWrapper from "../axon/LiveViewControlWrapper.js";
 
 /*
@@ -39,24 +39,6 @@ import LiveViewControlWrapper from "../axon/LiveViewControlWrapper.js";
             onRangeCommit={handleRangeCommit}
             onMove={moveStage}
           />*/
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-} from "chart.js";
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend
-);
 
 const appBarHeight = 64;
 
@@ -66,6 +48,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
   
   // Access global Redux state
   const liveViewState = useSelector(liveViewSlice.getLiveViewState);
+  const liveStreamState = useSelector(liveStreamSlice.getLiveStreamState);
   
   const socket = useWebSocket();
 
@@ -79,9 +62,6 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
   
   // Keep some local state for now (these may need their own slices later)
   const [isRecording, setIsRecording] = useState(false);
-  const [showHistogram, setShowHistogram] = useState(false);
-  const [histogramX, setHistogramX] = useState([]);
-  const [histogramY, setHistogramY] = useState([]);
   const [histogramActive, setHistogramActive] = useState(false);
   const [minVal, setMinVal] = useState(0);
   const [maxVal, setMaxVal] = useState(255);
@@ -100,10 +80,8 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
           [det]: `data:image/jpeg;base64,${j.image}`,
         }));
         if (j.pixelsize) dispatch(liveViewSlice.setPixelSize(j.pixelsize));
-      } else if (j.name === "sigHistogramComputed") {
-        setHistogramX(j.args.p0);
-        setHistogramY(j.args.p1);
       }
+      // Note: sigHistogramComputed is now handled in WebSocketHandler
     };
     socket.on("signal", handler);
     return () => socket.off("signal", handler);
@@ -282,21 +260,6 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
     ).catch(() => {});
   };
 
-  /* histogram dataset */
-  const histogramData = {
-    labels: histogramX,
-    datasets: [{ label: "Histogram", data: histogramY, borderWidth: 1 }],
-  };
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      title: { display: true, text: "Histogram" },
-    },
-    scales: { x: { max: 255 }, y: { beginAtZero: true } },
-  };
-
   return (
     <Box
       sx={{
@@ -334,8 +297,8 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
           <FormControlLabel
             control={
               <Checkbox
-                checked={showHistogram}
-                onChange={(e) => setShowHistogram(e.target.checked)}
+                checked={liveStreamState.showHistogram}
+                onChange={(e) => dispatch(liveStreamSlice.setShowHistogram(e.target.checked))}
               />
             }
             label="Show Histogram Overlay"

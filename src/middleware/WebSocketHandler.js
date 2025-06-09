@@ -79,6 +79,16 @@ const WebSocketHandler = () => {
         */
           //----------------------------------------------
         }
+      } else if (dataJson.name == "sigHistogramComputed") {
+        //console.log("sigHistogramComputed", dataJson);
+        // Handle histogram data similar to image updates
+        if (dataJson.args && dataJson.args.p0 && dataJson.args.p1) {
+          dispatch(liveStreamSlice.setHistogramData({
+            x: dataJson.args.p0, // units
+            y: dataJson.args.p1  // hist
+          }));
+        }
+        //----------------------------------------------
       } else if (
         dataJson.name == "sigExperimentWorkflowUpdate") {
           //Args: {"arg0":{"status":"completed","step_id":0,"name":"Move to point 0","total_step_number":2424}}
