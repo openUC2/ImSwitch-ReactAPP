@@ -248,7 +248,7 @@ const LiveViewComponent = ({ useFastMode = true }) => {
         title: { display: true, text: "Histogram", color: '#fff' },
       },
       scales: { 
-        x: { max: 255, ticks: { color: '#fff' } }, 
+        x: { max: 255, ticks: { color: '#fff' },         callback: (value) => Number(value).toFixed(1) }, // TODO: round number values
         y: { beginAtZero: true, ticks: { color: '#fff' } }
       },
     };
