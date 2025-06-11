@@ -1,98 +1,140 @@
 import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { Box, Checkbox, Slider, Typography, Paper, Grid } from "@mui/material";
 
+import * as experimentSlice from "../state/slices/ExperimentSlice.js";
+import * as parameterRangeSlice from "../state/slices/ParameterRangeSlice.js";
+import * as connectionSettingsSlice from "../state/slices/ConnectionSettingsSlice.js";
+import fetchExperimentControllerGetCurrentExperimentParams from "../middleware/fetchExperimentControllerGetCurrentExperimentParams.js";
+import fetchLaserControllerCurrentValues from "../middleware/fetchLaserControllerCurrentValues.js";
+
 export default function IlluminationController({ hostIP, hostPort }) {
-  const [lasers, setLasers] = useState([]);
+  const dispatch = useDispatch();
+  
+  // Get state from Redux instead of local state
+  const parameterRangeState = useSelector(parameterRangeSlice.getParameterRangeState);
+  const experimentState = useSelector((state) => state.experimentState);
+  const connectionSettingsState = useSelector(connectionSettingsSlice.getConnectionSettingsState);
+  
+  // Local state for laser active status since it's not in Redux yet
+  const [laserActiveStates, setLaserActiveStates] = useState([]);
 
-  // Fetch laser names and initialize their values
+  // Initialize experiment params and laser values on mount
   useEffect(() => {
-    (async () => {
-      try {
-        const r = await fetch(`${hostIP}:${hostPort}/LaserController/getLaserNames`);
-        const names = await r.json();
+    // Fetch experiment parameters which includes laser sources
+    fetchExperimentControllerGetCurrentExperimentParams(dispatch);
+  }, [dispatch]);
 
-        // Fetch value ranges for each laser
-        const lasersWithRanges = await Promise.all(
-          names.map(async (name) => {
-            try {
-              const rangeResponse = await fetch(
-                `${hostIP}:${hostPort}/LaserController/getLaserValueRanges?laserName=${encodeURIComponent(name)}`
-              );
-              const [min, max] = await rangeResponse.json();
-              return { name, value: 0, active: false, min, max };
-            } catch {
-              return { name, value: 0, active: false, min: 0, max: 1023 }; // Default range
-            }
-          })
-        );
-
-        setLasers(lasersWithRanges);
-      } catch {
-        console.error("Failed to fetch laser names or ranges.");
+  // Fetch current laser values when laser sources are available
+  useEffect(() => {
+    if (parameterRangeState.illuSources.length > 0) {
+      // Use connection settings from Redux if available, otherwise fall back to props
+      const ip = connectionSettingsState.ip || hostIP;
+      const port = connectionSettingsState.apiPort || hostPort;
+      
+      if (ip && port) {
+        fetchLaserControllerCurrentValues(dispatch, { ip, apiPort: port }, parameterRangeState.illuSources);
       }
-    })();
-  }, [hostIP, hostPort]);
-
-  // Update laser value
-  const setLaserValue = async (idx, val) => {
-    const n = encodeURIComponent(lasers[idx].name);
-    try {
-      await fetch(`${hostIP}:${hostPort}/LaserController/setLaserValue?laserName=${n}&value=${val}`);
-    } catch {
-      console.error("Failed to set laser value.");
+      
+      // Initialize active states for each laser (default to false)
+      setLaserActiveStates(new Array(parameterRangeState.illuSources.length).fill(false));
     }
-    setLasers((prev) =>
-      prev.map((l, i) => (i === idx ? { ...l, value: val } : l))
-    );
+  }, [dispatch, parameterRangeState.illuSources, connectionSettingsState.ip, connectionSettingsState.apiPort, hostIP, hostPort]);
+
+  // Update laser value using Redux and backend
+  const setLaserValue = async (idx, val) => {
+    // Update Redux state
+    const currentValues = experimentState.parameterValue.illuIntensities || [];
+    const newValues = [...currentValues];
+    newValues[idx] = val;
+    dispatch(experimentSlice.setIlluminationIntensities(newValues));
+    
+    // Update backend
+    const laserName = parameterRangeState.illuSources[idx];
+    if (laserName) {
+      const ip = connectionSettingsState.ip || hostIP;
+      const port = connectionSettingsState.apiPort || hostPort;
+      
+      if (ip && port) {
+        try {
+          const encodedLaserName = encodeURIComponent(laserName);
+          await fetch(`${ip}:${port}/LaserController/setLaserValue?laserName=${encodedLaserName}&value=${val}`);
+        } catch (error) {
+          console.error("Failed to set laser value in backend:", error);
+        }
+      }
+    }
   };
 
   // Update laser active state
   const setLaserActive = async (idx, active) => {
-    const n = encodeURIComponent(lasers[idx].name);
-    try {
-      await fetch(
-        `${hostIP}:${hostPort}/LaserController/setLaserActive?laserName=${n}&active=${active}`
-      );
-    } catch {
-      console.error("Failed to set laser active state.");
+    // Update local active state (since this isn't in Redux yet)
+    const newActiveStates = [...laserActiveStates];
+    newActiveStates[idx] = active;
+    setLaserActiveStates(newActiveStates);
+    
+    // Update backend
+    const laserName = parameterRangeState.illuSources[idx];
+    if (laserName) {
+      const ip = connectionSettingsState.ip || hostIP;
+      const port = connectionSettingsState.apiPort || hostPort;
+      
+      if (ip && port) {
+        try {
+          const encodedLaserName = encodeURIComponent(laserName);
+          await fetch(`${ip}:${port}/LaserController/setLaserActive?laserName=${encodedLaserName}&active=${active}`);
+        } catch (error) {
+          console.error("Failed to set laser active state in backend:", error);
+        }
+      }
     }
-    setLasers((prev) =>
-      prev.map((l, i) => (i === idx ? { ...l, active } : l))
-    );
   };
+
+  // Get laser data from Redux state
+  const laserSources = parameterRangeState.illuSources || [];
+  const laserValues = experimentState.parameterValue.illuIntensities || [];
+  const laserMinValues = parameterRangeState.illuSourceMinIntensities || [];
+  const laserMaxValues = parameterRangeState.illuSourceMaxIntensities || [];
 
   return (
     <Paper sx={{ p: 2 }}>
       <Grid container direction="column" spacing={2}>
-        {lasers.length ? (
-          lasers.map((l, idx) => (
-            <Grid
-              item
-              key={l.name}
-              sx={{ display: "flex", alignItems: "center", gap: 2 }}
-            >
-              {/* Laser name */}
-              <Typography sx={{ minWidth: 80 }}>{l.name}</Typography>
+        {laserSources.length ? (
+          laserSources.map((laserName, idx) => {
+            const currentValue = laserValues[idx] || 0;
+            const minValue = laserMinValues[idx] || 0;
+            const maxValue = laserMaxValues[idx] || 1023;
+            const isActive = laserActiveStates[idx] || false;
+            
+            return (
+              <Grid
+                item
+                key={laserName}
+                sx={{ display: "flex", alignItems: "center", gap: 2 }}
+              >
+                {/* Laser name */}
+                <Typography sx={{ minWidth: 80 }}>{laserName}</Typography>
 
-              {/* Slider with dynamic min and max */}
-              <Slider
-                value={l.value}
-                min={0}
-                max={l.max}
-                onChange={(e) => setLaserValue(idx, e.target.value)}
-                sx={{ flex: 1 }}
-              />
+                {/* Slider with dynamic min and max */}
+                <Slider
+                  value={currentValue}
+                  min={minValue}
+                  max={maxValue}
+                  onChange={(e) => setLaserValue(idx, e.target.value)}
+                  sx={{ flex: 1 }}
+                />
 
-              {/* Current slider value */}
-              <Typography sx={{ mx: 1 }}>{l.value}</Typography>
+                {/* Current slider value */}
+                <Typography sx={{ mx: 1 }}>{currentValue}</Typography>
 
-              {/* Active checkbox */}
-              <Checkbox
-                checked={l.active}
-                onChange={(e) => setLaserActive(idx, e.target.checked)}
-              />
-            </Grid>
-          ))
+                {/* Active checkbox */}
+                <Checkbox
+                  checked={isActive}
+                  onChange={(e) => setLaserActive(idx, e.target.checked)}
+                />
+              </Grid>
+            );
+          })
         ) : (
           <Typography>Loading laser names…</Typography>
         )}
