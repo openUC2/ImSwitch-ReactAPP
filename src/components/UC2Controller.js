@@ -52,8 +52,8 @@ const UC2Controller = ({ hostIP, hostPort }) => {
   const uc2State = useSelector(uc2Slice.getUc2State);
   
   // Use Redux state instead of local useState
-  const tabIndex = uc2State.tabIndex;
   const availableSetups = uc2State.availableSetups;
+  const tabIndex = uc2State.tabIndex;
   const selectedSetup = uc2State.selectedSetup;
   const isDialogOpen = uc2State.isDialogOpen;
   const restartSoftware = uc2State.restartSoftware;
