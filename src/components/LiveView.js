@@ -167,14 +167,14 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
         }
       } catch {}
     })();
-  }, [hostIP, hostPort]);
+  }, [hostIP, hostPort, activeTab, dispatch]);
 
   // Fetch the current compression rate from backend once
   useEffect(() => {
     const fetchCompressionRate = async () => {
       try {
         const res = await fetch(
-          "https://localhost:8001/SettingsController/getDetectorGlobalParameters"
+          `${hostIP}:${hostPort}/SettingsController/getDetectorGlobalParameters`
         );
         if (res.ok) {
           const data = await res.json();
@@ -195,7 +195,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
     setCompressionRate(val);
     try {
       await fetch(
-        `https://localhost:8001/SettingsController/setDetectorCompressionrate?compressionrate=${val}`
+        `${hostIP}:${hostPort}/SettingsController/setDetectorCompressionrate?compressionrate=${val}`
       );
     } catch (err) {
       console.error("Failed to set compression rate:", err);

@@ -134,7 +134,7 @@ export const {
 } = uc2Slice.actions;
 
 // Export selector
-export const getUc2State = (state) => state.uc2;
+export const getUc2State = (state) => state.uc2State;
 
 // Export reducer
 export default uc2Slice.reducer;
