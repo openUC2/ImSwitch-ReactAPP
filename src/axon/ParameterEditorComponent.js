@@ -370,6 +370,59 @@ const ParameterEditorComponent = () => {
               />
             </td>
           </tr>
+
+          {/* File Format Options */}
+          <tr>
+            <td rowSpan="3" style={tdStyle}>
+              File Format
+            </td>
+            <td style={tdStyle}>OME-TIFF</td>
+            <td style={tdStyle}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={parameterValue.ome_write_tiff || false}
+                    onChange={(e) =>
+                      dispatch(experimentSlice.setOmeWriteTiff(e.target.checked))
+                    }
+                  />
+                }
+                label=""
+              />
+            </td>
+          </tr>
+          <tr>
+            <td style={tdStyle}>OME-Zarr</td>
+            <td style={tdStyle}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={parameterValue.ome_write_zarr || false}
+                    onChange={(e) =>
+                      dispatch(experimentSlice.setOmeWriteZarr(e.target.checked))
+                    }
+                  />
+                }
+                label=""
+              />
+            </td>
+          </tr>
+          <tr>
+            <td style={tdStyle}>Stitched OME-TIFF</td>
+            <td style={tdStyle}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={parameterValue.ome_write_stitched_tiff || false}
+                    onChange={(e) =>
+                      dispatch(experimentSlice.setOmeWriteStitchedTiff(e.target.checked))
+                    }
+                  />
+                }
+                label=""
+              />
+            </td>
+          </tr>
         </tbody>
       </table>
     </div>
