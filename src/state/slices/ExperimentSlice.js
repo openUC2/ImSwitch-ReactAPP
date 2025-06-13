@@ -57,7 +57,10 @@ const initialExperimentState = {
     speed: 0, 
     gains: 0,
     exposureTimes: 0,
-    performanceMode: false
+    performanceMode: false,
+    ome_write_tiff: false,
+    ome_write_zarr: true,
+    ome_write_stitched_tiff: false
   },
 };
 
@@ -151,6 +154,18 @@ const experimentSlice = createSlice({
       console.log("setPerformanceMode", action.payload);
       state.parameterValue.performanceMode = action.payload;
     },
+    setOmeWriteTiff: (state, action) => {
+      console.log("setOmeWriteTiff", action.payload);
+      state.parameterValue.ome_write_tiff = action.payload;
+    },
+    setOmeWriteZarr: (state, action) => {
+      console.log("setOmeWriteZarr", action.payload);
+      state.parameterValue.ome_write_zarr = action.payload;
+    },
+    setOmeWriteStitchedTiff: (state, action) => {
+      console.log("setOmeWriteStitchedTiff", action.payload);
+      state.parameterValue.ome_write_stitched_tiff = action.payload;
+    },
     //------------------------ points
     createPoint: (state, action) => {
       console.log("createPoint", action);
@@ -222,6 +237,9 @@ export const {
   setGains,
   setExposureTimes,
   setPerformanceMode,
+  setOmeWriteTiff,
+  setOmeWriteZarr,
+  setOmeWriteStitchedTiff,
   createPoint,
   addPoint,
   removePoint,
