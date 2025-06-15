@@ -24,7 +24,6 @@ const initialState = {
   currentFrameNumber: 0,
   
   // Images
-  liveStreamImage: null,
   reconstructedImage: null,
 };
 
@@ -80,9 +79,6 @@ const stormSlice = createSlice({
     },
 
     // Image actions
-    setLiveStreamImage: (state, action) => {
-      state.liveStreamImage = action.payload;
-    },
     setReconstructedImage: (state, action) => {
       state.reconstructedImage = action.payload;
     },
@@ -112,7 +108,6 @@ export const {
   setLaserIntensity,
   setIsRunning,
   setCurrentFrameNumber,
-  setLiveStreamImage,
   setReconstructedImage,
   resetExperiment,
   resetToDefaults,

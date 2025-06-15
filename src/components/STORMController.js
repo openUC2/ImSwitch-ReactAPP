@@ -21,6 +21,7 @@ import { useWebSocket } from "../context/WebSocketContext";
 import * as stormSlice from "../state/slices/STORMSlice.js";
 import * as connectionSettingsSlice from "../state/slices/ConnectionSettingsSlice.js";
 import * as parameterRangeSlice from "../state/slices/ParameterRangeSlice.js";
+import * as liveStreamSlice from "../state/slices/LiveStreamSlice.js";
 import apiSTORMControllerStart from "../backendapi/apiSTORMControllerStart.js";
 import apiSTORMControllerStop from "../backendapi/apiSTORMControllerStop.js";
 import apiSTORMControllerGetStatus from "../backendapi/apiSTORMControllerGetStatus.js";
@@ -49,6 +50,7 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
   const stormState = useSelector(stormSlice.getSTORMState);
   const connectionSettingsState = useSelector(connectionSettingsSlice.getConnectionSettingsState);
   const parameterRangeState = useSelector(parameterRangeSlice.getParameterRangeState);
+  const liveStreamState = useSelector((state) => state.liveStreamState);
   
   // Local state for crop region selection
   const [isDragging, setIsDragging] = useState(false);
@@ -63,8 +65,10 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
   const laserIntensities = stormState.laserIntensities;
   const isRunning = stormState.isRunning;
   const currentFrameNumber = stormState.currentFrameNumber;
-  const liveStreamImage = stormState.liveStreamImage;
   const reconstructedImage = stormState.reconstructedImage;
+  
+  // Use global live stream image
+  const liveStreamImage = liveStreamState.liveViewImage;
   
   const socket = useWebSocket();
 
@@ -150,7 +154,7 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
     }
   }, [dispatch, parameterRangeState.illuSources, connectionSettingsState.ip, connectionSettingsState.apiPort]);
 
-  // WebSocket integration for real-time updates
+  // WebSocket integration for STORM-specific experiment status signals
   useEffect(() => {
     if (!socket) return;
 
@@ -158,24 +162,13 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
       try {
         const jdata = JSON.parse(data);
         
-        // Handle STORM-specific signals
-        if (jdata.name === "sigNSTORMImageAcquired") {
-          dispatch(stormSlice.setCurrentFrameNumber(jdata.args.p0 || 0));
-        }
-        
-        // Handle experiment status changes
+        // Handle STORM experiment status changes
         if (jdata.name === "sigSTORMExperimentStarted") {
           dispatch(stormSlice.setIsRunning(true));
         }
         
         if (jdata.name === "sigSTORMExperimentStopped") {
           dispatch(stormSlice.setIsRunning(false));
-        }
-        
-        // Handle live stream images for crop region selection
-        if (jdata.name === "sigUpdateImage" && jdata.detectorname) {
-          const imgSrc = `data:image/jpeg;base64,${jdata.image}`;
-          dispatch(stormSlice.setLiveStreamImage(imgSrc));
         }
       } catch (error) {
         console.error("Error parsing STORM signal data:", error);
