@@ -4,7 +4,7 @@ import createAxiosInstance from "./createAxiosInstance";
 const apiSTORMControllerStop = async () => {
   try {
     const axiosInstance = createAxiosInstance(); // Create Axios instance
-    const response = await axiosInstance.get("/STORMReconController/stopSTORMExperiment"); // Send GET request
+    const response = await axiosInstance.get("/STORMReconController/stopFastSTORMAcquisition"); // Send GET request
     return response.data; // Return the data from the response
   } catch (error) {
     console.error("Error stopping STORM experiment:", error);

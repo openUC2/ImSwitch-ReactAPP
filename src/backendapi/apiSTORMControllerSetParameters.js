@@ -1,7 +1,7 @@
-// src/api/apiSTORMControllerStart.js
+// src/backendapi/apiSTORMControllerSetParameters.js
 import createAxiosInstance from "./createAxiosInstance";
 
-const apiSTORMControllerStart = async (params = {}) => {
+const apiSTORMControllerSetParameters = async (params = {}) => {
   try {
     const axiosInstance = createAxiosInstance(); // Create Axios instance
     
@@ -13,33 +13,31 @@ const apiSTORMControllerStart = async (params = {}) => {
       }
     });
     
-    const url = `/STORMReconController/startFastSTORMAcquisition${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const url = `/STORMReconController/setSTORMParameters${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     const response = await axiosInstance.get(url); // Send GET request
     return response.data; // Return the data from the response
   } catch (error) {
-    console.error("Error starting STORM experiment:", error);
+    console.error("Error setting STORM parameters:", error);
     throw error; // Throw error to be handled by the caller
   }
 };
 
-export default apiSTORMControllerStart;
+export default apiSTORMControllerSetParameters;
 
 /*
 // Example usage:
 
-const startSTORMExperiment = () => {
-  apiSTORMControllerStart({
-    exposureTime: 50,
-    cropX: 0,
-    cropY: 0,
-    cropWidth: 512,
-    cropHeight: 512
+const setSTORMParameters = () => {
+  apiSTORMControllerSetParameters({
+    threshold: 100,
+    roi_size: 15,
+    update_rate: 10
   })
     .then((data) => {
-      console.log("STORM experiment started:", data); // Handle success response
+      console.log("STORM parameters set:", data); // Handle success response
     })
     .catch((err) => {
-      console.error("Failed to start STORM experiment:", err); // Handle the error
+      console.error("Failed to set STORM parameters:", err); // Handle the error
     });
 };
 */

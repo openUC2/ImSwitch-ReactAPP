@@ -4,7 +4,7 @@ import createAxiosInstance from "./createAxiosInstance";
 const apiSTORMControllerGetStatus = async () => {
   try {
     const axiosInstance = createAxiosInstance(); // Create Axios instance
-    const response = await axiosInstance.get("/STORMReconController/getStatus"); // Send GET request
+    const response = await axiosInstance.get("/STORMReconController/getSTORMStatus"); // Send GET request
     return response.data; // Return the data from the response
   } catch (error) {
     console.error("Error fetching STORM status:", error);
