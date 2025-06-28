@@ -6,8 +6,6 @@ import WellSelectorComponent from "./WellSelectorComponent";
 import PointListEditorComponent from "./PointListEditorComponent";
 import PointListShapeEditorComponent from "./PointListShapeEditorComponent";
 import WebSocketComponent from "./WebSocketComponent";
-import LiveViewComponent from "./LiveViewComponent";
-import PositionControllerComponent from "./PositionControllerComponent";
 import PositionViewComponent from "./PositionViewComponent";
 import ParameterEditorWrapper from "./ParameterEditorWrapper";
 import ExperimentComponent from "./ExperimentComponent";

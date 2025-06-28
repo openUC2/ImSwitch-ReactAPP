@@ -32,6 +32,7 @@ import lightsheetReducer from "./slices/LightsheetSlice";
 import zarrinitialZarrReducer from "./slices/OmeZarrTileStreamSlice";
 import stresstestReducer from "./slices/StresstestSlice";
 import workflowReducer from "./slices/WorkflowSlice";
+import stormReducer from "./slices/STORMSlice";
 
 //#####################################################################################
 // Combine reducers
@@ -59,6 +60,7 @@ const rootReducer = combineReducers({
   omeZarrState: zarrinitialZarrReducer,
   stresstestState: stresstestReducer,
   workflowState: workflowReducer,
+  storm: stormReducer,
 });
 
 //#####################################################################################

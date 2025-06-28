@@ -170,6 +170,12 @@ const WebSocketHandler = () => {
         //update redux state
         dispatch(omeZarrSlice.setZarrUrl(dataJson.args.p0));
         dispatch(omeZarrSlice.tileArrived());
+      } else if (dataJson.name == "sigNSTORMImageAcquired") {
+        //console.log("sigNSTORMImageAcquired", dataJson);
+        // Update STORM frame count - expected p0 to be frame number
+        if (dataJson.args && dataJson.args.p0 !== undefined) {
+          dispatch({ type: 'storm/setCurrentFrameNumber', payload: dataJson.args.p0 });
+        }
       }
       else {
         //console.warn("WebSocket: Unhandled signal from socket:", dataJson.name);
