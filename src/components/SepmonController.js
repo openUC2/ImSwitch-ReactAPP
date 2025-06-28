@@ -243,7 +243,7 @@ export default function LepmonController({ hostIP, hostPort }) {
 
   const handleStop = async () => {
     try {
-      const urlStop = `${hostIP}:${hostPort}/LepmonController/stopExperiment`;
+      const urlStop = `${hostIP}:${hostPort}/LepmonController/stopLepmonExperiment`;
       const res = await fetch(urlStop, { method: "POST" });
       const data = await res.json();
       if (data.success) {
@@ -370,6 +370,82 @@ export default function LepmonController({ hostIP, hostPort }) {
     }
   };
 
+  // LepmonOS Control Functions (new)
+  const handleLepmonStartup = async () => {
+    try {
+      const url = `${hostIP}:${hostPort}/LepmonController/lepmonStartup`;
+      const response = await fetch(url, { method: "POST" });
+      const data = await response.json();
+      if (data.success) {
+        console.log("LepmonOS startup completed");
+      }
+    } catch (err) {
+      console.error("Error starting LepmonOS:", err);
+    }
+  };
+
+  const handleLepmonShutdown = async () => {
+    try {
+      const url = `${hostIP}:${hostPort}/LepmonController/lepmonShutdown`;
+      const response = await fetch(url, { method: "POST" });
+      const data = await response.json();
+      if (data.success) {
+        console.log("LepmonOS shutdown completed");
+      }
+    } catch (err) {
+      console.error("Error shutting down LepmonOS:", err);
+    }
+  };
+
+  const handleUVLedControl = async (action) => {
+    try {
+      const url = `${hostIP}:${hostPort}/LepmonController/lepmonUVLed`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action })
+      });
+      const data = await response.json();
+      if (data.success) {
+        dispatch(lepmonSlice.setLightState({ lightName: "UV_LED", isOn: data.state }));
+      }
+    } catch (err) {
+      console.error("Error controlling UV LED:", err);
+    }
+  };
+
+  const handleVisibleLedControl = async (action) => {
+    try {
+      const url = `${hostIP}:${hostPort}/LepmonController/lepmonVisibleLed`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action })
+      });
+      const data = await response.json();
+      if (data.success) {
+        dispatch(lepmonSlice.setLightState({ lightName: "Visible_LED", isOn: data.state }));
+      }
+    } catch (err) {
+      console.error("Error controlling Visible LED:", err);
+    }
+  };
+
+  // Live Sensor Data Fetch (new)
+  const fetchLiveSensorData = async () => {
+    try {
+      const url = `${hostIP}:${hostPort}/LepmonController/getSensorDataLive`;
+      const response = await fetch(url);
+      const data = await response.json();
+      if (data.success) {
+        dispatch(lepmonSlice.setSensorData(data.sensorData));
+        dispatch(lepmonSlice.setAvailableSensors(data.availableSensors));
+      }
+    } catch (err) {
+      console.error("Error fetching live sensor data:", err);
+    }
+  };
+
   return (
     <Paper style={{ padding: 20 }}>
       <Typography variant="h5">LepMon Controller</Typography>
@@ -464,9 +540,56 @@ export default function LepmonController({ hostIP, hostPort }) {
                     variant="contained"
                     color="secondary"
                     onClick={() => handleAllLightsToggle(false)}
+                    style={{ marginRight: 10 }}
                   >
                     All Lights Off
                   </Button>
+                </Grid>
+                
+                {/* Specialized LED Controls */}
+                <Grid item xs={12}>
+                  <Typography variant="subtitle2" style={{ marginTop: 16, marginBottom: 8 }}>
+                    Specialized LEDs
+                  </Typography>
+                </Grid>
+                <Grid item xs={6} md={3}>
+                  <Button
+                    variant="outlined"
+                    color="secondary"
+                    onClick={() => handleUVLedControl("on")}
+                    style={{ marginRight: 8 }}
+                  >
+                    UV LED On
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    onClick={() => handleUVLedControl("off")}
+                  >
+                    UV LED Off
+                  </Button>
+                </Grid>
+                <Grid item xs={6} md={3}>
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    onClick={() => handleVisibleLedControl("on")}
+                    style={{ marginRight: 8 }}
+                  >
+                    Visible LED On
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    onClick={() => handleVisibleLedControl("off")}
+                  >
+                    Visible LED Off
+                  </Button>
+                </Grid>
+
+                {/* Individual Light Controls */}
+                <Grid item xs={12}>
+                  <Typography variant="subtitle2" style={{ marginTop: 16, marginBottom: 8 }}>
+                    Individual LED Controls
+                  </Typography>
                 </Grid>
                 {availableLights.map((lightName) => (
                   <Grid item xs={6} md={4} key={lightName}>
@@ -482,6 +605,57 @@ export default function LepmonController({ hostIP, hostPort }) {
                     />
                   </Grid>
                 ))}
+              </Grid>
+            </AccordionDetails>
+          </Accordion>
+        </Grid>
+
+        {/* LepmonOS Controls Section */}
+        <Grid item xs={12}>
+          <Accordion>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="h6">LepmonOS Controls</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Grid container spacing={2}>
+                <Grid item xs={6} md={3}>
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    onClick={handleLepmonStartup}
+                    fullWidth
+                  >
+                    LepmonOS Startup
+                  </Button>
+                </Grid>
+                <Grid item xs={6} md={3}>
+                  <Button
+                    variant="outlined"
+                    color="secondary"
+                    onClick={handleLepmonShutdown}
+                    fullWidth
+                  >
+                    LepmonOS Shutdown
+                  </Button>
+                </Grid>
+                <Grid item xs={6} md={3}>
+                  <Button
+                    variant="outlined"
+                    onClick={fetchLiveSensorData}
+                    fullWidth
+                  >
+                    Update Sensors
+                  </Button>
+                </Grid>
+                <Grid item xs={6} md={3}>
+                  <Button
+                    variant="outlined"
+                    onClick={() => handleUpdateDisplay("Status Update", `Images: ${currentImageCount}`, `Time: ${new Date().toLocaleTimeString()}`, "LepMon Ready")}
+                    fullWidth
+                  >
+                    Update Display
+                  </Button>
+                </Grid>
               </Grid>
             </AccordionDetails>
           </Accordion>
@@ -567,14 +741,6 @@ export default function LepmonController({ hostIP, hostPort }) {
                       </Typography>
                     </CardContent>
                   </Card>
-                </Grid>
-                <Grid item xs={12}>
-                  <Button
-                    variant="outlined"
-                    onClick={() => handleUpdateDisplay("Status Update", `Images: ${currentImageCount}`, `Time: ${new Date().toLocaleTimeString()}`, "LepMon Ready")}
-                  >
-                    Update Display
-                  </Button>
                 </Grid>
               </Grid>
             </AccordionDetails>
