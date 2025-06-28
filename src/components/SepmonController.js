@@ -7,7 +7,17 @@ import {
   Switch,
   TextField,
   Grid,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  FormControlLabel,
+  Card,
+  CardContent,
+  CardMedia,
+  Box,
+  Chip,
 } from "@mui/material";
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 // ggf. weitere MUI-Komponenten wie Slider, IconButton etc.
 
 import { useWebSocket } from "../context/WebSocketContext"; // Beispiel: eigener WebSocket-Context
@@ -24,7 +34,7 @@ export default function LepmonController({ hostIP, hostPort }) {
   const isRunning = lepmonState.isRunning;
   const currentImageCount = lepmonState.currentImageCount;
   const serverTime = lepmonState.serverTime;
-  const deviceTime = lepmonState.deviceTime;
+  // const deviceTime = lepmonState.deviceTime; // Currently unused
   const insideTemp = lepmonState.insideTemp;
   const outsideTemp = lepmonState.outsideTemp;
   const humidity = lepmonState.humidity;
@@ -40,6 +50,18 @@ export default function LepmonController({ hostIP, hostPort }) {
   const lng = lepmonState.lng;
   const time = lepmonState.time;
   const date = lepmonState.date;
+
+  // New state variables
+  const lightStates = lepmonState.lightStates;
+  const availableLights = lepmonState.availableLights;
+  const hardwareStatus = lepmonState.hardwareStatus;
+  const latestImage = lepmonState.latestImage;
+  const lcdDisplay = lepmonState.lcdDisplay;
+  // const buttonStates = lepmonState.buttonStates; // Currently unused in UI
+  // const availableButtons = lepmonState.availableButtons; // Currently unused in UI
+  const timingConfig = lepmonState.timingConfig;
+  // const sensorData = lepmonState.sensorData; // Currently unused in UI  
+  // const availableSensors = lepmonState.availableSensors; // Currently unused in UI
 
   // WebSocket
   const socket = useWebSocket(); // Context, der `socket` zur Verfügung stellt
@@ -58,6 +80,23 @@ export default function LepmonController({ hostIP, hostPort }) {
         const resParams = await fetch(urlInitialParams);
         const paramsData = await resParams.json();
         dispatch(lepmonSlice.setInitialParams(paramsData));
+
+        // 3. Hole Hardware-Status (new)
+        const urlHardwareStatus = `${hostIP}:${hostPort}/LepmonController/getHardwareStatus`;
+        const resHardware = await fetch(urlHardwareStatus);
+        const hardwareData = await resHardware.json();
+        dispatch(lepmonSlice.setHardwareStatus(hardwareData.hardwareStatus));
+        dispatch(lepmonSlice.setLightStates(hardwareData.lightStates));
+        dispatch(lepmonSlice.setAvailableLights(hardwareData.availableLEDs));
+        dispatch(lepmonSlice.setButtonStates(hardwareData.buttonStates));
+        dispatch(lepmonSlice.setAvailableButtons(hardwareData.availableButtons));
+        dispatch(lepmonSlice.setLcdDisplay(hardwareData.lcdDisplay));
+
+        // 4. Hole Timing-Konfiguration (new)
+        const urlTimingConfig = `${hostIP}:${hostPort}/LepmonController/getTimingConfig`;
+        const resTiming = await fetch(urlTimingConfig);
+        const timingData = await resTiming.json();
+        dispatch(lepmonSlice.setTimingConfig(timingData));
       } catch (err) {
         console.error("Fehler beim Laden der Initialdaten:", err);
       }
@@ -85,7 +124,7 @@ export default function LepmonController({ hostIP, hostPort }) {
     const now = new Date();
     dispatch(lepmonSlice.setTime(now.toTimeString().slice(0, 8))); // HH:MM:SS
     dispatch(lepmonSlice.setDate(now.toISOString().slice(0, 10))); // YYYY-MM-DD
-  }, [dispatch]);
+  }, [dispatch, hostIP, hostPort]);
 
   // WebSocket-Ereignisse
   useEffect(() => {
@@ -116,6 +155,47 @@ export default function LepmonController({ hostIP, hostPort }) {
           break;
         case "serverTime":
           dispatch(lepmonSlice.setServerTime(data.value));
+          break;
+        case "sigUpdateImage":
+          // Handle lepmon images specifically
+          if (data.detectorname === "LepmonCamera" || data.detectorname === "lepmonCam") {
+            dispatch(lepmonSlice.setLatestImage(data.image));
+            if (data.format) {
+              dispatch(lepmonSlice.setImageFormat(data.format));
+            }
+          }
+          break;
+        case "sigLightStateChanged":
+          // Handle light state changes
+          if (data.args && data.args.p0) {
+            const lightData = JSON.parse(data.args.p0.replace(/'/g, '"'));
+            dispatch(lepmonSlice.setLightState({
+              lightName: lightData.lightName,
+              isOn: lightData.state
+            }));
+          }
+          break;
+        case "sigLCDDisplayUpdate":
+          // Handle LCD display updates
+          if (data.args && data.args.p0) {
+            const displayLines = data.args.p0.split('\n');
+            dispatch(lepmonSlice.setLcdDisplay({
+              line1: displayLines[0] || "",
+              line2: displayLines[1] || "",
+              line3: displayLines[2] || "",
+              line4: displayLines[3] || ""
+            }));
+          }
+          break;
+        case "sigButtonPressed":
+          // Handle button press events
+          if (data.args && data.args.p0) {
+            const buttonData = JSON.parse(data.args.p0.replace(/'/g, '"'));
+            dispatch(lepmonSlice.setButtonState({
+              buttonName: buttonData.buttonName,
+              isPressed: buttonData.state
+            }));
+          }
           break;
         default:
           console.log("Unbekannter msgType:", data.msgType);
@@ -178,7 +258,7 @@ export default function LepmonController({ hostIP, hostPort }) {
   const handleFocus = async () => {
     try {
       const urlFocus = `${hostIP}:${hostPort}/LepmonController/focusMode`;
-      const res = await fetch(urlFocus, { method: "POST" });
+      await fetch(urlFocus, { method: "POST" });
       // Backend startet 15s-Fokusmodus => sendet "focusSharpness" als WS
     } catch (err) {
       console.error("Fehler beim Fokus:", err);
@@ -190,15 +270,111 @@ export default function LepmonController({ hostIP, hostPort }) {
     // z. B. mit Confirm-Dialog
     try {
       const urlReboot = `${hostIP}:${hostPort}/LepmonController/reboot`;
-      const res = await fetch(urlReboot, { method: "POST" });
+      await fetch(urlReboot, { method: "POST" });
     } catch (err) {
       console.error("Reboot-Error:", err);
+    }
+  };
+
+  // Light Control Functions (new)
+  const handleLightToggle = async (lightName, newState) => {
+    try {
+      const url = `${hostIP}:${hostPort}/LepmonController/setLightState`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lightName, state: newState })
+      });
+      const data = await response.json();
+      if (data.success) {
+        dispatch(lepmonSlice.setLightState({ lightName, isOn: newState }));
+      }
+    } catch (err) {
+      console.error("Error controlling light:", err);
+    }
+  };
+
+  const handleAllLightsToggle = async (newState) => {
+    try {
+      const url = `${hostIP}:${hostPort}/LepmonController/setAllLightsState`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ state: newState })
+      });
+      const data = await response.json();
+      if (data.success) {
+        // Update all light states
+        const newLightStates = {};
+        availableLights.forEach(light => {
+          newLightStates[light] = newState;
+        });
+        dispatch(lepmonSlice.setLightStates(newLightStates));
+      }
+    } catch (err) {
+      console.error("Error controlling all lights:", err);
+    }
+  };
+
+  // Snap Image Function (new)
+  const handleSnapImage = async () => {
+    try {
+      const url = `${hostIP}:${hostPort}/LepmonController/lepmonSnapImage`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ format: "jpeg", exposure: exposure })
+      });
+      const data = await response.json();
+      if (data.success) {
+        console.log("Image captured:", data.filename);
+      }
+    } catch (err) {
+      console.error("Error capturing image:", err);
+    }
+  };
+
+  // Update LCD Display Function (new)
+  const handleUpdateDisplay = async (line1, line2, line3, line4) => {
+    try {
+      const url = `${hostIP}:${hostPort}/LepmonController/updateLCDDisplay`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ line1, line2, line3, line4 })
+      });
+      const data = await response.json();
+      if (data.success) {
+        dispatch(lepmonSlice.setLcdDisplay({ line1, line2, line3, line4 }));
+      }
+    } catch (err) {
+      console.error("Error updating display:", err);
+    }
+  };
+
+  // Timing Configuration Update Function (new)
+  const handleTimingConfigUpdate = async (newConfig) => {
+    try {
+      const url = `${hostIP}:${hostPort}/LepmonController/setTimingConfig`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ config: newConfig })
+      });
+      const data = await response.json();
+      if (data.success) {
+        dispatch(lepmonSlice.setTimingConfig(data.updated_config));
+      }
+    } catch (err) {
+      console.error("Error updating timing config:", err);
     }
   };
 
   return (
     <Paper style={{ padding: 20 }}>
       <Typography variant="h5">LepMon Controller</Typography>
+      
+      {/* Main Status Section */}
       <Grid container spacing={2}>
         <Grid item xs={12}>
           <Typography>
@@ -214,6 +390,198 @@ export default function LepmonController({ hostIP, hostPort }) {
           </Typography>
         </Grid>
 
+        {/* Hardware Status Section */}
+        <Grid item xs={12}>
+          <Accordion>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="h6">Hardware Status</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Grid container spacing={2}>
+                <Grid item xs={6}>
+                  <Typography>GPIO Available: 
+                    <Chip 
+                      label={hardwareStatus.gpio_available ? "Yes" : "No"} 
+                      color={hardwareStatus.gpio_available ? "success" : "error"}
+                      size="small"
+                      style={{ marginLeft: 8 }}
+                    />
+                  </Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography>OLED Available: 
+                    <Chip 
+                      label={hardwareStatus.oled_available ? "Yes" : "No"} 
+                      color={hardwareStatus.oled_available ? "success" : "error"}
+                      size="small"
+                      style={{ marginLeft: 8 }}
+                    />
+                  </Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography>I2C Available: 
+                    <Chip 
+                      label={hardwareStatus.i2c_available ? "Yes" : "No"} 
+                      color={hardwareStatus.i2c_available ? "success" : "error"}
+                      size="small"
+                      style={{ marginLeft: 8 }}
+                    />
+                  </Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography>Simulation Mode: 
+                    <Chip 
+                      label={hardwareStatus.simulation_mode ? "On" : "Off"} 
+                      color={hardwareStatus.simulation_mode ? "warning" : "success"}
+                      size="small"
+                      style={{ marginLeft: 8 }}
+                    />
+                  </Typography>
+                </Grid>
+              </Grid>
+            </AccordionDetails>
+          </Accordion>
+        </Grid>
+
+        {/* Light Control Section */}
+        <Grid item xs={12}>
+          <Accordion>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="h6">Light Controls</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={() => handleAllLightsToggle(true)}
+                    style={{ marginRight: 10 }}
+                  >
+                    All Lights On
+                  </Button>
+                  <Button
+                    variant="contained"
+                    color="secondary"
+                    onClick={() => handleAllLightsToggle(false)}
+                  >
+                    All Lights Off
+                  </Button>
+                </Grid>
+                {availableLights.map((lightName) => (
+                  <Grid item xs={6} md={4} key={lightName}>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={lightStates[lightName] || false}
+                          onChange={(e) => handleLightToggle(lightName, e.target.checked)}
+                          color="primary"
+                        />
+                      }
+                      label={`${lightName} LED`}
+                    />
+                  </Grid>
+                ))}
+              </Grid>
+            </AccordionDetails>
+          </Accordion>
+        </Grid>
+
+        {/* Image Display Section */}
+        <Grid item xs={12}>
+          <Accordion>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="h6">Latest Image</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Grid container spacing={2}>
+                <Grid item xs={12} md={8}>
+                  {latestImage ? (
+                    <Card>
+                      <CardMedia
+                        component="img"
+                        style={{ maxHeight: 400, objectFit: 'contain' }}
+                        image={`data:image/jpeg;base64,${latestImage}`}
+                        alt="Latest captured image"
+                      />
+                      <CardContent>
+                        <Typography variant="body2">
+                          Latest image from LepMon camera
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <Box 
+                      style={{ 
+                        height: 200, 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        border: '2px dashed #ccc',
+                        borderRadius: 8
+                      }}
+                    >
+                      <Typography color="textSecondary">
+                        No image available. Start experiment or capture image.
+                      </Typography>
+                    </Box>
+                  )}
+                </Grid>
+                <Grid item xs={12} md={4}>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleSnapImage}
+                    fullWidth
+                  >
+                    Capture Image
+                  </Button>
+                </Grid>
+              </Grid>
+            </AccordionDetails>
+          </Accordion>
+        </Grid>
+
+        {/* LCD Display Section */}
+        <Grid item xs={12}>
+          <Accordion>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="h6">OLED Display</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <Card style={{ backgroundColor: '#000', color: '#0f0', fontFamily: 'monospace' }}>
+                    <CardContent>
+                      <Typography style={{ color: '#0f0', fontSize: '12px' }}>
+                        {lcdDisplay.line1 || "Line 1"}
+                      </Typography>
+                      <Typography style={{ color: '#0f0', fontSize: '12px' }}>
+                        {lcdDisplay.line2 || "Line 2"}
+                      </Typography>
+                      <Typography style={{ color: '#0f0', fontSize: '12px' }}>
+                        {lcdDisplay.line3 || "Line 3"}
+                      </Typography>
+                      <Typography style={{ color: '#0f0', fontSize: '12px' }}>
+                        {lcdDisplay.line4 || "Line 4"}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+                <Grid item xs={12}>
+                  <Button
+                    variant="outlined"
+                    onClick={() => handleUpdateDisplay("Status Update", `Images: ${currentImageCount}`, `Time: ${new Date().toLocaleTimeString()}`, "LepMon Ready")}
+                  >
+                    Update Display
+                  </Button>
+                </Grid>
+              </Grid>
+            </AccordionDetails>
+          </Accordion>
+        </Grid>
+
+        {/* Camera and Experiment Settings */}
         <Grid item xs={6}>
           <TextField
             label="Exposure"
@@ -243,7 +611,7 @@ export default function LepmonController({ hostIP, hostPort }) {
         </Grid>
 
         <Grid item xs={6}>
-          <Typography>Timelapse Period (Sekunden)</Typography>
+          <Typography>Reboot Control</Typography>
           <Switch
             checked={!rebootLocked}
             onChange={() => dispatch(lepmonSlice.setRebootLocked(!rebootLocked))}
@@ -256,6 +624,55 @@ export default function LepmonController({ hostIP, hostPort }) {
           >
             Reboot
           </Button>
+        </Grid>
+
+        {/* Timing Configuration Section */}
+        <Grid item xs={12}>
+          <Accordion>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="h6">Timing Configuration</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Grid container spacing={2}>
+                <Grid item xs={6}>
+                  <TextField
+                    label="Acquisition Interval (s)"
+                    type="number"
+                    value={timingConfig.acquisitionInterval || 60}
+                    onChange={(e) => handleTimingConfigUpdate({ acquisitionInterval: parseInt(e.target.value) })}
+                    fullWidth
+                  />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    label="Stabilization Time (s)"
+                    type="number"
+                    value={timingConfig.stabilizationTime || 5}
+                    onChange={(e) => handleTimingConfigUpdate({ stabilizationTime: parseInt(e.target.value) })}
+                    fullWidth
+                  />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    label="Pre-Acquisition Delay (s)"
+                    type="number"
+                    value={timingConfig.preAcquisitionDelay || 2}
+                    onChange={(e) => handleTimingConfigUpdate({ preAcquisitionDelay: parseInt(e.target.value) })}
+                    fullWidth
+                  />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    label="Post-Acquisition Delay (s)"
+                    type="number"
+                    value={timingConfig.postAcquisitionDelay || 1}
+                    onChange={(e) => handleTimingConfigUpdate({ postAcquisitionDelay: parseInt(e.target.value) })}
+                    fullWidth
+                  />
+                </Grid>
+              </Grid>
+            </AccordionDetails>
+          </Accordion>
         </Grid>
 
         <Grid item xs={6}>
@@ -286,18 +703,21 @@ export default function LepmonController({ hostIP, hostPort }) {
             value={date}
             onChange={(e) => dispatch(lepmonSlice.setDate(e.target.value))}
           />
-          
         </Grid>
 
+        {/* Focus Control */}
         <Grid item xs={12}>
-            <Button variant="contained" color="primary" onClick={handleFocus}>
-                Focus
-            </Button>
-            {sharpnessValue && (
-                <Typography>Sharpness: {sharpnessValue}</Typography>
-            )}  
+          <Button variant="contained" color="primary" onClick={handleFocus}>
+            Focus
+          </Button>
+          {sharpnessValue && (
+            <Typography style={{ marginLeft: 16, display: 'inline' }}>
+              Sharpness: {sharpnessValue}
+            </Typography>
+          )}  
         </Grid>
 
+        {/* Experiment Control */}
         <Grid item xs={12} style={{ marginTop: 20 }}>
           <Button
             variant="contained"
