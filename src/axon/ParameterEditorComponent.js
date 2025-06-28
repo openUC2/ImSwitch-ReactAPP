@@ -270,10 +270,9 @@ const ParameterEditorComponent = () => {
           <tr>
             <td style={tdStyle}>Min Focus Position</td>
             <td style={tdStyle}>
+              {/* No min/max, allow free entry, step=1 */}
               <input
                 type="number"
-                min={parameterRange.autoFocus.min}
-                max={parameterRange.autoFocus.max}
                 step="1"
                 value={parameterValue.autoFocusMin}
                 onChange={(e) =>
@@ -286,10 +285,9 @@ const ParameterEditorComponent = () => {
           <tr>
             <td style={tdStyle}>Max Focus Position</td>
             <td style={tdStyle}>
+              {/* No min/max, allow free entry, step=1 */}
               <input
                 type="number"
-                min={parameterRange.autoFocus.min}
-                max={parameterRange.autoFocus.max}
                 step="1"
                 value={parameterValue.autoFocusMax}
                 onChange={(e) =>
@@ -302,10 +300,9 @@ const ParameterEditorComponent = () => {
           <tr>
             <td style={tdStyle}>Step Size</td>
             <td style={tdStyle}>
+              {/* No min/max, allow free entry, step=0.1 */}
               <input
                 type="number"
-                min={parameterRange.autoFocusStepSize.min}
-                max={parameterRange.autoFocusStepSize.max}
                 step="0.1"
                 value={parameterValue.autoFocusStepSize}
                 onChange={(e) =>
@@ -325,10 +322,9 @@ const ParameterEditorComponent = () => {
             </td>
             <td style={tdStyle}>Min Focus Position</td>
             <td style={tdStyle}>
+              {/* No min/max, allow free entry, step=1 */}
               <input
                 type="number"
-                min={parameterRange.zStack.min}
-                max={parameterRange.zStack.max}
                 step="1"
                 value={parameterValue.zStackMin}
                 onChange={(e) =>
@@ -341,10 +337,9 @@ const ParameterEditorComponent = () => {
           <tr>
             <td style={tdStyle}>Max Focus Position</td>
             <td style={tdStyle}>
+              {/* No min/max, allow free entry, step=1 */}
               <input
                 type="number"
-                min={parameterRange.zStack.min}
-                max={parameterRange.zStack.max}
                 step="1"
                 value={parameterValue.zStackMax}
                 onChange={(e) =>
@@ -357,10 +352,9 @@ const ParameterEditorComponent = () => {
           <tr>
             <td style={tdStyle}>Step Size</td>
             <td style={tdStyle}>
+              {/* No min/max, allow free entry, step=0.1 */}
               <input
                 type="number"
-                min={parameterRange.zStackStepSize.min}
-                max={parameterRange.zStackStepSize.max}
                 step="0.1"
                 value={parameterValue.zStackStepSize}
                 onChange={(e) =>

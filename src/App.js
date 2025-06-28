@@ -19,6 +19,7 @@ import ExtendedLEDMatrixController from "./components/ExtendedLEDMatrixControlle
 import StageOffsetCalibration from "./components/StageOffsetCalibrationController";
 import DetectorTriggerController from "./components/DetectorTriggerController";
 import StresstestController from "./components/StresstestController";
+import STORMController from "./components/STORMController.js";
 
 import theme from "./theme";
 import {
@@ -578,6 +579,17 @@ const handleFileManagerInitialPathChange = (event) => {
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "HistoScan" : ""} />
               </ListItem>
+              {/* STORM */}
+              <ListItem
+                button
+                selected={selectedPlugin === "STORM"}
+                onClick={() => handlePluginChange("STORM")}
+              >
+                <ListItemIcon>  
+                  <SettingsOverscanSharpIcon />
+                </ListItemIcon>
+                <ListItemText primary={sidebarVisible ? "STORM" : ""} />
+              </ListItem>
               {/* Stresstest */}
               <ListItem
                 button
@@ -850,6 +862,9 @@ const handleFileManagerInitialPathChange = (event) => {
             </Box>
             {selectedPlugin === "HistoScan" && (  
                 <HistoScanController hostIP={hostIP} hostPort={apiPort} />
+            )}
+            {selectedPlugin === "STORM" && (
+                <STORMController hostIP={hostIP} hostPort={apiPort} />
             )}
             {selectedPlugin === "Stresstest" && (
               <StresstestController hostIP={hostIP} hostPort={apiPort} />

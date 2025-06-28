@@ -24,7 +24,7 @@ import { useWebSocket } from "../context/WebSocketContext";
 import * as stormSlice from "../state/slices/STORMSlice.js";
 import * as connectionSettingsSlice from "../state/slices/ConnectionSettingsSlice.js";
 import * as parameterRangeSlice from "../state/slices/ParameterRangeSlice.js";
-import * as liveStreamSlice from "../state/slices/LiveStreamSlice.js";
+import LiveViewControlWrapper from "../axon/LiveViewControlWrapper";
 import apiSTORMControllerStart from "../backendapi/apiSTORMControllerStart.js";
 import apiSTORMControllerStop from "../backendapi/apiSTORMControllerStop.js";
 import apiSTORMControllerGetStatus from "../backendapi/apiSTORMControllerGetStatus.js";
@@ -46,24 +46,55 @@ const TabPanel = (props) => {
   );
 };
 
+// Utility function to perform min/max intensity stretch on an image
+function stretchImageIntensity(imageData) {
+  // Find min and max pixel values
+  let min = 255,
+    max = 0;
+  for (let i = 0; i < imageData.data.length; i += 4) {
+    const v = imageData.data[i]; // Assume grayscale PNG
+    if (v < min) min = v;
+    if (v > max) max = v;
+  }
+  // Stretch intensities
+  const range = max - min || 1;
+  for (let i = 0; i < imageData.data.length; i += 4) {
+    const v = imageData.data[i];
+    const stretched = Math.round(((v - min) / range) * 255);
+    imageData.data[i] = stretched;
+    imageData.data[i + 1] = stretched;
+    imageData.data[i + 2] = stretched;
+    // Alpha channel remains unchanged
+  }
+  return imageData;
+}
+
 const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
   // Redux dispatcher
   const dispatch = useDispatch();
-  
+
   // Access global Redux state
   const stormState = useSelector(stormSlice.getSTORMState);
-  const connectionSettingsState = useSelector(connectionSettingsSlice.getConnectionSettingsState);
+  const connectionSettingsState = useSelector(
+    connectionSettingsSlice.getConnectionSettingsState
+  );
   const parameterRangeState = useSelector(parameterRangeSlice.getParameterRangeState);
   const liveStreamState = useSelector((state) => state.liveStreamState);
-  
+
   // Local state for crop region selection and detector parameters
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [laserActiveStates, setLaserActiveStates] = useState({});
   const [detectorGain, setDetectorGain] = useState(0);
   const [cropImage, setCropImage] = useState(null); // Image for cropping that loads on mount
+  // Add state for loaded image and its pixel dimensions
+  const [loadedImage, setLoadedImage] = useState(null); // holds stretched PNG data URL
+  const [imageDims, setImageDims] = useState({ width: 0, height: 0 });
+  const [isCropping, setIsCropping] = useState(false);
+  const [cropStart, setCropStart] = useState({ x: 0, y: 0 });
+  const [cropPreview, setCropPreview] = useState(null); // for preview rectangle
   const canvasRef = useRef(null);
-  
+
   // Use Redux state instead of local useState
   const tabIndex = stormState.tabIndex;
   const experimentName = stormState.experimentName;
@@ -73,10 +104,10 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
   const isRunning = stormState.isRunning;
   const currentFrameNumber = stormState.currentFrameNumber;
   const reconstructedImage = stormState.reconstructedImage;
-  
+
   // Use global live stream image
   const liveStreamImage = liveStreamState.liveViewImage;
-  
+
   const socket = useWebSocket();
 
   // Load initial image for cropping on component mount
@@ -292,15 +323,22 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
     dispatch(stormSlice.setTabIndex(newValue));
   };
 
-  // Handle exposure time setting via SettingsController
+  // --- Exposure Time and Gain boundaries from parameterRangeState ---
+  const minExposure = parameterRangeState?.exposureTimeMin ?? 1;
+  const maxExposure = parameterRangeState?.exposureTimeMax ?? 1000;
+  const minGain = parameterRangeState?.detectorGainMin ?? 0;
+  const maxGain = parameterRangeState?.detectorGainMax ?? 100;
+
+  // --- Synchronized Exposure Time ---
   const setExposureTime = async (value) => {
-    dispatch(stormSlice.setExposureTime(value));
-    
-    // Also update backend immediately if connected
+    // Clamp value to min/max
+    let newValue = Math.max(minExposure, Math.min(maxExposure, Number(value)));
+    dispatch(stormSlice.setExposureTime(newValue));
+    // Update backend immediately
     if (connectionSettingsState.ip && connectionSettingsState.apiPort) {
       try {
         await fetch(
-          `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/SettingsController/setExposureTime?exposureTime=${value}`
+          `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/SettingsController/setExposureTime?exposureTime=${newValue}`
         );
       } catch (error) {
         console.error("Failed to update exposure time in backend:", error);
@@ -358,93 +396,144 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
     }
   };
 
-  // Reset crop region to default
-  const resetCropRegion = () => {
-    dispatch(stormSlice.setCropRegion({
-      x: 0,
-      y: 0,
-      width: 512,
-      height: 512,
-    }));
+  // Helper: Min/Max stretch for PNG (Uint8)
+  const minMaxStretch = async (imgUrl) => {
+    return new Promise((resolve) => {
+      const img = new window.Image();
+      img.crossOrigin = "Anonymous";
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+        let min = 255, max = 0;
+        for (let i = 0; i < data.length; i += 4) {
+          const v = data[i];
+          if (v < min) min = v;
+          if (v > max) max = v;
+        }
+        const range = max - min || 1;
+        for (let i = 0; i < data.length; i += 4) {
+          const stretched = Math.round(((data[i] - min) / range) * 255);
+          data[i] = data[i + 1] = data[i + 2] = stretched;
+        }
+        ctx.putImageData(imageData, 0, 0);
+        resolve(canvas.toDataURL("image/png"));
+      };
+      img.src = imgUrl;
+    });
   };
 
-  // Canvas drawing for crop region selection
-  const drawCanvas = useCallback(() => {
+  // Load image from backend and stretch
+  const handleLoadImage = async () => {
+    try {
+      const response = await fetch(
+        `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/RecordingController/snapNumpyToFastAPI?resizeFactor=1`
+      );
+      if (!response.ok) throw new Error("Failed to load image");
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      // Get true pixel dimensions
+      const img = new window.Image();
+      img.onload = async () => {
+        setImageDims({ width: img.naturalWidth, height: img.naturalHeight });
+        const stretchedUrl = await minMaxStretch(url);
+        setLoadedImage(stretchedUrl);
+        // Reset crop region to full image
+        dispatch(stormSlice.setCropRegion({
+          x: 0,
+          y: 0,
+          width: img.naturalWidth,
+          height: img.naturalHeight,
+        }));
+      };
+      img.src = url;
+    } catch (e) {
+      alert("Could not load image: " + e.message);
+    }
+  };
+
+  // Draw canvas with crop rectangle
+  const drawCropCanvas = useCallback(() => {
     const canvas = canvasRef.current;
-    const imageToUse = cropImage || liveStreamImage;
-    if (!canvas || !imageToUse) return;
-    
-    const ctx = canvas.getContext('2d');
-    const img = new Image();
-    
+    const imgSrc = loadedImage;
+    if (!canvas || !imgSrc) return;
+    const ctx = canvas.getContext("2d");
+    const img = new window.Image();
     img.onload = () => {
-      // Clear canvas
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
-      // Draw image
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      
       // Draw crop rectangle
-      ctx.strokeStyle = '#ff0000';
+      const scaleX = canvas.width / imageDims.width;
+      const scaleY = canvas.height / imageDims.height;
+      const crop = cropPreview || cropRegion;
+      ctx.save();
+      ctx.strokeStyle = "#ff0000";
       ctx.lineWidth = 2;
       ctx.strokeRect(
-        (cropRegion.x / img.naturalWidth) * canvas.width,
-        (cropRegion.y / img.naturalHeight) * canvas.height,
-        (cropRegion.width / img.naturalWidth) * canvas.width,
-        (cropRegion.height / img.naturalHeight) * canvas.height
+        crop.x * scaleX,
+        crop.y * scaleY,
+        crop.width * scaleX,
+        crop.height * scaleY
       );
+      ctx.restore();
     };
-    
-    img.src = imageToUse;
-  }, [cropImage, liveStreamImage, cropRegion]);
+    img.src = imgSrc;
+  }, [loadedImage, imageDims, cropRegion, cropPreview]);
 
-  // Update canvas when image or crop region changes
   useEffect(() => {
-    drawCanvas();
-  }, [drawCanvas]);
+    drawCropCanvas();
+  }, [drawCropCanvas]);
 
-  // Handle mouse events for crop region selection
-  const handleMouseDown = (e) => {
+  // Mouse events for cropping
+  const handleCropMouseDown = (e) => {
+    if (!loadedImage) return;
     const canvas = canvasRef.current;
-    if (!canvas) return;
-    
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    setIsDragging(true);
-    setDragStart({ x, y });
+    const x = ((e.clientX - rect.left) * imageDims.width) / canvas.width;
+    const y = ((e.clientY - rect.top) * imageDims.height) / canvas.height;
+    setIsCropping(true);
+    setCropStart({ x, y });
+    setCropPreview({ x, y, width: 1, height: 1 });
   };
-
-  const handleMouseMove = (e) => {
-    if (!isDragging) return;
-    
+  const handleCropMouseMove = (e) => {
+    if (!isCropping) return;
     const canvas = canvasRef.current;
-    if (!canvas) return;
-    
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    // Calculate crop region in image coordinates
-    const imgWidth = 1024; // Assume standard camera resolution, could be made dynamic
-    const imgHeight = 1024;
-    
-    const cropX = Math.min(dragStart.x, x) * (imgWidth / canvas.width);
-    const cropY = Math.min(dragStart.y, y) * (imgHeight / canvas.height);
-    const cropWidth = Math.abs(x - dragStart.x) * (imgWidth / canvas.width);
-    const cropHeight = Math.abs(y - dragStart.y) * (imgHeight / canvas.height);
-    
-    dispatch(stormSlice.setCropRegion({
+    const x = ((e.clientX - rect.left) * imageDims.width) / canvas.width;
+    const y = ((e.clientY - rect.top) * imageDims.height) / canvas.height;
+    const cropX = Math.max(0, Math.min(cropStart.x, x));
+    const cropY = Math.max(0, Math.min(cropStart.y, y));
+    const cropW = Math.abs(x - cropStart.x);
+    const cropH = Math.abs(y - cropStart.y);
+    setCropPreview({
       x: Math.round(cropX),
       y: Math.round(cropY),
-      width: Math.round(cropWidth),
-      height: Math.round(cropHeight),
-    }));
+      width: Math.round(cropW),
+      height: Math.round(cropH),
+    });
+  };
+  const handleCropMouseUp = () => {
+    if (isCropping && cropPreview) {
+      dispatch(stormSlice.setCropRegion(cropPreview));
+    }
+    setIsCropping(false);
+    setCropPreview(null);
   };
 
-  const handleMouseUp = () => {
-    setIsDragging(false);
+  // Reset crop region to full image
+  const resetCropRegion = () => {
+    if (loadedImage && imageDims.width && imageDims.height) {
+      dispatch(stormSlice.setCropRegion({
+        x: 0,
+        y: 0,
+        width: imageDims.width,
+        height: imageDims.height,
+      }));
+    }
   };
 
   return (
@@ -459,32 +548,7 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
             
             {/* Live stream image */}
             <Box sx={{ flex: 1, minHeight: 400, border: '1px solid #ccc', mb: 2 }}>
-              {liveStreamImage ? (
-                <img 
-                  src={liveStreamImage} 
-                  alt="Live Stream" 
-                  style={{ 
-                    width: "100%", 
-                    height: "100%", 
-                    objectFit: "contain" 
-                  }} 
-                />
-              ) : (
-                <Box 
-                  sx={{ 
-                    width: '100%', 
-                    height: '100%', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    backgroundColor: '#f5f5f5'
-                  }}
-                >
-                  <Typography color="textSecondary">
-                    No live stream available
-                  </Typography>
-                </Box>
-              )}
+              <LiveViewControlWrapper />
             </Box>
 
             {/* Status and frame counter */}
@@ -535,31 +599,82 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
                   margin="normal"
                 />
               </Grid>
-              
               <Grid item xs={12}>
                 <Typography gutterBottom>
                   Exposure Time: {exposureTime} ms
                 </Typography>
-                <Slider
-                  value={exposureTime}
-                  onChange={(e, value) => setExposureTime(value)}
-                  min={1}
-                  max={1000}
-                  valueLabelDisplay="auto"
-                />
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Slider
+                    value={exposureTime}
+                    min={parameterRangeState.exposureTimeMin || 1}
+                    max={parameterRangeState.exposureTimeMax || 1000}
+                    onChange={(e, value) => {
+                      // Clamp value and update
+                      const min = parameterRangeState.exposureTimeMin || 1;
+                      const max = parameterRangeState.exposureTimeMax || 1000;
+                      let v = Math.max(min, Math.min(max, value));
+                      setExposureTime(v);
+                    }}
+                    valueLabelDisplay="auto"
+                    sx={{ flex: 1 }}
+                  />
+                  <TextField
+                    type="number"
+                    value={exposureTime}
+                    onChange={e => {
+                      const min = parameterRangeState.exposureTimeMin || 1;
+                      const max = parameterRangeState.exposureTimeMax || 1000;
+                      let v = parseInt(e.target.value) || min;
+                      v = Math.max(min, Math.min(max, v));
+                      setExposureTime(v);
+                    }}
+                    inputProps={{
+                      min: parameterRangeState.exposureTimeMin || 1,
+                      max: parameterRangeState.exposureTimeMax || 1000,
+                      style: { width: 80 }
+                    }}
+                    size="small"
+                  />
+                </Box>
               </Grid>
 
               <Grid item xs={12}>
                 <Typography gutterBottom>
                   Detector Gain: {detectorGain}
                 </Typography>
-                <Slider
-                  value={detectorGain}
-                  onChange={(e, value) => updateDetectorGain(value)}
-                  min={0}
-                  max={100}
-                  valueLabelDisplay="auto"
-                />
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Slider
+                    value={detectorGain}
+                    min={parameterRangeState.detectorGainMin || 0}
+                    max={parameterRangeState.detectorGainMax || 100}
+                    onChange={(e, value) => {
+                      // Clamp value and update
+                      const min = parameterRangeState.detectorGainMin || 0;
+                      const max = parameterRangeState.detectorGainMax || 100;
+                      let v = Math.max(min, Math.min(max, value));
+                      updateDetectorGain(v);
+                    }}
+                    valueLabelDisplay="auto"
+                    sx={{ flex: 1 }}
+                  />
+                  <TextField
+                    type="number"
+                    value={detectorGain}
+                    onChange={e => {
+                      const min = parameterRangeState.detectorGainMin || 0;
+                      const max = parameterRangeState.detectorGainMax || 100;
+                      let v = parseInt(e.target.value) || min;
+                      v = Math.max(min, Math.min(max, v));
+                      updateDetectorGain(v);
+                    }}
+                    inputProps={{
+                      min: parameterRangeState.detectorGainMin || 0,
+                      max: parameterRangeState.detectorGainMax || 100,
+                      style: { width: 80 }
+                    }}
+                    size="small"
+                  />
+                </Box>
               </Grid>
 
               {/* Laser Controls */}
@@ -643,37 +758,45 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
                   <Typography variant="h6">
                     Select Crop Region
                   </Typography>
-                  <Button
-                    variant="outlined"
-                    startIcon={<RefreshIcon />}
-                    onClick={resetCropRegion}
-                    size="small"
-                  >
-                    Reset Crop
-                  </Button>
+                  <Box>
+                    <Button
+                      variant="outlined"
+                      onClick={handleLoadImage}
+                      size="small"
+                      sx={{ mr: 1 }}
+                    >
+                      Load Image
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      startIcon={<RefreshIcon />}
+                      onClick={resetCropRegion}
+                      size="small"
+                    >
+                      Reset Crop
+                    </Button>
+                  </Box>
                 </Box>
                 <Typography variant="body2" color="textSecondary" gutterBottom>
-                  Click and drag to select the crop region
+                  Load an image, then click and drag to select the crop region
                 </Typography>
               </Grid>
-              
               <Grid item xs={12}>
                 <canvas
                   ref={canvasRef}
-                  width={400}
-                  height={400}
+                  width={imageDims.width || 400}
+                  height={imageDims.height || 400}
                   style={{
                     border: '1px solid #ccc',
-                    cursor: isDragging ? 'crosshair' : 'pointer',
+                    cursor: isCropping ? 'crosshair' : 'pointer',
                     maxWidth: '100%',
                   }}
-                  onMouseDown={handleMouseDown}
-                  onMouseMove={handleMouseMove}
-                  onMouseUp={handleMouseUp}
-                  onMouseLeave={handleMouseUp}
+                  onMouseDown={handleCropMouseDown}
+                  onMouseMove={handleCropMouseMove}
+                  onMouseUp={handleCropMouseUp}
+                  onMouseLeave={handleCropMouseUp}
                 />
               </Grid>
-              
               <Grid item xs={6}>
                 <TextField
                   label="X Position"
@@ -683,7 +806,6 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
                   fullWidth
                 />
               </Grid>
-              
               <Grid item xs={6}>
                 <TextField
                   label="Y Position"
@@ -693,7 +815,6 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
                   fullWidth
                 />
               </Grid>
-              
               <Grid item xs={6}>
                 <TextField
                   label="Width"
@@ -703,7 +824,6 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
                   fullWidth
                 />
               </Grid>
-              
               <Grid item xs={6}>
                 <TextField
                   label="Height"
