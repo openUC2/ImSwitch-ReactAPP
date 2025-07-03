@@ -138,7 +138,7 @@ export default function LepmonController({ hostIP, hostPort }) {
           dispatch(lepmonSlice.setCurrentImageCount(data.args.p0));
           break;
         case "temperatureUpdate":
-            const _args = JSON.parse(data.args.p0.replace(/'/g, '"'));
+            const _args = data.args.p0;
             dispatch(lepmonSlice.setTemperatureData({
               innerTemp: _args.innerTemp,
               outerTemp: _args.outerTemp,

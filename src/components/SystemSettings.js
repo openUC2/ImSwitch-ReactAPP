@@ -14,7 +14,7 @@ export default function SystemSettings({ hostIP, hostPort }) {
   const [isImSwitchRunning, setIsImSwitchRunning] = useState(false);
   const [diskUsage, setDiskUsage] = useState(null);
 
-  const base = `${hostIP}:${hostPort}/UC2ConfigController`;
+  const base = `${hostIP}:${hostPort}`;
 
   const callEndpoint = async (url) => {
     try {
@@ -122,6 +122,17 @@ export default function SystemSettings({ hostIP, hostPort }) {
             onClick={() => callEndpoint(`${base}/restartRaspi`)}
           >
             Reboot Raspberry Pi
+          </Button>
+        </Box>
+
+        <Box sx={{ mt: 1 }}>
+          <Button
+            variant="outlined"
+            color="error"
+            disabled={!enableRaspi}
+            onClick={() => callEndpoint(`${base}/shutdownRaspi`)}
+          >
+            Shutdown Raspberry Pi
           </Button>
         </Box>
       </Box>
