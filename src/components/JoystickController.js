@@ -179,66 +179,130 @@ const JoystickController = ({ hostIP, hostPort }) => {
               </Grid>
             </Grid>
 
-            {/* Simple Button-based Joystick for now */}
-            <Box display="flex" flexDirection="column" alignItems="center" gap={2}>
-              <Typography variant="h6">Joystick Controls</Typography>
-              
-              {/* Y+ */}
-              <Button 
-                variant="contained" 
-                onClick={() => handleJoystickClick("Y+", stepSizeXY)}
-                style={{ width: "60px", height: "40px" }}
-              >
-                Y+
-              </Button>
-              
-              {/* X- and X+ */}
-              <Box display="flex" gap={2} alignItems="center">
-                <Button 
-                  variant="contained" 
-                  onClick={() => handleJoystickClick("X-", stepSizeXY)}
-                  style={{ width: "60px", height: "40px" }}
-                >
-                  X-
-                </Button>
-                <Box width="60px" height="40px" display="flex" alignItems="center" justifyContent="center">
-                  <Typography variant="body2">Center</Typography>
-                </Box>
-                <Button 
-                  variant="contained" 
-                  onClick={() => handleJoystickClick("X+", stepSizeXY)}
-                  style={{ width: "60px", height: "40px" }}
-                >
-                  X+
-                </Button>
-              </Box>
-              
-              {/* Y- */}
-              <Button 
-                variant="contained" 
-                onClick={() => handleJoystickClick("Y-", stepSizeXY)}
-                style={{ width: "60px", height: "40px" }}
-              >
-                Y-
-              </Button>
+            {/* SVG Joystick */}
+            <Box display="flex" justifyContent="center" marginTop={2}>
+              <svg width="320" height="260" viewBox="0 0 320 260" xmlns="http://www.w3.org/2000/svg" style={{ border: "1px solid #ccc" }}>
+                <defs>
+                  <style>
+                    {`
+                      .joyStd { stroke: black; stroke-width: 1; filter: url(#joyF1); cursor: pointer; }
+                      .joyStd:hover { fill: orange; }
+                      .joyHome { font-family: helvetica; stroke: black; stroke-width: 1; fill: black; font-weight: 900; font-size: 16; pointer-events: none; }
+                      .joyScl { font-family: helvetica; stroke: white; stroke-width: 1; fill: white; pointer-events: none; }
+                    `}
+                  </style>
+                  <filter id="joyF1" x="-1" y="-1" width="300%" height="300%">
+                    <feOffset result="offOut" in="SourceAlpha" dx="3" dy="3"/>
+                    <feGaussianBlur result="blurOut" in="offOut" stdDeviation="4"/>
+                    <feBlend in="SourceGraphic" in2="blurOut" mode="normal"/>
+                  </filter>
+                  <symbol id="HomeIcon" viewBox="0 0 20 18">
+                    <path className="joyHome" d="M3,18 v-8 l7,-6 l7,6 v8 h-5 v-6 h-4 v6 z" fill="black"/>
+                    <path className="joyHome" d="M0,10 l10-8.5 l10,8.5" strokeWidth="1.5" fill="none"/>
+                    <path className="joyHome" d="M15,3 v2.8 l1,.8 v-3.6 z"/>
+                  </symbol>
+                </defs>
 
-              {/* Z Controls */}
-              <Box display="flex" gap={2} marginTop={2}>
-                <Button 
-                  variant="contained" 
-                  onClick={() => handleJoystickClick("Z+", stepSizeZ)}
-                  style={{ backgroundColor: "DarkSeaGreen" }}
-                >
-                  Z+ ({stepSizeZ})
-                </Button>
-                <Button 
-                  variant="contained" 
-                  onClick={() => handleJoystickClick("Z-", stepSizeZ)}
-                  style={{ backgroundColor: "DarkSeaGreen" }}
-                >
-                  Z- ({stepSizeZ})
-                </Button>
-              </Box>
+                {/* Home All */}
+                <g transform="translate(10, 10)" onClick={() => homeAll()}>
+                  <path className="joyStd" d="M10 182.5 h-10 v57.5 h57.5 v-10 a 125,125 0 0,1 -47.5 -47.5 Z" fill="#f0f0f0" />
+                  <use x="3" y="217" width="20" height="18" href="#HomeIcon"/>
+                </g>
+
+                {/* Home X */}
+                <g transform="translate(10, 10)" onClick={() => homeAxis("X")}>
+                  <path className="joyStd" d="M10 57.50 h-10 v-57.5 h57.5 v10 a 125,125 0 0,0 -47.5 47.5 Z" fill="Khaki" />
+                  <use x="3" y="5" width="20" height="18" href="#HomeIcon"/>
+                  <text x="25" y="20" className="joyHome"> X</text>
+                </g>
+
+                {/* Home Y */}
+                <g transform="translate(10, 10)" onClick={() => homeAxis("Y")}>
+                  <path className="joyStd" d="M230 57.50 h10 v-57.5 h-57.5 v10 a 125,125 0 0,1 47.5 47.5 z" fill="SteelBlue" />
+                  <use x="217" y="5" width="20" height="18" href="#HomeIcon"/>
+                  <text x="202" y="20" className="joyHome"> Y</text>
+                </g>
+
+                {/* Home Z */}
+                <g transform="translate(10, 10)" onClick={() => homeAxis("Z")}>
+                  <path className="joyStd" d="M230 182.5 h10 v57.5 h-57.5 v-10 a 125,125 0 0,0 47.5 -47.5 z" fill="DarkSeaGreen" />
+                  <use x="217" y="217" width="20" height="18" href="#HomeIcon"/>
+                  <text x="202" y="232" className="joyHome"> Z</text>
+                </g>
+
+                {/* XY Movement Rings - Outermost */}
+                <g fill="#c0c0c0" transform="translate(10, 10)">
+                  <g transform="translate(120 120)" onClick={() => handleJoystickClick("Y+", stepSizeXY)}>
+                    <path className="joyStd" d="M-60 -67.07 L-75.93,-83 A112.5,112.5 0 0,1 75,-83 L60,-67.07 A90,90 0 0,0 -60.00,-67.07 z" />
+                  </g>
+                  <g transform="translate(120 120)" onClick={() => handleJoystickClick("X+", stepSizeXY)}>
+                    <path className="joyStd" d="M67.07,-60 L83,-75.93 A112.5,112.5 0 0,1 83,75.93 L67.07,60 A90,90 0 0,0 67.07,-60" />
+                  </g>
+                  <g transform="translate(120 120)" onClick={() => handleJoystickClick("Y-", stepSizeXY)}>
+                    <path className="joyStd" d="M-60,67.07 L-75.93,83 A112.5,112.5 0 0,0 75,83 L60,67.07 A90,90 0 0,1 -60.00,67.07 z" />
+                  </g>
+                  <g transform="translate(120 120)" onClick={() => handleJoystickClick("X-", stepSizeXY)}>
+                    <path className="joyStd" d="M-67.07,-60 L-83,-75.93 A112.5,112.5 0 0,0 -83,75.93 L-67.07,60 A90,90 0 0,1 -67.07,-60 z" />
+                  </g>
+                </g>
+
+                {/* XY Movement Rings - Middle */}
+                <g fill="#d0d0d0" transform="translate(10, 10)">
+                  <g transform="translate(120 120)" onClick={() => handleJoystickClick("Y+", stepSizeXY / 10)}>
+                    <path className="joyStd" d="M-44.06 -51.13 L-60,-67.07 A90,90 0 0,1 60,-67 L44.06,-51.13 A67.5,67.5 0 0,0 -44.06,-51.13 z" />
+                  </g>
+                  <g transform="translate(120 120)" onClick={() => handleJoystickClick("X+", stepSizeXY / 10)}>
+                    <path className="joyStd" d="M51.13 44.06 L67.07,60 A90,90 0 0,0 67.07,-60 L51.13,-44.06 A67.5,67.5 0 0,1 51.13,44.06 z" />
+                  </g>
+                  <g transform="translate(120 120)" onClick={() => handleJoystickClick("Y-", stepSizeXY / 10)}>
+                    <path className="joyStd" d="M-44.06 51.13 L-60,67.07 A90,90 0 0,0 60,67 L44.06,51.13 A67.5,67.5 0 0,1 -44.06,51.13 z" />
+                  </g>
+                  <g transform="translate(120 120)" onClick={() => handleJoystickClick("X-", stepSizeXY / 10)}>
+                    <path className="joyStd" d="M-51.13 44.06 L-67.07,60 A90,90 0 0,1 -67.07,-60 L-51.13,-44.06 A67.5,67.5 0 0,0 -51.13,44.06 z" />
+                  </g>
+                </g>
+
+                {/* XY Movement Rings - Inner */}
+                <g fill="#e0e0e0" transform="translate(10, 10)">
+                  <g transform="translate(120 120)" onClick={() => handleJoystickClick("Y+", stepSizeXY / 100)}>
+                    <path className="joyStd" d="M-28.09 -35.16 L-44.06,-51.13 A67.5,67.5 0 0,1 44.06,-51.13 L28.09,-35.16 A45,45 0 0,0 -28.09,-35.16 z" />
+                  </g>
+                  <g transform="translate(120 120)" onClick={() => handleJoystickClick("X+", stepSizeXY / 100)}>
+                    <path className="joyStd" d="M35.16 -28.09 L51.13,-44.06 A67.5,67.05 0 0,1 51.13,44.06 L35.16,28.09 A45,45 0 0,0 35.16,-28.09 z" />
+                  </g>
+                  <g transform="translate(120 120)" onClick={() => handleJoystickClick("Y-", stepSizeXY / 100)}>
+                    <path className="joyStd" d="M-28.09 35.16 L-44.06,51.13 A67.5,67.5 0 0,0 44.06,51.13 L28.09,35.16 A45,45 0 0,1 -28.09,35.16 z" />
+                  </g>
+                  <g transform="translate(120 120)" onClick={() => handleJoystickClick("X-", stepSizeXY / 100)}>
+                    <path className="joyStd" d="M-35.16 -28.09 L-51.13,-44.06 A67.5,67.05 0 0,0 -51.13,44.06 L-35.16,28.09 A45,45 0 0,1 -35.16,-28.09 z" />
+                  </g>
+                </g>
+
+                {/* Z Movement Buttons */}
+                <g fill="#d0d0d0" transform="translate(270, 10)" onClick={() => handleJoystickClick("Z+", stepSizeZ)}>
+                  <rect className="joyStd" x="0" y="32" width="40" height="30" />
+                  <circle cx="20" cy="47" r="13" fill="black" fillOpacity="0.5" stroke="red" strokeWidth="3"/>
+                  <text x="9" y="53" className="joyScl" fontSize="14"> +{stepSizeZ}</text>
+                </g>
+                
+                <g fill="#d0d0d0" transform="translate(270, 10)" onClick={() => handleJoystickClick("Z-", stepSizeZ)}>
+                  <rect className="joyStd" x="0" y="178" width="40" height="30" />
+                  <circle cx="20" cy="193" r="13" fill="black" fillOpacity="0.5" stroke="red" strokeWidth="3"/>
+                  <text x="9" y="199" className="joyScl" fontSize="14"> -{stepSizeZ}</text>
+                </g>
+
+                {/* Direction indicators */}
+                <g pointerEvents="none" fontWeight="900" fontSize="11" fillOpacity=".6">
+                  <path d="M120,20 l17,17 h-10 v11 h-14 v-11 h-10 z" fill="SteelBlue" transform="translate(10, 10)"/>
+                  <path d="M120,220 l17,-17 h-10 v-11 h-14 v11 h-10 z" fill="SteelBlue" transform="translate(10, 10)"/>
+                  <path d="M20,120 l17,17 v-10 h11 v-14 h-11 v-10 z" fill="Khaki" transform="translate(10, 10)"/>
+                  <path d="M220,120 l-17,-17 v10 h-11 v14 h11 v10 z" fill="Khaki" transform="translate(10, 10)"/>
+                  <text x="123" y="47" fill="black"> +Y</text>
+                  <text x="123" y="232" fill="black"> -Y</text>
+                  <text x="37" y="134" fill="black"> -X</text>
+                  <text x="206" y="134" fill="black"> +X</text>
+                </g>
+              </svg>
             </Box>
 
             {/* Manual Home Buttons */}
