@@ -19,6 +19,7 @@ import ExtendedLEDMatrixController from "./components/ExtendedLEDMatrixControlle
 import StageOffsetCalibration from "./components/StageOffsetCalibrationController";
 import DetectorTriggerController from "./components/DetectorTriggerController";
 import StresstestController from "./components/StresstestController";
+import JoystickController from "./components/JoystickController";
 
 import theme from "./theme";
 import {
@@ -705,6 +706,19 @@ const handleFileManagerInitialPathChange = (event) => {
                   primary={sidebarVisible ? "StageOffsetCalibration" : ""}
                 />
               </ListItem>
+              {/* Joystick Controller */}
+              <ListItem
+                button
+                selected={selectedPlugin === "JoystickController"}
+                onClick={() => handlePluginChange("JoystickController")}
+              >
+                <ListItemIcon>
+                  <ThreeDRotationIcon />
+                </ListItemIcon>
+                <ListItemText
+                  primary={sidebarVisible ? "Joystick Controller" : ""}
+                />
+              </ListItem>
               {/* UC2 */}
               <ListItem
                 button
@@ -935,6 +949,11 @@ const handleFileManagerInitialPathChange = (event) => {
             {selectedPlugin === "StageOffsetCalibration" && (
               
                 <StageOffsetCalibration hostIP={hostIP} hostPort={apiPort} />
+              
+            )}
+            {selectedPlugin === "JoystickController" && (
+              
+                <JoystickController hostIP={hostIP} hostPort={apiPort} />
               
             )}
             {selectedPlugin === "UC2" && (
