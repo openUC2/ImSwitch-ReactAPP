@@ -502,7 +502,7 @@ const handleFileManagerInitialPathChange = (event) => {
                 <MenuIcon />
               </IconButton>
               <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: "bold" }}>
-                Microscope Control
+                ImSwitch - {selectedPlugin}
               </Typography>
               <Typography variant="h6" sx={{ fontWeight: "bold" }}>
                 Light/dark
