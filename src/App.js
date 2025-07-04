@@ -19,7 +19,6 @@ import ExtendedLEDMatrixController from "./components/ExtendedLEDMatrixControlle
 import StageOffsetCalibration from "./components/StageOffsetCalibrationController";
 import DetectorTriggerController from "./components/DetectorTriggerController";
 import StresstestController from "./components/StresstestController";
-import JoystickController from "./components/JoystickController";
 
 import theme from "./theme";
 import {
@@ -503,7 +502,7 @@ const handleFileManagerInitialPathChange = (event) => {
                 <MenuIcon />
               </IconButton>
               <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: "bold" }}>
-                Microscope Control
+                ImSwitch - {selectedPlugin}
               </Typography>
               <Typography variant="h6" sx={{ fontWeight: "bold" }}>
                 Light/dark
@@ -704,19 +703,6 @@ const handleFileManagerInitialPathChange = (event) => {
                 </ListItemIcon>
                 <ListItemText
                   primary={sidebarVisible ? "StageOffsetCalibration" : ""}
-                />
-              </ListItem>
-              {/* Joystick Controller */}
-              <ListItem
-                button
-                selected={selectedPlugin === "JoystickController"}
-                onClick={() => handlePluginChange("JoystickController")}
-              >
-                <ListItemIcon>
-                  <ThreeDRotationIcon />
-                </ListItemIcon>
-                <ListItemText
-                  primary={sidebarVisible ? "Joystick Controller" : ""}
                 />
               </ListItem>
               {/* UC2 */}
@@ -949,11 +935,6 @@ const handleFileManagerInitialPathChange = (event) => {
             {selectedPlugin === "StageOffsetCalibration" && (
               
                 <StageOffsetCalibration hostIP={hostIP} hostPort={apiPort} />
-              
-            )}
-            {selectedPlugin === "JoystickController" && (
-              
-                <JoystickController hostIP={hostIP} hostPort={apiPort} />
               
             )}
             {selectedPlugin === "UC2" && (

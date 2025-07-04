@@ -278,17 +278,47 @@ const JoystickController = ({ hostIP, hostPort }) => {
                   </g>
                 </g>
 
-                {/* Z Movement Buttons */}
-                <g fill="#d0d0d0" transform="translate(270, 10)" onClick={() => handleJoystickClick("Z+", stepSizeZ)}>
-                  <rect className="joyStd" x="0" y="32" width="40" height="30" />
-                  <circle cx="20" cy="47" r="13" fill="black" fillOpacity="0.5" stroke="red" strokeWidth="3"/>
-                  <text x="9" y="53" className="joyScl" fontSize="14"> +{stepSizeZ}</text>
+                {/* Z Movement Buttons - Multiple Step Sizes */}
+                {/* Z+ Full Step */}
+                <g fill="#c0c0c0" transform="translate(270, 10)" onClick={() => handleJoystickClick("Z+", stepSizeZ)}>
+                  <rect className="joyStd" x="0" y="20" width="40" height="25" />
+                  <circle cx="20" cy="32.5" r="10" fill="black" fillOpacity="0.5" stroke="red" strokeWidth="2"/>
+                  <text x="8" y="37" className="joyScl" fontSize="12"> +{stepSizeZ}</text>
                 </g>
                 
-                <g fill="#d0d0d0" transform="translate(270, 10)" onClick={() => handleJoystickClick("Z-", stepSizeZ)}>
-                  <rect className="joyStd" x="0" y="178" width="40" height="30" />
-                  <circle cx="20" cy="193" r="13" fill="black" fillOpacity="0.5" stroke="red" strokeWidth="3"/>
-                  <text x="9" y="199" className="joyScl" fontSize="14"> -{stepSizeZ}</text>
+                {/* Z+ 1/10 Step */}
+                <g fill="#d0d0d0" transform="translate(270, 10)" onClick={() => handleJoystickClick("Z+", stepSizeZ / 10)}>
+                  <rect className="joyStd" x="0" y="50" width="40" height="25" />
+                  <circle cx="20" cy="62.5" r="10" fill="black" fillOpacity="0.5" stroke="orange" strokeWidth="2"/>
+                  <text x="8" y="67" className="joyScl" fontSize="12"> +{stepSizeZ/10}</text>
+                </g>
+                
+                {/* Z+ 1/100 Step */}
+                <g fill="#e0e0e0" transform="translate(270, 10)" onClick={() => handleJoystickClick("Z+", stepSizeZ / 100)}>
+                  <rect className="joyStd" x="0" y="80" width="40" height="25" />
+                  <circle cx="20" cy="92.5" r="10" fill="black" fillOpacity="0.5" stroke="blue" strokeWidth="2"/>
+                  <text x="8" y="97" className="joyScl" fontSize="12"> +{stepSizeZ/100}</text>
+                </g>
+                
+                {/* Z- 1/100 Step */}
+                <g fill="#e0e0e0" transform="translate(270, 10)" onClick={() => handleJoystickClick("Z-", stepSizeZ / 100)}>
+                  <rect className="joyStd" x="0" y="155" width="40" height="25" />
+                  <circle cx="20" cy="167.5" r="10" fill="black" fillOpacity="0.5" stroke="blue" strokeWidth="2"/>
+                  <text x="8" y="172" className="joyScl" fontSize="12"> -{stepSizeZ/100}</text>
+                </g>
+                
+                {/* Z- 1/10 Step */}
+                <g fill="#d0d0d0" transform="translate(270, 10)" onClick={() => handleJoystickClick("Z-", stepSizeZ / 10)}>
+                  <rect className="joyStd" x="0" y="185" width="40" height="25" />
+                  <circle cx="20" cy="197.5" r="10" fill="black" fillOpacity="0.5" stroke="orange" strokeWidth="2"/>
+                  <text x="8" y="202" className="joyScl" fontSize="12"> -{stepSizeZ/10}</text>
+                </g>
+                
+                {/* Z- Full Step */}
+                <g fill="#c0c0c0" transform="translate(270, 10)" onClick={() => handleJoystickClick("Z-", stepSizeZ)}>
+                  <rect className="joyStd" x="0" y="215" width="40" height="25" />
+                  <circle cx="20" cy="227.5" r="10" fill="black" fillOpacity="0.5" stroke="red" strokeWidth="2"/>
+                  <text x="8" y="232" className="joyScl" fontSize="12"> -{stepSizeZ}</text>
                 </g>
 
                 {/* Direction indicators */}
