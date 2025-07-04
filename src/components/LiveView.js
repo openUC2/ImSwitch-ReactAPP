@@ -247,18 +247,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
       () => {}
     );
   };
-  const moveStage = async (dir) => {
-    const map = {
-      up: { axis: "Y", dist: 1000 },
-      down: { axis: "Y", dist: -1000 },
-      left: { axis: "X", dist: 1000 },
-      right: { axis: "X", dist: -1000 },
-    };
-    const { axis, dist } = map[dir];
-    fetch(
-      `${hostIP}:${hostPort}/PositionerController/movePositioner?axis=${axis}&dist=${dist}&isAbsolute=false&isBlocking=false`
-    ).catch(() => {});
-  };
+
 
   return (
     <Box
