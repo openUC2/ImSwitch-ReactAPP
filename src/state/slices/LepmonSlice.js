@@ -29,6 +29,46 @@ const initialState = {
   // Time/Date
   time: "",
   date: "",
+
+  // Light Controls (new)
+  lightStates: {},
+  availableLights: [],
+
+  // Hardware Status (new)
+  hardwareStatus: {
+    gpio_available: false,
+    oled_available: false,
+    i2c_available: false,
+    simulation_mode: true
+  },
+
+  // Images (new)
+  latestImage: null,
+  imageFormat: "jpeg",
+
+  // Display (new)
+  lcdDisplay: {
+    line1: "",
+    line2: "",
+    line3: "",
+    line4: ""
+  },
+
+  // Button States (new)
+  buttonStates: {},
+  availableButtons: [],
+
+  // Timing Configuration (new)
+  timingConfig: {
+    acquisitionInterval: 60,
+    stabilizationTime: 5,
+    preAcquisitionDelay: 2,
+    postAcquisitionDelay: 1
+  },
+
+  // Live Sensor Data (new)
+  sensorData: {},
+  availableSensors: []
 };
 
 const lepmonSlice = createSlice({
@@ -123,6 +163,61 @@ const lepmonSlice = createSlice({
       state.outsideTemp = outerTemp;
       state.humidity = humidity;
     },
+
+    // Light Control actions (new)
+    setLightStates: (state, action) => {
+      state.lightStates = action.payload;
+    },
+    setLightState: (state, action) => {
+      const { lightName, isOn } = action.payload;
+      state.lightStates[lightName] = isOn;
+    },
+    setAvailableLights: (state, action) => {
+      state.availableLights = action.payload;
+    },
+
+    // Hardware Status actions (new)
+    setHardwareStatus: (state, action) => {
+      state.hardwareStatus = { ...state.hardwareStatus, ...action.payload };
+    },
+
+    // Image actions (new)
+    setLatestImage: (state, action) => {
+      state.latestImage = action.payload;
+    },
+    setImageFormat: (state, action) => {
+      state.imageFormat = action.payload;
+    },
+
+    // Display actions (new)
+    setLcdDisplay: (state, action) => {
+      state.lcdDisplay = { ...state.lcdDisplay, ...action.payload };
+    },
+
+    // Button actions (new)
+    setButtonStates: (state, action) => {
+      state.buttonStates = action.payload;
+    },
+    setButtonState: (state, action) => {
+      const { buttonName, isPressed } = action.payload;
+      state.buttonStates[buttonName] = isPressed;
+    },
+    setAvailableButtons: (state, action) => {
+      state.availableButtons = action.payload;
+    },
+
+    // Timing Configuration actions (new)
+    setTimingConfig: (state, action) => {
+      state.timingConfig = { ...state.timingConfig, ...action.payload };
+    },
+
+    // Sensor Data actions (new)
+    setSensorData: (state, action) => {
+      state.sensorData = { ...state.sensorData, ...action.payload };
+    },
+    setAvailableSensors: (state, action) => {
+      state.availableSensors = action.payload;
+    },
   },
 });
 
@@ -150,6 +245,20 @@ export const {
   setInitialStatus,
   setInitialParams,
   setTemperatureData,
+  // New exports
+  setLightStates,
+  setLightState,
+  setAvailableLights,
+  setHardwareStatus,
+  setLatestImage,
+  setImageFormat,
+  setLcdDisplay,
+  setButtonStates,
+  setButtonState,
+  setAvailableButtons,
+  setTimingConfig,
+  setSensorData,
+  setAvailableSensors,
 } = lepmonSlice.actions;
 
 // Export selector
