@@ -5,6 +5,7 @@
   "homepage": "/imswitch",
   "dependencies": {
     "@blockly/theme-dark": "^7.0.10",
+    "@deck.gl/geo-layers": "^9.1.12",
     "@deck.gl/layers": "^9.1.12",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
