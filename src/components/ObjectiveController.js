@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { Paper, Grid, Button, Typography, TextField } from "@mui/material";
 import { useWebSocket } from "../context/WebSocketContext";
 import LiveViewControlWrapper from "../axon/LiveViewControlWrapper";
+import ObjectiveCalibrationWizard from "./ObjectiveCalibrationWizard";
 import * as objectiveSlice from "../state/slices/ObjectiveSlice.js";
 
 import apiPositionerControllerMovePositioner from "../backendapi/apiPositionerControllerMovePositioner.js";
@@ -34,6 +35,9 @@ const ExtendedObjectiveController = ({ hostIP, hostPort }) => {
   const manualX2 = objectiveState.manualX2;
   const manualZ1 = objectiveState.manualZ1;
   const manualZ2 = objectiveState.manualZ2;
+
+  // Local state for wizard
+  const [wizardOpen, setWizardOpen] = useState(false);
 
   const socket = useWebSocket(); //TODO remove
 
@@ -280,6 +284,14 @@ const ExtendedObjectiveController = ({ hostIP, hostPort }) => {
 
         {/* Calibration and Switching */}
         <Grid item xs={12}>
+          <Button 
+            variant="contained" 
+            color="success" 
+            onClick={() => setWizardOpen(true)}
+            sx={{ mr: 2 }}
+          >
+            Start Calibration Wizard
+          </Button>
           <Button variant="contained" color="primary" onClick={handleCalibrate}>
             Calibrate/Home Objective
           </Button>
@@ -504,6 +516,14 @@ const ExtendedObjectiveController = ({ hostIP, hostPort }) => {
           </Grid>
         </Grid>
       </Grid>
+
+      {/* Calibration Wizard */}
+      <ObjectiveCalibrationWizard
+        open={wizardOpen}
+        onClose={() => setWizardOpen(false)}
+        hostIP={hostIP}
+        hostPort={hostPort}
+      />
     </Paper>
   );
 };
