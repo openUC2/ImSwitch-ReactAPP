@@ -18,6 +18,7 @@ import * as objectiveSlice from "../../state/slices/ObjectiveSlice.js";
 
 import apiObjectiveControllerMoveToObjective from "../../backendapi/apiObjectiveControllerMoveToObjective.js";
 import apiPositionerControllerGetPositions from "../../backendapi/apiPositionerControllerGetPositions.js";
+import apiObjectiveControllerSetPositions from "../../backendapi/apiObjectiveControllerSetPositions.js";
 
 const WizardStep5 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps }) => {
   const dispatch = useDispatch();
@@ -33,8 +34,63 @@ const WizardStep5 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
 
   useEffect(() => {
     // Fetch current positions when component mounts
-    fetchCurrentPositions();
-  }, []);
+    const fetchPos = () => {
+      apiPositionerControllerGetPositions()
+        .then((data) => {
+          if (data.ESP32Stage) {
+            setCurrentPositions({
+              X: data.ESP32Stage.X,
+              Y: data.ESP32Stage.Y,
+              Z: data.ESP32Stage.Z,
+              A: data.ESP32Stage.A,
+            });
+            dispatch(objectiveSlice.setCurrentZ(data.ESP32Stage.Z));
+            dispatch(objectiveSlice.setCurrentA(data.ESP32Stage.A));
+          } else if (data.VirtualStage) {
+            setCurrentPositions({
+              X: data.VirtualStage.X,
+              Y: data.VirtualStage.Y,
+              Z: data.VirtualStage.Z,
+              A: data.VirtualStage.A,
+            });
+            dispatch(objectiveSlice.setCurrentZ(data.VirtualStage.Z));
+            dispatch(objectiveSlice.setCurrentA(data.VirtualStage.A));
+          }
+        })
+        .catch((err) => {
+          console.error("Error fetching current positions:", err);
+        });
+    };
+    fetchPos();
+  }, [dispatch]);
+
+  const fetchCurrentPositions = () => {
+    apiPositionerControllerGetPositions()
+      .then((data) => {
+        if (data.ESP32Stage) {
+          setCurrentPositions({
+            X: data.ESP32Stage.X,
+            Y: data.ESP32Stage.Y,
+            Z: data.ESP32Stage.Z,
+            A: data.ESP32Stage.A,
+          });
+          dispatch(objectiveSlice.setCurrentZ(data.ESP32Stage.Z));
+          dispatch(objectiveSlice.setCurrentA(data.ESP32Stage.A));
+        } else if (data.VirtualStage) {
+          setCurrentPositions({
+            X: data.VirtualStage.X,
+            Y: data.VirtualStage.Y,
+            Z: data.VirtualStage.Z,
+            A: data.VirtualStage.A,
+          });
+          dispatch(objectiveSlice.setCurrentZ(data.VirtualStage.Z));
+          dispatch(objectiveSlice.setCurrentA(data.VirtualStage.A));
+        }
+      })
+      .catch((err) => {
+        console.error("Error fetching current positions:", err);
+      });
+  };
 
   const fetchCurrentPositions = () => {
     apiPositionerControllerGetPositions()
@@ -79,22 +135,18 @@ const WizardStep5 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
 
   const handleSaveZ2Position = () => {
     if (currentPositions.Z !== null) {
-      // Save current Z position as Z2
-      const handleSetZ2 = async () => {
-        try {
-          const response = await fetch(
-            `${hostIP}:${hostPort}/ObjectiveController/setPositions?z2=${currentPositions.Z}&isBlocking=false`,
-            { method: 'GET' }
-          );
-          if (response.ok) {
-            dispatch(objectiveSlice.setPosZ2(currentPositions.Z));
-            alert(`Z2 position set to: ${currentPositions.Z}`);
-          }
-        } catch (err) {
+      // Save current Z position as Z2 using the proper API
+      apiObjectiveControllerSetPositions({
+        z2: currentPositions.Z,
+        isBlocking: false,
+      })
+        .then((data) => {
+          dispatch(objectiveSlice.setPosZ2(currentPositions.Z));
+          alert(`Z2 position set to: ${currentPositions.Z}`);
+        })
+        .catch((err) => {
           console.error("Error setting Z2:", err);
-        }
-      };
-      handleSetZ2();
+        });
     }
   };
 

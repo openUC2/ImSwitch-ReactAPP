@@ -8,7 +8,6 @@ import {
   Grid,
   TextField,
   Alert,
-  Divider,
 } from "@mui/material";
 import {
   Home as HomeIcon,
@@ -20,8 +19,8 @@ import * as objectiveSlice from "../../state/slices/ObjectiveSlice.js";
 
 import apiPositionerControllerMovePositioner from "../../backendapi/apiPositionerControllerMovePositioner.js";
 import apiObjectiveControllerCalibrateObjective from "../../backendapi/apiObjectiveControllerCalibrateObjective.js";
-import apiObjectiveControllerMoveToObjective from "../../backendapi/apiObjectiveControllerMoveToObjective.js";
 import apiPositionerControllerGetPositions from "../../backendapi/apiPositionerControllerGetPositions.js";
+import apiObjectiveControllerSetPositions from "../../backendapi/apiObjectiveControllerSetPositions.js";
 import fetchObjectiveControllerGetCurrentObjective from "../../middleware/fetchObjectiveControllerGetCurrentObjective.js";
 
 const WizardStep2 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps }) => {
@@ -40,8 +39,39 @@ const WizardStep2 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
 
   useEffect(() => {
     // Fetch current position when component mounts
-    fetchCurrentPosition();
-  }, []);
+    const fetchPos = () => {
+      apiPositionerControllerGetPositions()
+        .then((data) => {
+          if (data.ESP32Stage) {
+            setCurrentPosition(data.ESP32Stage.A);
+            dispatch(objectiveSlice.setCurrentA(data.ESP32Stage.A));
+          } else if (data.VirtualStage) {
+            setCurrentPosition(data.VirtualStage.A);
+            dispatch(objectiveSlice.setCurrentA(data.VirtualStage.A));
+          }
+        })
+        .catch((err) => {
+          console.error("Error fetching current position:", err);
+        });
+    };
+    fetchPos();
+  }, [dispatch]);
+
+  const fetchCurrentPosition = () => {
+    apiPositionerControllerGetPositions()
+      .then((data) => {
+        if (data.ESP32Stage) {
+          setCurrentPosition(data.ESP32Stage.A);
+          dispatch(objectiveSlice.setCurrentA(data.ESP32Stage.A));
+        } else if (data.VirtualStage) {
+          setCurrentPosition(data.VirtualStage.A);
+          dispatch(objectiveSlice.setCurrentA(data.VirtualStage.A));
+        }
+      })
+      .catch((err) => {
+        console.error("Error fetching current position:", err);
+      });
+  };
 
   const fetchCurrentPosition = () => {
     apiPositionerControllerGetPositions()
@@ -113,22 +143,18 @@ const WizardStep2 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
 
   const handleSaveX1Position = () => {
     if (currentPosition !== null) {
-      // Save current position as X1
-      const handleSetX1 = async () => {
-        try {
-          const response = await fetch(
-            `${hostIP}:${hostPort}/ObjectiveController/setPositions?x1=${currentPosition}&isBlocking=false`,
-            { method: 'GET' }
-          );
-          if (response.ok) {
-            dispatch(objectiveSlice.setPosX1(currentPosition));
-            alert(`X1 position set to: ${currentPosition}`);
-          }
-        } catch (err) {
+      // Save current position as X1 using the proper API
+      apiObjectiveControllerSetPositions({
+        x1: currentPosition,
+        isBlocking: false,
+      })
+        .then((data) => {
+          dispatch(objectiveSlice.setPosX1(currentPosition));
+          alert(`X1 position set to: ${currentPosition}`);
+        })
+        .catch((err) => {
           console.error("Error setting X1:", err);
-        }
-      };
-      handleSetX1();
+        });
     }
   };
 
