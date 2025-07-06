@@ -102,16 +102,31 @@ const ObjectiveCalibrationWizard = ({ open, onClose, hostIP, hostPort }) => {
             alternativeLabel={!fullScreen}
             orientation={fullScreen ? "vertical" : "horizontal"}
           >
-            {steps.map((label, index) => (
-              <Step 
-                key={label} 
-                completed={index < activeStep}
-                sx={{ cursor: 'pointer' }}
-                onClick={() => handleStepClick(index)}
-              >
-                <StepLabel>{label}</StepLabel>
-              </Step>
-            ))}
+            {steps.map((label, index) => {
+              const stepProps = {};
+              const labelProps = {};
+              
+              return (
+                <Step 
+                  key={label} 
+                  completed={index < activeStep}
+                  {...stepProps}
+                >
+                  <StepLabel 
+                    {...labelProps}
+                    sx={{ 
+                      cursor: 'pointer',
+                      '& .MuiStepLabel-label': {
+                        cursor: 'pointer'
+                      }
+                    }}
+                    onClick={() => handleStepClick(index)}
+                  >
+                    {label}
+                  </StepLabel>
+                </Step>
+              );
+            })}
           </Stepper>
         </Box>
         

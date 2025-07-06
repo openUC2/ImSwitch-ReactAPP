@@ -92,6 +92,7 @@ const WizardStep3 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
   };
 
   const handleMoveToSlot2 = () => {
+    setIsMovedToSlot2(false); // Reset state for movement feedback
     if (objectiveState.posX2 !== null && objectiveState.posX2 !== undefined) {
       // Move to existing X2 position
       apiPositionerControllerMovePositioner({
@@ -194,9 +195,9 @@ const WizardStep3 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
               variant="contained"
               color="secondary"
               onClick={handleMoveToSlot2}
-              disabled={isMovedToSlot2}
+              disabled={false}
             >
-              {isMovedToSlot2 ? "At Slot 2 ✓" : "Move to Slot 2"}
+              {isMovedToSlot2 ? "Move to Slot 2 Again" : "Move to Slot 2"}
             </Button>
           </Paper>
 
