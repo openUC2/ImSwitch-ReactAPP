@@ -92,34 +92,6 @@ const WizardStep5 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
       });
   };
 
-  const fetchCurrentPositions = () => {
-    apiPositionerControllerGetPositions()
-      .then((data) => {
-        if (data.ESP32Stage) {
-          setCurrentPositions({
-            X: data.ESP32Stage.X,
-            Y: data.ESP32Stage.Y,
-            Z: data.ESP32Stage.Z,
-            A: data.ESP32Stage.A,
-          });
-          dispatch(objectiveSlice.setCurrentZ(data.ESP32Stage.Z));
-          dispatch(objectiveSlice.setCurrentA(data.ESP32Stage.A));
-        } else if (data.VirtualStage) {
-          setCurrentPositions({
-            X: data.VirtualStage.X,
-            Y: data.VirtualStage.Y,
-            Z: data.VirtualStage.Z,
-            A: data.VirtualStage.A,
-          });
-          dispatch(objectiveSlice.setCurrentZ(data.VirtualStage.Z));
-          dispatch(objectiveSlice.setCurrentA(data.VirtualStage.A));
-        }
-      })
-      .catch((err) => {
-        console.error("Error fetching current positions:", err);
-      });
-  };
-
   const handleSwitchToObjective2 = () => {
     apiObjectiveControllerMoveToObjective(2)
       .then((data) => {

@@ -73,21 +73,7 @@ const WizardStep3 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
     }
   }, [dispatch, objectiveState.posX2]);
 
-  const fetchCurrentPosition = () => {
-    apiPositionerControllerGetPositions()
-      .then((data) => {
-        if (data.ESP32Stage) {
-          setCurrentPosition(data.ESP32Stage.A);
-          dispatch(objectiveSlice.setCurrentA(data.ESP32Stage.A));
-        } else if (data.VirtualStage) {
-          setCurrentPosition(data.VirtualStage.A);
-          dispatch(objectiveSlice.setCurrentA(data.VirtualStage.A));
-        }
-      })
-      .catch((err) => {
-        console.error("Error fetching current position:", err);
-      });
-  };
+
 
   const fetchCurrentPosition = () => {
     apiPositionerControllerGetPositions()
