@@ -2,8 +2,8 @@ import React from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { Box, Paper, Typography } from "@mui/material";
 import { MyLocation as LocationIcon } from "@mui/icons-material";
-import * as stageCenterCalibrationSlice from "../../state/slices/StageCenterCalibrationSlice";
-import apiPositionerControllerMovePositioner from "../../backendapi/apiPositionerControllerMovePositioner";
+import * as stageCenterCalibrationSlice from "../state/slices/StageCenterCalibrationSlice";
+import apiPositionerControllerMovePositioner from "../backendapi/apiPositionerControllerMovePositioner";
 
 const StageMapVisualization = ({ hostIP, hostPort, width = 400, height = 400 }) => {
   const dispatch = useDispatch();
