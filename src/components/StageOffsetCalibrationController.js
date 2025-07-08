@@ -11,6 +11,8 @@ import {
 } from "@mui/material";
 import { useWebSocket } from "../context/WebSocketContext";
 import * as stageOffsetCalibrationSlice from "../state/slices/StageOffsetCalibrationSlice.js";
+import * as stageCenterCalibrationSlice from "../state/slices/StageCenterCalibrationSlice.js";
+import StageCenterCalibrationWizard from "./StageCenterCalibrationWizard";
 
 const StageOffsetCalibration = ({ hostIP, hostPort }) => {
   const socket = useWebSocket(); 
@@ -207,6 +209,33 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
   return (
     <Paper style={{ padding: "20px", margin: "20px" }}>
       <Grid container spacing={3}>
+        {/* Title and Wizard Button */}
+        <Grid item xs={12}>
+          <Grid container spacing={2} alignItems="center" justifyContent="space-between">
+            <Grid item>
+              <Typography variant="h5" gutterBottom>
+                Stage Offset Calibration
+              </Typography>
+            </Grid>
+            <Grid item>
+              <Button 
+                variant="contained" 
+                color="primary" 
+                size="large"
+                onClick={() => dispatch(stageCenterCalibrationSlice.setWizardOpen(true))}
+                sx={{
+                  background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                  '&:hover': {
+                    background: 'linear-gradient(45deg, #1976D2 30%, #0097A7 90%)',
+                  }
+                }}
+              >
+                🔍 Stage Center Wizard
+              </Button>
+            </Grid>
+          </Grid>
+        </Grid>
+
         {/* Live Image */}
         <Grid item xs={12}>
           <Card>
@@ -490,6 +519,12 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
           </Card>
         </Grid>
       </Grid>
+      
+      {/* Stage Center Calibration Wizard */}
+      <StageCenterCalibrationWizard
+        hostIP={hostIP}
+        hostPort={hostPort}
+      />
     </Paper>
   );
 };
