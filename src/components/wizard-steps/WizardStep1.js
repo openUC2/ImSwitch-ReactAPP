@@ -87,7 +87,7 @@ const WizardStep1 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
           </ListItem>
         </List>
 
-        <Box sx={placeholderImageStyle}>
+        <Box sx={{placeholderImageStyle, backgroundColor: '#0000'}}>
           <Typography variant="body1" color="textSecondary">
             📷 Setup Reference Image Placeholder
             <br />
@@ -96,7 +96,7 @@ const WizardStep1 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
         </Box>
       </Paper>
 
-      <Paper elevation={1} sx={{ p: 2, backgroundColor: '#f8f9fa' }}>
+      <Paper elevation={1} sx={{ p: 2, backgroundColor: '#0000' }}>
         <Typography variant="h6" gutterBottom>
           <InfoIcon sx={{ mr: 1, verticalAlign: 'middle' }} color="info" />
           What This Wizard Will Do

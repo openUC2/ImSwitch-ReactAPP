@@ -36,6 +36,7 @@ const WizardStep2 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
     pixelsize: objectiveState.pixelsize || '',
     NA: objectiveState.NA || '',
   });
+  const [customPosition, setCustomPosition] = useState('');
 
   useEffect(() => {
     // Fetch current position when component mounts
@@ -90,7 +91,7 @@ const WizardStep2 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
     setIsMovedToSlot1(false); // Reset state for movement feedback
     if (objectiveState.posX1 !== null && objectiveState.posX1 !== undefined) {
       // Move to existing X1 position
-      apiPositionerControllerMovePositioner({
+      apiPositionerControllerMovePositioner({ // TODO use /ObjectiveController/moveToObjective?slot=1 instead 
         axis: "A",
         dist: objectiveState.posX1,
         isAbsolute: true,
@@ -159,6 +160,26 @@ const WizardStep2 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
     alert("Objective information updated");
   };
 
+  const handleMoveToCustomPosition = (position) => {
+    const pos = parseFloat(position);
+    if (!isNaN(pos)) {
+      apiPositionerControllerMovePositioner({
+        axis: "A",
+        dist: pos,
+        isAbsolute: true,
+        isBlocking: false,
+      })
+        .then(() => {
+          fetchCurrentPosition();
+        })
+        .catch((err) => {
+          console.error("Error moving to custom position:", err);
+        });
+    } else {
+      alert("Invalid position value");
+    }
+  };
+
   return (
     <Box sx={{ p: 2 }}>
       <Typography variant="h5" gutterBottom>
@@ -203,16 +224,37 @@ const WizardStep2 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
 
           <Paper elevation={2} sx={{ p: 2, mb: 2 }}>
             <Typography variant="h6" gutterBottom>
-              2. Move to Slot 1
+              2. Move to Slot 1 or Custom Position
             </Typography>
             <Button
               variant="contained"
               color="secondary"
               onClick={handleMoveToSlot1}
               disabled={!isHomed}
+              sx={{ mr: 2 }}
             >
               {isMovedToSlot1 ? "Move to Slot 1 Again" : "Move to Slot 1"}
             </Button>
+            {/* Custom position input and go button */}
+            <Box sx={{ display: 'inline-flex', alignItems: 'center', ml: 2 }}>
+              <TextField
+                label="Custom Position"
+                type="number"
+                size="small"
+                value={customPosition}
+                onChange={e => setCustomPosition(e.target.value)}
+                sx={{ mr: 1, width: 120 }}
+                disabled={!isHomed}
+              />
+              <Button
+                variant="outlined"
+                color="primary"
+                onClick={() => handleMoveToCustomPosition(customPosition)}
+                disabled={!isHomed || customPosition === ''}
+              >
+                Go
+              </Button>
+            </Box>
           </Paper>
 
           <Paper elevation={2} sx={{ p: 2, mb: 2 }}>
