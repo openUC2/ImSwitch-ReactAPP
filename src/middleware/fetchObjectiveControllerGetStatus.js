@@ -7,7 +7,7 @@ const fetchObjectiveControllerGetStatus = (dispatch) => {
   apiObjectiveControllerGetStatus()
     .then((data) => {
       console.log("fetchObjectiveControllerGetStatus", data);
-
+      // TODO: THIS IS CALLED TOO OFTEN! 
       // Update Redux with the fetched status
       dispatch(objectiveSlice.setFovX(data.FOV[0]*1)); //* 1000)); //TODO remove fov dummy data correction factor
       dispatch(objectiveSlice.setFovY(data.FOV[1]*1));// * 1000)); //TODO remove fov dummy data correction factor

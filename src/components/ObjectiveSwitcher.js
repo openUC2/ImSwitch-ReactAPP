@@ -31,7 +31,7 @@ export default function ObjectiveSwitcher({ hostIP, hostPort }) {
       setCurrentSlot(objectiveState.currentObjective);
       setIsSwitching(false); // We got an update => done switching
     }
-  }, [objectiveState]);
+  }, [dispatch]);
 
   // Switch to a different objective, show spinner until we get update from the socket
   const switchTo = async (slot) => {
