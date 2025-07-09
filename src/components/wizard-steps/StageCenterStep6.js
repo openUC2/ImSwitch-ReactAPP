@@ -23,9 +23,11 @@ import {
   Save as SaveIcon,
 } from "@mui/icons-material";
 import * as stageCenterCalibrationSlice from "../../state/slices/StageCenterCalibrationSlice";
+import { useTheme } from '@mui/material/styles';
 
 const StageCenterStep6 = ({ hostIP, hostPort, onComplete, activeStep, totalSteps }) => {
   const dispatch = useDispatch();
+  const theme = useTheme();
   const stageCenterState = useSelector(stageCenterCalibrationSlice.getStageCenterCalibrationState);
   
   const {
@@ -86,7 +88,7 @@ const StageCenterStep6 = ({ hostIP, hostPort, onComplete, activeStep, totalSteps
       <Grid container spacing={3}>
         {/* Calibration Summary */}
         <Grid item xs={12} md={6}>
-          <Card elevation={2}>
+          <Card elevation={2} sx={{ background: theme.palette.background.paper, color: theme.palette.text.primary }}>
             <CardContent>
               <Typography variant="h6" gutterBottom color="primary">
                 Calibration Summary
@@ -138,7 +140,7 @@ const StageCenterStep6 = ({ hostIP, hostPort, onComplete, activeStep, totalSteps
 
         {/* Next Steps */}
         <Grid item xs={12} md={6}>
-          <Card elevation={2}>
+          <Card elevation={2} sx={{ background: theme.palette.background.paper, color: theme.palette.text.primary }}>
             <CardContent>
               <Typography variant="h6" gutterBottom color="primary">
                 What's Next?
@@ -218,9 +220,10 @@ const StageCenterStep6 = ({ hostIP, hostPort, onComplete, activeStep, totalSteps
             fullWidth
             startIcon={<HomeIcon />}
             sx={{
-              background: 'linear-gradient(45deg, #4CAF50 30%, #8BC34A 90%)',
+              background: theme.palette.success.main,
+              color: theme.palette.success.contrastText,
               '&:hover': {
-                background: 'linear-gradient(45deg, #388E3C 30%, #689F38 90%)',
+                background: theme.palette.success.dark,
               }
             }}
           >
@@ -229,7 +232,7 @@ const StageCenterStep6 = ({ hostIP, hostPort, onComplete, activeStep, totalSteps
         </Grid>
       </Grid>
 
-      <Paper elevation={1} sx={{ p: 3, backgroundColor: '#f8f9fa' }}>
+      <Paper elevation={1} sx={{ p: 3, background: theme.palette.background.paper, color: theme.palette.text.primary }}>
         <Typography variant="h6" gutterBottom>
           Tips for Future Use
         </Typography>

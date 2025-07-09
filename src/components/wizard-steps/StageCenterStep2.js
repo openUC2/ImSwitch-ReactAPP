@@ -20,8 +20,10 @@ import {
 } from "@mui/icons-material";
 import * as stageCenterCalibrationSlice from "../../state/slices/StageCenterCalibrationSlice";
 import apiPositionerControllerMovePositioner from "../../backendapi/apiPositionerControllerMovePositioner";
+import { useTheme } from '@mui/material/styles';
 
 const StageCenterStep2 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps }) => {
+  const theme = useTheme();
   const dispatch = useDispatch();
   const stageCenterState = useSelector(stageCenterCalibrationSlice.getStageCenterCalibrationState);
   
@@ -148,7 +150,7 @@ const StageCenterStep2 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
       <Grid container spacing={3}>
         {/* Current Position Card */}
         <Grid item xs={12} md={6}>
-          <Card elevation={2} sx={{ height: '100%' }}>
+          <Card elevation={2} sx={{ height: '100%', background: theme.palette.background.paper, color: theme.palette.text.primary }}>
             <CardContent>
               <Typography variant="h6" gutterBottom color="primary">
                 <LocationIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
@@ -163,7 +165,7 @@ const StageCenterStep2 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
                     InputProps={{ readOnly: true }}
                     fullWidth
                     variant="outlined"
-                    sx={{ backgroundColor: '#f5f5f5' }}
+                    sx={{ backgroundColor: theme.palette.action.disabledBackground }}
                   />
                 </Grid>
                 <Grid item xs={6}>
@@ -173,7 +175,7 @@ const StageCenterStep2 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
                     InputProps={{ readOnly: true }}
                     fullWidth
                     variant="outlined"
-                    sx={{ backgroundColor: '#f5f5f5' }}
+                    sx={{ backgroundColor: theme.palette.action.disabledBackground }}
                   />
                 </Grid>
               </Grid>
@@ -205,7 +207,7 @@ const StageCenterStep2 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
 
         {/* Manual Entry Card */}
         <Grid item xs={12} md={6}>
-          <Card elevation={2} sx={{ height: '100%' }}>
+          <Card elevation={2} sx={{ height: '100%', background: theme.palette.background.paper, color: theme.palette.text.primary }}>
             <CardContent>
               <Typography variant="h6" gutterBottom color="primary">
                 <InputIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
@@ -244,9 +246,10 @@ const StageCenterStep2 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
                   disabled={isLoading || !manualCenterX || !manualCenterY}
                   fullWidth
                   sx={{
-                    background: 'linear-gradient(45deg, #FF6B6B 30%, #4ECDC4 90%)',
+                    background: theme.palette.primary.main,
+                    color: theme.palette.primary.contrastText,
                     '&:hover': {
-                      background: 'linear-gradient(45deg, #E55A5A 30%, #45B7B8 90%)',
+                      background: theme.palette.primary.dark,
                     }
                   }}
                 >
@@ -260,7 +263,7 @@ const StageCenterStep2 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
 
       <Divider sx={{ my: 3 }} />
 
-      <Paper elevation={1} sx={{ p: 3, mb: 3, backgroundColor: '#f8f9fa' }}>
+      <Paper elevation={1} sx={{ p: 3, mb: 3, background: theme.palette.background.paper, color: theme.palette.text.primary }}>
         <Typography variant="h6" gutterBottom>
           Manual Calibration Instructions
         </Typography>
@@ -291,9 +294,10 @@ const StageCenterStep2 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
           onClick={onNext}
           size="large"
           sx={{
-            background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+            background: theme.palette.primary.main,
+            color: theme.palette.primary.contrastText,
             '&:hover': {
-              background: 'linear-gradient(45deg, #1976D2 30%, #0097A7 90%)',
+              background: theme.palette.primary.dark,
             }
           }}
         >

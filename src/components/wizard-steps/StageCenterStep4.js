@@ -29,9 +29,11 @@ import * as stageCenterCalibrationSlice from "../../state/slices/StageCenterCali
 import apiStageCenterCalibrationPerformCalibration from "../../backendapi/apiStageCenterCalibrationPerformCalibration";
 import apiStageCenterCalibrationGetStatus from "../../backendapi/apiStageCenterCalibrationGetStatus";
 import apiStageCenterCalibrationStopCalibration from "../../backendapi/apiStageCenterCalibrationStopCalibration";
+import { useTheme } from '@mui/material/styles';
 
 const StageCenterStep4 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps }) => {
   const dispatch = useDispatch();
+  const theme = useTheme();
   const stageCenterState = useSelector(stageCenterCalibrationSlice.getStageCenterCalibrationState);
   
   const {
@@ -184,7 +186,7 @@ const StageCenterStep4 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
       <Grid container spacing={3}>
         {/* Control Panel */}
         <Grid item xs={12} md={6}>
-          <Card elevation={2}>
+          <Card elevation={2} sx={{ background: theme.palette.background.paper, color: theme.palette.text.primary }}>
             <CardContent>
               <Typography variant="h6" gutterBottom color="primary">
                 <SearchIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
@@ -230,12 +232,6 @@ const StageCenterStep4 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
                   onClick={startCalibration}
                   disabled={isCalibrationRunning || isLoading}
                   startIcon={<PlayIcon />}
-                  sx={{
-                    background: 'linear-gradient(45deg, #4CAF50 30%, #8BC34A 90%)',
-                    '&:hover': {
-                      background: 'linear-gradient(45deg, #388E3C 30%, #689F38 90%)',
-                    }
-                  }}
                   fullWidth
                 >
                   Start Auto Detection
@@ -246,7 +242,7 @@ const StageCenterStep4 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
 
           {/* Results */}
           {calibrationResults.length > 0 && (
-            <Card elevation={2} sx={{ mt: 2 }}>
+            <Card elevation={2} sx={{ mt: 2, background: theme.palette.background.paper, color: theme.palette.text.primary }}>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
                   Detection Results
@@ -270,7 +266,7 @@ const StageCenterStep4 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
 
         {/* Advanced Settings */}
         <Grid item xs={12} md={6}>
-          <Card elevation={2}>
+          <Card elevation={2} sx={{ background: theme.palette.background.paper, color: theme.palette.text.primary }}>
             <CardContent>
               <Typography variant="h6" gutterBottom color="primary">
                 <SettingsIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
@@ -285,7 +281,7 @@ const StageCenterStep4 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
                     InputProps={{ readOnly: true }}
                     fullWidth
                     size="small"
-                    sx={{ backgroundColor: '#f5f5f5' }}
+                    sx={{ backgroundColor: theme.palette.action.disabledBackground }}
                   />
                 </Grid>
                 <Grid item xs={6}>
@@ -295,7 +291,7 @@ const StageCenterStep4 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
                     InputProps={{ readOnly: true }}
                     fullWidth
                     size="small"
-                    sx={{ backgroundColor: '#f5f5f5' }}
+                    sx={{ backgroundColor: theme.palette.action.disabledBackground }}
                   />
                 </Grid>
               </Grid>
@@ -371,7 +367,7 @@ const StageCenterStep4 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
         </Grid>
       </Grid>
 
-      <Paper elevation={1} sx={{ p: 3, mt: 3, backgroundColor: '#f8f9fa' }}>
+      <Paper elevation={1} sx={{ p: 3, mt: 3, background: theme.palette.background.paper, color: theme.palette.text.primary }}>
         <Typography variant="h6" gutterBottom>
           How Automatic Detection Works
         </Typography>
@@ -404,9 +400,10 @@ const StageCenterStep4 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
           size="large"
           disabled={isCalibrationRunning}
           sx={{
-            background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+            background: theme.palette.primary.main,
+            color: theme.palette.primary.contrastText,
             '&:hover': {
-              background: 'linear-gradient(45deg, #1976D2 30%, #0097A7 90%)',
+              background: theme.palette.primary.dark,
             }
           }}
         >

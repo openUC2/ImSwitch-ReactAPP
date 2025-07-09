@@ -94,14 +94,15 @@ const StageCenterCalibrationWizard = ({ hostIP, hostPort }) => {
       PaperProps={{
         style: {
           minHeight: '80vh',
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          background: theme.palette.background.default,
+          color: theme.palette.text.primary,
         },
       }}
     >
       <DialogTitle
         sx={{
-          background: 'rgba(255, 255, 255, 0.95)',
-          color: '#1976d2',
+          background: theme.palette.background.paper,
+          color: theme.palette.text.primary,
           fontWeight: 'bold',
           display: 'flex',
           justifyContent: 'space-between',
@@ -116,7 +117,8 @@ const StageCenterCalibrationWizard = ({ hostIP, hostPort }) => {
       
       <DialogContent
         sx={{
-          background: 'rgba(255, 255, 255, 0.98)',
+          background: theme.palette.background.default,
+          color: theme.palette.text.primary,
         }}
       >
         <Box sx={{ width: '100%', mb: 2 }}>

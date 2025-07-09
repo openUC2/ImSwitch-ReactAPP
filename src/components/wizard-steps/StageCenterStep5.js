@@ -24,11 +24,13 @@ import {
   CenterFocusStrong as CenterIcon,
   Save as SaveIcon,
 } from "@mui/icons-material";
+import { useTheme } from '@mui/material/styles';
 import * as stageCenterCalibrationSlice from "../../state/slices/StageCenterCalibrationSlice";
 import StageMapVisualization from "../StageMapVisualization";
 
 const StageCenterStep5 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps }) => {
   const dispatch = useDispatch();
+  const theme = useTheme();
   const stageCenterState = useSelector(stageCenterCalibrationSlice.getStageCenterCalibrationState);
   
   const {
@@ -127,7 +129,7 @@ const StageCenterStep5 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
       <Grid container spacing={3}>
         {/* Results Summary */}
         <Grid item xs={12} md={6}>
-          <Card elevation={2} sx={{ mb: 2 }}>
+          <Card elevation={2} sx={{ mb: 2, background: theme.palette.background.paper, color: theme.palette.text.primary }}>
             <CardContent>
               <Typography variant="h6" gutterBottom color="primary">
                 <AssessmentIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
@@ -137,7 +139,7 @@ const StageCenterStep5 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
               <Grid container spacing={2}>
                 {/* Current Position */}
                 <Grid item xs={12}>
-                  <Paper elevation={1} sx={{ p: 2, backgroundColor: '#f5f5f5' }}>
+                  <Paper elevation={1} sx={{ p: 2, background: theme.palette.action.disabledBackground }}>
                     <Typography variant="subtitle2" gutterBottom>
                       Current Stage Position
                     </Typography>
@@ -150,7 +152,7 @@ const StageCenterStep5 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
                 {/* Manual Center */}
                 {hasManualCenter && (
                   <Grid item xs={12}>
-                    <Paper elevation={1} sx={{ p: 2, backgroundColor: '#fff3e0' }}>
+                    <Paper elevation={1} sx={{ p: 2, background: theme.palette.warning.light }}>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                         <Typography variant="subtitle2">
                           Manual Center Position
@@ -184,7 +186,7 @@ const StageCenterStep5 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
                 {/* Found Center */}
                 {hasFoundCenter && (
                   <Grid item xs={12}>
-                    <Paper elevation={1} sx={{ p: 2, backgroundColor: '#e8f5e8' }}>
+                    <Paper elevation={1} sx={{ p: 2, background: theme.palette.success.light }}>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                         <Typography variant="subtitle2">
                           Auto-Detected Center
@@ -217,7 +219,7 @@ const StageCenterStep5 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
                 {/* Comparison */}
                 {hasManualCenter && hasFoundCenter && (
                   <Grid item xs={12}>
-                    <Paper elevation={1} sx={{ p: 2, backgroundColor: '#e3f2fd' }}>
+                    <Paper elevation={1} sx={{ p: 2, background: theme.palette.info.light }}>
                       <Typography variant="subtitle2" gutterBottom>
                         Center Comparison
                       </Typography>
@@ -347,9 +349,10 @@ const StageCenterStep5 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
           onClick={onNext}
           size="large"
           sx={{
-            background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+            background: theme.palette.primary.main,
+            color: theme.palette.primary.contrastText,
             '&:hover': {
-              background: 'linear-gradient(45deg, #1976D2 30%, #0097A7 90%)',
+              background: theme.palette.primary.dark,
             }
           }}
         >

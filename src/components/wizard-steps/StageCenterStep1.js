@@ -22,12 +22,14 @@ import {
   TouchApp as TouchIcon,
   Settings as SettingsIcon,
 } from "@mui/icons-material";
+import { useTheme } from '@mui/material/styles';
 
 const StageCenterStep1 = ({ onNext, activeStep, totalSteps }) => {
+  const theme = useTheme();
   const placeholderImageStyle = {
     width: "100%",
     height: "200px",
-    backgroundColor: "#f5f5f5",
+    backgroundColor: theme.palette.background.paper,
     border: "2px dashed #ccc",
     borderRadius: "8px",
     display: "flex",
@@ -46,7 +48,7 @@ const StageCenterStep1 = ({ onNext, activeStep, totalSteps }) => {
         using both manual methods and automatic bright spot detection.
       </Alert>
 
-      <Paper elevation={2} sx={{ p: 3, mb: 3, background: 'linear-gradient(45deg, #e3f2fd 30%, #f3e5f5 90%)' }}>
+      <Paper elevation={2} sx={{ p: 3, mb: 3, background: theme.palette.background.paper, color: theme.palette.text.primary }}>
         <Typography variant="h6" gutterBottom color="primary">
           <WarningIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
           What This Wizard Will Do
@@ -54,7 +56,7 @@ const StageCenterStep1 = ({ onNext, activeStep, totalSteps }) => {
         
         <Grid container spacing={3}>
           <Grid item xs={12} md={6}>
-            <Card elevation={1} sx={{ height: '100%' }}>
+            <Card elevation={1} sx={{ height: '100%', background: theme.palette.background.paper, color: theme.palette.text.primary }}>
               <CardContent>
                 <Typography variant="subtitle1" gutterBottom>
                   <SettingsIcon sx={{ mr: 1, verticalAlign: 'middle', color: '#1976d2' }} />
@@ -70,7 +72,7 @@ const StageCenterStep1 = ({ onNext, activeStep, totalSteps }) => {
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <Card elevation={1} sx={{ height: '100%' }}>
+            <Card elevation={1} sx={{ height: '100%', background: theme.palette.background.paper, color: theme.palette.text.primary }}>
               <CardContent>
                 <Typography variant="subtitle1" gutterBottom>
                   <SearchIcon sx={{ mr: 1, verticalAlign: 'middle', color: '#4caf50' }} />
@@ -86,7 +88,7 @@ const StageCenterStep1 = ({ onNext, activeStep, totalSteps }) => {
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <Card elevation={1} sx={{ height: '100%' }}>
+            <Card elevation={1} sx={{ height: '100%', background: theme.palette.background.paper, color: theme.palette.text.primary }}>
               <CardContent>
                 <Typography variant="subtitle1" gutterBottom>
                   <TouchIcon sx={{ mr: 1, verticalAlign: 'middle', color: '#ff9800' }} />
@@ -102,7 +104,7 @@ const StageCenterStep1 = ({ onNext, activeStep, totalSteps }) => {
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <Card elevation={1} sx={{ height: '100%' }}>
+            <Card elevation={1} sx={{ height: '100%', background: theme.palette.background.paper, color: theme.palette.text.primary }}>
               <CardContent>
                 <Typography variant="subtitle1" gutterBottom>
                   <CenterIcon sx={{ mr: 1, verticalAlign: 'middle', color: '#9c27b0' }} />
@@ -119,7 +121,7 @@ const StageCenterStep1 = ({ onNext, activeStep, totalSteps }) => {
         </Grid>
       </Paper>
 
-      <Paper elevation={1} sx={{ p: 3, mb: 3 }}>
+      <Paper elevation={1} sx={{ p: 3, mb: 3, background: theme.palette.background.paper, color: theme.palette.text.primary }}>
         <Typography variant="h6" gutterBottom color="primary">
           <InfoIcon sx={{ mr: 1, verticalAlign: 'middle' }} color="info" />
           Wizard Steps Overview
@@ -200,7 +202,7 @@ const StageCenterStep1 = ({ onNext, activeStep, totalSteps }) => {
         </Typography>
       </Alert>
 
-      <Box sx={{placeholderImageStyle, backgroundColor: '#e8f5e8'}}>
+      <Box sx={{...placeholderImageStyle}}>
         <Typography variant="body1" color="textSecondary" sx={{ textAlign: 'center' }}>
           🔬 Stage Center Calibration Overview
           <br />
@@ -215,9 +217,10 @@ const StageCenterStep1 = ({ onNext, activeStep, totalSteps }) => {
           onClick={onNext}
           size="large"
           sx={{
-            background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+            background: theme.palette.primary.main,
+            color: theme.palette.primary.contrastText,
             '&:hover': {
-              background: 'linear-gradient(45deg, #1976D2 30%, #0097A7 90%)',
+              background: theme.palette.primary.dark,
             }
           }}
         >
