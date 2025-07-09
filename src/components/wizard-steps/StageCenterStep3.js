@@ -10,15 +10,14 @@ import {
   TextField,
   Card,
   CardContent,
-  Slider,
 } from "@mui/material";
 import {
   Map as MapIcon,
-  Tune as TuneIcon,
   Refresh as RefreshIcon,
 } from "@mui/icons-material";
 import * as stageCenterCalibrationSlice from "../../state/slices/StageCenterCalibrationSlice";
-import StageMapVisualization from "../StageMapVisualization";
+import StageMapCanvas from "../StageMapCanvas";
+import LiveStreamTile from "../LiveStreamTile";
 import { useTheme } from '@mui/material/styles';
 
 const StageCenterStep3 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps }) => {
@@ -29,8 +28,6 @@ const StageCenterStep3 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
   const {
     currentX,
     currentY,
-    stageMapWidth,
-    stageMapHeight,
     isLoading,
     error,
     successMessage
@@ -65,17 +62,11 @@ const StageCenterStep3 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
   };
 
   const handleMapWidthChange = (event, newValue) => {
-    dispatch(stageCenterCalibrationSlice.setStageMapDimensions({
-      width: newValue,
-      height: stageMapHeight
-    }));
+    // Map dimension changes are handled by the WellSelectorCanvas internally
   };
 
   const handleMapHeightChange = (event, newValue) => {
-    dispatch(stageCenterCalibrationSlice.setStageMapDimensions({
-      width: stageMapWidth,
-      height: newValue
-    }));
+    // Map dimension changes are handled by the WellSelectorCanvas internally
   };
 
   const clearMessages = () => {
@@ -84,12 +75,17 @@ const StageCenterStep3 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
 
   return (
     <Box sx={{ maxWidth: 1200, mx: "auto", p: 2 }}>
+      {/* Live Stream Tile - positioned in top right */}
+      <Box sx={{ position: 'absolute', top: 20, right: 20, zIndex: 10 }}>
+        <LiveStreamTile hostIP={hostIP} hostPort={hostPort} width={200} height={150} />
+      </Box>
+
       <Alert severity="info" sx={{ mb: 3 }}>
         <Typography variant="h6" gutterBottom>
           Step 3: Stage Map Visualization
         </Typography>
         Use the interactive stage map to visualize your current position and navigate to different areas. 
-        Click anywhere on the map to move the stage to that location.
+        Click anywhere on the map to move the stage to that location. The live stream shows your current view.
       </Alert>
 
       {error && (
@@ -105,7 +101,7 @@ const StageCenterStep3 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
       )}
 
       <Grid container spacing={3}>
-        {/* Stage Map */}
+        {/* Stage Map - taking full width */}
         <Grid item xs={12} md={8}>
           <Card elevation={2} sx={{ background: theme.palette.background.paper, color: theme.palette.text.primary }}>
             <CardContent>
@@ -114,7 +110,7 @@ const StageCenterStep3 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
                 Interactive Stage Map
               </Typography>
               
-              <StageMapVisualization 
+              <StageMapCanvas 
                 hostIP={hostIP} 
                 hostPort={hostPort} 
                 width={500} 
@@ -124,68 +120,11 @@ const StageCenterStep3 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
           </Card>
         </Grid>
 
-        {/* Controls */}
+        {/* Current Position and Controls */}
         <Grid item xs={12} md={4}>
           <Card elevation={2} sx={{ mb: 2, background: theme.palette.background.paper, color: theme.palette.text.primary }}>
             <CardContent>
               <Typography variant="h6" gutterBottom color="primary">
-                <TuneIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-                Map Settings
-              </Typography>
-              
-              <Box sx={{ mb: 3 }}>
-                <Typography variant="subtitle2" gutterBottom>
-                  Map Width (μm): {stageMapWidth}
-                </Typography>
-                <Slider
-                  value={stageMapWidth}
-                  onChange={handleMapWidthChange}
-                  min={1000}
-                  max={10000}
-                  step={500}
-                  marks={[
-                    { value: 1000, label: '1mm' },
-                    { value: 5000, label: '5mm' },
-                    { value: 10000, label: '10mm' },
-                  ]}
-                  valueLabelDisplay="auto"
-                />
-              </Box>
-              
-              <Box sx={{ mb: 3 }}>
-                <Typography variant="subtitle2" gutterBottom>
-                  Map Height (μm): {stageMapHeight}
-                </Typography>
-                <Slider
-                  value={stageMapHeight}
-                  onChange={handleMapHeightChange}
-                  min={1000}
-                  max={10000}
-                  step={500}
-                  marks={[
-                    { value: 1000, label: '1mm' },
-                    { value: 5000, label: '5mm' },
-                    { value: 10000, label: '10mm' },
-                  ]}
-                  valueLabelDisplay="auto"
-                />
-              </Box>
-
-              <Button
-                variant="outlined"
-                onClick={fetchCurrentPosition}
-                disabled={isLoading}
-                startIcon={<RefreshIcon />}
-                fullWidth
-              >
-                Refresh Position
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card elevation={2} sx={{ background: theme.palette.background.paper, color: theme.palette.text.primary }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
                 Current Position
               </Typography>
               
@@ -213,6 +152,17 @@ const StageCenterStep3 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
                   />
                 </Grid>
               </Grid>
+
+              <Button
+                variant="outlined"
+                onClick={fetchCurrentPosition}
+                disabled={isLoading}
+                startIcon={<RefreshIcon />}
+                fullWidth
+                sx={{ mt: 2 }}
+              >
+                Refresh Position
+              </Button>
             </CardContent>
           </Card>
         </Grid>
@@ -224,15 +174,15 @@ const StageCenterStep3 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
         </Typography>
         <Typography variant="body2" paragraph>
           <strong>Navigation:</strong> Click anywhere on the grid to move the stage to that position. 
-          The blue circle shows your current location, and it updates in real-time.
+          The current position is shown in real-time and updates automatically.
         </Typography>
         <Typography variant="body2" paragraph>
-          <strong>Map Scale:</strong> Adjust the map width and height using the sliders to change the 
-          visible area. Smaller values show more detail, larger values show more of the stage.
+          <strong>Map Controls:</strong> Use mouse wheel to zoom in/out and drag to pan the view.
+          The map shows the coordinate system and allows precise positioning.
         </Typography>
         <Typography variant="body2">
-          <strong>Visual Feedback:</strong> Orange circles show manually set center positions, 
-          and green circles show automatically detected centers (from the next step).
+          <strong>Live Stream:</strong> The camera feed on the top right shows what you're currently viewing.
+          This helps you navigate to find bright spots or specific features.
         </Typography>
       </Paper>
 

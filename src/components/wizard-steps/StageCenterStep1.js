@@ -23,8 +23,9 @@ import {
   Settings as SettingsIcon,
 } from "@mui/icons-material";
 import { useTheme } from '@mui/material/styles';
+import LiveStreamTile from "../LiveStreamTile";
 
-const StageCenterStep1 = ({ onNext, activeStep, totalSteps }) => {
+const StageCenterStep1 = ({ hostIP, hostPort, onNext, activeStep, totalSteps }) => {
   const theme = useTheme();
   const placeholderImageStyle = {
     width: "100%",
@@ -40,12 +41,17 @@ const StageCenterStep1 = ({ onNext, activeStep, totalSteps }) => {
 
   return (
     <Box sx={{ maxWidth: 1000, mx: "auto", p: 2 }}>
+      {/* Live Stream Tile - positioned in top right */}
+      <Box sx={{ position: 'absolute', top: 20, right: 20, zIndex: 10 }}>
+        <LiveStreamTile hostIP={hostIP} hostPort={hostPort} width={200} height={150} />
+      </Box>
+
       <Alert severity="info" sx={{ mb: 3 }}>
         <Typography variant="h6" gutterBottom>
           Welcome to the Stage Center Calibration Wizard
         </Typography>
         This advanced wizard will help you find and calibrate the center position of your microscope stage 
-        using both manual methods and automatic bright spot detection.
+        using both manual methods and automatic bright spot detection. Monitor the live stream during calibration.
       </Alert>
 
       <Paper elevation={2} sx={{ p: 3, mb: 3, background: theme.palette.background.paper, color: theme.palette.text.primary }}>

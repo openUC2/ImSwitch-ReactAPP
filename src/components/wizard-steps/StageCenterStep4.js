@@ -29,6 +29,7 @@ import * as stageCenterCalibrationSlice from "../../state/slices/StageCenterCali
 import apiStageCenterCalibrationPerformCalibration from "../../backendapi/apiStageCenterCalibrationPerformCalibration";
 import apiStageCenterCalibrationGetStatus from "../../backendapi/apiStageCenterCalibrationGetStatus";
 import apiStageCenterCalibrationStopCalibration from "../../backendapi/apiStageCenterCalibrationStopCalibration";
+import LiveStreamTile from "../LiveStreamTile";
 import { useTheme } from '@mui/material/styles';
 
 const StageCenterStep4 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps }) => {
@@ -141,12 +142,17 @@ const StageCenterStep4 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
 
   return (
     <Box sx={{ maxWidth: 1000, mx: "auto", p: 2 }}>
+      {/* Live Stream Tile - positioned in top right */}
+      <Box sx={{ position: 'absolute', top: 20, right: 20, zIndex: 10 }}>
+        <LiveStreamTile hostIP={hostIP} hostPort={hostPort} width={200} height={150} />
+      </Box>
+
       <Alert severity="info" sx={{ mb: 3 }}>
         <Typography variant="h6" gutterBottom>
           Step 4: Automatic Bright Spot Detection
         </Typography>
         Configure and run an automated spiral scan to find bright spots on your stage. The system will 
-        scan in an expanding spiral pattern until it finds an area with increased brightness.
+        scan in an expanding spiral pattern until it finds an area with increased brightness. Monitor the live stream.
       </Alert>
 
       {error && (

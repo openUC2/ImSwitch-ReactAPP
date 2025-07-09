@@ -26,7 +26,8 @@ import {
 } from "@mui/icons-material";
 import { useTheme } from '@mui/material/styles';
 import * as stageCenterCalibrationSlice from "../../state/slices/StageCenterCalibrationSlice";
-import StageMapVisualization from "../StageMapVisualization";
+import StageMapCanvas from "../StageMapCanvas";
+import LiveStreamTile from "../LiveStreamTile";
 
 const StageCenterStep5 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps }) => {
   const dispatch = useDispatch();
@@ -106,12 +107,17 @@ const StageCenterStep5 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
 
   return (
     <Box sx={{ maxWidth: 1200, mx: "auto", p: 2 }}>
+      {/* Live Stream Tile - positioned in top right */}
+      <Box sx={{ position: 'absolute', top: 20, right: 20, zIndex: 10 }}>
+        <LiveStreamTile hostIP={hostIP} hostPort={hostPort} width={200} height={150} />
+      </Box>
+
       <Alert severity="info" sx={{ mb: 3 }}>
         <Typography variant="h6" gutterBottom>
           Step 5: Review Calibration Results
         </Typography>
         Review the calibration results from manual entry and automatic detection. Choose which 
-        center position to apply or proceed to the final step.
+        center position to apply or proceed to the final step. Check the live stream for verification.
       </Alert>
 
       {error && (
@@ -283,7 +289,7 @@ const StageCenterStep5 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
                 Visual Results
               </Typography>
               
-              <StageMapVisualization 
+              <StageMapCanvas 
                 hostIP={hostIP} 
                 hostPort={hostPort} 
                 width={450} 

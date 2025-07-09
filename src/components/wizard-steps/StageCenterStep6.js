@@ -23,6 +23,7 @@ import {
   Save as SaveIcon,
 } from "@mui/icons-material";
 import * as stageCenterCalibrationSlice from "../../state/slices/StageCenterCalibrationSlice";
+import LiveStreamTile from "../LiveStreamTile";
 import { useTheme } from '@mui/material/styles';
 
 const StageCenterStep6 = ({ hostIP, hostPort, onComplete, activeStep, totalSteps }) => {
@@ -76,13 +77,18 @@ const StageCenterStep6 = ({ hostIP, hostPort, onComplete, activeStep, totalSteps
 
   return (
     <Box sx={{ maxWidth: 1000, mx: "auto", p: 2 }}>
+      {/* Live Stream Tile - positioned in top right */}
+      <Box sx={{ position: 'absolute', top: 20, right: 20, zIndex: 10 }}>
+        <LiveStreamTile hostIP={hostIP} hostPort={hostPort} width={200} height={150} />
+      </Box>
+
       <Alert severity="success" sx={{ mb: 3 }}>
         <Typography variant="h6" gutterBottom>
           <CelebrationIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
           Stage Center Calibration Complete!
         </Typography>
         Your stage center calibration has been completed successfully. Review the summary below 
-        and choose your next steps.
+        and choose your next steps. The live stream shows your final position.
       </Alert>
 
       <Grid container spacing={3}>

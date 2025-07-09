@@ -20,6 +20,7 @@ import {
 } from "@mui/icons-material";
 import * as stageCenterCalibrationSlice from "../../state/slices/StageCenterCalibrationSlice";
 import apiPositionerControllerMovePositioner from "../../backendapi/apiPositionerControllerMovePositioner";
+import LiveStreamTile from "../LiveStreamTile";
 import { useTheme } from '@mui/material/styles';
 
 const StageCenterStep2 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps }) => {
@@ -128,11 +129,17 @@ const StageCenterStep2 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
 
   return (
     <Box sx={{ maxWidth: 1000, mx: "auto", p: 2 }}>
+      {/* Live Stream Tile - positioned in top right */}
+      <Box sx={{ position: 'absolute', top: 20, right: 20, zIndex: 10 }}>
+        <LiveStreamTile hostIP={hostIP} hostPort={hostPort} width={200} height={150} />
+      </Box>
+
       <Alert severity="info" sx={{ mb: 3 }}>
         <Typography variant="h6" gutterBottom>
           Step 2: Manual Position Entry
         </Typography>
         Enter known center coordinates or use the current stage position as your reference point.
+        Watch the live stream to verify your position.
       </Alert>
 
       {error && (
