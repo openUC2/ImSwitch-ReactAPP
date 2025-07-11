@@ -16,6 +16,7 @@ import * as stageCenterCalibrationSlice from "../state/slices/StageCenterCalibra
 import StageCenterCalibrationWizard from "./StageCenterCalibrationWizard";
 import JoystickController from "./JoystickController";
 
+
 const StageOffsetCalibration = ({ hostIP, hostPort }) => {
   const socket = useWebSocket(); 
   const dispatch = useDispatch();
@@ -225,7 +226,7 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
           }}>
             <Typography variant="h4" gutterBottom sx={{ 
               fontWeight: 'bold', 
-              background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+              background: 'linear-gradient(45deg,rgb(0, 0, 0) 30%,rgb(53, 53, 53) 90%)',
               backgroundClip: 'text',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
@@ -242,10 +243,10 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
                 fontSize: '1.2rem',
                 py: 2,
                 px: 4,
-                background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                background: 'linear-gradient(45deg,rgb(193, 193, 193) 30%,rgb(137, 137, 137) 90%)',
                 boxShadow: '0 4px 20px 0 rgba(33, 150, 243, 0.4)',
                 '&:hover': {
-                  background: 'linear-gradient(45deg, #1976D2 30%, #0097A7 90%)',
+                  background: 'linear-gradient(45deg, rgb(134, 134, 134),rgb(181, 181, 181) 90%)',
                   boxShadow: '0 6px 25px 0 rgba(33, 150, 243, 0.6)',
                   transform: 'translateY(-2px)',
                 },
@@ -259,6 +260,7 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
             </Typography>
           </Box>
         </Grid>
+
 
         {/* Joystick Controller - Full Width */}
         <Grid item xs={12}>

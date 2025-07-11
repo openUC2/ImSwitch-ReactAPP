@@ -13,9 +13,6 @@ const StageMapCanvas = ({ hostIP, hostPort, width = 500, height = 400 }) => {
   useEffect(() => {
     // Set the mode to MOVE_CAMERA so clicking moves the stage
     dispatch(wellSelectorSlice.setMode(Mode.MOVE_CAMERA));
-    
-    // Initialize basic experiment state if needed
-    dispatch(experimentSlice.setName("Stage Center Calibration"));
   }, [dispatch]);
 
   return (
