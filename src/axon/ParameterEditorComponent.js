@@ -55,7 +55,7 @@ const ParameterEditorComponent = () => {
       (_, idx) => intensities[idx] ?? 0
     );
     const initGainsArray = parameterRange.illuSources.map(
-      (_, idx) => gains[idx] ?? 0 
+      (_, idx) => gains[idx] ?? 0
     );
     const initExposuresArray = parameterRange.illuSources.map(
       (_, idx) => exposures[idx] ?? 0
@@ -80,7 +80,7 @@ const ParameterEditorComponent = () => {
     const arr = [...intensities];
     arr[idx] = value;
     dispatch(experimentSlice.setIlluminationIntensities(arr));
-    
+
     // Also update backend immediately for real-time feedback
     const laserName = parameterRange.illuSources[idx];
     if (laserName && connectionSettingsState.ip && connectionSettingsState.apiPort) {

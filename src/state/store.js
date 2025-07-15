@@ -52,7 +52,7 @@ const rootReducer = combineReducers({
   liveViewState: liveViewReducer,
   histoScanState: histoScanReducer,
   widgetState: widgetReducer,
-  lepmonState: lepmonReducer,
+  lepmon: lepmonReducer,
   uc2State: uc2Reducer,
   stageOffsetCalibration: stageOffsetCalibrationReducer,
   flowStop: flowStopReducer,

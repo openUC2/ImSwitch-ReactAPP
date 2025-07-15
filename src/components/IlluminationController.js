@@ -41,6 +41,42 @@ export default function IlluminationController({ hostIP, hostPort }) {
     }
   }, [dispatch, parameterRangeState.illuSources, connectionSettingsState.ip, connectionSettingsState.apiPort, hostIP, hostPort]);
 
+  // Fetch laser names, value ranges, and current values from backend and update Redux state
+  useEffect(() => {
+    async function fetchIlluminationData() {
+      try {
+        // Fetch laser names
+        const namesRes = await fetch(`${hostIP}:${hostPort}/LaserController/getLaserNames`);
+        const names = await namesRes.json();
+        dispatch(parameterRangeSlice.setIlluSources(names));
+
+        // Fetch value ranges and current values for each laser
+        const minArr = [];
+        const maxArr = [];
+        const valueArr = [];
+        for (const name of names) {
+          const encodedName = encodeURIComponent(name);
+          // Value range
+          const rangeRes = await fetch(`${hostIP}:${hostPort}/LaserController/getLaserValueRanges?laserName=${encodedName}`);
+          const range = await rangeRes.json();
+          minArr.push(range[0]);
+          maxArr.push(range[1]);
+          // Current value
+          const valueRes = await fetch(`${hostIP}:${hostPort}/LaserController/getLaserValue?laserName=${encodedName}`);
+          const value = await valueRes.json();
+          valueArr.push(value);
+        }
+        dispatch(parameterRangeSlice.setIlluSourceMinIntensities(minArr));
+        dispatch(parameterRangeSlice.setIlluSourceMaxIntensities(maxArr));
+        dispatch(parameterRangeSlice.setilluIntensities(valueArr));
+      } catch (e) {
+        console.error("Failed to fetch illumination data", e);
+      }
+    }
+    fetchIlluminationData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hostIP, hostPort, dispatch]);
+
   // Update laser value using Redux and backend
   const setLaserValue = async (idx, val) => {
     // Update Redux state
