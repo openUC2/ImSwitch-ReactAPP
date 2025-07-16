@@ -41,7 +41,10 @@ import apiSTORMControllerSetParameters from "../backendapi/apiSTORMControllerSet
 import apiSTORMControllerTriggerReconstruction from "../backendapi/apiSTORMControllerTriggerReconstruction.js";
 import apiSTORMControllerSetProcessingParameters from "../backendapi/apiSTORMControllerSetProcessingParameters.js";
 import apiSTORMControllerStartReconstructionLocal from "../backendapi/apiSTORMControllerStartReconstructionLocal.js";
+import apiSTORMControllerStopReconstructionLocal from "../backendapi/apiSTORMControllerStopReconstructionLocal.js";
 import apiSTORMControllerGetProcessingParameters from "../backendapi/apiSTORMControllerGetProcessingParameters.js";
+import apiSTORMControllerGetReconstructionStatus from "../backendapi/apiSTORMControllerGetReconstructionStatus.js";
+import apiSTORMControllerGetLastReconstructedImagePath from "../backendapi/apiSTORMControllerGetLastReconstructedImagePath.js";
 
 const TabPanel = (props) => {
   const { children, value, index, ...other } = props;
@@ -181,6 +184,9 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
         const data = await apiSTORMControllerGetStatus();
         dispatch(stormSlice.setIsRunning(data.isRunning || false));
         dispatch(stormSlice.setCurrentFrameNumber(data.currentFrame || 0));
+        
+        // Also get reconstruction status
+        await getReconstructionStatus();
       } catch (error) {
         console.error('Error fetching STORM status:', error);
       }
@@ -188,6 +194,37 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
 
     fetchStatus();
   }, [dispatch]);
+
+  // Load processing parameters on component mount
+  useEffect(() => {
+    const loadInitialParameters = async () => {
+      try {
+        await loadProcessingParameters();
+      } catch (error) {
+        console.log("Could not load initial processing parameters, using defaults");
+      }
+    };
+
+    loadInitialParameters();
+  }, []);
+
+  // Periodic status polling when reconstruction is running
+  useEffect(() => {
+    let statusInterval;
+    
+    if (isReconstructing) {
+      statusInterval = setInterval(async () => {
+        await getReconstructionStatus();
+        await loadLastReconstructedImage();
+      }, 2000); // Poll every 2 seconds
+    }
+    
+    return () => {
+      if (statusInterval) {
+        clearInterval(statusInterval);
+      }
+    };
+  }, [isReconstructing]);
 
   // Initialize laser intensities when parameter range is available
   useEffect(() => {
@@ -606,6 +643,17 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
     }
   };
 
+  // Stop local reconstruction
+  const stopReconstructionLocal = async () => {
+    try {
+      await apiSTORMControllerStopReconstructionLocal();
+      dispatch(stormSlice.setIsReconstructing(false));
+      console.log("Local reconstruction stopped successfully");
+    } catch (error) {
+      console.error("Error stopping local reconstruction:", error);
+    }
+  };
+
   // Load current processing parameters from backend
   const loadProcessingParameters = async () => {
     try {
@@ -614,6 +662,32 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
       console.log("Processing parameters loaded successfully");
     } catch (error) {
       console.error("Error loading processing parameters:", error);
+    }
+  };
+
+  // Get reconstruction status
+  const getReconstructionStatus = async () => {
+    try {
+      const status = await apiSTORMControllerGetReconstructionStatus();
+      dispatch(stormSlice.setIsReconstructing(status.isReconstructing || false));
+      return status;
+    } catch (error) {
+      console.error("Error getting reconstruction status:", error);
+      return null;
+    }
+  };
+
+  // Get last reconstructed image path and load it
+  const loadLastReconstructedImage = async () => {
+    try {
+      const imagePath = await apiSTORMControllerGetLastReconstructedImagePath();
+      if (imagePath && connectionSettingsState.ip && connectionSettingsState.apiPort) {
+        // Construct the URL to load the image
+        const imageUrl = `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/FileManager/preview/${encodeURIComponent(imagePath)}`;
+        dispatch(stormSlice.setReconstructedImage(imageUrl));
+      }
+    } catch (error) {
+      console.error("Error loading last reconstructed image:", error);
     }
   };
 
@@ -1015,7 +1089,7 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
                           <TextField
                             type="number"
                             value={stormParameters.threshold}
-                            onChange={e => setStormParameter('threshold', parseFloat(e.target.value) || 0.0)}
+                            onChange={e => setStormParameter('threshold', Math.max(0.0, Math.min(1.0, parseFloat(e.target.value) || 0.0)))}
                             inputProps={{
                               min: 0.0,
                               max: 1.0,
@@ -1039,12 +1113,22 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
                             step={2}
                             onChange={(e, value) => setStormParameter('fit_roi_size', value)}
                             valueLabelDisplay="auto"
+                            marks={[
+                              { value: 7, label: '7' },
+                              { value: 99, label: '99' }
+                            ]}
                             sx={{ flex: 1 }}
                           />
                           <TextField
                             type="number"
                             value={stormParameters.fit_roi_size}
-                            onChange={e => setStormParameter('fit_roi_size', parseInt(e.target.value) || 7)}
+                            onChange={e => {
+                              let value = parseInt(e.target.value) || 7;
+                              // Ensure odd number between 7 and 99
+                              value = Math.max(7, Math.min(99, value));
+                              if (value % 2 === 0) value = value + 1; // Make it odd
+                              setStormParameter('fit_roi_size', value);
+                            }}
                             inputProps={{
                               min: 7,
                               max: 99,
@@ -1099,12 +1183,17 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
                             max={100}
                             onChange={(e, value) => setStormParameter('update_rate', value)}
                             valueLabelDisplay="auto"
+                            marks={[
+                              { value: 1, label: '1' },
+                              { value: 50, label: '50' },
+                              { value: 100, label: '100' }
+                            ]}
                             sx={{ flex: 1 }}
                           />
                           <TextField
                             type="number"
                             value={stormParameters.update_rate}
-                            onChange={e => setStormParameter('update_rate', parseInt(e.target.value) || 1)}
+                            onChange={e => setStormParameter('update_rate', Math.max(1, Math.min(100, parseInt(e.target.value) || 1)))}
                             inputProps={{
                               min: 1,
                               max: 100,
@@ -1133,7 +1222,7 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
                           label="Pixel Size (nm)"
                           type="number"
                           value={stormParameters.pixel_size_nm}
-                          onChange={e => setStormParameter('pixel_size_nm', parseFloat(e.target.value) || 117.5)}
+                          onChange={e => setStormParameter('pixel_size_nm', Math.max(0.1, parseFloat(e.target.value) || 117.5))}
                           inputProps={{
                             min: 0.1,
                             step: 0.1
@@ -1148,7 +1237,7 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
                           label="Super Resolution Pixel Size (nm)"
                           type="number"
                           value={stormParameters.super_resolution_pixel_size_nm}
-                          onChange={e => setStormParameter('super_resolution_pixel_size_nm', parseFloat(e.target.value) || 10.0)}
+                          onChange={e => setStormParameter('super_resolution_pixel_size_nm', Math.max(0.1, parseFloat(e.target.value) || 10.0))}
                           inputProps={{
                             min: 0.1,
                             step: 0.1
@@ -1175,7 +1264,7 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
                           label="Center Frequency"
                           type="number"
                           value={stormParameters.bandpass_filter.center}
-                          onChange={e => setBandpassFilterParameter('center', parseFloat(e.target.value) || 40.0)}
+                          onChange={e => setBandpassFilterParameter('center', Math.max(0.1, parseFloat(e.target.value) || 40.0))}
                           inputProps={{
                             min: 0.1,
                             step: 0.1
@@ -1190,7 +1279,7 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
                           label="Filter Width"
                           type="number"
                           value={stormParameters.bandpass_filter.width}
-                          onChange={e => setBandpassFilterParameter('width', parseFloat(e.target.value) || 90.0)}
+                          onChange={e => setBandpassFilterParameter('width', Math.max(0.1, parseFloat(e.target.value) || 90.0))}
                           inputProps={{
                             min: 0.1,
                             step: 0.1
@@ -1244,7 +1333,7 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
                           label="Min Threshold"
                           type="number"
                           value={stormParameters.blob_detector.min_threshold}
-                          onChange={e => setBlobDetectorParameter('min_threshold', parseFloat(e.target.value) || 0.0)}
+                          onChange={e => setBlobDetectorParameter('min_threshold', Math.max(0.0, Math.min(255.0, parseFloat(e.target.value) || 0.0)))}
                           inputProps={{
                             min: 0.0,
                             max: 255.0,
@@ -1260,7 +1349,7 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
                           label="Max Threshold"
                           type="number"
                           value={stormParameters.blob_detector.max_threshold}
-                          onChange={e => setBlobDetectorParameter('max_threshold', parseFloat(e.target.value) || 255.0)}
+                          onChange={e => setBlobDetectorParameter('max_threshold', Math.max(0.0, Math.min(255.0, parseFloat(e.target.value) || 255.0)))}
                           inputProps={{
                             min: 0.0,
                             max: 255.0,
@@ -1276,7 +1365,7 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
                           label="Min Area"
                           type="number"
                           value={stormParameters.blob_detector.min_area}
-                          onChange={e => setBlobDetectorParameter('min_area', parseFloat(e.target.value) || 1.5)}
+                          onChange={e => setBlobDetectorParameter('min_area', Math.max(0.1, parseFloat(e.target.value) || 1.5))}
                           inputProps={{
                             min: 0.1,
                             step: 0.1
@@ -1291,7 +1380,7 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
                           label="Max Area"
                           type="number"
                           value={stormParameters.blob_detector.max_area}
-                          onChange={e => setBlobDetectorParameter('max_area', parseFloat(e.target.value) || 80.0)}
+                          onChange={e => setBlobDetectorParameter('max_area', Math.max(0.1, parseFloat(e.target.value) || 80.0))}
                           inputProps={{
                             min: 0.1,
                             step: 0.1
@@ -1306,7 +1395,7 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
                           label="Min Circularity (null to disable)"
                           type="number"
                           value={stormParameters.blob_detector.min_circularity || ''}
-                          onChange={e => setBlobDetectorParameter('min_circularity', e.target.value ? parseFloat(e.target.value) : null)}
+                          onChange={e => setBlobDetectorParameter('min_circularity', e.target.value ? Math.max(0.0, Math.min(1.0, parseFloat(e.target.value))) : null)}
                           inputProps={{
                             min: 0.0,
                             max: 1.0,
@@ -1322,7 +1411,7 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
                           label="Min Convexity (null to disable)"
                           type="number"
                           value={stormParameters.blob_detector.min_convexity || ''}
-                          onChange={e => setBlobDetectorParameter('min_convexity', e.target.value ? parseFloat(e.target.value) : null)}
+                          onChange={e => setBlobDetectorParameter('min_convexity', e.target.value ? Math.max(0.0, Math.min(1.0, parseFloat(e.target.value))) : null)}
                           inputProps={{
                             min: 0.0,
                             max: 1.0,
@@ -1338,7 +1427,7 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
                           label="Min Inertia Ratio (null to disable)"
                           type="number"
                           value={stormParameters.blob_detector.min_inertia_ratio || ''}
-                          onChange={e => setBlobDetectorParameter('min_inertia_ratio', e.target.value ? parseFloat(e.target.value) : null)}
+                          onChange={e => setBlobDetectorParameter('min_inertia_ratio', e.target.value ? Math.max(0.0, Math.min(1.0, parseFloat(e.target.value))) : null)}
                           inputProps={{
                             min: 0.0,
                             max: 1.0,
@@ -1354,7 +1443,7 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
                           label="Blob Color"
                           type="number"
                           value={stormParameters.blob_detector.blob_color}
-                          onChange={e => setBlobDetectorParameter('blob_color', parseInt(e.target.value) || 255)}
+                          onChange={e => setBlobDetectorParameter('blob_color', Math.max(0, Math.min(255, parseInt(e.target.value) || 255)))}
                           inputProps={{
                             min: 0,
                             max: 255,
@@ -1370,7 +1459,7 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
                           label="Min Distance Between Blobs"
                           type="number"
                           value={stormParameters.blob_detector.min_dist_between_blobs}
-                          onChange={e => setBlobDetectorParameter('min_dist_between_blobs', parseFloat(e.target.value) || 0.0)}
+                          onChange={e => setBlobDetectorParameter('min_dist_between_blobs', Math.max(0.0, parseFloat(e.target.value) || 0.0))}
                           inputProps={{
                             min: 0.0,
                             step: 0.1
@@ -1532,6 +1621,41 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
                   sx={{ mb: 1 }}
                 >
                   {isReconstructing ? 'Reconstructing...' : 'Trigger Single Frame Reconstruction'}
+                </Button>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Button
+                  variant="contained"
+                  onClick={stopReconstructionLocal}
+                  disabled={!isReconstructing}
+                  color="secondary"
+                  fullWidth
+                  sx={{ mb: 1 }}
+                >
+                  Stop Local Reconstruction
+                </Button>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Button
+                  variant="outlined"
+                  onClick={getReconstructionStatus}
+                  fullWidth
+                  sx={{ mb: 1 }}
+                >
+                  Get Reconstruction Status
+                </Button>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Button
+                  variant="outlined"
+                  onClick={loadLastReconstructedImage}
+                  fullWidth
+                  sx={{ mb: 1 }}
+                >
+                  Load Last Reconstructed Image
                 </Button>
               </Grid>
 
