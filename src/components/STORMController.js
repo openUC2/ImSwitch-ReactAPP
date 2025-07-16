@@ -29,6 +29,7 @@ import apiSTORMControllerStart from "../backendapi/apiSTORMControllerStart.js";
 import apiSTORMControllerStop from "../backendapi/apiSTORMControllerStop.js";
 import apiSTORMControllerGetStatus from "../backendapi/apiSTORMControllerGetStatus.js";
 import apiSTORMControllerSetParameters from "../backendapi/apiSTORMControllerSetParameters.js";
+import apiSTORMControllerTriggerReconstruction from "../backendapi/apiSTORMControllerTriggerReconstruction.js";
 
 const TabPanel = (props) => {
   const { children, value, index, ...other } = props;
@@ -104,6 +105,8 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
   const isRunning = stormState.isRunning;
   const currentFrameNumber = stormState.currentFrameNumber;
   const reconstructedImage = stormState.reconstructedImage;
+  const stormParameters = stormState.stormParameters;
+  const isReconstructing = stormState.isReconstructing;
 
   // Use global live stream image
   const liveStreamImage = liveStreamState.liveViewImage;
@@ -524,6 +527,28 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
     setCropPreview(null);
   };
 
+  // Handle STORM reconstruction parameters
+  const setStormParameter = async (paramName, value) => {
+    const params = { [paramName]: value };
+    
+    try {
+      await apiSTORMControllerSetParameters(params);
+      dispatch(stormSlice.setStormParameters(params));
+    } catch (error) {
+      console.error("Error setting STORM parameter:", error);
+    }
+  };
+
+  // Trigger STORM reconstruction
+  const triggerReconstruction = async () => {
+    try {
+      await apiSTORMControllerTriggerReconstruction();
+      dispatch(stormSlice.setIsReconstructing(true));
+    } catch (error) {
+      console.error("Error triggering STORM reconstruction:", error);
+    }
+  };
+
   // Reset crop region to full image
   const resetCropRegion = () => {
     if (loadedImage && imageDims.width && imageDims.height) {
@@ -585,6 +610,7 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
             <Tab label="Experiment & Controls" />
             <Tab label="Crop Region" />
             <Tab label="Reconstructed Image" />
+            <Tab label="STORM Reconstruction" />
           </Tabs>
 
           {/* Experiment & Controls Tab (merged exposure, gain, lasers) */}
@@ -872,6 +898,125 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
                     </Typography>
                   </Box>
                 )}
+              </Grid>
+            </Grid>
+          </TabPanel>
+
+          {/* STORM Reconstruction Tab */}
+          <TabPanel value={tabIndex} index={3}>
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <Typography variant="h6" gutterBottom>
+                  STORM Reconstruction Parameters
+                </Typography>
+              </Grid>
+              
+              <Grid item xs={12}>
+                <Typography gutterBottom>
+                  Detection Threshold: {stormParameters.threshold}
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Slider
+                    value={stormParameters.threshold}
+                    min={1}
+                    max={1000}
+                    onChange={(e, value) => setStormParameter('threshold', value)}
+                    valueLabelDisplay="auto"
+                    sx={{ flex: 1 }}
+                  />
+                  <TextField
+                    type="number"
+                    value={stormParameters.threshold}
+                    onChange={e => setStormParameter('threshold', parseInt(e.target.value) || 1)}
+                    inputProps={{
+                      min: 1,
+                      max: 1000,
+                      style: { width: 80 }
+                    }}
+                    size="small"
+                  />
+                </Box>
+              </Grid>
+
+              <Grid item xs={12}>
+                <Typography gutterBottom>
+                  ROI Size: {stormParameters.roi_size}
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Slider
+                    value={stormParameters.roi_size}
+                    min={5}
+                    max={50}
+                    onChange={(e, value) => setStormParameter('roi_size', value)}
+                    valueLabelDisplay="auto"
+                    sx={{ flex: 1 }}
+                  />
+                  <TextField
+                    type="number"
+                    value={stormParameters.roi_size}
+                    onChange={e => setStormParameter('roi_size', parseInt(e.target.value) || 5)}
+                    inputProps={{
+                      min: 5,
+                      max: 50,
+                      style: { width: 80 }
+                    }}
+                    size="small"
+                  />
+                </Box>
+              </Grid>
+
+              <Grid item xs={12}>
+                <Typography gutterBottom>
+                  Update Rate: {stormParameters.update_rate}
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Slider
+                    value={stormParameters.update_rate}
+                    min={1}
+                    max={100}
+                    onChange={(e, value) => setStormParameter('update_rate', value)}
+                    valueLabelDisplay="auto"
+                    sx={{ flex: 1 }}
+                  />
+                  <TextField
+                    type="number"
+                    value={stormParameters.update_rate}
+                    onChange={e => setStormParameter('update_rate', parseInt(e.target.value) || 1)}
+                    inputProps={{
+                      min: 1,
+                      max: 100,
+                      style: { width: 80 }
+                    }}
+                    size="small"
+                  />
+                </Box>
+              </Grid>
+
+              <Grid item xs={12}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                  <Typography variant="h6">
+                    Reconstruction Status:
+                  </Typography>
+                  {isReconstructing ? (
+                    <CheckCircleIcon
+                      style={{ color: green[500], marginLeft: "10px" }}
+                    />
+                  ) : (
+                    <CancelIcon style={{ color: red[500], marginLeft: "10px" }} />
+                  )}
+                </Box>
+              </Grid>
+
+              <Grid item xs={12}>
+                <Button
+                  variant="contained"
+                  onClick={triggerReconstruction}
+                  disabled={isReconstructing}
+                  color="primary"
+                  fullWidth
+                >
+                  {isReconstructing ? 'Reconstructing...' : 'Trigger STORM Reconstruction'}
+                </Button>
               </Grid>
             </Grid>
           </TabPanel>

@@ -176,6 +176,18 @@ const WebSocketHandler = () => {
         if (dataJson.args && dataJson.args.p0 !== undefined) {
           dispatch({ type: 'storm/setCurrentFrameNumber', payload: dataJson.args.p0 });
         }
+      } else if (dataJson.name == "sigSTORMReconstructionUpdated") {
+        //console.log("sigSTORMReconstructionUpdated", dataJson);
+        // Update STORM reconstructed image
+        if (dataJson.args && dataJson.args.p0) {
+          dispatch({ type: 'storm/setReconstructedImage', payload: dataJson.args.p0 });
+        }
+      } else if (dataJson.name == "sigSTORMReconstructionStarted") {
+        //console.log("sigSTORMReconstructionStarted", dataJson);
+        dispatch({ type: 'storm/setIsReconstructing', payload: true });
+      } else if (dataJson.name == "sigSTORMReconstructionStopped") {
+        //console.log("sigSTORMReconstructionStopped", dataJson);
+        dispatch({ type: 'storm/setIsReconstructing', payload: false });
       }
       else {
         //console.warn("WebSocket: Unhandled signal from socket:", dataJson.name);

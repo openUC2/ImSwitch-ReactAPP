@@ -23,6 +23,16 @@ const initialState = {
   isRunning: false,
   currentFrameNumber: 0,
   
+  // STORM reconstruction parameters
+  stormParameters: {
+    threshold: 100,
+    roi_size: 15,
+    update_rate: 10,
+  },
+  
+  // Reconstruction status
+  isReconstructing: false,
+  
   // Images
   reconstructedImage: null,
 };
@@ -77,6 +87,25 @@ const stormSlice = createSlice({
     setCurrentFrameNumber: (state, action) => {
       state.currentFrameNumber = action.payload;
     },
+    
+    // STORM reconstruction parameter actions
+    setStormParameters: (state, action) => {
+      state.stormParameters = { ...state.stormParameters, ...action.payload };
+    },
+    setThreshold: (state, action) => {
+      state.stormParameters.threshold = action.payload;
+    },
+    setRoiSize: (state, action) => {
+      state.stormParameters.roi_size = action.payload;
+    },
+    setUpdateRate: (state, action) => {
+      state.stormParameters.update_rate = action.payload;
+    },
+    
+    // Reconstruction status actions
+    setIsReconstructing: (state, action) => {
+      state.isReconstructing = action.payload;
+    },
 
     // Image actions
     setReconstructedImage: (state, action) => {
@@ -87,6 +116,7 @@ const stormSlice = createSlice({
     resetExperiment: (state) => {
       state.isRunning = false;
       state.currentFrameNumber = 0;
+      state.isReconstructing = false;
     },
     resetToDefaults: (state) => {
       return { ...initialState };
@@ -108,6 +138,11 @@ export const {
   setLaserIntensity,
   setIsRunning,
   setCurrentFrameNumber,
+  setStormParameters,
+  setThreshold,
+  setRoiSize,
+  setUpdateRate,
+  setIsReconstructing,
   setReconstructedImage,
   resetExperiment,
   resetToDefaults,
