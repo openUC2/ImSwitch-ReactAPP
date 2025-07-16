@@ -15,7 +15,16 @@ import {
   CardContent,
   Checkbox,
   FormControlLabel,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Divider,
 } from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { green, red } from "@mui/material/colors";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
@@ -30,6 +39,9 @@ import apiSTORMControllerStop from "../backendapi/apiSTORMControllerStop.js";
 import apiSTORMControllerGetStatus from "../backendapi/apiSTORMControllerGetStatus.js";
 import apiSTORMControllerSetParameters from "../backendapi/apiSTORMControllerSetParameters.js";
 import apiSTORMControllerTriggerReconstruction from "../backendapi/apiSTORMControllerTriggerReconstruction.js";
+import apiSTORMControllerSetProcessingParameters from "../backendapi/apiSTORMControllerSetProcessingParameters.js";
+import apiSTORMControllerStartReconstructionLocal from "../backendapi/apiSTORMControllerStartReconstructionLocal.js";
+import apiSTORMControllerGetProcessingParameters from "../backendapi/apiSTORMControllerGetProcessingParameters.js";
 
 const TabPanel = (props) => {
   const { children, value, index, ...other } = props;
@@ -106,6 +118,7 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
   const currentFrameNumber = stormState.currentFrameNumber;
   const reconstructedImage = stormState.reconstructedImage;
   const stormParameters = stormState.stormParameters;
+  const acquisitionParameters = stormState.acquisitionParameters;
   const isReconstructing = stormState.isReconstructing;
 
   // Use global live stream image
@@ -539,6 +552,71 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
     }
   };
 
+  // Handle bandpass filter parameters
+  const setBandpassFilterParameter = (paramName, value) => {
+    const updatedFilter = { ...stormParameters.bandpass_filter, [paramName]: value };
+    dispatch(stormSlice.setBandpassFilter(updatedFilter));
+  };
+
+  // Handle blob detector parameters
+  const setBlobDetectorParameter = (paramName, value) => {
+    const updatedDetector = { ...stormParameters.blob_detector, [paramName]: value };
+    dispatch(stormSlice.setBlobDetector(updatedDetector));
+  };
+
+  // Handle acquisition parameters
+  const setAcquisitionParameter = (paramName, value) => {
+    const updatedAcquisition = { ...acquisitionParameters, [paramName]: value };
+    dispatch(stormSlice.setAcquisitionParameters(updatedAcquisition));
+  };
+
+  // Update processing parameters on the backend
+  const updateProcessingParameters = async () => {
+    try {
+      await apiSTORMControllerSetProcessingParameters(stormParameters);
+      console.log("Processing parameters updated successfully");
+    } catch (error) {
+      console.error("Error updating processing parameters:", error);
+    }
+  };
+
+  // Start local reconstruction
+  const startReconstructionLocal = async () => {
+    try {
+      const reconstructionRequest = {
+        session_id: acquisitionParameters.session_id,
+        acquisition_parameters: {
+          ...acquisitionParameters,
+          crop_x: cropRegion.x,
+          crop_y: cropRegion.y,
+          crop_width: cropRegion.width,
+          crop_height: cropRegion.height,
+          exposure_time: exposureTime,
+          crop_enabled: acquisitionParameters.crop_enabled || (cropRegion.x !== 0 || cropRegion.y !== 0 || cropRegion.width !== imageDims.width || cropRegion.height !== imageDims.height),
+        },
+        processing_parameters: stormParameters,
+        save_enabled: acquisitionParameters.save_enabled
+      };
+      
+      await apiSTORMControllerStartReconstructionLocal(reconstructionRequest);
+      dispatch(stormSlice.setIsReconstructing(true));
+      console.log("Local reconstruction started successfully");
+    } catch (error) {
+      console.error("Error starting local reconstruction:", error);
+    }
+  };
+
+  // Load current processing parameters from backend
+  const loadProcessingParameters = async () => {
+    try {
+      const params = await apiSTORMControllerGetProcessingParameters();
+      dispatch(stormSlice.setStormParameters(params));
+      console.log("Processing parameters loaded successfully");
+    } catch (error) {
+      console.error("Error loading processing parameters:", error);
+    }
+  };
+
   // Trigger STORM reconstruction
   const triggerReconstruction = async () => {
     try {
@@ -911,88 +989,500 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
                 </Typography>
               </Grid>
               
+              {/* Main Processing Parameters */}
               <Grid item xs={12}>
-                <Typography gutterBottom>
-                  Detection Threshold: {stormParameters.threshold}
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Slider
-                    value={stormParameters.threshold}
-                    min={1}
-                    max={1000}
-                    onChange={(e, value) => setStormParameter('threshold', value)}
-                    valueLabelDisplay="auto"
-                    sx={{ flex: 1 }}
-                  />
-                  <TextField
-                    type="number"
-                    value={stormParameters.threshold}
-                    onChange={e => setStormParameter('threshold', parseInt(e.target.value) || 1)}
-                    inputProps={{
-                      min: 1,
-                      max: 1000,
-                      style: { width: 80 }
-                    }}
-                    size="small"
-                  />
-                </Box>
+                <Card sx={{ mb: 2 }}>
+                  <CardContent>
+                    <Typography variant="subtitle1" gutterBottom>
+                      Main Processing Parameters
+                    </Typography>
+                    
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} md={6}>
+                        <Typography gutterBottom>
+                          Detection Threshold: {stormParameters.threshold}
+                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <Slider
+                            value={stormParameters.threshold}
+                            min={0.0}
+                            max={1.0}
+                            step={0.01}
+                            onChange={(e, value) => setStormParameter('threshold', value)}
+                            valueLabelDisplay="auto"
+                            sx={{ flex: 1 }}
+                          />
+                          <TextField
+                            type="number"
+                            value={stormParameters.threshold}
+                            onChange={e => setStormParameter('threshold', parseFloat(e.target.value) || 0.0)}
+                            inputProps={{
+                              min: 0.0,
+                              max: 1.0,
+                              step: 0.01,
+                              style: { width: 80 }
+                            }}
+                            size="small"
+                          />
+                        </Box>
+                      </Grid>
+
+                      <Grid item xs={12} md={6}>
+                        <Typography gutterBottom>
+                          Fit ROI Size: {stormParameters.fit_roi_size}
+                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <Slider
+                            value={stormParameters.fit_roi_size}
+                            min={7}
+                            max={99}
+                            step={2}
+                            onChange={(e, value) => setStormParameter('fit_roi_size', value)}
+                            valueLabelDisplay="auto"
+                            sx={{ flex: 1 }}
+                          />
+                          <TextField
+                            type="number"
+                            value={stormParameters.fit_roi_size}
+                            onChange={e => setStormParameter('fit_roi_size', parseInt(e.target.value) || 7)}
+                            inputProps={{
+                              min: 7,
+                              max: 99,
+                              step: 2,
+                              style: { width: 80 }
+                            }}
+                            size="small"
+                          />
+                        </Box>
+                      </Grid>
+
+                      <Grid item xs={12} md={6}>
+                        <FormControl fullWidth size="small">
+                          <InputLabel>Fitting Method</InputLabel>
+                          <Select
+                            value={stormParameters.fitting_method}
+                            onChange={e => setStormParameter('fitting_method', e.target.value)}
+                            label="Fitting Method"
+                          >
+                            <MenuItem value="2D_Phasor_CPU">2D Phasor CPU</MenuItem>
+                            <MenuItem value="2D_Gauss_MLE_fixed_sigma">2D Gauss MLE Fixed Sigma</MenuItem>
+                            <MenuItem value="2D_Gauss_MLE_free_sigma">2D Gauss MLE Free Sigma</MenuItem>
+                            <MenuItem value="2D_Gauss_MLE_elliptical_sigma">2D Gauss MLE Elliptical Sigma</MenuItem>
+                            <MenuItem value="3D_Gauss_MLE_cspline_sigma">3D Gauss MLE CSpline Sigma</MenuItem>
+                          </Select>
+                        </FormControl>
+                      </Grid>
+
+                      <Grid item xs={12} md={6}>
+                        <FormControl fullWidth size="small">
+                          <InputLabel>Filter Type</InputLabel>
+                          <Select
+                            value={stormParameters.filter_type}
+                            onChange={e => setStormParameter('filter_type', e.target.value)}
+                            label="Filter Type"
+                          >
+                            <MenuItem value="bandpass">Bandpass</MenuItem>
+                            <MenuItem value="difference_of_gaussians">Difference of Gaussians</MenuItem>
+                            <MenuItem value="temporal_median">Temporal Median</MenuItem>
+                          </Select>
+                        </FormControl>
+                      </Grid>
+
+                      <Grid item xs={12} md={6}>
+                        <Typography gutterBottom>
+                          Update Rate: {stormParameters.update_rate}
+                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <Slider
+                            value={stormParameters.update_rate}
+                            min={1}
+                            max={100}
+                            onChange={(e, value) => setStormParameter('update_rate', value)}
+                            valueLabelDisplay="auto"
+                            sx={{ flex: 1 }}
+                          />
+                          <TextField
+                            type="number"
+                            value={stormParameters.update_rate}
+                            onChange={e => setStormParameter('update_rate', parseInt(e.target.value) || 1)}
+                            inputProps={{
+                              min: 1,
+                              max: 100,
+                              style: { width: 80 }
+                            }}
+                            size="small"
+                          />
+                        </Box>
+                      </Grid>
+
+                      <Grid item xs={12} md={6}>
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              checked={stormParameters.temporal_median_enabled}
+                              onChange={e => setStormParameter('temporal_median_enabled', e.target.checked)}
+                            />
+                          }
+                          label="Enable Temporal Median"
+                        />
+                      </Grid>
+
+                      <Grid item xs={12} md={6}>
+                        <TextField
+                          fullWidth
+                          label="Pixel Size (nm)"
+                          type="number"
+                          value={stormParameters.pixel_size_nm}
+                          onChange={e => setStormParameter('pixel_size_nm', parseFloat(e.target.value) || 117.5)}
+                          inputProps={{
+                            min: 0.1,
+                            step: 0.1
+                          }}
+                          size="small"
+                        />
+                      </Grid>
+
+                      <Grid item xs={12} md={6}>
+                        <TextField
+                          fullWidth
+                          label="Super Resolution Pixel Size (nm)"
+                          type="number"
+                          value={stormParameters.super_resolution_pixel_size_nm}
+                          onChange={e => setStormParameter('super_resolution_pixel_size_nm', parseFloat(e.target.value) || 10.0)}
+                          inputProps={{
+                            min: 0.1,
+                            step: 0.1
+                          }}
+                          size="small"
+                        />
+                      </Grid>
+                    </Grid>
+                  </CardContent>
+                </Card>
               </Grid>
 
+              {/* Bandpass Filter Parameters */}
               <Grid item xs={12}>
-                <Typography gutterBottom>
-                  ROI Size: {stormParameters.roi_size}
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Slider
-                    value={stormParameters.roi_size}
-                    min={5}
-                    max={50}
-                    onChange={(e, value) => setStormParameter('roi_size', value)}
-                    valueLabelDisplay="auto"
-                    sx={{ flex: 1 }}
-                  />
-                  <TextField
-                    type="number"
-                    value={stormParameters.roi_size}
-                    onChange={e => setStormParameter('roi_size', parseInt(e.target.value) || 5)}
-                    inputProps={{
-                      min: 5,
-                      max: 50,
-                      style: { width: 80 }
-                    }}
-                    size="small"
-                  />
-                </Box>
+                <Accordion>
+                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                    <Typography variant="subtitle1">Bandpass Filter Parameters</Typography>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} md={6}>
+                        <TextField
+                          fullWidth
+                          label="Center Frequency"
+                          type="number"
+                          value={stormParameters.bandpass_filter.center}
+                          onChange={e => setBandpassFilterParameter('center', parseFloat(e.target.value) || 40.0)}
+                          inputProps={{
+                            min: 0.1,
+                            step: 0.1
+                          }}
+                          size="small"
+                        />
+                      </Grid>
+
+                      <Grid item xs={12} md={6}>
+                        <TextField
+                          fullWidth
+                          label="Filter Width"
+                          type="number"
+                          value={stormParameters.bandpass_filter.width}
+                          onChange={e => setBandpassFilterParameter('width', parseFloat(e.target.value) || 90.0)}
+                          inputProps={{
+                            min: 0.1,
+                            step: 0.1
+                          }}
+                          size="small"
+                        />
+                      </Grid>
+
+                      <Grid item xs={12} md={6}>
+                        <FormControl fullWidth size="small">
+                          <InputLabel>Bandpass Filter Type</InputLabel>
+                          <Select
+                            value={stormParameters.bandpass_filter.filter_type}
+                            onChange={e => setBandpassFilterParameter('filter_type', e.target.value)}
+                            label="Bandpass Filter Type"
+                          >
+                            <MenuItem value="gauss">Gauss</MenuItem>
+                            <MenuItem value="butterworth">Butterworth</MenuItem>
+                            <MenuItem value="ideal">Ideal</MenuItem>
+                          </Select>
+                        </FormControl>
+                      </Grid>
+
+                      <Grid item xs={12} md={6}>
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              checked={stormParameters.bandpass_filter.show_filter}
+                              onChange={e => setBandpassFilterParameter('show_filter', e.target.checked)}
+                            />
+                          }
+                          label="Show Filter Visualization"
+                        />
+                      </Grid>
+                    </Grid>
+                  </AccordionDetails>
+                </Accordion>
               </Grid>
 
+              {/* Blob Detector Parameters */}
               <Grid item xs={12}>
-                <Typography gutterBottom>
-                  Update Rate: {stormParameters.update_rate}
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Slider
-                    value={stormParameters.update_rate}
-                    min={1}
-                    max={100}
-                    onChange={(e, value) => setStormParameter('update_rate', value)}
-                    valueLabelDisplay="auto"
-                    sx={{ flex: 1 }}
-                  />
-                  <TextField
-                    type="number"
-                    value={stormParameters.update_rate}
-                    onChange={e => setStormParameter('update_rate', parseInt(e.target.value) || 1)}
-                    inputProps={{
-                      min: 1,
-                      max: 100,
-                      style: { width: 80 }
-                    }}
-                    size="small"
-                  />
-                </Box>
+                <Accordion>
+                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                    <Typography variant="subtitle1">Blob Detector Parameters</Typography>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} md={6}>
+                        <TextField
+                          fullWidth
+                          label="Min Threshold"
+                          type="number"
+                          value={stormParameters.blob_detector.min_threshold}
+                          onChange={e => setBlobDetectorParameter('min_threshold', parseFloat(e.target.value) || 0.0)}
+                          inputProps={{
+                            min: 0.0,
+                            max: 255.0,
+                            step: 0.1
+                          }}
+                          size="small"
+                        />
+                      </Grid>
+
+                      <Grid item xs={12} md={6}>
+                        <TextField
+                          fullWidth
+                          label="Max Threshold"
+                          type="number"
+                          value={stormParameters.blob_detector.max_threshold}
+                          onChange={e => setBlobDetectorParameter('max_threshold', parseFloat(e.target.value) || 255.0)}
+                          inputProps={{
+                            min: 0.0,
+                            max: 255.0,
+                            step: 0.1
+                          }}
+                          size="small"
+                        />
+                      </Grid>
+
+                      <Grid item xs={12} md={6}>
+                        <TextField
+                          fullWidth
+                          label="Min Area"
+                          type="number"
+                          value={stormParameters.blob_detector.min_area}
+                          onChange={e => setBlobDetectorParameter('min_area', parseFloat(e.target.value) || 1.5)}
+                          inputProps={{
+                            min: 0.1,
+                            step: 0.1
+                          }}
+                          size="small"
+                        />
+                      </Grid>
+
+                      <Grid item xs={12} md={6}>
+                        <TextField
+                          fullWidth
+                          label="Max Area"
+                          type="number"
+                          value={stormParameters.blob_detector.max_area}
+                          onChange={e => setBlobDetectorParameter('max_area', parseFloat(e.target.value) || 80.0)}
+                          inputProps={{
+                            min: 0.1,
+                            step: 0.1
+                          }}
+                          size="small"
+                        />
+                      </Grid>
+
+                      <Grid item xs={12} md={6}>
+                        <TextField
+                          fullWidth
+                          label="Min Circularity (null to disable)"
+                          type="number"
+                          value={stormParameters.blob_detector.min_circularity || ''}
+                          onChange={e => setBlobDetectorParameter('min_circularity', e.target.value ? parseFloat(e.target.value) : null)}
+                          inputProps={{
+                            min: 0.0,
+                            max: 1.0,
+                            step: 0.01
+                          }}
+                          size="small"
+                        />
+                      </Grid>
+
+                      <Grid item xs={12} md={6}>
+                        <TextField
+                          fullWidth
+                          label="Min Convexity (null to disable)"
+                          type="number"
+                          value={stormParameters.blob_detector.min_convexity || ''}
+                          onChange={e => setBlobDetectorParameter('min_convexity', e.target.value ? parseFloat(e.target.value) : null)}
+                          inputProps={{
+                            min: 0.0,
+                            max: 1.0,
+                            step: 0.01
+                          }}
+                          size="small"
+                        />
+                      </Grid>
+
+                      <Grid item xs={12} md={6}>
+                        <TextField
+                          fullWidth
+                          label="Min Inertia Ratio (null to disable)"
+                          type="number"
+                          value={stormParameters.blob_detector.min_inertia_ratio || ''}
+                          onChange={e => setBlobDetectorParameter('min_inertia_ratio', e.target.value ? parseFloat(e.target.value) : null)}
+                          inputProps={{
+                            min: 0.0,
+                            max: 1.0,
+                            step: 0.01
+                          }}
+                          size="small"
+                        />
+                      </Grid>
+
+                      <Grid item xs={12} md={6}>
+                        <TextField
+                          fullWidth
+                          label="Blob Color"
+                          type="number"
+                          value={stormParameters.blob_detector.blob_color}
+                          onChange={e => setBlobDetectorParameter('blob_color', parseInt(e.target.value) || 255)}
+                          inputProps={{
+                            min: 0,
+                            max: 255,
+                            step: 1
+                          }}
+                          size="small"
+                        />
+                      </Grid>
+
+                      <Grid item xs={12} md={6}>
+                        <TextField
+                          fullWidth
+                          label="Min Distance Between Blobs"
+                          type="number"
+                          value={stormParameters.blob_detector.min_dist_between_blobs}
+                          onChange={e => setBlobDetectorParameter('min_dist_between_blobs', parseFloat(e.target.value) || 0.0)}
+                          inputProps={{
+                            min: 0.0,
+                            step: 0.1
+                          }}
+                          size="small"
+                        />
+                      </Grid>
+                    </Grid>
+                  </AccordionDetails>
+                </Accordion>
               </Grid>
 
+              {/* Acquisition Parameters */}
               <Grid item xs={12}>
+                <Accordion>
+                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                    <Typography variant="subtitle1">Acquisition Parameters</Typography>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} md={6}>
+                        <TextField
+                          fullWidth
+                          label="Session ID"
+                          value={acquisitionParameters.session_id || ''}
+                          onChange={e => setAcquisitionParameter('session_id', e.target.value)}
+                          size="small"
+                        />
+                      </Grid>
+
+                      <Grid item xs={12} md={6}>
+                        <TextField
+                          fullWidth
+                          label="Max Frames (-1 for unlimited)"
+                          type="number"
+                          value={acquisitionParameters.max_frames}
+                          onChange={e => setAcquisitionParameter('max_frames', parseInt(e.target.value) || -1)}
+                          inputProps={{
+                            min: -1,
+                            step: 1
+                          }}
+                          size="small"
+                        />
+                      </Grid>
+
+                      <Grid item xs={12} md={6}>
+                        <TextField
+                          fullWidth
+                          label="Save Directory"
+                          value={acquisitionParameters.save_directory}
+                          onChange={e => setAcquisitionParameter('save_directory', e.target.value)}
+                          size="small"
+                        />
+                      </Grid>
+
+                      <Grid item xs={12} md={6}>
+                        <FormControl fullWidth size="small">
+                          <InputLabel>Save Format</InputLabel>
+                          <Select
+                            value={acquisitionParameters.save_format}
+                            onChange={e => setAcquisitionParameter('save_format', e.target.value)}
+                            label="Save Format"
+                          >
+                            <MenuItem value="tiff">TIFF</MenuItem>
+                            <MenuItem value="omezarr">OME-Zarr</MenuItem>
+                          </Select>
+                        </FormControl>
+                      </Grid>
+
+                      <Grid item xs={12} md={6}>
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              checked={acquisitionParameters.save_enabled}
+                              onChange={e => setAcquisitionParameter('save_enabled', e.target.checked)}
+                            />
+                          }
+                          label="Enable Saving"
+                        />
+                      </Grid>
+
+                      <Grid item xs={12} md={6}>
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              checked={acquisitionParameters.process_locally}
+                              onChange={e => setAcquisitionParameter('process_locally', e.target.checked)}
+                            />
+                          }
+                          label="Process Locally"
+                        />
+                      </Grid>
+
+                      <Grid item xs={12} md={6}>
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              checked={acquisitionParameters.process_arkitekt}
+                              onChange={e => setAcquisitionParameter('process_arkitekt', e.target.checked)}
+                            />
+                          }
+                          label="Process with Arkitekt"
+                        />
+                      </Grid>
+                    </Grid>
+                  </AccordionDetails>
+                </Accordion>
+              </Grid>
+
+              {/* Reconstruction Control */}
+              <Grid item xs={12}>
+                <Divider sx={{ my: 2 }} />
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
                   <Typography variant="h6">
                     Reconstruction Status:
@@ -1007,15 +1497,52 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
                 </Box>
               </Grid>
 
-              <Grid item xs={12}>
+              <Grid item xs={12} md={6}>
+                <Button
+                  variant="contained"
+                  onClick={updateProcessingParameters}
+                  color="secondary"
+                  fullWidth
+                  sx={{ mb: 1 }}
+                >
+                  Update Processing Parameters
+                </Button>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Button
+                  variant="contained"
+                  onClick={startReconstructionLocal}
+                  disabled={isReconstructing}
+                  color="primary"
+                  fullWidth
+                  sx={{ mb: 1 }}
+                >
+                  {isReconstructing ? 'Reconstructing...' : 'Start Local Reconstruction'}
+                </Button>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
                 <Button
                   variant="contained"
                   onClick={triggerReconstruction}
                   disabled={isReconstructing}
                   color="primary"
                   fullWidth
+                  sx={{ mb: 1 }}
                 >
-                  {isReconstructing ? 'Reconstructing...' : 'Trigger STORM Reconstruction'}
+                  {isReconstructing ? 'Reconstructing...' : 'Trigger Single Frame Reconstruction'}
+                </Button>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Button
+                  variant="outlined"
+                  onClick={loadProcessingParameters}
+                  fullWidth
+                  sx={{ mb: 1 }}
+                >
+                  Load Current Parameters
                 </Button>
               </Grid>
             </Grid>

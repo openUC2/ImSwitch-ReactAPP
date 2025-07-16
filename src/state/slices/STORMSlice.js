@@ -23,11 +23,56 @@ const initialState = {
   isRunning: false,
   currentFrameNumber: 0,
   
-  // STORM reconstruction parameters
+  // STORM reconstruction parameters following the new API structure
   stormParameters: {
-    threshold: 100,
-    roi_size: 15,
+    // Processing parameters
+    threshold: 0.2,
+    fit_roi_size: 13,
+    fitting_method: "2D_Phasor_CPU",
+    filter_type: "bandpass",
+    temporal_median_enabled: false,
     update_rate: 10,
+    pixel_size_nm: 117.5,
+    super_resolution_pixel_size_nm: 10.0,
+    
+    // Bandpass filter parameters
+    bandpass_filter: {
+      center: 40.0,
+      width: 90.0,
+      filter_type: "gauss",
+      show_filter: false
+    },
+    
+    // Blob detector parameters  
+    blob_detector: {
+      min_threshold: 0.0,
+      max_threshold: 255.0,
+      min_area: 1.5,
+      max_area: 80.0,
+      min_circularity: null,
+      min_convexity: null,
+      min_inertia_ratio: null,
+      blob_color: 255,
+      min_dist_between_blobs: 0.0
+    }
+  },
+  
+  // Acquisition parameters
+  acquisitionParameters: {
+    session_id: null,
+    exposure_time: null,
+    max_frames: -1,
+    crop_enabled: false,
+    crop_x: null,
+    crop_y: null,
+    crop_width: null,
+    crop_height: null,
+    save_enabled: false,
+    save_directory: "STORM",
+    save_format: "tiff",
+    process_locally: true,
+    process_arkitekt: false,
+    processing_parameters: null
   },
   
   // Reconstruction status
@@ -95,11 +140,64 @@ const stormSlice = createSlice({
     setThreshold: (state, action) => {
       state.stormParameters.threshold = action.payload;
     },
-    setRoiSize: (state, action) => {
-      state.stormParameters.roi_size = action.payload;
+    setFitRoiSize: (state, action) => {
+      state.stormParameters.fit_roi_size = action.payload;
+    },
+    setFittingMethod: (state, action) => {
+      state.stormParameters.fitting_method = action.payload;
+    },
+    setFilterType: (state, action) => {
+      state.stormParameters.filter_type = action.payload;
+    },
+    setTemporalMedianEnabled: (state, action) => {
+      state.stormParameters.temporal_median_enabled = action.payload;
     },
     setUpdateRate: (state, action) => {
       state.stormParameters.update_rate = action.payload;
+    },
+    setPixelSizeNm: (state, action) => {
+      state.stormParameters.pixel_size_nm = action.payload;
+    },
+    setSuperResolutionPixelSizeNm: (state, action) => {
+      state.stormParameters.super_resolution_pixel_size_nm = action.payload;
+    },
+    setBandpassFilter: (state, action) => {
+      state.stormParameters.bandpass_filter = { ...state.stormParameters.bandpass_filter, ...action.payload };
+    },
+    setBlobDetector: (state, action) => {
+      state.stormParameters.blob_detector = { ...state.stormParameters.blob_detector, ...action.payload };
+    },
+    
+    // Acquisition parameter actions
+    setAcquisitionParameters: (state, action) => {
+      state.acquisitionParameters = { ...state.acquisitionParameters, ...action.payload };
+    },
+    setSessionId: (state, action) => {
+      state.acquisitionParameters.session_id = action.payload;
+    },
+    setAcquisitionExposureTime: (state, action) => {
+      state.acquisitionParameters.exposure_time = action.payload;
+    },
+    setMaxFrames: (state, action) => {
+      state.acquisitionParameters.max_frames = action.payload;
+    },
+    setCropEnabled: (state, action) => {
+      state.acquisitionParameters.crop_enabled = action.payload;
+    },
+    setSaveEnabled: (state, action) => {
+      state.acquisitionParameters.save_enabled = action.payload;
+    },
+    setSaveDirectory: (state, action) => {
+      state.acquisitionParameters.save_directory = action.payload;
+    },
+    setSaveFormat: (state, action) => {
+      state.acquisitionParameters.save_format = action.payload;
+    },
+    setProcessLocally: (state, action) => {
+      state.acquisitionParameters.process_locally = action.payload;
+    },
+    setProcessArkitekt: (state, action) => {
+      state.acquisitionParameters.process_arkitekt = action.payload;
     },
     
     // Reconstruction status actions
@@ -140,8 +238,25 @@ export const {
   setCurrentFrameNumber,
   setStormParameters,
   setThreshold,
-  setRoiSize,
+  setFitRoiSize,
+  setFittingMethod,
+  setFilterType,
+  setTemporalMedianEnabled,
   setUpdateRate,
+  setPixelSizeNm,
+  setSuperResolutionPixelSizeNm,
+  setBandpassFilter,
+  setBlobDetector,
+  setAcquisitionParameters,
+  setSessionId,
+  setAcquisitionExposureTime,
+  setMaxFrames,
+  setCropEnabled,
+  setSaveEnabled,
+  setSaveDirectory,
+  setSaveFormat,
+  setProcessLocally,
+  setProcessArkitekt,
   setIsReconstructing,
   setReconstructedImage,
   resetExperiment,
