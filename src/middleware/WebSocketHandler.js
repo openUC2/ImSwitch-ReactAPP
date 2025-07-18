@@ -188,7 +188,10 @@ const WebSocketHandler = () => {
       } else if (dataJson.name == "sigSTORMReconstructionStopped") {
         //console.log("sigSTORMReconstructionStopped", dataJson);
         dispatch({ type: 'storm/setIsReconstructing', payload: false });
-      }
+      } 
+      // Name: sigUpdatedSTORMReconstruction => Args: {"p0":[[252.2014923095703,298.37579345703125,2814.840087890625,206508.3125,1.037859320640564]}
+
+
       else {
         //console.warn("WebSocket: Unhandled signal from socket:", dataJson.name);
         //console.warn(dataJson);

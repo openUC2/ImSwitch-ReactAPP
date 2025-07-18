@@ -391,7 +391,7 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
     if (connectionSettingsState.ip && connectionSettingsState.apiPort) {
       try {
         await fetch(
-          `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/SettingsController/setExposureTime?exposureTime=${newValue}`
+          `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/SettingsController/setDetectorExposureTime?exposureTime=${newValue}`
         );
       } catch (error) {
         console.error("Failed to update exposure time in backend:", error);
@@ -577,6 +577,9 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
     setCropPreview(null);
   };
 
+  // Local state for acquisition_active from backend
+  const [acquisitionActive, setAcquisitionActive] = useState(false);
+
   // Handle STORM reconstruction parameters
   const setStormParameter = async (paramName, value) => {
     const params = { [paramName]: value };
@@ -669,10 +672,13 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
   const getReconstructionStatus = async () => {
     try {
       const status = await apiSTORMControllerGetReconstructionStatus();
+      // Update Redux and local state
       dispatch(stormSlice.setIsReconstructing(status.isReconstructing || false));
+      setAcquisitionActive(!!status.acquisition_active); // Update local state
       return status;
     } catch (error) {
       console.error("Error getting reconstruction status:", error);
+      setAcquisitionActive(false);
       return null;
     }
   };
@@ -713,6 +719,28 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
     }
   };
 
+  // Local state for socket image
+  const [reconImage, setReconImage] = useState(null);
+
+  // Listen for socket image updates
+  useEffect(() => {
+    if (!socket) return;
+    const handleImageUpdate = (data) => {
+      try {
+        const jdata = typeof data === 'string' ? JSON.parse(data) : data;
+        if (jdata.name === 'sigExperimentImageUpdate' && jdata.detectorname === 'STORM' && jdata.image) {
+          // Decode base64 JPEG and apply min-max stretch
+          const imgSrc = `data:image/jpeg;base64,${jdata.image}`;
+          minMaxStretch(imgSrc).then(stretchedUrl => setReconImage(stretchedUrl));
+        }
+      } catch (err) {
+        console.error('Error parsing socket image update:', err);
+      }
+    };
+    socket.on('signal', handleImageUpdate);
+    return () => socket.off('signal', handleImageUpdate);
+  }, [socket]);
+
   return (
     <Paper>
       <Grid container spacing={2} sx={{ height: '100%' }}>
@@ -733,16 +761,20 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
               <Grid item xs={6}>
                 <Box display="flex" alignItems="center">
                   <Typography variant="h6">Status: </Typography>
+                  {/* Show running status from Redux */}
                   {isRunning ? (
-                    <CheckCircleIcon
-                      style={{ color: green[500], marginLeft: "10px" }}
-                    />
+                    <>
+                      <CheckCircleIcon style={{ color: green[500], marginLeft: "10px" }} />
+                      <Typography sx={{ ml: 1 }} color="success.main">Running</Typography>
+                    </>
                   ) : (
-                    <CancelIcon style={{ color: red[500], marginLeft: "10px" }} />
+                    <>
+                      <CancelIcon style={{ color: red[500], marginLeft: "10px" }} />
+                      <Typography sx={{ ml: 1 }} color="error.main">Stopped</Typography>
+                    </>
                   )}
                 </Box>
               </Grid>
-              
               <Grid item xs={6}>
                 <Typography variant="h6">
                   Frame: {currentFrameNumber}
@@ -763,6 +795,7 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
             <Tab label="Crop Region" />
             <Tab label="Reconstructed Image" />
             <Tab label="STORM Reconstruction" />
+            <Tab label="Live Reconstruction" />
           </Tabs>
 
           {/* Experiment & Controls Tab (merged exposure, gain, lasers) */}
@@ -1576,12 +1609,21 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
                   <Typography variant="h6">
                     Reconstruction Status:
                   </Typography>
-                  {isReconstructing ? (
-                    <CheckCircleIcon
-                      style={{ color: green[500], marginLeft: "10px" }}
-                    />
+                  {/* Show acquisitionActive and isReconstructing */}
+                  {acquisitionActive ? (
+                    <>
+                      <CheckCircleIcon style={{ color: green[500], marginLeft: "10px" }} />
+                      <Typography sx={{ ml: 1 }} color="success.main">Active</Typography>
+                    </>
                   ) : (
-                    <CancelIcon style={{ color: red[500], marginLeft: "10px" }} />
+                    <>
+                      <CancelIcon style={{ color: red[500], marginLeft: "10px" }} />
+                      <Typography sx={{ ml: 1 }} color="error.main">Inactive</Typography>
+                    </>
+                  )}
+                  {/* Show internal reconstructing state for debugging */}
+                  {isReconstructing && (
+                    <Typography sx={{ ml: 2 }} color="info.main">(Reconstructing)</Typography>
                   )}
                 </Box>
               </Grid>
@@ -1628,7 +1670,7 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
                 <Button
                   variant="contained"
                   onClick={stopReconstructionLocal}
-                  disabled={!isReconstructing}
+                  disabled={!acquisitionActive}
                   color="secondary"
                   fullWidth
                   sx={{ mb: 1 }}
@@ -1668,6 +1710,29 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
                 >
                   Load Current Parameters
                 </Button>
+              </Grid>
+            </Grid>
+          </TabPanel>
+
+          {/* Live Reconstruction Tab */}
+          <TabPanel value={tabIndex} index={4}>
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <Typography variant="h6" gutterBottom>
+                  Live STORM Reconstruction
+                </Typography>
+                <Typography variant="body2" color="textSecondary">
+                  This tab displays the latest reconstruction image received via socket.
+                </Typography>
+              </Grid>
+              <Grid item xs={12}>
+                {reconImage ? (
+                  <img src={reconImage} alt="Live STORM Reconstruction" style={{ maxWidth: '100%', height: 'auto' }} />
+                ) : (
+                  <Box sx={{ width: '100%', height: 400, backgroundColor: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px dashed #ccc' }}>
+                    <Typography color="textSecondary">No reconstruction image received yet</Typography>
+                  </Box>
+                )}
               </Grid>
             </Grid>
           </TabPanel>
