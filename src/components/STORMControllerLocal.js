@@ -19,11 +19,15 @@ import {
   MenuItem,
   Divider,
   LinearProgress,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from "@mui/material";
 import { green, red } from "@mui/material/colors";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useWebSocket } from "../context/WebSocketContext";
 import * as stormSlice from "../state/slices/STORMSlice.js";
 import * as connectionSettingsSlice from "../state/slices/ConnectionSettingsSlice.js";
@@ -96,6 +100,14 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
 
   // Local state
   const [activeStep, setActiveStep] = useState(0);
+  const [expandedAccordions, setExpandedAccordions] = useState({
+    0: true, // Start with first accordion expanded
+    1: false,
+    2: false,
+    3: false,
+    4: false,
+    5: false
+  });
   const [reconstructionTabIndex, setReconstructionTabIndex] = useState(0);
   const [visualizationTabIndex, setVisualizationTabIndex] = useState(0);
   const [cropImage, setCropImage] = useState(null);
@@ -393,6 +405,17 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
     setActiveStep(stepIndex);
   };
 
+  // Handle accordion expand/collapse
+  const handleAccordionChange = (stepIndex) => (event, isExpanded) => {
+    setExpandedAccordions(prev => ({
+      ...prev,
+      [stepIndex]: isExpanded
+    }));
+    if (isExpanded) {
+      setActiveStep(stepIndex);
+    }
+  };
+
   const handleNext = () => {
     setActiveStep((prevStep) => prevStep + 1);
   };
@@ -409,11 +432,43 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
     setVisualizationTabIndex(newValue);
   };
 
+  const renderAccordionSteps = () => {
+    return steps.map((stepTitle, index) => (
+      <Accordion
+        key={index}
+        expanded={expandedAccordions[index]}
+        onChange={handleAccordionChange(index)}
+        sx={{
+          mb: 1,
+          '&:before': { display: 'none' }, // Remove default accordion divider
+          boxShadow: 'none', // Remove shadow
+          border: '1px solid #e0e0e0', // Add subtle border
+          borderRadius: '4px !important'
+        }}
+      >
+        <AccordionSummary
+          expandIcon={<ExpandMoreIcon />}
+          sx={{
+            backgroundColor: activeStep === index ? '#f5f5f5' : 'transparent',
+            '&:hover': { backgroundColor: '#f9f9f9' }
+          }}
+        >
+          <Typography variant="subtitle1" sx={{ fontWeight: activeStep === index ? 600 : 400 }}>
+            {index + 1}. {stepTitle}
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails sx={{ pt: 0 }}>
+          {renderStepContent(index)}
+        </AccordionDetails>
+      </Accordion>
+    ));
+  };
+
   const renderStepContent = (step) => {
     switch (step) {
       case 0: // Crop Settings
         return (
-          <Box sx={{ p: 2 }}>
+          <Box>
             <Typography variant="h6" gutterBottom>Crop Settings</Typography>
             <Grid container spacing={2}>
               <Grid item xs={12}>
@@ -487,7 +542,7 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
 
       case 1: // Autofocus Settings
         return (
-          <Box sx={{ p: 2 }}>
+          <Box>
             <Typography variant="h6" gutterBottom>Autofocus Settings</Typography>
             <Grid container spacing={2}>
               <Grid item xs={12}>
@@ -527,7 +582,7 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
 
       case 2: // Prefilter Settings
         return (
-          <Box sx={{ p: 2 }}>
+          <Box>
             <Typography variant="h6" gutterBottom>Prefilter Settings</Typography>
             <Grid container spacing={2}>
               <Grid item xs={6}>
@@ -587,7 +642,7 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
 
       case 3: // Localization Settings
         return (
-          <Box sx={{ p: 2 }}>
+          <Box>
             <Typography variant="h6" gutterBottom>Localization Settings</Typography>
             <Grid container spacing={2}>
               <Grid item xs={6}>
@@ -638,7 +693,7 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
 
       case 4: // N-Frames/Display Settings
         return (
-          <Box sx={{ p: 2 }}>
+          <Box>
             <Typography variant="h6" gutterBottom>N-Frames/Display Settings</Typography>
             <Grid container spacing={2}>
               <Grid item xs={6}>
@@ -693,7 +748,7 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
 
       case 5: // Start/Stop Acquisition
         return (
-          <Box sx={{ p: 2 }}>
+          <Box>
             <Typography variant="h6" gutterBottom>Start/Stop Acquisition</Typography>
             <Grid container spacing={2}>
               <Grid item xs={12}>
@@ -763,7 +818,7 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
   };
 
   return (
-    <Paper sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'transparent' }}>
       <Typography variant="h5" sx={{ p: 2, borderBottom: '1px solid #ddd' }}>
         STORM Local Controller
       </Typography>
@@ -786,29 +841,9 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
           <Box sx={{ p: 2, height: '100%', overflow: 'auto' }}>
             <Typography variant="h6" gutterBottom>Acquisition Settings</Typography>
             
-            {/* Clickable Step Tabs */}
-            <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-              <Tabs
-                value={activeStep}
-                onChange={(event, newValue) => setActiveStep(newValue)}
-                variant="scrollable"
-                scrollButtons="auto"
-                orientation="horizontal"
-              >
-                {steps.map((label, index) => (
-                  <Tab 
-                    key={index}
-                    label={label} 
-                    onClick={() => handleStepClick(index)}
-                    sx={{ minWidth: 'auto', fontSize: '0.8rem' }}
-                  />
-                ))}
-              </Tabs>
-            </Box>
-            
-            {/* Step Content */}
-            <Box sx={{ flex: 1 }}>
-              {renderStepContent(activeStep)}
+            {/* Vertical Accordion Steps */}
+            <Box sx={{ mt: 2 }}>
+              {renderAccordionSteps()}
             </Box>
           </Box>
         </Grid>
@@ -920,7 +955,7 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
           </Box>
         </Grid>
       </Grid>
-    </Paper>
+    </Box>
   );
 };
 

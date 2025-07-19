@@ -190,15 +190,36 @@ const WebSocketHandler = () => {
         dispatch({ type: 'storm/setIsReconstructing', payload: false });
       } else if (dataJson.name == "sigUpdatedSTORMReconstruction") {
         //console.log("sigUpdatedSTORMReconstruction", dataJson);
-        // Handle localization data - expected p0 to be a JSON string containing array of {x, y} coordinates
+        // Handle localization data - expected p0 to be an object with x, y, and intensity arrays
         if (dataJson.args && dataJson.args.p0) {
           try {
-            const localizationsData = JSON.parse(dataJson.args.p0);
-            if (Array.isArray(localizationsData)) {
-              // Convert to {x, y} format if needed
+            let localizationsData = dataJson.args.p0;
+            
+            // If p0 is a string, parse it first
+            if (typeof localizationsData === 'string') {
+              localizationsData = JSON.parse(localizationsData);
+            }
+            
+            // Check if it has the new format with separate x, y, intensity arrays
+            if (localizationsData.x && localizationsData.y && Array.isArray(localizationsData.x) && Array.isArray(localizationsData.y)) {
+              const localizations = [];
+              const minLength = Math.min(localizationsData.x.length, localizationsData.y.length);
+              
+              for (let i = 0; i < minLength; i++) {
+                localizations.push({
+                  x: localizationsData.x[i],
+                  y: localizationsData.y[i],
+                  intensity: localizationsData.intensity ? localizationsData.intensity[i] : 0
+                });
+              }
+              
+              dispatch({ type: 'storm/addLocalizations', payload: localizations });
+            } else if (Array.isArray(localizationsData)) {
+              // Fallback for old format - array of objects
               const localizations = localizationsData.map(loc => ({
                 x: loc.x || loc[0],
-                y: loc.y || loc[1]
+                y: loc.y || loc[1],
+                intensity: loc.intensity || 0
               }));
               dispatch({ type: 'storm/addLocalizations', payload: localizations });
             }
@@ -206,7 +227,7 @@ const WebSocketHandler = () => {
             console.warn("Failed to parse STORM localization data:", e);
           }
         }
-      } 
+      }
       // Name: sigUpdatedSTORMReconstruction => Args: {"p0":[[252.2014923095703,298.37579345703125,2814.840087890625,206508.3125,1.037859320640564]}
 
 
