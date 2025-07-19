@@ -170,7 +170,67 @@ const WebSocketHandler = () => {
         //update redux state
         dispatch(omeZarrSlice.setZarrUrl(dataJson.args.p0));
         dispatch(omeZarrSlice.tileArrived());
+      } else if (dataJson.name == "sigNSTORMImageAcquired") {
+        //console.log("sigNSTORMImageAcquired", dataJson);
+        // Update STORM frame count - expected p0 to be frame number
+        if (dataJson.args && dataJson.args.p0 !== undefined) {
+          dispatch({ type: 'storm/setCurrentFrameNumber', payload: dataJson.args.p0 });
+        }
+      } else if (dataJson.name == "sigSTORMReconstructionUpdated") {
+        //console.log("sigSTORMReconstructionUpdated", dataJson);
+        // Update STORM reconstructed image
+        if (dataJson.args && dataJson.args.p0) {
+          dispatch({ type: 'storm/setReconstructedImage', payload: dataJson.args.p0 });
+        }
+      } else if (dataJson.name == "sigSTORMReconstructionStarted") {
+        //console.log("sigSTORMReconstructionStarted", dataJson);
+        dispatch({ type: 'storm/setIsReconstructing', payload: true });
+      } else if (dataJson.name == "sigSTORMReconstructionStopped") {
+        //console.log("sigSTORMReconstructionStopped", dataJson);
+        dispatch({ type: 'storm/setIsReconstructing', payload: false });
+      } else if (dataJson.name == "sigUpdatedSTORMReconstruction") {
+        //console.log("sigUpdatedSTORMReconstruction", dataJson);
+        // Handle localization data - expected p0 to be an object with x, y, and intensity arrays
+        if (dataJson.args && dataJson.args.p0) {
+          try {
+            let localizationsData = dataJson.args.p0;
+            
+            // If p0 is a string, parse it first
+            if (typeof localizationsData === 'string') {
+              localizationsData = JSON.parse(localizationsData);
+            }
+            
+            // Check if it has the new format with separate x, y, intensity arrays
+            if (localizationsData.x && localizationsData.y && Array.isArray(localizationsData.x) && Array.isArray(localizationsData.y)) {
+              const localizations = [];
+              const minLength = Math.min(localizationsData.x.length, localizationsData.y.length);
+              
+              for (let i = 0; i < minLength; i++) {
+                localizations.push({
+                  x: localizationsData.x[i],
+                  y: localizationsData.y[i],
+                  intensity: localizationsData.intensity ? localizationsData.intensity[i] : 0
+                });
+              }
+              
+              dispatch({ type: 'storm/addLocalizations', payload: localizations });
+            } else if (Array.isArray(localizationsData)) {
+              // Fallback for old format - array of objects
+              const localizations = localizationsData.map(loc => ({
+                x: loc.x || loc[0],
+                y: loc.y || loc[1],
+                intensity: loc.intensity || 0
+              }));
+              dispatch({ type: 'storm/addLocalizations', payload: localizations });
+            }
+          } catch (e) {
+            console.warn("Failed to parse STORM localization data:", e);
+          }
+        }
       }
+      // Name: sigUpdatedSTORMReconstruction => Args: {"p0":[[252.2014923095703,298.37579345703125,2814.840087890625,206508.3125,1.037859320640564]}
+
+
       else {
         //console.warn("WebSocket: Unhandled signal from socket:", dataJson.name);
         //console.warn(dataJson);

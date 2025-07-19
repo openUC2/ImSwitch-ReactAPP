@@ -19,6 +19,9 @@ import ExtendedLEDMatrixController from "./components/ExtendedLEDMatrixControlle
 import StageOffsetCalibration from "./components/StageOffsetCalibrationController";
 import DetectorTriggerController from "./components/DetectorTriggerController";
 import StresstestController from "./components/StresstestController";
+import STORMController from "./components/STORMController.js";
+import STORMControllerArkitekt from "./components/STORMControllerArkitekt.js";
+import STORMControllerLocal from "./components/STORMControllerLocal.js";
 
 import theme from "./theme";
 import {
@@ -606,6 +609,28 @@ function App() {
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "HistoScan" : ""} />
               </ListItem>
+              {/* STORM Local */}
+              <ListItem
+                button
+                selected={selectedPlugin === "STORMLocal"}
+                onClick={() => handlePluginChange("STORMLocal")}
+              >
+                <ListItemIcon>  
+                  <SettingsOverscanSharpIcon />
+                </ListItemIcon>
+                <ListItemText primary={sidebarVisible ? "STORM Local" : ""} />
+              </ListItem>
+              {/* STORM Arkitekt */}
+              <ListItem
+                button
+                selected={selectedPlugin === "STORMArkitekt"}
+                onClick={() => handlePluginChange("STORMArkitekt")}
+              >
+                <ListItemIcon>  
+                  <SettingsOverscanSharpIcon />
+                </ListItemIcon>
+                <ListItemText primary={sidebarVisible ? "STORM Arkitekt" : ""} />
+              </ListItem>
               {/* Stresstest */}
               <ListItem
                 button
@@ -877,6 +902,12 @@ function App() {
             </Box>
             {selectedPlugin === "HistoScan" && (
               <HistoScanController hostIP={hostIP} hostPort={apiPort} />
+            )}
+            {selectedPlugin === "STORMLocal" && (
+                <STORMControllerLocal hostIP={hostIP} hostPort={apiPort} />
+            )}
+            {selectedPlugin === "STORMArkitekt" && (
+                <STORMControllerArkitekt hostIP={hostIP} hostPort={apiPort} />
             )}
             {selectedPlugin === "Stresstest" && (
               <StresstestController hostIP={hostIP} hostPort={apiPort} />
