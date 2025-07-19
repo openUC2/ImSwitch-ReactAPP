@@ -20,6 +20,8 @@ import StageOffsetCalibration from "./components/StageOffsetCalibrationControlle
 import DetectorTriggerController from "./components/DetectorTriggerController";
 import StresstestController from "./components/StresstestController";
 import STORMController from "./components/STORMController.js";
+import STORMControllerArkitekt from "./components/STORMControllerArkitekt.js";
+import STORMControllerLocal from "./components/STORMControllerLocal.js";
 
 import theme from "./theme";
 import {
@@ -891,7 +893,7 @@ function App() {
               <HistoScanController hostIP={hostIP} hostPort={apiPort} />
             )}
             {selectedPlugin === "STORM" && (
-                <STORMController hostIP={hostIP} hostPort={apiPort} />
+                <STORMControllerLocal hostIP={hostIP} hostPort={apiPort} />
             )}
             {selectedPlugin === "Stresstest" && (
               <StresstestController hostIP={hostIP} hostPort={apiPort} />
