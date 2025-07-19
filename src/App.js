@@ -609,16 +609,27 @@ function App() {
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "HistoScan" : ""} />
               </ListItem>
-              {/* STORM */}
+              {/* STORM Local */}
               <ListItem
                 button
-                selected={selectedPlugin === "STORM"}
-                onClick={() => handlePluginChange("STORM")}
+                selected={selectedPlugin === "STORMLocal"}
+                onClick={() => handlePluginChange("STORMLocal")}
               >
                 <ListItemIcon>  
                   <SettingsOverscanSharpIcon />
                 </ListItemIcon>
-                <ListItemText primary={sidebarVisible ? "STORM" : ""} />
+                <ListItemText primary={sidebarVisible ? "STORM Local" : ""} />
+              </ListItem>
+              {/* STORM Arkitekt */}
+              <ListItem
+                button
+                selected={selectedPlugin === "STORMArkitekt"}
+                onClick={() => handlePluginChange("STORMArkitekt")}
+              >
+                <ListItemIcon>  
+                  <SettingsOverscanSharpIcon />
+                </ListItemIcon>
+                <ListItemText primary={sidebarVisible ? "STORM Arkitekt" : ""} />
               </ListItem>
               {/* Stresstest */}
               <ListItem
@@ -892,8 +903,11 @@ function App() {
             {selectedPlugin === "HistoScan" && (
               <HistoScanController hostIP={hostIP} hostPort={apiPort} />
             )}
-            {selectedPlugin === "STORM" && (
+            {selectedPlugin === "STORMLocal" && (
                 <STORMControllerLocal hostIP={hostIP} hostPort={apiPort} />
+            )}
+            {selectedPlugin === "STORMArkitekt" && (
+                <STORMControllerArkitekt hostIP={hostIP} hostPort={apiPort} />
             )}
             {selectedPlugin === "Stresstest" && (
               <StresstestController hostIP={hostIP} hostPort={apiPort} />

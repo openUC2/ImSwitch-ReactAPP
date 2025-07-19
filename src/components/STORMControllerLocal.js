@@ -11,18 +11,12 @@ import {
   Button,
   Grid,
   Slider,
-  Card,
-  CardContent,
   Checkbox,
   FormControlLabel,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
-  Stepper,
-  Step,
-  StepLabel,
-  StepContent,
   Divider,
   LinearProgress,
 } from "@mui/material";
@@ -126,6 +120,7 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
   const stormParameters = stormState.stormParameters;
   const acquisitionParameters = stormState.acquisitionParameters;
   const reconstructedImage = stormState.reconstructedImage;
+  const localizations = stormState.localizations;
 
   const steps = [
     'Crop Settings',
@@ -388,6 +383,16 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
     }
   };
 
+  // Reset localizations
+  const resetLocalizations = () => {
+    dispatch(stormSlice.resetLocalizations());
+  };
+
+  // Handle direct step navigation (clicking on steps)
+  const handleStepClick = (stepIndex) => {
+    setActiveStep(stepIndex);
+  };
+
   const handleNext = () => {
     setActiveStep((prevStep) => prevStep + 1);
   };
@@ -408,360 +413,348 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
     switch (step) {
       case 0: // Crop Settings
         return (
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>Crop Settings</Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={12}>
-                  <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                    <Button variant="outlined" onClick={handleLoadImage} size="small">
-                      Load Image
-                    </Button>
-                    <Button variant="outlined" startIcon={<RefreshIcon />} onClick={resetCropRegion} size="small">
-                      Reset Crop
-                    </Button>
-                  </Box>
-                  <canvas
-                    ref={canvasRef}
-                    width={imageDims.width || 400}
-                    height={imageDims.height || 300}
-                    style={{
-                      border: '1px solid #ccc',
-                      cursor: isCropping ? 'crosshair' : 'pointer',
-                      maxWidth: '100%',
-                      maxHeight: '300px'
-                    }}
-                    onMouseDown={handleCropMouseDown}
-                    onMouseMove={handleCropMouseMove}
-                    onMouseUp={handleCropMouseUp}
-                    onMouseLeave={handleCropMouseUp}
-                  />
-                </Grid>
-                <Grid item xs={6}>
-                  <TextField
-                    label="X Position"
-                    type="number"
-                    value={cropRegion.x}
-                    onChange={(e) => dispatch(stormSlice.setCropX(parseInt(e.target.value) || 0))}
-                    fullWidth
-                    size="small"
-                  />
-                </Grid>
-                <Grid item xs={6}>
-                  <TextField
-                    label="Y Position"
-                    type="number"
-                    value={cropRegion.y}
-                    onChange={(e) => dispatch(stormSlice.setCropY(parseInt(e.target.value) || 0))}
-                    fullWidth
-                    size="small"
-                  />
-                </Grid>
-                <Grid item xs={6}>
-                  <TextField
-                    label="Width"
-                    type="number"
-                    value={cropRegion.width}
-                    onChange={(e) => dispatch(stormSlice.setCropWidth(parseInt(e.target.value) || 1))}
-                    fullWidth
-                    size="small"
-                  />
-                </Grid>
-                <Grid item xs={6}>
-                  <TextField
-                    label="Height"
-                    type="number"
-                    value={cropRegion.height}
-                    onChange={(e) => dispatch(stormSlice.setCropHeight(parseInt(e.target.value) || 1))}
-                    fullWidth
-                    size="small"
-                  />
-                </Grid>
+          <Box sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>Crop Settings</Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                  <Button variant="outlined" onClick={handleLoadImage} size="small">
+                    Load Image
+                  </Button>
+                  <Button variant="outlined" startIcon={<RefreshIcon />} onClick={resetCropRegion} size="small">
+                    Reset Crop
+                  </Button>
+                </Box>
+                <canvas
+                  ref={canvasRef}
+                  width={imageDims.width || 400}
+                  height={imageDims.height || 300}
+                  style={{
+                    border: '1px solid #ccc',
+                    cursor: isCropping ? 'crosshair' : 'pointer',
+                    maxWidth: '100%',
+                    maxHeight: '300px'
+                  }}
+                  onMouseDown={handleCropMouseDown}
+                  onMouseMove={handleCropMouseMove}
+                  onMouseUp={handleCropMouseUp}
+                  onMouseLeave={handleCropMouseUp}
+                />
               </Grid>
-            </CardContent>
-          </Card>
+              <Grid item xs={6}>
+                <TextField
+                  label="X Position"
+                  type="number"
+                  value={cropRegion.x}
+                  onChange={(e) => dispatch(stormSlice.setCropX(parseInt(e.target.value) || 0))}
+                  fullWidth
+                  size="small"
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField
+                  label="Y Position"
+                  type="number"
+                  value={cropRegion.y}
+                  onChange={(e) => dispatch(stormSlice.setCropY(parseInt(e.target.value) || 0))}
+                  fullWidth
+                  size="small"
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField
+                  label="Width"
+                  type="number"
+                  value={cropRegion.width}
+                  onChange={(e) => dispatch(stormSlice.setCropWidth(parseInt(e.target.value) || 1))}
+                  fullWidth
+                  size="small"
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField
+                  label="Height"
+                  type="number"
+                  value={cropRegion.height}
+                  onChange={(e) => dispatch(stormSlice.setCropHeight(parseInt(e.target.value) || 1))}
+                  fullWidth
+                  size="small"
+                />
+              </Grid>
+            </Grid>
+          </Box>
         );
 
       case 1: // Autofocus Settings
         return (
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>Autofocus Settings</Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={12}>
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={acquisitionParameters.autofocus_enabled || false}
-                        onChange={e => setAcquisitionParameter('autofocus_enabled', e.target.checked)}
-                      />
-                    }
-                    label="Enable Autofocus"
-                  />
-                </Grid>
-                <Grid item xs={6}>
-                  <TextField
-                    fullWidth
-                    label="Autofocus Interval (frames)"
-                    type="number"
-                    value={acquisitionParameters.autofocus_interval || 100}
-                    onChange={e => setAcquisitionParameter('autofocus_interval', parseInt(e.target.value) || 100)}
-                    size="small"
-                  />
-                </Grid>
-                <Grid item xs={6}>
-                  <TextField
-                    fullWidth
-                    label="Focus Range (µm)"
-                    type="number"
-                    value={acquisitionParameters.focus_range || 5}
-                    onChange={e => setAcquisitionParameter('focus_range', parseFloat(e.target.value) || 5)}
-                    size="small"
-                  />
-                </Grid>
+          <Box sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>Autofocus Settings</Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={acquisitionParameters.autofocus_enabled || false}
+                      onChange={e => setAcquisitionParameter('autofocus_enabled', e.target.checked)}
+                    />
+                  }
+                  label="Enable Autofocus"
+                />
               </Grid>
-            </CardContent>
-          </Card>
+              <Grid item xs={6}>
+                <TextField
+                  fullWidth
+                  label="Autofocus Interval (frames)"
+                  type="number"
+                  value={acquisitionParameters.autofocus_interval || 100}
+                  onChange={e => setAcquisitionParameter('autofocus_interval', parseInt(e.target.value) || 100)}
+                  size="small"
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField
+                  fullWidth
+                  label="Focus Range (µm)"
+                  type="number"
+                  value={acquisitionParameters.focus_range || 5}
+                  onChange={e => setAcquisitionParameter('focus_range', parseFloat(e.target.value) || 5)}
+                  size="small"
+                />
+              </Grid>
+            </Grid>
+          </Box>
         );
 
       case 2: // Prefilter Settings
         return (
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>Prefilter Settings</Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>Filter Type</InputLabel>
-                    <Select
-                      value={stormParameters.filter_type}
-                      onChange={e => setStormParameter('filter_type', e.target.value)}
-                      label="Filter Type"
-                    >
-                      <MenuItem value="bandpass">Bandpass</MenuItem>
-                      <MenuItem value="difference_of_gaussians">Difference of Gaussians</MenuItem>
-                      <MenuItem value="temporal_median">Temporal Median</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={6}>
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={stormParameters.temporal_median_enabled}
-                        onChange={e => setStormParameter('temporal_median_enabled', e.target.checked)}
-                      />
-                    }
-                    label="Enable Temporal Median"
-                  />
-                </Grid>
-                <Grid item xs={6}>
-                  <TextField
-                    fullWidth
-                    label="Bandpass Center"
-                    type="number"
-                    value={stormParameters.bandpass_filter?.center || 40}
-                    onChange={e => setStormParameter('bandpass_filter', { 
-                      ...stormParameters.bandpass_filter, 
-                      center: parseFloat(e.target.value) || 40 
-                    })}
-                    size="small"
-                  />
-                </Grid>
-                <Grid item xs={6}>
-                  <TextField
-                    fullWidth
-                    label="Bandpass Width"
-                    type="number"
-                    value={stormParameters.bandpass_filter?.width || 90}
-                    onChange={e => setStormParameter('bandpass_filter', { 
-                      ...stormParameters.bandpass_filter, 
-                      width: parseFloat(e.target.value) || 90 
-                    })}
-                    size="small"
-                  />
-                </Grid>
+          <Box sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>Prefilter Settings</Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={6}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Filter Type</InputLabel>
+                  <Select
+                    value={stormParameters.filter_type}
+                    onChange={e => setStormParameter('filter_type', e.target.value)}
+                    label="Filter Type"
+                  >
+                    <MenuItem value="bandpass">Bandpass</MenuItem>
+                    <MenuItem value="difference_of_gaussians">Difference of Gaussians</MenuItem>
+                    <MenuItem value="temporal_median">Temporal Median</MenuItem>
+                  </Select>
+                </FormControl>
               </Grid>
-            </CardContent>
-          </Card>
+              <Grid item xs={6}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={stormParameters.temporal_median_enabled}
+                      onChange={e => setStormParameter('temporal_median_enabled', e.target.checked)}
+                    />
+                  }
+                  label="Enable Temporal Median"
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField
+                  fullWidth
+                  label="Bandpass Center"
+                  type="number"
+                  value={stormParameters.bandpass_filter?.center || 40}
+                  onChange={e => setStormParameter('bandpass_filter', { 
+                    ...stormParameters.bandpass_filter, 
+                    center: parseFloat(e.target.value) || 40 
+                  })}
+                  size="small"
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField
+                  fullWidth
+                  label="Bandpass Width"
+                  type="number"
+                  value={stormParameters.bandpass_filter?.width || 90}
+                  onChange={e => setStormParameter('bandpass_filter', { 
+                    ...stormParameters.bandpass_filter, 
+                    width: parseFloat(e.target.value) || 90 
+                  })}
+                  size="small"
+                />
+              </Grid>
+            </Grid>
+          </Box>
         );
 
       case 3: // Localization Settings
         return (
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>Localization Settings</Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
-                  <Typography gutterBottom>
-                    Detection Threshold: {stormParameters.threshold}
-                  </Typography>
-                  <Slider
-                    value={stormParameters.threshold}
-                    min={0.0}
-                    max={1.0}
-                    step={0.01}
-                    onChange={(e, value) => setStormParameter('threshold', value)}
-                    valueLabelDisplay="auto"
-                  />
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography gutterBottom>
-                    Fit ROI Size: {stormParameters.fit_roi_size}
-                  </Typography>
-                  <Slider
-                    value={stormParameters.fit_roi_size}
-                    min={7}
-                    max={99}
-                    step={2}
-                    onChange={(e, value) => setStormParameter('fit_roi_size', value)}
-                    valueLabelDisplay="auto"
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>Fitting Method</InputLabel>
-                    <Select
-                      value={stormParameters.fitting_method}
-                      onChange={e => setStormParameter('fitting_method', e.target.value)}
-                      label="Fitting Method"
-                    >
-                      <MenuItem value="2D_Phasor_CPU">2D Phasor CPU</MenuItem>
-                      <MenuItem value="2D_Gauss_MLE_fixed_sigma">2D Gauss MLE Fixed Sigma</MenuItem>
-                      <MenuItem value="2D_Gauss_MLE_free_sigma">2D Gauss MLE Free Sigma</MenuItem>
-                      <MenuItem value="2D_Gauss_MLE_elliptical_sigma">2D Gauss MLE Elliptical Sigma</MenuItem>
-                      <MenuItem value="3D_Gauss_MLE_cspline_sigma">3D Gauss MLE CSpline Sigma</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
+          <Box sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>Localization Settings</Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={6}>
+                <Typography gutterBottom>
+                  Detection Threshold: {stormParameters.threshold}
+                </Typography>
+                <Slider
+                  value={stormParameters.threshold}
+                  min={0.0}
+                  max={1.0}
+                  step={0.01}
+                  onChange={(e, value) => setStormParameter('threshold', value)}
+                  valueLabelDisplay="auto"
+                />
               </Grid>
-            </CardContent>
-          </Card>
+              <Grid item xs={6}>
+                <Typography gutterBottom>
+                  Fit ROI Size: {stormParameters.fit_roi_size}
+                </Typography>
+                <Slider
+                  value={stormParameters.fit_roi_size}
+                  min={7}
+                  max={99}
+                  step={2}
+                  onChange={(e, value) => setStormParameter('fit_roi_size', value)}
+                  valueLabelDisplay="auto"
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Fitting Method</InputLabel>
+                  <Select
+                    value={stormParameters.fitting_method}
+                    onChange={e => setStormParameter('fitting_method', e.target.value)}
+                    label="Fitting Method"
+                  >
+                    <MenuItem value="2D_Phasor_CPU">2D Phasor CPU</MenuItem>
+                    <MenuItem value="2D_Gauss_MLE_fixed_sigma">2D Gauss MLE Fixed Sigma</MenuItem>
+                    <MenuItem value="2D_Gauss_MLE_free_sigma">2D Gauss MLE Free Sigma</MenuItem>
+                    <MenuItem value="2D_Gauss_MLE_elliptical_sigma">2D Gauss MLE Elliptical Sigma</MenuItem>
+                    <MenuItem value="3D_Gauss_MLE_cspline_sigma">3D Gauss MLE CSpline Sigma</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+            </Grid>
+          </Box>
         );
 
       case 4: // N-Frames/Display Settings
         return (
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>N-Frames/Display Settings</Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
-                  <TextField
-                    fullWidth
-                    label="Max Frames (-1 for unlimited)"
-                    type="number"
-                    value={acquisitionParameters.max_frames}
-                    onChange={e => setAcquisitionParameter('max_frames', parseInt(e.target.value) || -1)}
-                    size="small"
-                  />
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography gutterBottom>
-                    Update Rate: {stormParameters.update_rate}
-                  </Typography>
-                  <Slider
-                    value={stormParameters.update_rate}
-                    min={1}
-                    max={100}
-                    onChange={(e, value) => setStormParameter('update_rate', value)}
-                    valueLabelDisplay="auto"
-                  />
-                </Grid>
-                <Grid item xs={6}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>Save Format</InputLabel>
-                    <Select
-                      value={acquisitionParameters.save_format}
-                      onChange={e => setAcquisitionParameter('save_format', e.target.value)}
-                      label="Save Format"
-                    >
-                      <MenuItem value="tiff">TIFF</MenuItem>
-                      <MenuItem value="omezarr">OME-Zarr</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={6}>
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={acquisitionParameters.save_enabled}
-                        onChange={e => setAcquisitionParameter('save_enabled', e.target.checked)}
-                      />
-                    }
-                    label="Enable Saving"
-                  />
-                </Grid>
+          <Box sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>N-Frames/Display Settings</Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={6}>
+                <TextField
+                  fullWidth
+                  label="Max Frames (-1 for unlimited)"
+                  type="number"
+                  value={acquisitionParameters.max_frames}
+                  onChange={e => setAcquisitionParameter('max_frames', parseInt(e.target.value) || -1)}
+                  size="small"
+                />
               </Grid>
-            </CardContent>
-          </Card>
+              <Grid item xs={6}>
+                <Typography gutterBottom>
+                  Update Rate: {stormParameters.update_rate}
+                </Typography>
+                <Slider
+                  value={stormParameters.update_rate}
+                  min={1}
+                  max={100}
+                  onChange={(e, value) => setStormParameter('update_rate', value)}
+                  valueLabelDisplay="auto"
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Save Format</InputLabel>
+                  <Select
+                    value={acquisitionParameters.save_format}
+                    onChange={e => setAcquisitionParameter('save_format', e.target.value)}
+                    label="Save Format"
+                  >
+                    <MenuItem value="tiff">TIFF</MenuItem>
+                    <MenuItem value="omezarr">OME-Zarr</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={6}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={acquisitionParameters.save_enabled}
+                      onChange={e => setAcquisitionParameter('save_enabled', e.target.checked)}
+                    />
+                  }
+                  label="Enable Saving"
+                />
+              </Grid>
+            </Grid>
+          </Box>
         );
 
       case 5: // Start/Stop Acquisition
         return (
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>Start/Stop Acquisition</Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Session ID"
-                    value={acquisitionParameters.session_id || ''}
-                    onChange={e => setAcquisitionParameter('session_id', e.target.value)}
-                    size="small"
-                    sx={{ mb: 2 }}
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                    <Typography variant="h6">Status:</Typography>
-                    {acquisitionActive ? (
-                      <>
-                        <CheckCircleIcon style={{ color: green[500] }} />
-                        <Typography color="success.main">Active</Typography>
-                      </>
-                    ) : (
-                      <>
-                        <CancelIcon style={{ color: red[500] }} />
-                        <Typography color="error.main">Inactive</Typography>
-                      </>
-                    )}
-                  </Box>
-                </Grid>
-                <Grid item xs={6}>
-                  <Button
-                    variant="contained"
-                    onClick={startReconstructionLocal}
-                    disabled={isReconstructing}
-                    color="primary"
-                    fullWidth
-                  >
-                    {isReconstructing ? 'Starting...' : 'Start Acquisition'}
-                  </Button>
-                </Grid>
-                <Grid item xs={6}>
-                  <Button
-                    variant="contained"
-                    onClick={stopReconstructionLocal}
-                    disabled={!acquisitionActive}
-                    color="secondary"
-                    fullWidth
-                  >
-                    Stop Acquisition
-                  </Button>
-                </Grid>
-                <Grid item xs={12}>
-                  <Button
-                    variant="outlined"
-                    onClick={getReconstructionStatus}
-                    fullWidth
-                  >
-                    Refresh Status
-                  </Button>
-                </Grid>
+          <Box sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>Start/Stop Acquisition</Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Session ID"
+                  value={acquisitionParameters.session_id || ''}
+                  onChange={e => setAcquisitionParameter('session_id', e.target.value)}
+                  size="small"
+                  sx={{ mb: 2 }}
+                />
               </Grid>
-            </CardContent>
-          </Card>
+              <Grid item xs={12}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                  <Typography variant="h6">Status:</Typography>
+                  {acquisitionActive ? (
+                    <>
+                      <CheckCircleIcon style={{ color: green[500] }} />
+                      <Typography color="success.main">Active</Typography>
+                    </>
+                  ) : (
+                    <>
+                      <CancelIcon style={{ color: red[500] }} />
+                      <Typography color="error.main">Inactive</Typography>
+                    </>
+                  )}
+                </Box>
+              </Grid>
+              <Grid item xs={6}>
+                <Button
+                  variant="contained"
+                  onClick={startReconstructionLocal}
+                  disabled={isReconstructing}
+                  color="primary"
+                  fullWidth
+                >
+                  {isReconstructing ? 'Starting...' : 'Start Acquisition'}
+                </Button>
+              </Grid>
+              <Grid item xs={6}>
+                <Button
+                  variant="contained"
+                  onClick={stopReconstructionLocal}
+                  disabled={!acquisitionActive}
+                  color="secondary"
+                  fullWidth
+                >
+                  Stop Acquisition
+                </Button>
+              </Grid>
+              <Grid item xs={12}>
+                <Button
+                  variant="outlined"
+                  onClick={getReconstructionStatus}
+                  fullWidth
+                >
+                  Refresh Status
+                </Button>
+              </Grid>
+            </Grid>
+          </Box>
         );
 
       default:
@@ -793,33 +786,30 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
           <Box sx={{ p: 2, height: '100%', overflow: 'auto' }}>
             <Typography variant="h6" gutterBottom>Acquisition Settings</Typography>
             
-            <Stepper activeStep={activeStep} orientation="vertical">
-              {steps.map((label, index) => (
-                <Step key={label}>
-                  <StepLabel>{label}</StepLabel>
-                  <StepContent>
-                    {renderStepContent(index)}
-                    <Box sx={{ mt: 2 }}>
-                      <Button
-                        variant="contained"
-                        onClick={handleNext}
-                        sx={{ mr: 1 }}
-                        disabled={index === steps.length - 1}
-                      >
-                        {index === steps.length - 1 ? 'Finish' : 'Continue'}
-                      </Button>
-                      <Button
-                        disabled={index === 0}
-                        onClick={handleBack}
-                        sx={{ mr: 1 }}
-                      >
-                        Back
-                      </Button>
-                    </Box>
-                  </StepContent>
-                </Step>
-              ))}
-            </Stepper>
+            {/* Clickable Step Tabs */}
+            <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+              <Tabs
+                value={activeStep}
+                onChange={(event, newValue) => setActiveStep(newValue)}
+                variant="scrollable"
+                scrollButtons="auto"
+                orientation="horizontal"
+              >
+                {steps.map((label, index) => (
+                  <Tab 
+                    key={index}
+                    label={label} 
+                    onClick={() => handleStepClick(index)}
+                    sx={{ minWidth: 'auto', fontSize: '0.8rem' }}
+                  />
+                ))}
+              </Tabs>
+            </Box>
+            
+            {/* Step Content */}
+            <Box sx={{ flex: 1 }}>
+              {renderStepContent(activeStep)}
+            </Box>
           </Box>
         </Grid>
 
@@ -877,7 +867,19 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
 
               <TabPanel value={visualizationTabIndex} index={1}>
                 <Typography variant="h6" gutterBottom>XY Plot</Typography>
-                <StormPlot data={plotData} />
+                <Box sx={{ mb: 2 }}>
+                  <Button 
+                    variant="outlined" 
+                    onClick={resetLocalizations}
+                    size="small"
+                  >
+                    Reset Localizations
+                  </Button>
+                  <Typography variant="body2" sx={{ mt: 1 }}>
+                    Total localizations: {localizations.length}
+                  </Typography>
+                </Box>
+                <StormPlot data={localizations} />
               </TabPanel>
 
               <TabPanel value={visualizationTabIndex} index={2}>

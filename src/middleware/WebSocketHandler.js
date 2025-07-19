@@ -188,6 +188,24 @@ const WebSocketHandler = () => {
       } else if (dataJson.name == "sigSTORMReconstructionStopped") {
         //console.log("sigSTORMReconstructionStopped", dataJson);
         dispatch({ type: 'storm/setIsReconstructing', payload: false });
+      } else if (dataJson.name == "sigUpdatedSTORMReconstruction") {
+        //console.log("sigUpdatedSTORMReconstruction", dataJson);
+        // Handle localization data - expected p0 to be a JSON string containing array of {x, y} coordinates
+        if (dataJson.args && dataJson.args.p0) {
+          try {
+            const localizationsData = JSON.parse(dataJson.args.p0);
+            if (Array.isArray(localizationsData)) {
+              // Convert to {x, y} format if needed
+              const localizations = localizationsData.map(loc => ({
+                x: loc.x || loc[0],
+                y: loc.y || loc[1]
+              }));
+              dispatch({ type: 'storm/addLocalizations', payload: localizations });
+            }
+          } catch (e) {
+            console.warn("Failed to parse STORM localization data:", e);
+          }
+        }
       } 
       // Name: sigUpdatedSTORMReconstruction => Args: {"p0":[[252.2014923095703,298.37579345703125,2814.840087890625,206508.3125,1.037859320640564]}
 

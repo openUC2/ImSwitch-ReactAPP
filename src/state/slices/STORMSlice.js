@@ -80,6 +80,9 @@ const initialState = {
   
   // Images
   reconstructedImage: null,
+  
+  // Localizations data
+  localizations: [], // Array of {x, y} coordinates
 };
 
 const stormSlice = createSlice({
@@ -210,6 +213,15 @@ const stormSlice = createSlice({
       state.reconstructedImage = action.payload;
     },
 
+    // Localization actions
+    addLocalizations: (state, action) => {
+      // action.payload should be an array of {x, y} coordinates
+      state.localizations.push(...action.payload);
+    },
+    resetLocalizations: (state) => {
+      state.localizations = [];
+    },
+
     // Reset actions
     resetExperiment: (state) => {
       state.isRunning = false;
@@ -259,6 +271,8 @@ export const {
   setProcessArkitekt,
   setIsReconstructing,
   setReconstructedImage,
+  addLocalizations,
+  resetLocalizations,
   resetExperiment,
   resetToDefaults,
 } = stormSlice.actions;
