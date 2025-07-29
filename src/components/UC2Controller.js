@@ -95,6 +95,73 @@ const UC2Controller = ({ hostIP, hostPort }) => {
 
   const socket = useWebSocket();
 
+  const fetchAvailableSetups = useCallback(() => {
+    const url = `${hostIP}:${hostPort}/UC2ConfigController/returnAvailableSetups`;
+    dispatch(uc2Slice.setStatusMessage({ 
+      message: "Loading available setups...", 
+      type: "info" 
+    }));
+    
+    fetch(url)
+      .then((response) => response.json())
+      .then((data) => {
+        dispatch(uc2Slice.setAvailableSetups(data.available_setups || []));
+        dispatch(uc2Slice.setStatusMessage({ 
+          message: `Found ${data.available_setups?.length || 0} configuration files`, 
+          type: "success" 
+        }));
+        setTimeout(() => dispatch(uc2Slice.clearStatusMessage()), 3000);
+      })
+      .catch((error) => {
+        console.error("Error fetching setups:", error);
+        dispatch(uc2Slice.setStatusMessage({ 
+          message: "Failed to load configuration files", 
+          type: "error" 
+        }));
+      });
+  }, [hostIP, hostPort, dispatch]);
+
+  const monitorRestartStatus = useCallback(() => {
+    let retryCount = 0;
+    const maxRetries = 30; // 5 minutes with 10-second intervals
+    
+    const checkStatus = () => {
+      fetch(`${hostIP}:${hostPort}/UC2ConfigController/is_connected`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data === true) {
+            dispatch(uc2Slice.setStatusMessage({ 
+              message: "ImSwitch is back online!", 
+              type: "success" 
+            }));
+            dispatch(uc2Slice.setIsRestarting(false));
+            setTimeout(() => dispatch(uc2Slice.clearStatusMessage()), 3000);
+          } else {
+            throw new Error("Not connected yet");
+          }
+        })
+        .catch(() => {
+          retryCount++;
+          if (retryCount < maxRetries) {
+            dispatch(uc2Slice.setStatusMessage({ 
+              message: `Waiting for ImSwitch to restart... (${retryCount}/${maxRetries})`, 
+              type: "info" 
+            }));
+            setTimeout(checkStatus, 10000); // Check every 10 seconds
+          } else {
+            dispatch(uc2Slice.setStatusMessage({ 
+              message: "ImSwitch restart taking longer than expected. Please check manually.", 
+              type: "warning" 
+            }));
+            dispatch(uc2Slice.setIsRestarting(false));
+          }
+        });
+    };
+    
+    // Start checking after 5 seconds
+    setTimeout(checkStatus, 5000);
+  }, [hostIP, hostPort, dispatch]);
+
   useEffect(() => {
     if (!socket) return;
     const handleSignal = (data) => {
@@ -136,32 +203,6 @@ const UC2Controller = ({ hostIP, hostPort }) => {
   const handleTabChange = (event, newValue) => {
     dispatch(uc2Slice.setTabIndex(newValue));
   };
-
-  const fetchAvailableSetups = useCallback(() => {
-    const url = `${hostIP}:${hostPort}/UC2ConfigController/returnAvailableSetups`;
-    dispatch(uc2Slice.setStatusMessage({ 
-      message: "Loading available setups...", 
-      type: "info" 
-    }));
-    
-    fetch(url)
-      .then((response) => response.json())
-      .then((data) => {
-        dispatch(uc2Slice.setAvailableSetups(data.available_setups || []));
-        dispatch(uc2Slice.setStatusMessage({ 
-          message: `Found ${data.available_setups?.length || 0} configuration files`, 
-          type: "success" 
-        }));
-        setTimeout(() => dispatch(uc2Slice.clearStatusMessage()), 3000);
-      })
-      .catch((error) => {
-        console.error("Error fetching setups:", error);
-        dispatch(uc2Slice.setStatusMessage({ 
-          message: "Failed to load configuration files", 
-          type: "error" 
-        }));
-      });
-  }, [hostIP, hostPort, dispatch]);
 
   const handleSetupChange = (event) => {
     dispatch(uc2Slice.setSelectedSetup(event.target.value));
@@ -231,47 +272,6 @@ const UC2Controller = ({ hostIP, hostPort }) => {
         dispatch(uc2Slice.setIsRestarting(false));
       });
   };
-
-  const monitorRestartStatus = useCallback(() => {
-    let retryCount = 0;
-    const maxRetries = 30; // 5 minutes with 10-second intervals
-    
-    const checkStatus = () => {
-      fetch(`${hostIP}:${hostPort}/UC2ConfigController/is_connected`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data === true) {
-            dispatch(uc2Slice.setStatusMessage({ 
-              message: "ImSwitch is back online!", 
-              type: "success" 
-            }));
-            dispatch(uc2Slice.setIsRestarting(false));
-            setTimeout(() => dispatch(uc2Slice.clearStatusMessage()), 3000);
-          } else {
-            throw new Error("Not connected yet");
-          }
-        })
-        .catch(() => {
-          retryCount++;
-          if (retryCount < maxRetries) {
-            dispatch(uc2Slice.setStatusMessage({ 
-              message: `Waiting for ImSwitch to restart... (${retryCount}/${maxRetries})`, 
-              type: "info" 
-            }));
-            setTimeout(checkStatus, 10000); // Check every 10 seconds
-          } else {
-            dispatch(uc2Slice.setStatusMessage({ 
-              message: "ImSwitch restart taking longer than expected. Please check manually.", 
-              type: "warning" 
-            }));
-            dispatch(uc2Slice.setIsRestarting(false));
-          }
-        });
-    };
-    
-    // Start checking after 5 seconds
-    setTimeout(checkStatus, 5000);
-  }, [hostIP, hostPort, dispatch]);
 
   const handleDialogClose = () => {
     dispatch(uc2Slice.setIsDialogOpen(false)); // Close the dialog
