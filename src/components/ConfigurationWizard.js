@@ -1,0 +1,476 @@
+import React, { useState, useCallback, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Stepper,
+  Step,
+  StepLabel,
+  Box,
+  useTheme,
+  useMediaQuery,
+} from "@mui/material";
+import * as uc2Slice from "../state/slices/UC2Slice";
+import { validateJsonString } from "../utils/configValidation";
+
+// Import wizard steps
+import ConfigWizardStep1 from "./config-wizard-steps/ConfigWizardStep1";
+import ConfigWizardStep2 from "./config-wizard-steps/ConfigWizardStep2";
+import ConfigWizardStep3 from "./config-wizard-steps/ConfigWizardStep3";
+import ConfigWizardStep4 from "./config-wizard-steps/ConfigWizardStep4";
+import ConfigWizardStep5 from "./config-wizard-steps/ConfigWizardStep5";
+import ConfigWizardStep6 from "./config-wizard-steps/ConfigWizardStep6";
+
+const steps = [
+  "Choose Source",
+  "Load Configuration", 
+  "Edit & Validate",
+  "Save Options",
+  "Execute Save",
+  "Complete"
+];
+
+const ConfigurationWizard = ({ open, onClose, hostIP, hostPort }) => {
+  const theme = useTheme();
+  const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
+  const dispatch = useDispatch();
+  
+  // Redux state
+  const uc2State = useSelector(uc2Slice.getUc2State);
+  const availableSetups = uc2State.availableSetups;
+  
+  // Wizard state
+  const [activeStep, setActiveStep] = useState(0);
+  const [selectedSource, setSelectedSource] = useState('');
+  const [selectedFile, setSelectedFile] = useState('');
+  const [loadedConfig, setLoadedConfig] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState('');
+  
+  // Editor state
+  const [editorJson, setEditorJson] = useState(null);
+  const [editorJsonText, setEditorJsonText] = useState('');
+  const [useAceEditor, setUseAceEditor] = useState(false);
+  
+  // Save options state
+  const [filename, setFilename] = useState('');
+  const [setAsCurrentConfig, setSetAsCurrentConfig] = useState(true);
+  const [restartAfterSave, setRestartAfterSave] = useState(false);
+  const [overwriteFile, setOverwriteFile] = useState(false);
+  
+  // Save execution state
+  const [isSaving, setIsSaving] = useState(false);
+  const [isRestarting, setIsRestarting] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [restartProgress, setRestartProgress] = useState({ current: 0, max: 30 });
+
+  // Fetch available setups when wizard opens
+  useEffect(() => {
+    if (open && availableSetups.length === 0) {
+      fetchAvailableSetups();
+    }
+  }, [open]);
+
+  const fetchAvailableSetups = useCallback(() => {
+    const url = `${hostIP}:${hostPort}/UC2ConfigController/returnAvailableSetups`;
+    fetch(url)
+      .then((response) => response.json())
+      .then((data) => {
+        dispatch(uc2Slice.setAvailableSetups(data.available_setups || []));
+      })
+      .catch((error) => {
+        console.error("Error fetching setups:", error);
+      });
+  }, [hostIP, hostPort, dispatch]);
+
+  // Step navigation
+  const handleNext = () => {
+    setActiveStep((prevActiveStep) => prevActiveStep + 1);
+  };
+
+  const handleBack = () => {
+    setActiveStep((prevActiveStep) => prevActiveStep - 1);
+  };
+
+  const handleStepClick = (step) => {
+    // Allow clicking on completed steps or the next step
+    if (step <= activeStep + 1) {
+      setActiveStep(step);
+    }
+  };
+
+  const resetWizard = () => {
+    setActiveStep(0);
+    setSelectedSource('');
+    setSelectedFile('');
+    setLoadedConfig(null);
+    setIsLoading(false);
+    setLoadError('');
+    setEditorJson(null);
+    setEditorJsonText('');
+    setUseAceEditor(false);
+    setFilename('');
+    setSetAsCurrentConfig(true);
+    setRestartAfterSave(false);
+    setOverwriteFile(false);
+    setIsSaving(false);
+    setIsRestarting(false);
+    setSaveError('');
+    setSaveSuccess(false);
+    setRestartProgress({ current: 0, max: 30 });
+  };
+
+  const handleClose = () => {
+    resetWizard();
+    onClose();
+  };
+
+  // Configuration loading functions
+  const handleLoadCurrent = useCallback(() => {
+    setIsLoading(true);
+    setLoadError('');
+    
+    // Simulate loading current config - in real implementation, this would fetch from API
+    setTimeout(() => {
+      try {
+        // For now, just create a basic template
+        const currentConfig = {
+          detector: {},
+          actuators: {},
+          positioners: {},
+          // Add more default structure as needed
+        };
+        
+        setLoadedConfig(currentConfig);
+        setEditorJson(currentConfig);
+        setUseAceEditor(false);
+        setIsLoading(false);
+      } catch (error) {
+        setLoadError(error.message);
+        setIsLoading(false);
+      }
+    }, 1000);
+  }, []);
+
+  const handleLoadFile = useCallback((fileName) => {
+    setIsLoading(true);
+    setLoadError('');
+    
+    const url = `${hostIP}:${hostPort}/UC2ConfigController/readSetupFile?setupFileName=${encodeURIComponent(fileName)}`;
+    
+    fetch(url)
+      .then((res) => res.json())
+      .then((data) => {
+        setLoadedConfig(data);
+        setEditorJson(data);
+        setUseAceEditor(false);
+        setIsLoading(false);
+      })
+      .catch((error) => {
+        setLoadError(error.message);
+        setIsLoading(false);
+      });
+  }, [hostIP, hostPort]);
+
+  const handleCreateNew = useCallback(() => {
+    setIsLoading(true);
+    
+    setTimeout(() => {
+      const newConfig = "{\n  \"detector\": {},\n  \"actuators\": {},\n  \"positioners\": {}\n}";
+      setLoadedConfig(null);
+      setEditorJson(null);
+      setEditorJsonText(newConfig);
+      setUseAceEditor(true);
+      setIsLoading(false);
+    }, 500);
+  }, []);
+
+  // Save execution
+  const handleExecuteSave = useCallback(() => {
+    setIsSaving(true);
+    setSaveError('');
+    setSaveSuccess(false);
+    
+    // Get the final configuration
+    let finalJson = null;
+    if (useAceEditor) {
+      const jsonValidation = validateJsonString(editorJsonText);
+      if (!jsonValidation.isValid) {
+        setSaveError(`Invalid JSON: ${jsonValidation.error}`);
+        setIsSaving(false);
+        return;
+      }
+      finalJson = jsonValidation.parsed;
+    } else {
+      finalJson = editorJson || loadedConfig;
+    }
+
+    if (!finalJson) {
+      setSaveError('No configuration to save');
+      setIsSaving(false);
+      return;
+    }
+
+    const url = `${hostIP}:${hostPort}/UC2ConfigController/writeNewSetupFile?setupFileName=${encodeURIComponent(
+      filename
+    )}&setAsCurrentConfig=${setAsCurrentConfig}&restart=${restartAfterSave}&overwrite=${overwriteFile}`;
+
+    fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(finalJson),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        setSaveSuccess(true);
+        setIsSaving(false);
+        
+        if (restartAfterSave) {
+          setIsRestarting(true);
+          monitorRestart();
+        }
+        
+        // Refresh available setups
+        fetchAvailableSetups();
+      })
+      .catch((error) => {
+        setSaveError(error.message || 'Failed to save configuration');
+        setIsSaving(false);
+      });
+  }, [filename, setAsCurrentConfig, restartAfterSave, overwriteFile, useAceEditor, editorJsonText, editorJson, loadedConfig, hostIP, hostPort, fetchAvailableSetups]);
+
+  const monitorRestart = useCallback(() => {
+    let retryCount = 0;
+    const maxRetries = 30;
+    
+    const checkStatus = () => {
+      fetch(`${hostIP}:${hostPort}/UC2ConfigController/is_connected`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data === true) {
+            setIsRestarting(false);
+            setRestartProgress({ current: maxRetries, max: maxRetries });
+          } else {
+            throw new Error("Not connected yet");
+          }
+        })
+        .catch(() => {
+          retryCount++;
+          setRestartProgress({ current: retryCount, max: maxRetries });
+          
+          if (retryCount < maxRetries) {
+            setTimeout(checkStatus, 10000);
+          } else {
+            setIsRestarting(false);
+            setSaveError('System restart took longer than expected. Please check manually.');
+          }
+        });
+    };
+    
+    setTimeout(checkStatus, 5000);
+  }, [hostIP, hostPort]);
+
+  // Validation functions for step transitions
+  const canProceedFromStep = (step) => {
+    switch (step) {
+      case 0: return selectedSource !== '';
+      case 1: return loadedConfig !== null || (useAceEditor && editorJsonText.trim() !== '');
+      case 2: return loadedConfig !== null || (useAceEditor && editorJsonText.trim() !== '');
+      case 3: return filename && (!availableSetups.includes(filename) || overwriteFile);
+      case 4: return saveSuccess;
+      default: return true;
+    }
+  };
+
+  const getStepContent = (step) => {
+    const commonProps = {
+      onNext: handleNext,
+      onBack: handleBack,
+      activeStep,
+      totalSteps: steps.length,
+    };
+
+    switch (step) {
+      case 0:
+        return (
+          <ConfigWizardStep1
+            {...commonProps}
+            selectedSource={selectedSource}
+            onSourceChange={setSelectedSource}
+          />
+        );
+      case 1:
+        return (
+          <ConfigWizardStep2
+            {...commonProps}
+            selectedSource={selectedSource}
+            availableSetups={availableSetups}
+            selectedFile={selectedFile}
+            onFileChange={setSelectedFile}
+            loadedConfig={loadedConfig}
+            isLoading={isLoading}
+            loadError={loadError}
+            onLoadCurrent={handleLoadCurrent}
+            onLoadFile={handleLoadFile}
+            onCreateNew={handleCreateNew}
+            onRefreshFiles={fetchAvailableSetups}
+          />
+        );
+      case 2:
+        return (
+          <ConfigWizardStep3
+            {...commonProps}
+            loadedConfig={loadedConfig}
+            editorJson={editorJson}
+            editorJsonText={editorJsonText}
+            useAceEditor={useAceEditor}
+            onConfigChange={setEditorJson}
+            onJsonTextChange={setEditorJsonText}
+            onEditorTypeChange={setUseAceEditor}
+          />
+        );
+      case 3:
+        return (
+          <ConfigWizardStep4
+            {...commonProps}
+            filename={filename}
+            setAsCurrentConfig={setAsCurrentConfig}
+            restartAfterSave={restartAfterSave}
+            overwriteFile={overwriteFile}
+            onFilenameChange={setFilename}
+            onSetAsCurrentConfigChange={setSetAsCurrentConfig}
+            onRestartAfterSaveChange={setRestartAfterSave}
+            onOverwriteFileChange={setOverwriteFile}
+            availableSetups={availableSetups}
+          />
+        );
+      case 4:
+        return (
+          <ConfigWizardStep5
+            {...commonProps}
+            filename={filename}
+            setAsCurrentConfig={setAsCurrentConfig}
+            restartAfterSave={restartAfterSave}
+            overwriteFile={overwriteFile}
+            isSaving={isSaving}
+            isRestarting={isRestarting}
+            saveError={saveError}
+            saveSuccess={saveSuccess}
+            restartProgress={restartProgress}
+            onExecuteSave={handleExecuteSave}
+          />
+        );
+      case 5:
+        return (
+          <ConfigWizardStep6
+            {...commonProps}
+            filename={filename}
+            setAsCurrentConfig={setAsCurrentConfig}
+            restartAfterSave={restartAfterSave}
+            saveSuccess={saveSuccess}
+            onStartNewWizard={resetWizard}
+            onComplete={handleClose}
+          />
+        );
+      default:
+        return <ConfigWizardStep1 {...commonProps} />;
+    }
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      maxWidth="xl"
+      fullWidth
+      fullScreen={fullScreen}
+      PaperProps={{
+        style: {
+          minHeight: '80vh',
+        },
+      }}
+    >
+      <DialogTitle>
+        Configuration Wizard
+      </DialogTitle>
+      
+      <DialogContent>
+        <Box sx={{ width: '100%', mb: 2 }}>
+          <Stepper 
+            activeStep={activeStep} 
+            alternativeLabel={!fullScreen}
+            orientation={fullScreen ? "vertical" : "horizontal"}
+          >
+            {steps.map((label, index) => {
+              const stepProps = {};
+              const labelProps = {};
+              
+              // Mark completed steps
+              if (index < activeStep) {
+                stepProps.completed = true;
+              }
+              
+              return (
+                <Step 
+                  key={label} 
+                  {...stepProps}
+                >
+                  <StepLabel 
+                    {...labelProps}
+                    sx={{ 
+                      cursor: index <= activeStep + 1 ? 'pointer' : 'default',
+                      '& .MuiStepLabel-label': {
+                        cursor: index <= activeStep + 1 ? 'pointer' : 'default'
+                      }
+                    }}
+                    onClick={() => handleStepClick(index)}
+                  >
+                    {label}
+                  </StepLabel>
+                </Step>
+              );
+            })}
+          </Stepper>
+        </Box>
+        
+        <Box sx={{ mt: 2, minHeight: '60vh' }}>
+          {getStepContent(activeStep)}
+        </Box>
+      </DialogContent>
+
+      <DialogActions>
+        <Button onClick={handleClose} color="secondary">
+          Cancel
+        </Button>
+        <Box sx={{ flex: '1 1 auto' }} />
+        <Button
+          disabled={activeStep === 0}
+          onClick={handleBack}
+          sx={{ mr: 1 }}
+        >
+          Back
+        </Button>
+        {activeStep === steps.length - 1 ? (
+          <Button onClick={handleClose} variant="contained" color="primary">
+            Finish
+          </Button>
+        ) : (
+          <Button 
+            onClick={handleNext} 
+            variant="contained" 
+            color="primary"
+            disabled={!canProceedFromStep(activeStep)}
+          >
+            Next
+          </Button>
+        )}
+      </DialogActions>
+    </Dialog>
+  );
+};
+
+export default ConfigurationWizard;

@@ -27,6 +27,7 @@ import {
   Refresh as RefreshIcon,
   Preview as PreviewIcon,
   Save as SaveIcon,
+  AutoFixHigh as WizardIcon,
 } from "@mui/icons-material";
 import { useWebSocket } from "../context/WebSocketContext";
 import { JsonEditor } from "json-edit-react";
@@ -35,6 +36,7 @@ import "ace-builds/src-noconflict/mode-json";
 import "ace-builds/src-noconflict/theme-github";
 import * as uc2Slice from "../state/slices/UC2Slice.js";
 import ConfigurationPreviewDialog from "./ConfigurationPreviewDialog";
+import ConfigurationWizard from "./ConfigurationWizard";
 import StatusMessage from "./StatusMessage";
 import { 
   validateConfiguration, 
@@ -92,6 +94,9 @@ const UC2Controller = ({ hostIP, hostPort }) => {
   const showPreviewDialog = uc2State.showPreviewDialog;
   const statusMessage = uc2State.statusMessage;
   const statusType = uc2State.statusType;
+
+  // Wizard state
+  const [showConfigWizard, setShowConfigWizard] = React.useState(false);
 
   const socket = useWebSocket();
 
@@ -659,6 +664,35 @@ const UC2Controller = ({ hostIP, hostPort }) => {
       <TabPanel value={tabIndex} index={3}>
         <Typography variant="h6">Configuration Editor</Typography>
         
+        {/* Wizard Launch Section */}
+        <Paper elevation={2} sx={{ p: 3, mb: 3, backgroundColor: 'primary.light', color: 'primary.contrastText' }}>
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <WizardIcon sx={{ mr: 1 }} />
+            Recommended: Use Configuration Wizard
+          </Typography>
+          <Typography variant="body2" paragraph>
+            Get guided through the configuration process step-by-step with built-in validation, 
+            preview, and easy save options. Perfect for beginners and complex configurations.
+          </Typography>
+          <Button
+            variant="contained"
+            size="large"
+            startIcon={<WizardIcon />}
+            onClick={() => setShowConfigWizard(true)}
+            sx={{ 
+              backgroundColor: 'background.paper', 
+              color: 'primary.main',
+              '&:hover': { backgroundColor: 'grey.100' }
+            }}
+          >
+            Launch Configuration Wizard
+          </Button>
+        </Paper>
+
+        <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
+          Or use the advanced editor below:
+        </Typography>
+        
         {(isLoadingFile || isSavingFile) && (
           <Box sx={{ mt: 2, mb: 2 }}>
             <LinearProgress />
@@ -835,6 +869,14 @@ const UC2Controller = ({ hostIP, hostPort }) => {
         type={statusType}
         showProgress={isLoadingFile || isSavingFile || isRestarting}
         onClose={() => dispatch(uc2Slice.clearStatusMessage())}
+      />
+      
+      {/* Configuration Wizard */}
+      <ConfigurationWizard
+        open={showConfigWizard}
+        onClose={() => setShowConfigWizard(false)}
+        hostIP={hostIP}
+        hostPort={hostPort}
       />
     </>
   );
