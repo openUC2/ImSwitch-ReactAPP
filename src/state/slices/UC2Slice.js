@@ -26,6 +26,21 @@ const initialState = {
   setAsCurrentConfig: true,
   restartAfterSave: false,
   overwriteFile: false,
+
+  // Loading states
+  isLoadingFile: false,
+  isSavingFile: false,
+  isRestarting: false,
+  isValidatingConfig: false,
+
+  // Validation and preview
+  validationResult: null,
+  configPreview: null,
+  showPreviewDialog: false,
+
+  // Status messages
+  statusMessage: "",
+  statusType: "info", // "info", "success", "warning", "error"
 };
 
 const uc2Slice = createSlice({
@@ -96,6 +111,41 @@ const uc2Slice = createSlice({
       state.serialLog = action.payload;
     },
 
+    // Loading states
+    setIsLoadingFile: (state, action) => {
+      state.isLoadingFile = action.payload;
+    },
+    setIsSavingFile: (state, action) => {
+      state.isSavingFile = action.payload;
+    },
+    setIsRestarting: (state, action) => {
+      state.isRestarting = action.payload;
+    },
+    setIsValidatingConfig: (state, action) => {
+      state.isValidatingConfig = action.payload;
+    },
+
+    // Validation and preview
+    setValidationResult: (state, action) => {
+      state.validationResult = action.payload;
+    },
+    setConfigPreview: (state, action) => {
+      state.configPreview = action.payload;
+    },
+    setShowPreviewDialog: (state, action) => {
+      state.showPreviewDialog = action.payload;
+    },
+
+    // Status messages
+    setStatusMessage: (state, action) => {
+      state.statusMessage = action.payload.message || "";
+      state.statusType = action.payload.type || "info";
+    },
+    clearStatusMessage: (state) => {
+      state.statusMessage = "";
+      state.statusType = "info";
+    },
+
     // Reset actions
     resetFileOperations: (state) => {
       state.newFileName = "";
@@ -106,6 +156,12 @@ const uc2Slice = createSlice({
       state.editorJson = null;
       state.editorJsonText = "";
       state.useAceEditor = false;
+      state.validationResult = null;
+      state.configPreview = null;
+      state.showPreviewDialog = false;
+      state.isLoadingFile = false;
+      state.isSavingFile = false;
+      state.isValidatingConfig = false;
     },
   },
 });
@@ -130,7 +186,16 @@ export const {
   setRestartAfterSave,
   setOverwriteFile,
   resetFileOperations,
-  setSerialLog
+  setSerialLog,
+  setIsLoadingFile,
+  setIsSavingFile,
+  setIsRestarting,
+  setIsValidatingConfig,
+  setValidationResult,
+  setConfigPreview,
+  setShowPreviewDialog,
+  setStatusMessage,
+  clearStatusMessage,
 } = uc2Slice.actions;
 
 // Export selector
