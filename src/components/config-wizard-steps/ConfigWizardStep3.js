@@ -156,8 +156,13 @@ const ConfigWizardStep3 = ({
       </Typography>
       
       <Alert severity="info" sx={{ mb: 3 }}>
-        Modify your configuration using the editor below. Use the validation feature to check for issues 
-        before proceeding to the save step.
+        <Typography variant="body2" sx={{ mb: 1 }}>
+          <strong>Modify your configuration using the editor below.</strong> Use the validation feature to check for issues before proceeding to the save step.
+        </Typography>
+        <Typography variant="body2">
+          💡 <strong>Tip:</strong> Use the Visual Editor for guided editing, or switch to Text Editor for direct JSON manipulation. 
+          The Text Editor supports formatting (Ctrl+Alt+F) and has better copy/paste support.
+        </Typography>
       </Alert>
 
       {/* Editor Type Toggle */}
@@ -177,6 +182,12 @@ const ConfigWizardStep3 = ({
             label={`${useAceEditor ? 'Text' : 'Visual'} Editor`}
           />
         </Box>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+          {useAceEditor 
+            ? "Edit JSON directly with syntax highlighting and validation. Use this for advanced editing or copy/paste operations."
+            : "Use the visual editor for a guided approach to editing configuration values. Best for beginners."
+          }
+        </Typography>
       </Paper>
 
       {/* Validation Status */}
@@ -259,6 +270,25 @@ const ConfigWizardStep3 = ({
               {useAceEditor ? 'JSON Text Editor' : 'Visual Editor'}
             </Typography>
             <Box sx={{ display: 'flex', gap: 1 }}>
+              {useAceEditor && (
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => {
+                    try {
+                      const parsed = JSON.parse(editorJsonText || '{}');
+                      const formatted = JSON.stringify(parsed, null, 2);
+                      onJsonTextChange(formatted);
+                    } catch (e) {
+                      // Show error if JSON is invalid
+                      alert('Unable to format: Invalid JSON syntax');
+                    }
+                  }}
+                  disabled={!editorJsonText?.trim()}
+                >
+                  Format JSON
+                </Button>
+              )}
               <Button
                 variant="outlined"
                 size="small"
@@ -279,6 +309,11 @@ const ConfigWizardStep3 = ({
               </Button>
             </Box>
           </Box>
+          {useAceEditor && (
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+              Use Ctrl+Alt+F (Cmd+Alt+F on Mac) to format JSON, or click the Format JSON button above
+            </Typography>
+          )}
         </Box>
         
         <Box sx={{ minHeight: '400px' }}>
@@ -299,11 +334,36 @@ const ConfigWizardStep3 = ({
               highlightActiveLine={true}
               setOptions={{
                 enableBasicAutocompletion: true,
-                enableLiveAutocompletion: true,
-                enableSnippets: true,
+                enableLiveAutocompletion: false, // Disable to reduce noise
+                enableSnippets: false, // Disable snippets for cleaner experience
                 showLineNumbers: true,
                 tabSize: 2,
+                wrap: true, // Enable word wrapping
+                behavioursEnabled: true, // Auto-pair brackets
+                wrapBehavioursEnabled: true,
+                foldStyle: 'markbegin', // Enable code folding
+                cursorStyle: 'ace',
+                mergeUndoDeltas: true, // Better undo behavior
+                scrollPastEnd: 0.2,
+                fixedWidthGutter: true,
+                maxLines: Infinity
               }}
+              commands={[
+                {
+                  name: 'formatJson',
+                  bindKey: { win: 'Ctrl-Alt-F', mac: 'Cmd-Alt-F' },
+                  exec: (editor) => {
+                    try {
+                      const value = editor.getValue();
+                      const parsed = JSON.parse(value);
+                      const formatted = JSON.stringify(parsed, null, 2);
+                      editor.setValue(formatted);
+                    } catch (e) {
+                      // If JSON is invalid, don't format
+                    }
+                  }
+                }
+              ]}
             />
           ) : (
             <Box sx={{ height: '400px', overflow: 'auto', p: 1 }}>
@@ -314,6 +374,13 @@ const ConfigWizardStep3 = ({
                   restrictEdit={false}
                   restrictDelete={false}
                   restrictAdd={false}
+                  theme="default"
+                  indent={2}
+                  collapse={false}
+                  enableClipboard={true}
+                  displayDataTypes={true}
+                  displayObjectSize={true}
+                  displayArrayKey={true}
                 />
               ) : (
                 <Box sx={{ 
@@ -321,9 +388,14 @@ const ConfigWizardStep3 = ({
                   alignItems: 'center', 
                   justifyContent: 'center', 
                   height: '100%',
-                  color: 'text.secondary'
+                  color: 'text.secondary',
+                  flexDirection: 'column',
+                  gap: 2
                 }}>
-                  <Typography>No configuration loaded</Typography>
+                  <Typography variant="h6">No configuration loaded</Typography>
+                  <Typography variant="body2">
+                    Go back to Step 2 to load a configuration file first.
+                  </Typography>
                 </Box>
               )}
             </Box>
