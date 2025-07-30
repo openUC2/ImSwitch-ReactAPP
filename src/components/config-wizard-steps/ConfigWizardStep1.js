@@ -26,6 +26,7 @@ import {
 const ConfigWizardStep1 = ({ 
   selectedSource, 
   onSourceChange, 
+  currentActiveFilename,
   onNext, 
   onBack, 
   activeStep, 
@@ -84,6 +85,12 @@ const ConfigWizardStep1 = ({
                       <Typography variant="body2" color="text.secondary">
                         Start with the configuration that's currently running in your UC2 system.
                         This is the safest option if you want to make small modifications.
+                        {currentActiveFilename && (
+                          <>
+                            <br />
+                            <strong>Current file:</strong> {currentActiveFilename}
+                          </>
+                        )}
                       </Typography>
                     </Box>
                   }
