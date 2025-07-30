@@ -17,6 +17,7 @@ import {
   ListItemText,
   ListItemIcon,
   Divider,
+  useTheme,
 } from "@mui/material";
 import {
   FolderOpen as FolderIcon,
@@ -43,8 +44,10 @@ const ConfigWizardStep2 = ({
   onNext, 
   onBack, 
   activeStep, 
-  totalSteps 
+  totalSteps,
+  currentActiveFilename // <-- add prop
 }) => {
+  const theme = useTheme();
   const [localSelectedFile, setLocalSelectedFile] = useState(selectedFile || '');
 
   useEffect(() => {
@@ -259,6 +262,27 @@ const ConfigWizardStep2 = ({
         <Alert severity="warning" sx={{ mb: 3 }}>
           Please load a configuration to continue to the next step.
         </Alert>
+      )}
+
+      {/* Debug: Show loadedConfig as JSON if needed for troubleshooting */}
+      {loadedConfig && typeof loadedConfig === 'object' && (
+        <Box sx={{ mt: 2 }}>
+          <Typography variant="subtitle2" color="text.secondary">Raw configuration object:</Typography>
+          <pre style={{ fontSize: 12, background: '#fffff', padding: 8, borderRadius: 4, overflowX: 'auto' }}>{JSON.stringify(loadedConfig, null, 2)}</pre>
+        </Box>
+      )}
+      {/* Fix: If currentActiveFilename is an object, render as string */}
+      {typeof currentActiveFilename === 'object' && (
+        <Box sx={{ mt: 2 }}>
+          <Typography variant="subtitle2" color="text.secondary">Current setup filename (object):</Typography>
+          <pre style={{ fontSize: 12, background: theme.palette.mode === 'dark' ? '#222' : '#fff', color: theme.palette.text.primary, padding: 8, borderRadius: 4, overflowX: 'auto' }}>{JSON.stringify(currentActiveFilename, null, 2)}</pre>
+        </Box>
+      )}
+      {typeof currentActiveFilename === 'string' && currentActiveFilename && (
+        <Box sx={{ mt: 2 }}>
+          <Typography variant="subtitle2" color="text.secondary">Current setup filename:</Typography>
+          <Typography>{currentActiveFilename}</Typography>
+        </Box>
       )}
     </Box>
   );

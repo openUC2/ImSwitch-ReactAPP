@@ -25,6 +25,7 @@ import { JsonEditor } from "json-edit-react";
 import AceEditor from "react-ace";
 import "ace-builds/src-noconflict/mode-json";
 import "ace-builds/src-noconflict/theme-github";
+import 'ace-builds/src-noconflict/worker-json';
 import { 
   validateConfiguration, 
   validateJsonString, 
@@ -320,7 +321,6 @@ const ConfigWizardStep3 = ({
           {useAceEditor ? (
             <AceEditor
               mode="json"
-              setOptions={{ useWorker: false }}
               theme="github"
               onChange={onJsonTextChange}
               value={editorJsonText || ''}
@@ -333,37 +333,13 @@ const ConfigWizardStep3 = ({
               showGutter={true}
               highlightActiveLine={true}
               setOptions={{
+                useWorker: false, // Disable worker to prevent network error
                 enableBasicAutocompletion: true,
                 enableLiveAutocompletion: false, // Disable to reduce noise
                 enableSnippets: false, // Disable snippets for cleaner experience
                 showLineNumbers: true,
                 tabSize: 2,
-                wrap: true, // Enable word wrapping
-                behavioursEnabled: true, // Auto-pair brackets
-                wrapBehavioursEnabled: true,
-                foldStyle: 'markbegin', // Enable code folding
-                cursorStyle: 'ace',
-                mergeUndoDeltas: true, // Better undo behavior
-                scrollPastEnd: 0.2,
-                fixedWidthGutter: true,
-                maxLines: Infinity
               }}
-              commands={[
-                {
-                  name: 'formatJson',
-                  bindKey: { win: 'Ctrl-Alt-F', mac: 'Cmd-Alt-F' },
-                  exec: (editor) => {
-                    try {
-                      const value = editor.getValue();
-                      const parsed = JSON.parse(value);
-                      const formatted = JSON.stringify(parsed, null, 2);
-                      editor.setValue(formatted);
-                    } catch (e) {
-                      // If JSON is invalid, don't format
-                    }
-                  }
-                }
-              ]}
             />
           ) : (
             <Box sx={{ height: '400px', overflow: 'auto', p: 1 }}>
@@ -374,7 +350,6 @@ const ConfigWizardStep3 = ({
                   restrictEdit={false}
                   restrictDelete={false}
                   restrictAdd={false}
-                  theme="default"
                   indent={2}
                   collapse={false}
                   enableClipboard={true}

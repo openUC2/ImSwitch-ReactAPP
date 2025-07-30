@@ -15,6 +15,7 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
+  useTheme,
 } from "@mui/material";
 import {
   Settings as SettingsIcon,
@@ -32,6 +33,8 @@ const ConfigWizardStep1 = ({
   activeStep, 
   totalSteps 
 }) => {
+  const theme = useTheme();
+
   const handleSourceChange = (event) => {
     onSourceChange(event.target.value);
   };
@@ -88,7 +91,20 @@ const ConfigWizardStep1 = ({
                         {currentActiveFilename && (
                           <>
                             <br />
-                            <strong>Current file:</strong> {currentActiveFilename}
+                            <strong>Current file:</strong>{' '}
+                            {typeof currentActiveFilename === 'object' ? (
+                              <pre style={{
+                                display: 'inline-block',
+                                fontSize: 12,
+                                background: theme.palette.mode === 'dark' ? '#222' : '#fff',
+                                color: theme.palette.text.primary,
+                                padding: 4,
+                                borderRadius: 4,
+                                margin: 0
+                              }}>{JSON.stringify(currentActiveFilename, null, 2)}</pre>
+                            ) : (
+                              <span>{currentActiveFilename}</span>
+                            )}
                           </>
                         )}
                       </Typography>
