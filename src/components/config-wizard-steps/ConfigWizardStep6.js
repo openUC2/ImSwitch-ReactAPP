@@ -123,7 +123,7 @@ const ConfigWizardStep6 = ({
       </Paper>
 
       {/* Next Steps */}
-      <Paper elevation={1} sx={{ p: 3, mb: 3, backgroundColor: 'grey.50' }}>
+      <Paper elevation={1} sx={{ p: 3, mb: 3, backgroundColor: 'secondary' }}>
         <Typography variant="h6" gutterBottom>
           <PlayArrowIcon sx={{ mr: 1, verticalAlign: 'middle' }} color="primary" />
           What's Next?

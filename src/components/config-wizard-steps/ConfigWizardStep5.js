@@ -168,7 +168,7 @@ const ConfigWizardStep5 = ({
       </Paper>
 
       {/* Configuration Summary */}
-      <Paper elevation={1} sx={{ p: 3, mb: 3, backgroundColor: 'grey.50' }}>
+      <Paper elevation={1} sx={{ p: 3, mb: 3, backgroundColor: 'secondary' }}>
         <Typography variant="h6" gutterBottom>
           Configuration Summary
         </Typography>

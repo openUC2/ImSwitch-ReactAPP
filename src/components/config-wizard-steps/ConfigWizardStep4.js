@@ -192,7 +192,7 @@ const ConfigWizardStep4 = ({
       </Paper>
 
       {/* Configuration Summary */}
-      <Paper elevation={1} sx={{ p: 3, mb: 3, backgroundColor: 'grey.50' }}>
+      <Paper elevation={1} sx={{ p: 3, mb: 3, backgroundColor: 'secondary' }}>
         <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
           <InfoIcon sx={{ mr: 1 }} color="info" />
           Summary of Actions
