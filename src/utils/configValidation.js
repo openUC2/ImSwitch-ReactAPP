@@ -16,13 +16,13 @@ export const validateConfiguration = (config) => {
     return { isValid: false, errors, warnings };
   }
 
-  // Check for required basic structure
-  if (!config.detector) {
+  // Check for required basic structure (using actual config structure)
+  if (!config.detectors && !config.detector) {
     warnings.push('No detector configuration found');
   }
 
-  if (!config.actuators) {
-    warnings.push('No actuators configuration found');
+  if (!config.lasers && !config.actuators) {
+    warnings.push('No laser/actuator configuration found');
   }
 
   if (!config.positioners) {
@@ -30,10 +30,16 @@ export const validateConfiguration = (config) => {
   }
 
   // Validate device configurations if present
+  if (config.detectors && typeof config.detectors !== 'object') {
+    errors.push('Detectors configuration must be an object');
+  }
   if (config.detector && typeof config.detector !== 'object') {
     errors.push('Detector configuration must be an object');
   }
 
+  if (config.lasers && typeof config.lasers !== 'object') {
+    errors.push('Lasers configuration must be an object');
+  }
   if (config.actuators && typeof config.actuators !== 'object') {
     errors.push('Actuators configuration must be an object');
   }
@@ -42,14 +48,50 @@ export const validateConfiguration = (config) => {
     errors.push('Positioners configuration must be an object');
   }
 
-  // Check for common configuration issues
+  // Check for common configuration issues in detectors
+  if (config.detectors) {
+    Object.entries(config.detectors).forEach(([key, detector]) => {
+      if (!detector.managerName) {
+        warnings.push(`Detector '${key}' missing managerName`);
+      }
+      if (!detector.managerProperties) {
+        warnings.push(`Detector '${key}' missing managerProperties`);
+      }
+    });
+  }
+
+  // Check for common configuration issues in lasers
+  if (config.lasers) {
+    Object.entries(config.lasers).forEach(([key, laser]) => {
+      if (!laser.managerName) {
+        warnings.push(`Laser '${key}' missing managerName`);
+      }
+      if (!laser.managerProperties) {
+        warnings.push(`Laser '${key}' missing managerProperties`);
+      }
+    });
+  }
+
+  // Check for common configuration issues in actuators (legacy support)
   if (config.actuators) {
     Object.entries(config.actuators).forEach(([key, actuator]) => {
       if (!actuator.managerName) {
         warnings.push(`Actuator '${key}' missing managerName`);
       }
       if (!actuator.managerProperties) {
-        warnings.push(`Actuator '${key}' missing manageProperties`);
+        warnings.push(`Actuator '${key}' missing managerProperties`);
+      }
+    });
+  }
+
+  // Check for common configuration issues in positioners
+  if (config.positioners) {
+    Object.entries(config.positioners).forEach(([key, positioner]) => {
+      if (!positioner.managerName) {
+        warnings.push(`Positioner '${key}' missing managerName`);
+      }
+      if (!positioner.managerProperties) {
+        warnings.push(`Positioner '${key}' missing managerProperties`);
       }
     });
   }
@@ -113,6 +155,7 @@ export const createConfigurationPreview = (config) => {
       valid: false, 
       summary: 'Invalid configuration',
       detectorCount: 0,
+      laserCount: 0,
       actuatorCount: 0,
       positionerCount: 0,
       totalDevices: 0,
@@ -122,11 +165,12 @@ export const createConfigurationPreview = (config) => {
 
   const devices = [];
   
-  // Extract detector information
+  // Extract detector information (support both detectors and detector)
   let detectorCount = 0;
-  if (config.detector && typeof config.detector === 'object') {
-    detectorCount = Object.keys(config.detector).length;
-    Object.entries(config.detector).forEach(([key, detector]) => {
+  const detectors = config.detectors || config.detector;
+  if (detectors && typeof detectors === 'object') {
+    detectorCount = Object.keys(detectors).length;
+    Object.entries(detectors).forEach(([key, detector]) => {
       devices.push({
         name: key,
         type: 'Detector',
@@ -135,7 +179,20 @@ export const createConfigurationPreview = (config) => {
     });
   }
 
-  // Extract actuator information  
+  // Extract laser information
+  let laserCount = 0;
+  if (config.lasers && typeof config.lasers === 'object') {
+    laserCount = Object.keys(config.lasers).length;
+    Object.entries(config.lasers).forEach(([key, laser]) => {
+      devices.push({
+        name: key,
+        type: 'Laser',
+        manager: laser.managerName || 'Unknown'
+      });
+    });
+  }
+
+  // Extract actuator information (legacy support)
   let actuatorCount = 0;
   if (config.actuators && typeof config.actuators === 'object') {
     actuatorCount = Object.keys(config.actuators).length;
@@ -164,9 +221,10 @@ export const createConfigurationPreview = (config) => {
   return {
     valid: true,
     detectorCount,
+    laserCount,
     actuatorCount,
     positionerCount,
-    totalDevices: detectorCount + actuatorCount + positionerCount,
+    totalDevices: detectorCount + laserCount + actuatorCount + positionerCount,
     devices
   };
 };

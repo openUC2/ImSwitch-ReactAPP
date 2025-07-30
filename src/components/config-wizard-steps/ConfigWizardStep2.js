@@ -74,13 +74,35 @@ const ConfigWizardStep2 = ({
     if (!config || typeof config !== 'object') return null;
     
     const summary = {
-      detectors: config.detector && typeof config.detector === 'object' ? Object.keys(config.detector).length : 0,
-      actuators: config.actuators && typeof config.actuators === 'object' ? Object.keys(config.actuators).length : 0,
-      positioners: config.positioners && typeof config.positioners === 'object' ? Object.keys(config.positioners).length : 0,
+      detectors: 0,
+      lasers: 0,
+      actuators: 0,
+      positioners: 0,
       totalDevices: 0,
     };
     
-    summary.totalDevices = summary.detectors + summary.actuators + summary.positioners;
+    // Count detectors (support both detectors and detector)
+    const detectors = config.detectors || config.detector;
+    if (detectors && typeof detectors === 'object') {
+      summary.detectors = Object.keys(detectors).length;
+    }
+    
+    // Count lasers
+    if (config.lasers && typeof config.lasers === 'object') {
+      summary.lasers = Object.keys(config.lasers).length;
+    }
+    
+    // Count actuators (legacy support)
+    if (config.actuators && typeof config.actuators === 'object') {
+      summary.actuators = Object.keys(config.actuators).length;
+    }
+    
+    // Count positioners
+    if (config.positioners && typeof config.positioners === 'object') {
+      summary.positioners = Object.keys(config.positioners).length;
+    }
+    
+    summary.totalDevices = summary.detectors + summary.lasers + summary.actuators + summary.positioners;
     
     return summary;
   };
@@ -230,11 +252,20 @@ const ConfigWizardStep2 = ({
                   size="small" 
                   color="primary" 
                 />
-                <Chip 
-                  label={`${summary.actuators} Actuator${summary.actuators !== 1 ? 's' : ''}`} 
-                  size="small" 
-                  color="primary" 
-                />
+                {summary.lasers > 0 && (
+                  <Chip 
+                    label={`${summary.lasers} Laser${summary.lasers !== 1 ? 's' : ''}`} 
+                    size="small" 
+                    color="secondary" 
+                  />
+                )}
+                {summary.actuators > 0 && (
+                  <Chip 
+                    label={`${summary.actuators} Actuator${summary.actuators !== 1 ? 's' : ''}`} 
+                    size="small" 
+                    color="primary" 
+                  />
+                )}
                 <Chip 
                   label={`${summary.positioners} Positioner${summary.positioners !== 1 ? 's' : ''}`} 
                   size="small" 

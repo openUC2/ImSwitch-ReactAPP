@@ -76,6 +76,17 @@ const ConfigurationWizard = ({ open, onClose, hostIP, hostPort }) => {
     }
   }, [open]);
 
+  // Auto-populate filename when entering Step 4 with current configuration
+  useEffect(() => {
+    if (activeStep === 3 && selectedSource === 'current' && currentActiveFilename && !filename) {
+      // Extract filename without extension if needed, or use as-is
+      const baseFilename = typeof currentActiveFilename === 'string' 
+        ? currentActiveFilename
+        : JSON.stringify(currentActiveFilename);
+      setFilename(baseFilename);
+    }
+  }, [activeStep, selectedSource, currentActiveFilename, filename]);
+
   // Fetch current active setup filename when "current" is selected
   useEffect(() => {
     if (selectedSource === 'current' && !currentActiveFilename) {
@@ -86,10 +97,24 @@ const ConfigurationWizard = ({ open, onClose, hostIP, hostPort }) => {
   const fetchCurrentActiveFilename = useCallback(() => {
     const url = `${hostIP}:${hostPort}/UC2ConfigController/getCurrentSetupFilename`;
     fetch(url)
-      .then((response) => response.json())
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
       .then((data) => {
         // Handle different possible response formats
-        const filename = data.filename || data.currentSetupFilename || data;
+        let filename = null;
+        
+        if (typeof data === 'string') {
+          filename = data;
+        } else if (data && typeof data === 'object') {
+          filename = data.filename || data.currentSetupFilename || data.setupFileName || JSON.stringify(data);
+        } else {
+          filename = String(data);
+        }
+        
         setCurrentActiveFilename(filename || 'current_config.json');
       })
       .catch((error) => {
@@ -211,11 +236,74 @@ const ConfigurationWizard = ({ open, onClose, hostIP, hostPort }) => {
     setIsLoading(true);
     
     setTimeout(() => {
-      const newConfig = "{\n  \"detector\": {},\n  \"actuators\": {},\n  \"positioners\": {}\n}";
-      setLoadedConfig(null);
-      setEditorJson(null);
-      setEditorJsonText(newConfig);
-      setUseAceEditor(true);
+      const newConfig = {
+        "detectors": {},
+        "lasers": {},
+        "LEDs": {},
+        "LEDMatrixs": {},
+        "positioners": {},
+        "rs232devices": {},
+        "slm": null,
+        "sim": null,
+        "dpc": null,
+        "objective": null,
+        "mct": null,
+        "nidaq": {
+          "timerCounterChannel": null,
+          "startTrigger": false
+        },
+        "roiscan": null,
+        "lightsheet": null,
+        "webrtc": null,
+        "hypha": null,
+        "mockxx": null,
+        "jetsonnano": null,
+        "Stresstest": {},
+        "HistoScan": null,
+        "Workflow": null,
+        "FlowStop": null,
+        "Lepmon": null,
+        "Flatfield": null,
+        "PixelCalibration": {},
+        "uc2Config": null,
+        "ism": null,
+        "focusLock": null,
+        "fovLock": null,
+        "autofocus": null,
+        "scan": null,
+        "etSTED": null,
+        "rotators": null,
+        "microscopeStand": null,
+        "pulseStreamer": {
+          "ipAddress": null
+        },
+        "pyroServerInfo": {
+          "name": "ImSwitchServer",
+          "host": "0.0.0.0",
+          "port": 54333,
+          "active": false
+        },
+        "rois": {
+          "Full chip": {
+            "x": 600,
+            "y": 600,
+            "w": 1200,
+            "h": 1200
+          }
+        },
+        "ledPresets": {},
+        "defaultLEDPresetForScan": null,
+        "laserPresets": {},
+        "stageOffsets": {},
+        "defaultLaserPresetForScan": null,
+        "availableWidgets": [],
+        "nonAvailableWidgets": []
+      };
+      
+      setLoadedConfig(newConfig);
+      setEditorJson(newConfig);
+      setEditorJsonText(JSON.stringify(newConfig, null, 2));
+      setUseAceEditor(false);
       setIsLoading(false);
     }, 500);
   }, []);
@@ -350,6 +438,7 @@ const ConfigurationWizard = ({ open, onClose, hostIP, hostPort }) => {
             onLoadFile={handleLoadFile}
             onCreateNew={handleCreateNew}
             onRefreshFiles={fetchAvailableSetups}
+            currentActiveFilename={currentActiveFilename}
           />
         );
       case 2:
