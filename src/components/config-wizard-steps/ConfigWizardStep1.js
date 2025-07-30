@@ -155,7 +155,7 @@ const ConfigWizardStep1 = ({
         </FormControl>
       </Paper>
 
-      <Paper elevation={1} sx={{ p: 2, backgroundColor: 'grey.50' }}>
+      <Paper elevation={1} sx={{ p: 2, backgroundColor: 'black' }}>
         <Typography variant="h6" gutterBottom>
           <InfoIcon sx={{ mr: 1, verticalAlign: 'middle' }} color="info" />
           What Happens Next

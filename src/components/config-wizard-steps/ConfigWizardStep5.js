@@ -21,7 +21,7 @@ import {
   Check as CheckIcon,
   Error as ErrorIcon,
   Warning as WarningIcon,
-  Hourglass as HourglassIcon,
+  HourglassFull as HourglassIcon,
 } from "@mui/icons-material";
 
 const ConfigWizardStep5 = ({ 
