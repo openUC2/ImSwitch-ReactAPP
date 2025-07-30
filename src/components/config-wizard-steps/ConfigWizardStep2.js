@@ -71,9 +71,9 @@ const ConfigWizardStep2 = ({
     if (!config || typeof config !== 'object') return null;
     
     const summary = {
-      detectors: config.detector ? Object.keys(config.detector).length : 0,
-      actuators: config.actuators ? Object.keys(config.actuators).length : 0,
-      positioners: config.positioners ? Object.keys(config.positioners).length : 0,
+      detectors: config.detector && typeof config.detector === 'object' ? Object.keys(config.detector).length : 0,
+      actuators: config.actuators && typeof config.actuators === 'object' ? Object.keys(config.actuators).length : 0,
+      positioners: config.positioners && typeof config.positioners === 'object' ? Object.keys(config.positioners).length : 0,
       totalDevices: 0,
     };
     

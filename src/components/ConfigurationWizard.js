@@ -46,6 +46,7 @@ const ConfigurationWizard = ({ open, onClose, hostIP, hostPort }) => {
   const [activeStep, setActiveStep] = useState(0);
   const [selectedSource, setSelectedSource] = useState('');
   const [selectedFile, setSelectedFile] = useState('');
+  const [currentActiveFilename, setCurrentActiveFilename] = useState('');
   const [loadedConfig, setLoadedConfig] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState('');
@@ -74,6 +75,28 @@ const ConfigurationWizard = ({ open, onClose, hostIP, hostPort }) => {
       fetchAvailableSetups();
     }
   }, [open]);
+
+  // Fetch current active setup filename when "current" is selected
+  useEffect(() => {
+    if (selectedSource === 'current' && !currentActiveFilename) {
+      fetchCurrentActiveFilename();
+    }
+  }, [selectedSource]);
+
+  const fetchCurrentActiveFilename = useCallback(() => {
+    const url = `${hostIP}:${hostPort}/UC2ConfigController/getCurrentSetupFilename`;
+    fetch(url)
+      .then((response) => response.json())
+      .then((data) => {
+        // Handle different possible response formats
+        const filename = data.filename || data.currentSetupFilename || data;
+        setCurrentActiveFilename(filename || 'current_config.json');
+      })
+      .catch((error) => {
+        console.error("Error fetching current setup filename:", error);
+        setCurrentActiveFilename('current_config.json'); // fallback
+      });
+  }, [hostIP, hostPort]);
 
   const fetchAvailableSetups = useCallback(() => {
     const url = `${hostIP}:${hostPort}/UC2ConfigController/returnAvailableSetups`;
@@ -107,6 +130,7 @@ const ConfigurationWizard = ({ open, onClose, hostIP, hostPort }) => {
     setActiveStep(0);
     setSelectedSource('');
     setSelectedFile('');
+    setCurrentActiveFilename('');
     setLoadedConfig(null);
     setIsLoading(false);
     setLoadError('');
@@ -134,27 +158,28 @@ const ConfigurationWizard = ({ open, onClose, hostIP, hostPort }) => {
     setIsLoading(true);
     setLoadError('');
     
-    // Simulate loading current config - in real implementation, this would fetch from API
-    setTimeout(() => {
-      try {
-        // For now, just create a basic template
-        const currentConfig = {
-          detector: {},
-          actuators: {},
-          positioners: {},
-          // Add more default structure as needed
-        };
-        
-        setLoadedConfig(currentConfig);
-        setEditorJson(currentConfig);
+    // Use the readSetupFile API without setupFileName parameter to get current config
+    const url = `${hostIP}:${hostPort}/UC2ConfigController/readSetupFile`;
+    
+    fetch(url)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        setLoadedConfig(data);
+        setEditorJson(data);
+        setEditorJsonText(JSON.stringify(data, null, 2));
         setUseAceEditor(false);
         setIsLoading(false);
-      } catch (error) {
-        setLoadError(error.message);
+      })
+      .catch((error) => {
+        setLoadError(error.message || 'Failed to load current configuration');
         setIsLoading(false);
-      }
-    }, 1000);
-  }, []);
+      });
+  }, [hostIP, hostPort]);
 
   const handleLoadFile = useCallback((fileName) => {
     setIsLoading(true);
@@ -163,15 +188,21 @@ const ConfigurationWizard = ({ open, onClose, hostIP, hostPort }) => {
     const url = `${hostIP}:${hostPort}/UC2ConfigController/readSetupFile?setupFileName=${encodeURIComponent(fileName)}`;
     
     fetch(url)
-      .then((res) => res.json())
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
       .then((data) => {
         setLoadedConfig(data);
         setEditorJson(data);
+        setEditorJsonText(JSON.stringify(data, null, 2));
         setUseAceEditor(false);
         setIsLoading(false);
       })
       .catch((error) => {
-        setLoadError(error.message);
+        setLoadError(error.message || 'Failed to load configuration file');
         setIsLoading(false);
       });
   }, [hostIP, hostPort]);
@@ -301,6 +332,7 @@ const ConfigurationWizard = ({ open, onClose, hostIP, hostPort }) => {
             {...commonProps}
             selectedSource={selectedSource}
             onSourceChange={setSelectedSource}
+            currentActiveFilename={currentActiveFilename}
           />
         );
       case 1:

@@ -136,14 +136,14 @@ const ConfigWizardStep3 = ({
     if (!validationResult) return null;
     
     const { isValid, errors = [], warnings = [] } = validationResult;
-    const totalIssues = errors.length + warnings.length;
+    const totalIssues = (errors ? errors.length : 0) + (warnings ? warnings.length : 0);
     
     if (isValid && totalIssues === 0) {
       return { type: 'success', message: 'Configuration is valid with no issues' };
-    } else if (errors.length === 0) {
-      return { type: 'warning', message: `Configuration is valid but has ${warnings.length} warning${warnings.length !== 1 ? 's' : ''}` };
+    } else if ((errors ? errors.length : 0) === 0) {
+      return { type: 'warning', message: `Configuration is valid but has ${warnings ? warnings.length : 0} warning${(warnings && warnings.length !== 1) ? 's' : ''}` };
     } else {
-      return { type: 'error', message: `Configuration has ${errors.length} error${errors.length !== 1 ? 's' : ''}${warnings.length > 0 ? ` and ${warnings.length} warning${warnings.length !== 1 ? 's' : ''}` : ''}` };
+      return { type: 'error', message: `Configuration has ${errors ? errors.length : 0} error${(errors && errors.length !== 1) ? 's' : ''}${(warnings && warnings.length > 0) ? ` and ${warnings.length} warning${warnings.length !== 1 ? 's' : ''}` : ''}` };
     }
   };
 
@@ -219,9 +219,9 @@ const ConfigWizardStep3 = ({
       )}
 
       {/* Validation Issues */}
-      {validationResult && (validationResult.errors?.length > 0 || validationResult.warnings?.length > 0) && (
+      {validationResult && ((validationResult.errors && validationResult.errors.length > 0) || (validationResult.warnings && validationResult.warnings.length > 0)) && (
         <Paper elevation={1} sx={{ p: 2, mb: 3 }}>
-          {validationResult.errors?.length > 0 && (
+          {validationResult.errors && validationResult.errors.length > 0 && (
             <Box sx={{ mb: 2 }}>
               <Typography variant="subtitle2" color="error" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                 <ErrorIcon sx={{ mr: 1 }} />
@@ -235,7 +235,7 @@ const ConfigWizardStep3 = ({
             </Box>
           )}
           
-          {validationResult.warnings?.length > 0 && (
+          {validationResult.warnings && validationResult.warnings.length > 0 && (
             <Box>
               <Typography variant="subtitle2" color="warning.main" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                 <WarningIcon sx={{ mr: 1 }} />
@@ -346,17 +346,17 @@ const ConfigWizardStep3 = ({
       >
         <DialogTitle>Configuration Preview</DialogTitle>
         <DialogContent>
-          {previewData && (
+          {previewData && previewData.valid ? (
             <Box>
               <Typography variant="h6" gutterBottom>Device Summary</Typography>
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
-                <Chip label={`${previewData.detectorCount} Detectors`} color="primary" />
-                <Chip label={`${previewData.actuatorCount} Actuators`} color="primary" />
-                <Chip label={`${previewData.positionerCount} Positioners`} color="primary" />
-                <Chip label={`${previewData.totalDevices} Total`} variant="outlined" />
+                <Chip label={`${previewData.detectorCount || 0} Detectors`} color="primary" />
+                <Chip label={`${previewData.actuatorCount || 0} Actuators`} color="primary" />
+                <Chip label={`${previewData.positionerCount || 0} Positioners`} color="primary" />
+                <Chip label={`${previewData.totalDevices || 0} Total`} variant="outlined" />
               </Box>
               
-              {previewData.devices.length > 0 && (
+              {previewData.devices && previewData.devices.length > 0 && (
                 <Box>
                   <Typography variant="h6" gutterBottom>Configured Devices</Typography>
                   {previewData.devices.map((device, index) => (
@@ -368,6 +368,10 @@ const ConfigWizardStep3 = ({
                 </Box>
               )}
             </Box>
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              {previewData ? previewData.summary : 'Unable to generate preview for this configuration.'}
+            </Typography>
           )}
         </DialogContent>
         <DialogActions>

@@ -109,29 +109,64 @@ export const formatValidationMessage = (validationResult) => {
  */
 export const createConfigurationPreview = (config) => {
   if (!config || typeof config !== 'object') {
-    return { valid: false, summary: 'Invalid configuration' };
+    return { 
+      valid: false, 
+      summary: 'Invalid configuration',
+      detectorCount: 0,
+      actuatorCount: 0,
+      positionerCount: 0,
+      totalDevices: 0,
+      devices: []
+    };
   }
 
-  const summary = {
-    valid: true,
-    detectors: config.detector ? Object.keys(config.detector).length : 0,
-    actuators: config.actuators ? Object.keys(config.actuators).length : 0,
-    positioners: config.positioners ? Object.keys(config.positioners).length : 0,
-    lasers: 0,
-    scanners: 0,
-  };
-
-  // Count specific device types
-  if (config.actuators) {
-    Object.values(config.actuators).forEach(actuator => {
-      if (actuator.managerName === 'UC2ConfigLaser') {
-        summary.lasers++;
-      }
-      if (actuator.managerName === 'UC2ConfigScanner') {
-        summary.scanners++;
-      }
+  const devices = [];
+  
+  // Extract detector information
+  let detectorCount = 0;
+  if (config.detector && typeof config.detector === 'object') {
+    detectorCount = Object.keys(config.detector).length;
+    Object.entries(config.detector).forEach(([key, detector]) => {
+      devices.push({
+        name: key,
+        type: 'Detector',
+        manager: detector.managerName || 'Unknown'
+      });
     });
   }
 
-  return summary;
+  // Extract actuator information  
+  let actuatorCount = 0;
+  if (config.actuators && typeof config.actuators === 'object') {
+    actuatorCount = Object.keys(config.actuators).length;
+    Object.entries(config.actuators).forEach(([key, actuator]) => {
+      devices.push({
+        name: key,
+        type: 'Actuator',
+        manager: actuator.managerName || 'Unknown'
+      });
+    });
+  }
+
+  // Extract positioner information
+  let positionerCount = 0;
+  if (config.positioners && typeof config.positioners === 'object') {
+    positionerCount = Object.keys(config.positioners).length;
+    Object.entries(config.positioners).forEach(([key, positioner]) => {
+      devices.push({
+        name: key,
+        type: 'Positioner',
+        manager: positioner.managerName || 'Unknown'
+      });
+    });
+  }
+
+  return {
+    valid: true,
+    detectorCount,
+    actuatorCount,
+    positionerCount,
+    totalDevices: detectorCount + actuatorCount + positionerCount,
+    devices
+  };
 };
