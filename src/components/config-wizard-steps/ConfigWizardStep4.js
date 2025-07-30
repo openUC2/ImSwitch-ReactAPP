@@ -50,6 +50,11 @@ const ConfigWizardStep4 = ({
     if (!filename) {
       warnings.push('A filename is required to save the configuration');
     }
+
+    // check if filename is a path or contains invalid characters
+    if (filename && /[<>:"/\\|?*]/.test(filename)) {
+      warnings.push('Filename contains invalid characters (<>:"/\\|?*)');
+    }
     
     if (fileExists && !overwriteFile) {
       warnings.push(`File "${filename}" already exists. Enable "Overwrite if exists" to replace it.`);

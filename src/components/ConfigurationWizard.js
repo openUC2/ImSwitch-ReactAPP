@@ -110,7 +110,7 @@ const ConfigurationWizard = ({ open, onClose, hostIP, hostPort }) => {
         if (typeof data === 'string') {
           filename = data;
         } else if (data && typeof data === 'object') {
-          filename = data.filename || data.currentSetupFilename || data.setupFileName || JSON.stringify(data);
+          filename = data.current_setup || data.currentSetupFilename || data.setupFileName || JSON.stringify(data);
         } else {
           filename = String(data);
         }
