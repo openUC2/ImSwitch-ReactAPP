@@ -12,6 +12,7 @@ import {
   Legend,
 } from "chart.js";
 import * as liveViewSlice from "../state/slices/LiveStreamSlice.js";
+import apiPositionerControllerMovePositioner from "../backendapi/apiPositionerControllerMovePositioner.js";
 
 // Register Chart.js components
 ChartJS.register(
@@ -224,6 +225,65 @@ const LiveViewComponent = ({ useFastMode = true }) => {
       dispatch(liveViewSlice.setMaxVal(newValue[1]));
     };
 
+    // Move positioner to specified real-world coordinates
+    const moveToPosition = useCallback(async (x, y) => {
+      try {
+        console.log(`Moving to position X: ${x.toFixed(2)}, Y: ${y.toFixed(2)} µm`);
+        
+        // Move X axis
+        await apiPositionerControllerMovePositioner({
+          axis: "X",
+          dist: x,
+          isAbsolute: false,
+          isBlocking: false,
+        });
+
+        // Move Y axis
+        await apiPositionerControllerMovePositioner({
+          axis: "Y", 
+          dist: y,
+          isAbsolute: false,
+          isBlocking: false,
+        });
+
+        console.log(`Successfully moved to position X: ${x.toFixed(2)}, Y: ${y.toFixed(2)} µm`);
+      } catch (error) {
+        console.error('Error moving to position:', error);
+      }
+    }, []);
+
+    // Handle double-click to move to position
+    const handleCanvasDoubleClick = useCallback((event) => {
+      const canvas = canvasRef.current;
+      if (!canvas || !liveStreamState.pixelSize) {
+        console.warn('Canvas or pixel size not available for position calculation');
+        return;
+      }
+
+      // Get click position relative to canvas
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      
+      const clickX = (event.clientX - rect.left) * scaleX;
+      const clickY = (event.clientY - rect.top) * scaleY;
+
+      // Convert pixel coordinates to real-world coordinates
+      // Center of image is (0,0) in real coordinates
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      
+      // Calculate real-world distances from center
+      const realX = (clickX - centerX) * liveStreamState.pixelSize;
+      const realY = (clickY - centerY) * liveStreamState.pixelSize;
+
+      console.log(`Double-click at pixel (${clickX.toFixed(1)}, ${clickY.toFixed(1)}) -> real coordinates (${realX.toFixed(2)}, ${realY.toFixed(2)}) µm`);
+
+      // Move to the calculated position
+      // Note: Y direction might need to be inverted depending on stage orientation
+      moveToPosition(realX, -realY); // Inverting Y as microscope Y often goes opposite to image Y
+    }, [liveStreamState.pixelSize, moveToPosition]);
+
     // Calculate scale bar dimensions - using original fixed styling
     const scaleBarPx = 50;
     const scaleBarMicrons = liveStreamState.pixelSize ? (scaleBarPx * liveStreamState.pixelSize).toFixed(2) : null;
@@ -261,8 +321,10 @@ const LiveViewComponent = ({ useFastMode = true }) => {
           ref={canvasRef}
           style={{
             ...canvasStyle,
-            display: imageLoaded ? canvasStyle.display : 'none'
+            display: imageLoaded ? canvasStyle.display : 'none',
+            cursor: liveStreamState.pixelSize ? 'crosshair' : 'default'
           }}
+          onDoubleClick={handleCanvasDoubleClick}
         />
       ) : (
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
