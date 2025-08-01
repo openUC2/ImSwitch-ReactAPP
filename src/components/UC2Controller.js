@@ -134,6 +134,12 @@ const UC2Controller = ({ hostIP, hostPort }) => {
       .catch((error) => console.error("Error:", error));
   };
 
+  const restartESPBoard = () => {
+    fetch(`${hostIP}:${hostPort}/UC2ConfigController/espRestart`, { method: "GET" })
+      .then((response) => response.json())
+      .then((data) => console.log(data))
+      .catch((error) => console.error("Error:", error));
+  };
   const btConnect = () => {
     fetch(`${hostIP}:${hostPort}/UC2ConfigController/btpairing`, { method: "GET" })
       .then((response) => response.json())
@@ -262,6 +268,14 @@ const UC2Controller = ({ hostIP, hostPort }) => {
               onClick={reconnect}
             >
               Reconnect
+            </Button>
+            <Typography variant="h6">UC2 Force Restart</Typography>
+            <Button
+              style={{ marginBottom: "20px" }}
+              variant="contained"
+              onClick={restartESPBoard}
+            >
+              Force Restart
             </Button>
             <Typography variant="h6">Bluetooth Pairing</Typography>
             <Button
