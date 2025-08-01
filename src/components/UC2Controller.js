@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Paper,
@@ -20,13 +20,29 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  CircularProgress,
+  LinearProgress,
 } from "@mui/material";
+import { 
+  Refresh as RefreshIcon,
+  Preview as PreviewIcon,
+  Save as SaveIcon,
+  AutoFixHigh as WizardIcon,
+} from "@mui/icons-material";
 import { useWebSocket } from "../context/WebSocketContext";
 import { JsonEditor } from "json-edit-react";
 import AceEditor from "react-ace";
 import "ace-builds/src-noconflict/mode-json";
 import "ace-builds/src-noconflict/theme-github";
 import * as uc2Slice from "../state/slices/UC2Slice.js";
+import ConfigurationPreviewDialog from "./ConfigurationPreviewDialog";
+import ConfigurationWizard from "./ConfigurationWizard";
+import StatusMessage from "./StatusMessage";
+import { 
+  validateConfiguration, 
+  validateJsonString, 
+  createConfigurationPreview 
+} from "../utils/configValidation";
 
 const TabPanel = ({ children, value, index, ...other }) => (
   <div
@@ -69,7 +85,87 @@ const UC2Controller = ({ hostIP, hostPort }) => {
   const restartAfterSave = uc2State.restartAfterSave;
   const overwriteFile = uc2State.overwriteFile;
 
+  // New state properties
+  const isLoadingFile = uc2State.isLoadingFile;
+  const isSavingFile = uc2State.isSavingFile;
+  const isRestarting = uc2State.isRestarting;
+  const validationResult = uc2State.validationResult;
+  const configPreview = uc2State.configPreview;
+  const showPreviewDialog = uc2State.showPreviewDialog;
+  const statusMessage = uc2State.statusMessage;
+  const statusType = uc2State.statusType;
+
+  // Wizard state
+  const [showConfigWizard, setShowConfigWizard] = React.useState(false);
+
   const socket = useWebSocket();
+
+  const fetchAvailableSetups = useCallback(() => {
+    const url = `${hostIP}:${hostPort}/UC2ConfigController/returnAvailableSetups`;
+    dispatch(uc2Slice.setStatusMessage({ 
+      message: "Loading available setups...", 
+      type: "info" 
+    }));
+    
+    fetch(url)
+      .then((response) => response.json())
+      .then((data) => {
+        dispatch(uc2Slice.setAvailableSetups(data.available_setups || []));
+        dispatch(uc2Slice.setStatusMessage({ 
+          message: `Found ${data.available_setups?.length || 0} configuration files`, 
+          type: "success" 
+        }));
+        setTimeout(() => dispatch(uc2Slice.clearStatusMessage()), 3000);
+      })
+      .catch((error) => {
+        console.error("Error fetching setups:", error);
+        dispatch(uc2Slice.setStatusMessage({ 
+          message: "Failed to load configuration files", 
+          type: "error" 
+        }));
+      });
+  }, [hostIP, hostPort, dispatch]);
+
+  const monitorRestartStatus = useCallback(() => {
+    let retryCount = 0;
+    const maxRetries = 30; // 5 minutes with 10-second intervals
+    
+    const checkStatus = () => {
+      fetch(`${hostIP}:${hostPort}/UC2ConfigController/is_connected`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data === true) {
+            dispatch(uc2Slice.setStatusMessage({ 
+              message: "ImSwitch is back online!", 
+              type: "success" 
+            }));
+            dispatch(uc2Slice.setIsRestarting(false));
+            setTimeout(() => dispatch(uc2Slice.clearStatusMessage()), 3000);
+          } else {
+            throw new Error("Not connected yet");
+          }
+        })
+        .catch(() => {
+          retryCount++;
+          if (retryCount < maxRetries) {
+            dispatch(uc2Slice.setStatusMessage({ 
+              message: `Waiting for ImSwitch to restart... (${retryCount}/${maxRetries})`, 
+              type: "info" 
+            }));
+            setTimeout(checkStatus, 10000); // Check every 10 seconds
+          } else {
+            dispatch(uc2Slice.setStatusMessage({ 
+              message: "ImSwitch restart taking longer than expected. Please check manually.", 
+              type: "warning" 
+            }));
+            dispatch(uc2Slice.setIsRestarting(false));
+          }
+        });
+    };
+    
+    // Start checking after 5 seconds
+    setTimeout(checkStatus, 5000);
+  }, [hostIP, hostPort, dispatch]);
 
   useEffect(() => {
     if (!socket) return;
@@ -93,7 +189,7 @@ const UC2Controller = ({ hostIP, hostPort }) => {
 
   useEffect(() => {
     fetchAvailableSetups();
-  }, [dispatch]);
+  }, [dispatch, fetchAvailableSetups]);
 
   useEffect(() => {
     const checkConnection = () => {
@@ -107,20 +203,10 @@ const UC2Controller = ({ hostIP, hostPort }) => {
     checkConnection();
     const intervalId = setInterval(checkConnection, 5000);
     return () => clearInterval(intervalId);
-  }, [hostIP, hostPort]);
+  }, [hostIP, hostPort, dispatch]);
 
   const handleTabChange = (event, newValue) => {
     dispatch(uc2Slice.setTabIndex(newValue));
-  };
-
-  const fetchAvailableSetups = () => {
-    const url = `${hostIP}:${hostPort}/UC2ConfigController/returnAvailableSetups`;
-    fetch(url)
-      .then((response) => response.json())
-      .then((data) => {
-        dispatch(uc2Slice.setAvailableSetups(data.available_setups || []));
-      })
-      .catch((error) => console.error("Error fetching setups:", error));
   };
 
   const handleSetupChange = (event) => {
@@ -149,9 +235,18 @@ const UC2Controller = ({ hostIP, hostPort }) => {
 
   const handleSetSetup = () => {
     if (!selectedSetup) {
-      alert("Please select a setup before proceeding.");
+      dispatch(uc2Slice.setStatusMessage({ 
+        message: "Please select a setup before proceeding", 
+        type: "warning" 
+      }));
       return;
     }
+
+    dispatch(uc2Slice.setIsRestarting(true));
+    dispatch(uc2Slice.setStatusMessage({ 
+      message: "Setting up configuration...", 
+      type: "info" 
+    }));
 
     const url = `${hostIP}:${hostPort}/UC2ConfigController/setSetupFileName?setupFileName=${encodeURIComponent(
       selectedSetup
@@ -161,9 +256,32 @@ const UC2Controller = ({ hostIP, hostPort }) => {
       .then((response) => response.json())
       .then((data) => {
         console.log("Setup selected:", data);
-        dispatch(uc2Slice.setIsDialogOpen(true)); // Open the confirmation dialog
+        dispatch(uc2Slice.setIsDialogOpen(true));
+        
+        if (restartSoftware) {
+          dispatch(uc2Slice.setStatusMessage({ 
+            message: "ImSwitch is restarting... Please wait", 
+            type: "info" 
+          }));
+          // Start monitoring connection status
+          monitorRestartStatus();
+        } else {
+          dispatch(uc2Slice.setStatusMessage({ 
+            message: "Configuration updated successfully", 
+            type: "success" 
+          }));
+          dispatch(uc2Slice.setIsRestarting(false));
+          setTimeout(() => dispatch(uc2Slice.clearStatusMessage()), 3000);
+        }
       })
-      .catch((error) => console.error("Error setting setup:", error));
+      .catch((error) => {
+        console.error("Error setting setup:", error);
+        dispatch(uc2Slice.setStatusMessage({ 
+          message: "Failed to set configuration", 
+          type: "error" 
+        }));
+        dispatch(uc2Slice.setIsRestarting(false));
+      });
   };
 
   const handleDialogClose = () => {
@@ -179,46 +297,148 @@ const UC2Controller = ({ hostIP, hostPort }) => {
 
   const handleLoadSetupFile = () => {
     if (!selectedFileForEdit) {
-      alert("Please select a file to load.");
+      dispatch(uc2Slice.setStatusMessage({ 
+        message: "Please select a file to load", 
+        type: "warning" 
+      }));
       return;
     }
+    
+    dispatch(uc2Slice.setIsLoadingFile(true));
     dispatch(uc2Slice.setUseAceEditor(false));
+    dispatch(uc2Slice.setStatusMessage({ 
+      message: "Loading configuration file...", 
+      type: "info" 
+    }));
+    
     const url = `${hostIP}:${hostPort}/UC2ConfigController/readSetupFile?setupFileName=${encodeURIComponent(
       selectedFileForEdit
     )}`;
+    
     fetch(url)
       .then((res) => res.json())
       .then((data) => {
         dispatch(uc2Slice.setEditorJson(data));
+        dispatch(uc2Slice.setStatusMessage({ 
+          message: "Configuration file loaded successfully", 
+          type: "success" 
+        }));
+        setTimeout(() => dispatch(uc2Slice.clearStatusMessage()), 3000);
       })
-      .catch((error) => console.error("Error loading setup file:", error));
+      .catch((error) => {
+        console.error("Error loading setup file:", error);
+        dispatch(uc2Slice.setStatusMessage({ 
+          message: "Failed to load configuration file", 
+          type: "error" 
+        }));
+      })
+      .finally(() => {
+        dispatch(uc2Slice.setIsLoadingFile(false));
+      });
+  };
+
+  const handlePreviewConfig = () => {
+    if (!newFileName) {
+      dispatch(uc2Slice.setStatusMessage({ 
+        message: "Please provide a filename", 
+        type: "warning" 
+      }));
+      return;
+    }
+
+    let finalJson = null;
+    
+    // Get JSON content based on editor type
+    if (useAceEditor) {
+      if (!editorJsonText.trim()) {
+        dispatch(uc2Slice.setStatusMessage({ 
+          message: "No JSON content to preview", 
+          type: "warning" 
+        }));
+        return;
+      }
+      
+      const jsonValidation = validateJsonString(editorJsonText);
+      if (!jsonValidation.isValid) {
+        dispatch(uc2Slice.setStatusMessage({ 
+          message: `Invalid JSON: ${jsonValidation.error}`, 
+          type: "error" 
+        }));
+        return;
+      }
+      finalJson = jsonValidation.parsed;
+    } else {
+      if (!editorJson) {
+        dispatch(uc2Slice.setStatusMessage({ 
+          message: "No JSON content to preview", 
+          type: "warning" 
+        }));
+        return;
+      }
+      finalJson = editorJson;
+    }
+
+    // Validate configuration
+    const validation = validateConfiguration(finalJson);
+    dispatch(uc2Slice.setValidationResult(validation));
+
+    // Create preview
+    const preview = createConfigurationPreview(finalJson);
+    dispatch(uc2Slice.setConfigPreview(preview));
+
+    // Show preview dialog
+    dispatch(uc2Slice.setShowPreviewDialog(true));
+  };
+
+  const handleConfirmSave = () => {
+    dispatch(uc2Slice.setShowPreviewDialog(false));
+    handleSaveFile();
   };
 
   const handleSaveFile = () => {
     if (!newFileName) {
-      alert("Please provide a filename.");
+      dispatch(uc2Slice.setStatusMessage({ 
+        message: "Please provide a filename", 
+        type: "warning" 
+      }));
       return;
     }
 
     let finalJson = null;
     if (useAceEditor) {
       if (!editorJsonText.trim()) {
-        alert("No JSON content to save.");
+        dispatch(uc2Slice.setStatusMessage({ 
+          message: "No JSON content to save", 
+          type: "warning" 
+        }));
         return;
       }
-      try {
-        finalJson = JSON.parse(editorJsonText);
-      } catch (e) {
-        alert("Invalid JSON format in the editor.");
+      
+      const jsonValidation = validateJsonString(editorJsonText);
+      if (!jsonValidation.isValid) {
+        dispatch(uc2Slice.setStatusMessage({ 
+          message: `Invalid JSON: ${jsonValidation.error}`, 
+          type: "error" 
+        }));
         return;
       }
+      finalJson = jsonValidation.parsed;
     } else {
       if (!editorJson) {
-        alert("No JSON content to save.");
+        dispatch(uc2Slice.setStatusMessage({ 
+          message: "No JSON content to save", 
+          type: "warning" 
+        }));
         return;
       }
       finalJson = editorJson;
     }
+
+    dispatch(uc2Slice.setIsSavingFile(true));
+    dispatch(uc2Slice.setStatusMessage({ 
+      message: "Saving configuration file...", 
+      type: "info" 
+    }));
 
     const url = `${hostIP}:${hostPort}/UC2ConfigController/writeNewSetupFile?setupFileName=${encodeURIComponent(
       newFileName
@@ -232,8 +452,34 @@ const UC2Controller = ({ hostIP, hostPort }) => {
       .then((response) => response.json())
       .then((data) => {
         console.log("File saved:", data);
+        dispatch(uc2Slice.setStatusMessage({ 
+          message: "Configuration file saved successfully", 
+          type: "success" 
+        }));
+        
+        // Refresh available setups
+        fetchAvailableSetups();
+        
+        if (restartAfterSave) {
+          dispatch(uc2Slice.setStatusMessage({ 
+            message: "ImSwitch is restarting with new configuration...", 
+            type: "info" 
+          }));
+          monitorRestartStatus();
+        } else {
+          setTimeout(() => dispatch(uc2Slice.clearStatusMessage()), 3000);
+        }
       })
-      .catch((error) => console.error("Error saving file:", error));
+      .catch((error) => {
+        console.error("Error saving file:", error);
+        dispatch(uc2Slice.setStatusMessage({ 
+          message: "Failed to save configuration file", 
+          type: "error" 
+        }));
+      })
+      .finally(() => {
+        dispatch(uc2Slice.setIsSavingFile(false));
+      });
   };
 
   const handleSendSerial = () => {
@@ -246,17 +492,18 @@ const UC2Controller = ({ hostIP, hostPort }) => {
   };
 
   return (
-    <Paper>
-      <Tabs
-        value={tabIndex}
-        onChange={handleTabChange}
-        aria-label="settings tabs"
-      >
-        <Tab label="Reconnect to UC2 board" />
-        <Tab label="Select Setup" />
-        <Tab label="Serial CLI" />
-        <Tab label="Configuration Editor" />
-      </Tabs>
+    <>
+      <Paper>
+        <Tabs
+          value={tabIndex}
+          onChange={handleTabChange}
+          aria-label="settings tabs"
+        >
+          <Tab label="Reconnect to UC2 board" />
+          <Tab label="Select Setup" />
+          <Tab label="Serial CLI" />
+          <Tab label="Configuration Editor" />
+        </Tabs>
 
       <TabPanel value={tabIndex} index={0}>
         <Grid container spacing={2}>
@@ -311,13 +558,35 @@ const UC2Controller = ({ hostIP, hostPort }) => {
       <TabPanel value={tabIndex} index={1}>
         <Grid container spacing={2}>
           <Grid item xs={12}>
-            <Typography variant="h6">Select Available Setup</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+              <Typography variant="h6">Select Available Setup</Typography>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<RefreshIcon />}
+                onClick={fetchAvailableSetups}
+                disabled={isRestarting}
+              >
+                Refresh
+              </Button>
+            </Box>
+            
+            {isRestarting && (
+              <Box sx={{ mb: 2 }}>
+                <LinearProgress />
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                  {restartSoftware ? "ImSwitch is restarting..." : "Processing..."}
+                </Typography>
+              </Box>
+            )}
+            
             <FormControl fullWidth style={{ marginBottom: "20px" }}>
               <InputLabel id="setup-select-label">Available Setups</InputLabel>
               <Select
                 labelId="setup-select-label"
                 value={selectedSetup}
                 onChange={handleSetupChange}
+                disabled={isRestarting}
               >
                 {availableSetups.map((setup, index) => (
                   <MenuItem key={index} value={setup}>
@@ -326,28 +595,37 @@ const UC2Controller = ({ hostIP, hostPort }) => {
                 ))}
               </Select>
             </FormControl>
+            
             {/* Switch to enable/disable restart */}
             <FormControlLabel
               control={
                 <Switch
                   checked={restartSoftware}
                   onChange={(e) => dispatch(uc2Slice.setRestartSoftware(e.target.checked))}
+                  disabled={isRestarting}
                 />
               }
               label="Restart Software After Setup"
             />
 
-            <Button variant="contained" onClick={handleSetSetup}>
-              OK
-            </Button>
+            <Box sx={{ mt: 2 }}>
+              <Button 
+                variant="contained" 
+                onClick={handleSetSetup}
+                disabled={!selectedSetup || isRestarting}
+                startIcon={isRestarting ? <CircularProgress size={20} /> : null}
+              >
+                {isRestarting ? "Processing..." : "Apply Setup"}
+              </Button>
+            </Box>
 
             {/* Confirmation Dialog */}
             <Dialog open={isDialogOpen} onClose={handleDialogClose}>
               <DialogTitle>Setup Update in Progress</DialogTitle>
               <DialogContent>
                 <Typography>
-                  The setup is being updated. This may take some time for the system
-                  to restart and be back online.
+                  The setup is being updated. 
+                  {restartSoftware && " This may take some time for the system to restart and be back online."}
                 </Typography>
               </DialogContent>
               <DialogActions>
@@ -399,6 +677,45 @@ const UC2Controller = ({ hostIP, hostPort }) => {
 
       <TabPanel value={tabIndex} index={3}>
         <Typography variant="h6">Configuration Editor</Typography>
+        
+        {/* Wizard Launch Section */}
+        <Paper elevation={2} sx={{ p: 3, mb: 3, backgroundColor: 'primary.light', color: 'primary.contrastText' }}>
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <WizardIcon sx={{ mr: 1 }} />
+            Recommended: Use Configuration Wizard
+          </Typography>
+          <Typography variant="body2" paragraph>
+            Get guided through the configuration process step-by-step with built-in validation, 
+            preview, and easy save options. Perfect for beginners and complex configurations.
+          </Typography>
+          <Button
+            variant="contained"
+            size="large"
+            startIcon={<WizardIcon />}
+            onClick={() => setShowConfigWizard(true)}
+            sx={{ 
+              backgroundColor: 'background.paper', 
+              color: 'primary.main',
+              '&:hover': { backgroundColor: 'grey.100' }
+            }}
+          >
+            Launch Configuration Wizard
+          </Button>
+        </Paper>
+
+        <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
+          Or use the advanced editor below:
+        </Typography>
+        
+        {(isLoadingFile || isSavingFile) && (
+          <Box sx={{ mt: 2, mb: 2 }}>
+            <LinearProgress />
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              {isLoadingFile ? "Loading configuration file..." : "Saving configuration file..."}
+            </Typography>
+          </Box>
+        )}
+        
         <Box mt={2}>
           <FormControl fullWidth style={{ marginBottom: "20px" }}>
             <InputLabel id="editor-select-label">Select a file to load</InputLabel>
@@ -406,6 +723,7 @@ const UC2Controller = ({ hostIP, hostPort }) => {
               labelId="editor-select-label"
               value={selectedFileForEdit}
               onChange={(e) => dispatch(uc2Slice.setSelectedFileForEdit(e.target.value))}
+              disabled={isLoadingFile || isSavingFile}
             >
               {availableSetups.map((setup, index) => (
                 <MenuItem key={index} value={setup}>
@@ -414,16 +732,33 @@ const UC2Controller = ({ hostIP, hostPort }) => {
               ))}
             </Select>
           </FormControl>
-          <Button variant="contained" onClick={handleLoadSetupFile}>
-            Load File
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleNewConfig}
-            style={{ marginLeft: "10px" }}
-          >
-            New File
-          </Button>
+          
+          <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+            <Button 
+              variant="contained" 
+              onClick={handleLoadSetupFile}
+              disabled={!selectedFileForEdit || isLoadingFile || isSavingFile}
+              startIcon={isLoadingFile ? <CircularProgress size={20} /> : null}
+            >
+              {isLoadingFile ? "Loading..." : "Load File"}
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleNewConfig}
+              disabled={isLoadingFile || isSavingFile}
+            >
+              New File
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<RefreshIcon />}
+              onClick={fetchAvailableSetups}
+              disabled={isLoadingFile || isSavingFile}
+              size="small"
+            >
+              Refresh List
+            </Button>
+          </Box>
         </Box>
 
         <Box mt={2}>
@@ -440,6 +775,7 @@ const UC2Controller = ({ hostIP, hostPort }) => {
                 editorProps={{ $blockScrolling: true }}
                 width="100%"
                 height="400px"
+                readOnly={isLoadingFile || isSavingFile}
               />
             </>
           ) : editorJson ? (
@@ -449,6 +785,7 @@ const UC2Controller = ({ hostIP, hostPort }) => {
                 <JsonEditor
                   data={editorJson}
                   setData={(data) => dispatch(uc2Slice.setEditorJson(data))}
+                  readOnly={isLoadingFile || isSavingFile}
                 />
               </div>
             </>
@@ -464,42 +801,98 @@ const UC2Controller = ({ hostIP, hostPort }) => {
             value={newFileName}
             onChange={(e) => dispatch(uc2Slice.setNewFileName(e.target.value))}
             style={{ marginBottom: "20px" }}
+            disabled={isLoadingFile || isSavingFile}
           />
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={setAsCurrentConfig}
-                onChange={(e) => dispatch(uc2Slice.setSetAsCurrentConfig(e.target.checked))}
+          
+          <Grid container spacing={2} sx={{ mb: 2 }}>
+            <Grid item xs={12} sm={4}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={setAsCurrentConfig}
+                    onChange={(e) => dispatch(uc2Slice.setSetAsCurrentConfig(e.target.checked))}
+                    disabled={isLoadingFile || isSavingFile}
+                  />
+                }
+                label="Set as Current Config"
               />
-            }
-            label="Set as Current Config"
-          />
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={restartAfterSave}
-                onChange={(e) => dispatch(uc2Slice.setRestartAfterSave(e.target.checked))}
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={restartAfterSave}
+                    onChange={(e) => dispatch(uc2Slice.setRestartAfterSave(e.target.checked))}
+                    disabled={isLoadingFile || isSavingFile}
+                  />
+                }
+                label="Restart After Save"
               />
-            }
-            label="Restart After Save"
-          />
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={overwriteFile}
-                onChange={(e) => dispatch(uc2Slice.setOverwriteFile(e.target.checked))}
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={overwriteFile}
+                    onChange={(e) => dispatch(uc2Slice.setOverwriteFile(e.target.checked))}
+                    disabled={isLoadingFile || isSavingFile}
+                  />
+                }
+                label="Overwrite if exists"
               />
-            }
-            label="Overwrite if exists"
-          />
-          <Box mt={2}>
-            <Button variant="contained" onClick={handleSaveFile}>
-              Save
+            </Grid>
+          </Grid>
+          
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button 
+              variant="outlined" 
+              onClick={handlePreviewConfig}
+              disabled={!newFileName || isLoadingFile || isSavingFile || (!editorJson && !editorJsonText.trim())}
+              startIcon={<PreviewIcon />}
+            >
+              Preview & Validate
+            </Button>
+            <Button 
+              variant="contained" 
+              onClick={handleSaveFile}
+              disabled={!newFileName || isLoadingFile || isSavingFile || (!editorJson && !editorJsonText.trim())}
+              startIcon={isSavingFile ? <CircularProgress size={20} /> : <SaveIcon />}
+            >
+              {isSavingFile ? "Saving..." : "Save"}
             </Button>
           </Box>
         </Box>
+        
+        {/* Configuration Preview Dialog */}
+        <ConfigurationPreviewDialog
+          open={showPreviewDialog}
+          onClose={() => dispatch(uc2Slice.setShowPreviewDialog(false))}
+          onConfirmSave={handleConfirmSave}
+          validationResult={validationResult}
+          configPreview={configPreview}
+          filename={newFileName}
+          isSaving={isSavingFile}
+        />
       </TabPanel>
-    </Paper>
+      
+      </Paper>
+      
+      {/* Status Message Component */}
+      <StatusMessage
+        message={statusMessage}
+        type={statusType}
+        showProgress={isLoadingFile || isSavingFile || isRestarting}
+        onClose={() => dispatch(uc2Slice.clearStatusMessage())}
+      />
+      
+      {/* Configuration Wizard */}
+      <ConfigurationWizard
+        open={showConfigWizard}
+        onClose={() => setShowConfigWizard(false)}
+        hostIP={hostIP}
+        hostPort={hostPort}
+      />
+    </>
   );
 };
 
