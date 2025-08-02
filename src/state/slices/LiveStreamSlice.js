@@ -1,4 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { setFovX } from "./ObjectiveSlice";
 
 // Define the initial state
 const initialLiveStreamState = {
@@ -6,6 +7,8 @@ const initialLiveStreamState = {
   minVal: 0,
   maxVal: 255,
   pixelSize: null,
+  fovX: 0,
+  fovY: 0, 
   // Histogram data
   histogramX: [],
   histogramY: [],
@@ -35,6 +38,18 @@ const liveStreamSlice = createSlice({
       state.pixelSize = action.payload;
     },
 
+    setFovX: (state, action) => {
+      console.log("setFovX", action.payload);
+      state.fovX = action.payload;
+      
+    },
+    
+    setFovY: (state, action) => {
+      console.log("setFovY", action.payload);
+      state.fovY = action.payload;
+      
+    },
+
     setHistogramData: (state, action) => {
       state.histogramX = action.payload.x;
       state.histogramY = action.payload.y;
@@ -57,6 +72,8 @@ export const {
   setMinVal,
   setMaxVal,
   setPixelSize,
+  setFovX,
+  setFovY,
   setHistogramData,
   setShowHistogram,
   resetState,

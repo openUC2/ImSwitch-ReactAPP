@@ -33,6 +33,11 @@ export default function ObjectiveSwitcher({ hostIP, hostPort }) {
     }
   }, [dispatch]);
 
+  useEffect(() => {
+      //refresh status
+      refreshStatus();
+    }, [hostIP, hostPort]); // on host ip/port change
+  
   // Switch to a different objective, show spinner until we get update from the socket
   const switchTo = async (slot) => {
     try {
@@ -44,6 +49,13 @@ export default function ObjectiveSwitcher({ hostIP, hostPort }) {
       setIsSwitching(false);
     }
   };
+
+  // Fetch objective status (x1 and x2) from backend
+  const refreshStatus = () => {
+      //request fetch status
+      fetchObjectiveControllerGetStatus(dispatch);
+    };
+  
 
   return (
     <Paper sx={{ p: 2 }}>
