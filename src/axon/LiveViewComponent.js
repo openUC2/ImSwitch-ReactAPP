@@ -295,7 +295,7 @@ const LiveViewComponent = ({ useFastMode = true }) => {
 
       // Move to the calculated position
       // Note: Y direction might need to be inverted depending on stage orientation
-      moveToPosition(realX, -realY); // Inverting Y as microscope Y often goes opposite to image Y
+      moveToPosition(-realX, -realY); // Inverting Y as microscope Y often goes opposite to image Y
     }, [getAdaptivePixelSize, moveToPosition, objectiveState.fovX]);
 
     // Calculate scale bar dimensions - using adaptive pixel size

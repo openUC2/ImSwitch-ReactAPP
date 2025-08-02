@@ -38,17 +38,6 @@ const liveStreamSlice = createSlice({
       state.pixelSize = action.payload;
     },
 
-    setFovX: (state, action) => {
-      console.log("setFovX", action.payload);
-      state.fovX = action.payload;
-      
-    },
-    
-    setFovY: (state, action) => {
-      console.log("setFovY", action.payload);
-      state.fovY = action.payload;
-      
-    },
 
     setHistogramData: (state, action) => {
       state.histogramX = action.payload.x;
@@ -72,7 +61,6 @@ export const {
   setMinVal,
   setMaxVal,
   setPixelSize,
-  setFovX,
   setFovY,
   setHistogramData,
   setShowHistogram,
