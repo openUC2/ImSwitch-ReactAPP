@@ -12,6 +12,7 @@ import {
   Legend,
 } from "chart.js";
 import * as liveViewSlice from "../state/slices/LiveStreamSlice.js";
+import * as objectiveSlice from "../state/slices/ObjectiveSlice.js";
 import apiPositionerControllerMovePositioner from "../backendapi/apiPositionerControllerMovePositioner.js";
 
 // Register Chart.js components
@@ -38,6 +39,7 @@ const LiveViewComponent = ({ useFastMode = true }) => {
 
     // Access global Redux state
     const liveStreamState = useSelector(liveViewSlice.getLiveStreamState);
+    const objectiveState = useSelector(objectiveSlice.getObjectiveState);
 
     const canvasRef = useRef(null);
     const containerRef = useRef(null);
@@ -252,11 +254,22 @@ const LiveViewComponent = ({ useFastMode = true }) => {
       }
     }, []);
 
+    // Calculate adaptive pixel size based on field of view and canvas dimensions
+    const getAdaptivePixelSize = useCallback(() => {
+      const canvas = canvasRef.current;
+      if (!canvas || !objectiveState.fovX || canvas.width === 0) {
+        return null;
+      }
+      return objectiveState.fovX / canvas.width;
+    }, [objectiveState.fovX]);
+
     // Handle double-click to move to position
     const handleCanvasDoubleClick = useCallback((event) => {
       const canvas = canvasRef.current;
-      if (!canvas || !liveStreamState.pixelSize) {
-        console.warn('Canvas or pixel size not available for position calculation');
+      const adaptivePixelSize = getAdaptivePixelSize();
+      
+      if (!canvas || !adaptivePixelSize) {
+        console.warn('Canvas or field of view (fovX) not available for position calculation');
         return;
       }
 
@@ -273,20 +286,22 @@ const LiveViewComponent = ({ useFastMode = true }) => {
       const centerX = canvas.width / 2;
       const centerY = canvas.height / 2;
       
-      // Calculate real-world distances from center
-      const realX = (clickX - centerX) * liveStreamState.pixelSize;
-      const realY = (clickY - centerY) * liveStreamState.pixelSize;
+      // Calculate real-world distances from center using adaptive pixel size
+      const realX = (clickX - centerX) * adaptivePixelSize;
+      const realY = (clickY - centerY) * adaptivePixelSize;
 
       console.log(`Double-click at pixel (${clickX.toFixed(1)}, ${clickY.toFixed(1)}) -> real coordinates (${realX.toFixed(2)}, ${realY.toFixed(2)}) µm`);
+      console.log(`Adaptive pixel size: ${adaptivePixelSize.toFixed(4)} µm/pixel (fovX: ${objectiveState.fovX}, canvas width: ${canvas.width})`);
 
       // Move to the calculated position
       // Note: Y direction might need to be inverted depending on stage orientation
       moveToPosition(realX, -realY); // Inverting Y as microscope Y often goes opposite to image Y
-    }, [liveStreamState.pixelSize, moveToPosition]);
+    }, [getAdaptivePixelSize, moveToPosition, objectiveState.fovX]);
 
-    // Calculate scale bar dimensions - using original fixed styling
+    // Calculate scale bar dimensions - using adaptive pixel size
     const scaleBarPx = 50;
-    const scaleBarMicrons = liveStreamState.pixelSize ? (scaleBarPx * liveStreamState.pixelSize).toFixed(2) : null;
+    const adaptivePixelSize = getAdaptivePixelSize();
+    const scaleBarMicrons = adaptivePixelSize ? (scaleBarPx * adaptivePixelSize).toFixed(2) : null;
 
     // Prepare histogram data for chart.js
     const histogramData = {
@@ -322,7 +337,7 @@ const LiveViewComponent = ({ useFastMode = true }) => {
           style={{
             ...canvasStyle,
             display: imageLoaded ? canvasStyle.display : 'none',
-            cursor: liveStreamState.pixelSize ? 'crosshair' : 'default'
+            cursor: adaptivePixelSize ? 'crosshair' : 'default'
           }}
           onDoubleClick={handleCanvasDoubleClick}
         />
