@@ -1,10 +1,10 @@
 import createAxiosInstance from "./createAxiosInstance.js";
 
-const apiFocusLockControllerSetPIParameters = async ({ multiplier, kp, ki }) => {
+const apiFocusLockControllerSetPIParameters = async ({ kp, ki }) => {
   try {
     const axiosInstance = createAxiosInstance();
     const response = await axiosInstance.get('/FocusLockController/setPIParameters', {
-      params: { multiplier, kp, ki }
+      params: { kp, ki }
     });
     return response.data;
   } catch (error) {

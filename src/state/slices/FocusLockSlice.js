@@ -5,6 +5,7 @@ const initialFocusLockState = {
   // Focus lock status
   isFocusLocked: false,
   isCalibrating: false,
+  isMeasuring: false,
   
   // PI Controller parameters
   multiplier: 1.0,
@@ -17,9 +18,10 @@ const initialFocusLockState = {
   cropSize: 100,
   cropCenter: [0, 0],
   
-  // Images
+  // Images and streaming
   lastImage: null,
   lastCroppedImage: null,
+  pollImageUrl: null,
   
   // Focus values for graph (last 50 points)
   focusValues: [],
@@ -47,6 +49,9 @@ const focusLockSlice = createSlice({
     },
     setIsCalibrating: (state, action) => {
       state.isCalibrating = action.payload;
+    },
+    setIsMeasuring: (state, action) => {
+      state.isMeasuring = action.payload;
     },
     
     // PI Controller parameters
@@ -81,6 +86,9 @@ const focusLockSlice = createSlice({
     setLastCroppedImage: (state, action) => {
       state.lastCroppedImage = action.payload;
     },
+    setPollImageUrl: (state, action) => {
+      state.pollImageUrl = action.payload;
+    },
     
     // Focus values
     addFocusValue: (state, action) => {
@@ -114,6 +122,12 @@ const focusLockSlice = createSlice({
       state.isLoadingImage = action.payload;
     },
     
+    // Reset crop center coordinates
+    resetCropCenter: (state) => {
+      state.cropCenter = [0, 0];
+      state.selectedCropRegion = null;
+    },
+    
     // Reset state
     resetState: (state) => {
       return { ...initialFocusLockState };
@@ -125,6 +139,7 @@ const focusLockSlice = createSlice({
 export const {
   setFocusLocked,
   setIsCalibrating,
+  setIsMeasuring,
   setMultiplier,
   setKp,
   setKi,
@@ -134,11 +149,13 @@ export const {
   setCropCenter,
   setLastImage,
   setLastCroppedImage,
+  setPollImageUrl,
   addFocusValue,
   clearFocusHistory,
   setSelectedCropRegion,
   setShowImageSelector,
   setIsLoadingImage,
+  resetCropCenter,
   resetState,
 } = focusLockSlice.actions;
 

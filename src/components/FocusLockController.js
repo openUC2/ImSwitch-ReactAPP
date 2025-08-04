@@ -16,7 +16,6 @@ import {
   Divider,
   Alert
 } from "@mui/material";
-import { useWebSocket } from "../context/WebSocketContext";
 import * as focusLockSlice from "../state/slices/FocusLockSlice.js";
 import { useTheme } from '@mui/material/styles';
 import { Line } from 'react-chartjs-2';
@@ -31,7 +30,7 @@ import {
   Legend,
 } from 'chart.js';
 
-// Import API functions
+// Import updated API functions
 import apiFocusLockControllerFocusCalibrationStart from "../backendapi/apiFocusLockControllerFocusCalibrationStart.js";
 import apiFocusLockControllerGetParamsAstigmatism from "../backendapi/apiFocusLockControllerGetParamsAstigmatism.js";
 import apiFocusLockControllerReturnLastImage from "../backendapi/apiFocusLockControllerReturnLastImage.js";
@@ -41,6 +40,11 @@ import apiFocusLockControllerSetPIParameters from "../backendapi/apiFocusLockCon
 import apiFocusLockControllerSetParamsAstigmatism from "../backendapi/apiFocusLockControllerSetParamsAstigmatism.js";
 import apiFocusLockControllerToggleFocus from "../backendapi/apiFocusLockControllerToggleFocus.js";
 import apiFocusLockControllerUnlockFocus from "../backendapi/apiFocusLockControllerUnlockFocus.js";
+import apiFocusLockControllerStartFocusMeasurement from "../backendapi/apiFocusLockControllerStartFocusMeasurement.js";
+import apiFocusLockControllerStopFocusMeasurement from "../backendapi/apiFocusLockControllerStopFocusMeasurement.js";
+import apiFocusLockControllerEnableFocusLock from "../backendapi/apiFocusLockControllerEnableFocusLock.js";
+import apiFocusLockControllerGetFocusLockState from "../backendapi/apiFocusLockControllerGetFocusLockState.js";
+import apiFocusLockControllerGetPIParameters from "../backendapi/apiFocusLockControllerGetPIParameters.js";
 
 // Register Chart.js components
 ChartJS.register(
@@ -56,14 +60,13 @@ ChartJS.register(
 const FocusLockController = ({ hostIP, hostPort }) => {
   const dispatch = useDispatch();
   const theme = useTheme();
-  const socket = useWebSocket();
   const canvasRef = useRef(null);
+  const [imageScale, setImageScale] = useState(1);
   
   // Access Redux state
   const focusLockState = useSelector(focusLockSlice.getFocusLockState);
   
   // Local state for image display and crop selection
-  const [imageDataUrl, setImageDataUrl] = useState(null);
   const [cropSelection, setCropSelection] = useState({ 
     isSelecting: false, 
     startX: 0, 
@@ -72,38 +75,31 @@ const FocusLockController = ({ hostIP, hostPort }) => {
     endY: 0 
   });
 
-  // Handle socket updates for focus values
+  // Polling for image updates similar to HistoScan
   useEffect(() => {
-    if (!socket) return;
-    
-    const handleSignal = (data) => {
-      try {
-        const jdata = JSON.parse(data);
-        if (jdata.name === "sigUpdateFocusValue") {
-          // Expected: (setPointSignal, timestamp)
-          const [setPointSignal, timestamp] = jdata.args;
-          const focusValue = jdata.focusValue || 0; // Assuming focus value is included
-          
-          dispatch(focusLockSlice.addFocusValue({
-            focusValue,
-            setPointSignal,
-            timestamp
-          }));
+    if (focusLockState.isMeasuring) {
+      const id = setInterval(async () => {
+        try {
+          const res = await fetch(
+            `${hostIP}:${hostPort}/FocusLockController/returnLastImage`
+          );
+          if (res.ok) {
+            const blob = await res.blob();
+            dispatch(focusLockSlice.setPollImageUrl(URL.createObjectURL(blob)));
+          }
+        } catch (error) {
+          console.error("Error polling for image:", error);
         }
-      } catch (error) {
-        console.error("Error parsing focus signal data:", error);
-      }
-    };
-    
-    socket.on("signal", handleSignal);
-    return () => {
-      socket.off("signal", handleSignal);
-    };
-  }, [socket, dispatch]);
+      }, 1000);
+      return () => clearInterval(id);
+    }
+  }, [focusLockState.isMeasuring, hostIP, hostPort, dispatch]);
 
   // Load initial parameters on mount
   useEffect(() => {
     loadAstigmatismParameters();
+    loadPIParameters();
+    loadFocusLockState();
   }, []);
 
   // Load astigmatism parameters from backend
@@ -121,13 +117,39 @@ const FocusLockController = ({ hostIP, hostPort }) => {
     }
   };
 
+  // Load PI parameters from backend
+  const loadPIParameters = async () => {
+    try {
+      const params = await apiFocusLockControllerGetPIParameters();
+      if (params && Array.isArray(params) && params.length >= 2) {
+        dispatch(focusLockSlice.setKp(params[0] || 0.1));
+        dispatch(focusLockSlice.setKi(params[1] || 0.01));
+      }
+    } catch (error) {
+      console.error("Failed to load PI parameters:", error);
+    }
+  };
+
+  // Load focus lock state from backend
+  const loadFocusLockState = async () => {
+    try {
+      const state = await apiFocusLockControllerGetFocusLockState();
+      if (state) {
+        dispatch(focusLockSlice.setFocusLocked(state.is_locked || false));
+        dispatch(focusLockSlice.setIsCalibrating(state.is_calibrating || false));
+        dispatch(focusLockSlice.setIsMeasuring(state.is_measuring || false));
+      }
+    } catch (error) {
+      console.error("Failed to load focus lock state:", error);
+    }
+  };
+
   // Load last image from backend
   const loadLastImage = async () => {
     try {
       dispatch(focusLockSlice.setIsLoadingImage(true));
       const blob = await apiFocusLockControllerReturnLastImage();
       const dataUrl = URL.createObjectURL(blob);
-      setImageDataUrl(dataUrl);
       dispatch(focusLockSlice.setLastImage(dataUrl));
       dispatch(focusLockSlice.setShowImageSelector(true));
     } catch (error) {
@@ -137,11 +159,25 @@ const FocusLockController = ({ hostIP, hostPort }) => {
     }
   };
 
+  // Start/stop focus measurement
+  const toggleFocusMeasurement = async () => {
+    try {
+      if (focusLockState.isMeasuring) {
+        await apiFocusLockControllerStopFocusMeasurement();
+        dispatch(focusLockSlice.setIsMeasuring(false));
+      } else {
+        await apiFocusLockControllerStartFocusMeasurement();
+        dispatch(focusLockSlice.setIsMeasuring(true));
+      }
+    } catch (error) {
+      console.error("Failed to toggle focus measurement:", error);
+    }
+  };
+
   // Handle PI parameter updates
   const updatePIParameters = async () => {
     try {
       await apiFocusLockControllerSetPIParameters({
-        multiplier: focusLockState.multiplier,
         kp: focusLockState.kp,
         ki: focusLockState.ki
       });
@@ -176,10 +212,16 @@ const FocusLockController = ({ hostIP, hostPort }) => {
     }
   };
 
+  // Reset crop coordinates
+  const resetCropCoordinates = () => {
+    dispatch(focusLockSlice.resetCropCenter());
+    updateCropFrameParameters();
+  };
+
   // Toggle focus lock
   const toggleFocusLock = async () => {
     try {
-      await apiFocusLockControllerToggleFocus({ toLock: !focusLockState.isFocusLocked });
+      await apiFocusLockControllerEnableFocusLock({ enable: !focusLockState.isFocusLocked });
       dispatch(focusLockSlice.setFocusLocked(!focusLockState.isFocusLocked));
     } catch (error) {
       console.error("Failed to toggle focus lock:", error);
@@ -193,7 +235,6 @@ const FocusLockController = ({ hostIP, hostPort }) => {
       await apiFocusLockControllerFocusCalibrationStart();
     } catch (error) {
       console.error("Failed to start calibration:", error);
-    } finally {
       dispatch(focusLockSlice.setIsCalibrating(false));
     }
   };
@@ -224,29 +265,35 @@ const FocusLockController = ({ hostIP, hostPort }) => {
 
   const chartOptions = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: {
         position: 'top',
       },
       title: {
         display: true,
-        text: 'Focus Value Over Time',
+        text: 'Real-time Focus Value Chart',
       },
     },
     scales: {
       y: {
-        beginAtZero: true,
+        beginAtZero: false,
       },
     },
   };
 
-  // Handle mouse events for crop selection on image
+  // Handle mouse events for crop selection on image - improved to prevent dragging
   const handleImageMouseDown = (e) => {
-    if (!imageDataUrl) return;
+    e.preventDefault(); // Prevent default drag behavior
+    
+    const currentImage = focusLockState.pollImageUrl || focusLockState.lastImage;
+    if (!currentImage) return;
     
     const rect = e.target.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const scaleX = e.target.naturalWidth / rect.width;
+    const scaleY = e.target.naturalHeight / rect.height;
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
     
     setCropSelection({
       isSelecting: true,
@@ -259,10 +306,13 @@ const FocusLockController = ({ hostIP, hostPort }) => {
 
   const handleImageMouseMove = (e) => {
     if (!cropSelection.isSelecting) return;
+    e.preventDefault();
     
     const rect = e.target.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const scaleX = e.target.naturalWidth / rect.width;
+    const scaleY = e.target.naturalHeight / rect.height;
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
     
     setCropSelection(prev => ({
       ...prev,
@@ -273,6 +323,7 @@ const FocusLockController = ({ hostIP, hostPort }) => {
 
   const handleImageMouseUp = (e) => {
     if (!cropSelection.isSelecting) return;
+    e.preventDefault();
     
     const centerX = (cropSelection.startX + cropSelection.endX) / 2;
     const centerY = (cropSelection.startY + cropSelection.endY) / 2;
@@ -289,8 +340,10 @@ const FocusLockController = ({ hostIP, hostPort }) => {
     updateCropFrameParameters();
   };
 
+  const currentImage = focusLockState.pollImageUrl || focusLockState.lastImage;
+
   return (
-    <Paper style={{ padding: "24px", maxWidth: 1200, margin: "0 auto" }}>
+    <Paper style={{ padding: "24px", maxWidth: 1400, margin: "0 auto" }}>
       <Grid container spacing={3}>
         {/* Title */}
         <Grid item xs={12}>
@@ -303,19 +356,31 @@ const FocusLockController = ({ hostIP, hostPort }) => {
         </Grid>
 
         {/* Status and Controls */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={4}>
           <Card>
             <CardHeader title="Focus Lock Status" />
             <CardContent>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <FormControlLabel
                   control={
-                    <Switch // TODO: Switch doesn't work with Redux state yet isFocusLocked is not giving correct state
+                    <Switch
+                      checked={focusLockState.isFocusLocked}
                       onChange={toggleFocusLock}
                       color="primary"
                     />
                   }
                   label={`Focus Lock ${focusLockState.isFocusLocked ? 'Enabled' : 'Disabled'}`}
+                />
+                
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={focusLockState.isMeasuring}
+                      onChange={toggleFocusMeasurement}
+                      color="secondary"
+                    />
+                  }
+                  label={`Measurement ${focusLockState.isMeasuring ? 'Running' : 'Stopped'}`}
                 />
                 
                 <Typography variant="body2">
@@ -326,11 +391,12 @@ const FocusLockController = ({ hostIP, hostPort }) => {
                   Set Point Signal: {focusLockState.setPointSignal.toFixed(3)}
                 </Typography>
                 
-                <Box sx={{ display: 'flex', gap: 1 }}>
+                <Box sx={{ display: 'flex', gap: 1, flexDirection: 'column' }}>
                   <Button 
                     variant="contained" 
                     onClick={startCalibration}
                     disabled={focusLockState.isCalibrating}
+                    fullWidth
                   >
                     {focusLockState.isCalibrating ? 'Calibrating...' : 'Start Calibration'}
                   </Button>
@@ -339,6 +405,7 @@ const FocusLockController = ({ hostIP, hostPort }) => {
                     variant="outlined" 
                     onClick={unlockFocus}
                     disabled={!focusLockState.isFocusLocked}
+                    fullWidth
                   >
                     Unlock Focus
                   </Button>
@@ -349,17 +416,34 @@ const FocusLockController = ({ hostIP, hostPort }) => {
         </Grid>
 
         {/* Focus Value Graph */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={8}>
           <Card>
-            <CardHeader title="Focus Value History" />
+            <CardHeader 
+              title="Focus Value History" 
+              subheader="Chart.js integration showing last 50 data points"
+            />
             <CardContent>
-              <Box sx={{ height: 300 }}>
+              <Box sx={{ height: 350 }}>
                 {focusLockState.focusValues.length > 0 ? (
                   <Line data={chartData} options={chartOptions} />
                 ) : (
-                  <Typography variant="body2" color="textSecondary" sx={{ textAlign: 'center', mt: 10 }}>
-                    No focus data available
-                  </Typography>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    height: '100%',
+                    border: '2px dashed #ccc',
+                    borderRadius: 1,
+                    flexDirection: 'column',
+                    gap: 1
+                  }}>
+                    <Typography variant="h6" color="textSecondary">
+                      📈 Real-time Focus Value Chart
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary">
+                      (Chart.js integration showing last 50 data points)
+                    </Typography>
+                  </Box>
                 )}
               </Box>
               <Button 
@@ -379,18 +463,6 @@ const FocusLockController = ({ hostIP, hostPort }) => {
             <CardHeader title="PI Controller Parameters" />
             <CardContent>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                <Box>
-                  <Typography gutterBottom>Multiplier: {focusLockState.multiplier}</Typography>
-                  <Slider
-                    value={focusLockState.multiplier}
-                    onChange={(e, value) => dispatch(focusLockSlice.setMultiplier(value))}
-                    min={0.1}
-                    max={10}
-                    step={0.1}
-                    valueLabelDisplay="auto"
-                  />
-                </Box>
-                
                 <Box>
                   <Typography gutterBottom>Kp (Proportional): {focusLockState.kp}</Typography>
                   <Slider
@@ -460,9 +532,23 @@ const FocusLockController = ({ hostIP, hostPort }) => {
                   Crop Center: [{focusLockState.cropCenter[0]}, {focusLockState.cropCenter[1]}]
                 </Typography>
                 
-                <Button variant="contained" onClick={updateAstigmatismParameters}>
-                  Update Astigmatism Parameters
-                </Button>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Button 
+                    variant="contained" 
+                    onClick={updateAstigmatismParameters}
+                    sx={{ flex: 1 }}
+                  >
+                    Update Astigmatism Parameters
+                  </Button>
+                  
+                  <Button 
+                    variant="outlined" 
+                    onClick={resetCropCoordinates}
+                    sx={{ flex: 1 }}
+                  >
+                    Reset Coordinates
+                  </Button>
+                </Box>
               </Box>
             </CardContent>
           </Card>
@@ -484,20 +570,25 @@ const FocusLockController = ({ hostIP, hostPort }) => {
               }
             />
             <CardContent>
-              {imageDataUrl ? (
-                <Box sx={{ position: 'relative', display: 'inline-block' }}>
+              {currentImage ? (
+                <Box sx={{ position: 'relative', display: 'inline-block', maxWidth: '100%' }}>
                   <img
-                    src={imageDataUrl}
-                    alt="Last captured frame"
+                    src={currentImage}
+                    alt="Camera preview for focus analysis"
                     style={{ 
                       maxWidth: '100%', 
-                      maxHeight: '400px',
+                      minHeight: '500px',
+                      maxHeight: '700px',
                       cursor: 'crosshair',
-                      border: '1px solid #ccc'
+                      border: '1px solid #ccc',
+                      userSelect: 'none',
+                      pointerEvents: 'auto'
                     }}
+                    draggable={false}
                     onMouseDown={handleImageMouseDown}
                     onMouseMove={handleImageMouseMove}
                     onMouseUp={handleImageMouseUp}
+                    onDragStart={(e) => e.preventDefault()}
                   />
                   
                   {/* Show crop selection overlay */}
@@ -505,10 +596,10 @@ const FocusLockController = ({ hostIP, hostPort }) => {
                     <div
                       style={{
                         position: 'absolute',
-                        left: Math.min(cropSelection.startX, cropSelection.endX),
-                        top: Math.min(cropSelection.startY, cropSelection.endY),
-                        width: Math.abs(cropSelection.endX - cropSelection.startX),
-                        height: Math.abs(cropSelection.endY - cropSelection.startY),
+                        left: Math.min(cropSelection.startX / imageScale, cropSelection.endX / imageScale),
+                        top: Math.min(cropSelection.startY / imageScale, cropSelection.endY / imageScale),
+                        width: Math.abs(cropSelection.endX - cropSelection.startX) / imageScale,
+                        height: Math.abs(cropSelection.endY - cropSelection.startY) / imageScale,
                         border: '2px dashed red',
                         backgroundColor: 'rgba(255, 0, 0, 0.1)',
                         pointerEvents: 'none'
@@ -520,8 +611,8 @@ const FocusLockController = ({ hostIP, hostPort }) => {
                   <div
                     style={{
                       position: 'absolute',
-                      left: focusLockState.cropCenter[0] - 5,
-                      top: focusLockState.cropCenter[1] - 5,
+                      left: focusLockState.cropCenter[0] / imageScale - 5,
+                      top: focusLockState.cropCenter[1] / imageScale - 5,
                       width: 10,
                       height: 10,
                       backgroundColor: 'red',
@@ -529,11 +620,45 @@ const FocusLockController = ({ hostIP, hostPort }) => {
                       pointerEvents: 'none'
                     }}
                   />
+                  
+                  {/* Show crop size preview */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      left: focusLockState.cropCenter[0] / imageScale - focusLockState.cropSize / 2,
+                      top: focusLockState.cropCenter[1] / imageScale - focusLockState.cropSize / 2,
+                      width: focusLockState.cropSize,
+                      height: focusLockState.cropSize,
+                      border: '2px solid blue',
+                      backgroundColor: 'rgba(0, 0, 255, 0.1)',
+                      pointerEvents: 'none'
+                    }}
+                  />
                 </Box>
               ) : (
-                <Alert severity="info">
-                  Click "Load Last Image" to view and select crop region for focus analysis
-                </Alert>
+                <Box sx={{ 
+                  height: 400, 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  border: '2px dashed #ccc',
+                  borderRadius: 1,
+                  flexDirection: 'column',
+                  gap: 2
+                }}>
+                  <Typography variant="h6" color="textSecondary">
+                    📷 Image Display Area
+                  </Typography>
+                  <Typography variant="body2" color="textSecondary" textAlign="center">
+                    Click "Load Last Image" to view and select crop region for focus analysis<br/>
+                    Interactive crop selection with mouse drag
+                  </Typography>
+                  {focusLockState.isMeasuring && (
+                    <Typography variant="body2" color="primary">
+                      Waiting for camera image...
+                    </Typography>
+                  )}
+                </Box>
               )}
             </CardContent>
           </Card>
