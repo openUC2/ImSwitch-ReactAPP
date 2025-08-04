@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { 
   Paper, 
@@ -61,9 +61,14 @@ const FocusLockController = ({ hostIP, hostPort }) => {
   const dispatch = useDispatch();
   const theme = useTheme();
   const canvasRef = useRef(null);
+  const intervalRef = useRef(null);
+  const retryCountRef = useRef(0);
+  const maxRetries = 3;
   const [imageScale, setImageScale] = useState(1);
+  const [pollingError, setPollingError] = useState(false);
   
-  // Access Redux state
+  // Access Redux state with specific selectors for better performance
+  const isMeasuring = useSelector(state => state.focusLockState.isMeasuring);
   const focusLockState = useSelector(focusLockSlice.getFocusLockState);
   
   // Local state for image display and crop selection
@@ -75,25 +80,83 @@ const FocusLockController = ({ hostIP, hostPort }) => {
     endY: 0 
   });
 
-  // Polling for image updates every second using loadLastImage, similar to HistoScanController
+  // Load last image from backend - memoized to prevent unnecessary re-renders
+  const loadLastImage = useCallback(async () => {
+    try {
+      dispatch(focusLockSlice.setIsLoadingImage(true));
+      setPollingError(false);
+      const blob = await apiFocusLockControllerReturnLastImage();
+      
+      // Clean up previous blob URL to prevent memory leaks
+      if (focusLockState.lastImage && focusLockState.lastImage.startsWith('blob:')) {
+        URL.revokeObjectURL(focusLockState.lastImage);
+      }
+      
+      const dataUrl = URL.createObjectURL(blob);
+      dispatch(focusLockSlice.setLastImage(dataUrl));
+      dispatch(focusLockSlice.setShowImageSelector(true));
+      
+      // Reset retry count on success
+      retryCountRef.current = 0;
+    } catch (error) {
+      console.error("Failed to load last image:", error);
+      retryCountRef.current += 1;
+      
+      // Stop polling after max retries to prevent CPU overload
+      if (retryCountRef.current >= maxRetries) {
+        setPollingError(true);
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+          dispatch(focusLockSlice.setIsMeasuring(false));
+        }
+      }
+    } finally {
+      dispatch(focusLockSlice.setIsLoadingImage(false));
+    }
+  }, [dispatch, focusLockState.lastImage, maxRetries]);
+
+  // Polling for image updates with better error handling and cleanup
   useEffect(() => {
-    // Only poll when measuring is active
-    if (!focusLockState.isMeasuring) return;
-    const id = setInterval(() => {
-      loadLastImage();
-    }, 1000);
-    return () => clearInterval(id);
-  }, [focusLockState.isMeasuring, hostIP, hostPort]);
+    // Clear any existing interval
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+
+    // Only poll when measuring is active and no polling errors
+    if (isMeasuring && !pollingError) {
+      intervalRef.current = setInterval(loadLastImage, 1000);
+    }
+
+    // Cleanup function
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [isMeasuring, pollingError, loadLastImage]);
 
   // Load initial parameters on mount
   useEffect(() => {
     loadAstigmatismParameters();
     loadPIParameters();
     loadFocusLockState();
+    
+    // Cleanup blob URLs on unmount
+    return () => {
+      if (focusLockState.lastImage && focusLockState.lastImage.startsWith('blob:')) {
+        URL.revokeObjectURL(focusLockState.lastImage);
+      }
+      if (focusLockState.pollImageUrl && focusLockState.pollImageUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(focusLockState.pollImageUrl);
+      }
+    };
   }, []);
 
-  // Load astigmatism parameters from backend
-  const loadAstigmatismParameters = async () => {
+  // Load astigmatism parameters from backend - memoized
+  const loadAstigmatismParameters = useCallback(async () => {
     try {
       const params = await apiFocusLockControllerGetParamsAstigmatism();
       if (params) {
@@ -105,10 +168,10 @@ const FocusLockController = ({ hostIP, hostPort }) => {
     } catch (error) {
       console.error("Failed to load astigmatism parameters:", error);
     }
-  };
+  }, [dispatch]);
 
-  // Load PI parameters from backend
-  const loadPIParameters = async () => {
+  // Load PI parameters from backend - memoized
+  const loadPIParameters = useCallback(async () => {
     try {
       const params = await apiFocusLockControllerGetPIParameters();
       if (params && Array.isArray(params) && params.length >= 2) {
@@ -118,10 +181,10 @@ const FocusLockController = ({ hostIP, hostPort }) => {
     } catch (error) {
       console.error("Failed to load PI parameters:", error);
     }
-  };
+  }, [dispatch]);
 
-  // Load focus lock state from backend
-  const loadFocusLockState = async () => {
+  // Load focus lock state from backend - memoized
+  const loadFocusLockState = useCallback(async () => {
     try {
       const state = await apiFocusLockControllerGetFocusLockState();
       if (state) {
@@ -132,40 +195,30 @@ const FocusLockController = ({ hostIP, hostPort }) => {
     } catch (error) {
       console.error("Failed to load focus lock state:", error);
     }
-  };
+  }, [dispatch]);
 
-  // Load last image from backend
-  const loadLastImage = async () => {
-    try {
-      dispatch(focusLockSlice.setIsLoadingImage(true));
-      const blob = await apiFocusLockControllerReturnLastImage();
-      const dataUrl = URL.createObjectURL(blob);
-      dispatch(focusLockSlice.setLastImage(dataUrl));
-      dispatch(focusLockSlice.setShowImageSelector(true));
-    } catch (error) {
-      console.error("Failed to load last image:", error);
-    } finally {
-      dispatch(focusLockSlice.setIsLoadingImage(false));
-    }
-  };
-
-  // Start/stop focus measurement
-  const toggleFocusMeasurement = async () => {
+  // Start/stop focus measurement - memoized
+  const toggleFocusMeasurement = useCallback(async () => {
     try {
       if (focusLockState.isMeasuring) {
         await apiFocusLockControllerStopFocusMeasurement();
         dispatch(focusLockSlice.setIsMeasuring(false));
+        // Clear any polling errors when manually stopping
+        setPollingError(false);
+        retryCountRef.current = 0;
       } else {
         await apiFocusLockControllerStartFocusMeasurement();
         dispatch(focusLockSlice.setIsMeasuring(true));
+        setPollingError(false);
+        retryCountRef.current = 0;
       }
     } catch (error) {
       console.error("Failed to toggle focus measurement:", error);
     }
-  };
+  }, [focusLockState.isMeasuring, dispatch]);
 
-  // Handle PI parameter updates
-  const updatePIParameters = async () => {
+  // Handle PI parameter updates - memoized
+  const updatePIParameters = useCallback(async () => {
     try {
       await apiFocusLockControllerSetPIParameters({
         kp: focusLockState.kp,
@@ -174,10 +227,10 @@ const FocusLockController = ({ hostIP, hostPort }) => {
     } catch (error) {
       console.error("Failed to update PI parameters:", error);
     }
-  };
+  }, [focusLockState.kp, focusLockState.ki]);
 
-  // Handle astigmatism parameter updates
-  const updateAstigmatismParameters = async () => {
+  // Handle astigmatism parameter updates - memoized
+  const updateAstigmatismParameters = useCallback(async () => {
     try {
       await apiFocusLockControllerSetParamsAstigmatism({
         gaussianSigma: focusLockState.gaussianSigma,
@@ -188,10 +241,10 @@ const FocusLockController = ({ hostIP, hostPort }) => {
     } catch (error) {
       console.error("Failed to update astigmatism parameters:", error);
     }
-  };
+  }, [focusLockState.gaussianSigma, focusLockState.backgroundThreshold, focusLockState.cropSize, focusLockState.cropCenter]);
 
-  // Handle crop frame parameter updates
-  const updateCropFrameParameters = async () => {
+  // Handle crop frame parameter updates - memoized
+  const updateCropFrameParameters = useCallback(async () => {
     try {
       await apiFocusLockControllerSetCropFrameParameters({
         cropSize: focusLockState.cropSize,
@@ -200,26 +253,26 @@ const FocusLockController = ({ hostIP, hostPort }) => {
     } catch (error) {
       console.error("Failed to update crop frame parameters:", error);
     }
-  };
+  }, [focusLockState.cropSize, focusLockState.cropCenter]);
 
-  // Reset crop coordinates
-  const resetCropCoordinates = () => {
+  // Reset crop coordinates - memoized
+  const resetCropCoordinates = useCallback(() => {
     dispatch(focusLockSlice.resetCropCenter());
     updateCropFrameParameters();
-  };
+  }, [dispatch, updateCropFrameParameters]);
 
-  // Toggle focus lock
-  const toggleFocusLock = async () => {
+  // Toggle focus lock - memoized
+  const toggleFocusLock = useCallback(async () => {
     try {
       await apiFocusLockControllerEnableFocusLock({ enable: !focusLockState.isFocusLocked });
       dispatch(focusLockSlice.setFocusLocked(!focusLockState.isFocusLocked));
     } catch (error) {
       console.error("Failed to toggle focus lock:", error);
     }
-  };
+  }, [focusLockState.isFocusLocked, dispatch]);
 
-  // Start focus calibration
-  const startCalibration = async () => {
+  // Start focus calibration - memoized
+  const startCalibration = useCallback(async () => {
     try {
       dispatch(focusLockSlice.setIsCalibrating(true));
       await apiFocusLockControllerFocusCalibrationStart();
@@ -227,40 +280,43 @@ const FocusLockController = ({ hostIP, hostPort }) => {
       console.error("Failed to start calibration:", error);
       dispatch(focusLockSlice.setIsCalibrating(false));
     }
-  };
+  }, [dispatch]);
 
-  // Unlock focus
-  const unlockFocus = async () => {
+  // Unlock focus - memoized
+  const unlockFocus = useCallback(async () => {
     try {
       await apiFocusLockControllerUnlockFocus();
       dispatch(focusLockSlice.setFocusLocked(false));
     } catch (error) {
       console.error("Failed to unlock focus:", error);
     }
-  };
+  }, [dispatch]);
 
-  // Chart configuration for focus values
-  const chartData = {
-    // Use a rolling window for the x-axis: show time (relative or absolute) for a moving/scrolling effect
-    labels: focusLockState.focusTimepoints.length > 0
-      ? focusLockState.focusTimepoints.map((t, i) => {
-          // Show seconds since first point for a moving x-axis
-          const t0 = focusLockState.focusTimepoints[0];
-          return ((t - t0) / 1000).toFixed(1); // seconds
-        })
-      : [],
-    datasets: [
-      {
-        label: 'Focus Value',
-        data: focusLockState.focusValues,
-        borderColor: theme.palette.primary.main,
-        backgroundColor: theme.palette.primary.light,
-        tension: 0.1,
-      },
-    ],
-  };
+  // Chart configuration for focus values - memoized to prevent unnecessary recalculations
+  const chartData = useMemo(() => {
+    return {
+      // Use a rolling window for the x-axis: show time (relative or absolute) for a moving/scrolling effect
+      labels: focusLockState.focusTimepoints.length > 0
+        ? focusLockState.focusTimepoints.map((t, i) => {
+            // Show seconds since first point for a moving x-axis
+            const t0 = focusLockState.focusTimepoints[0];
+            return ((t - t0) / 1000).toFixed(1); // seconds
+          })
+        : [],
+      datasets: [
+        {
+          label: 'Focus Value',
+          data: focusLockState.focusValues,
+          borderColor: theme.palette.primary.main,
+          backgroundColor: theme.palette.primary.light,
+          tension: 0.1,
+        },
+      ],
+    };
+  }, [focusLockState.focusTimepoints, focusLockState.focusValues, theme.palette.primary.main, theme.palette.primary.light]);
 
-  const chartOptions = {
+  // Chart options - memoized to prevent unnecessary recalculations
+  const chartOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -277,10 +333,10 @@ const FocusLockController = ({ hostIP, hostPort }) => {
         beginAtZero: false,
       },
     },
-  };
+  }), []);
 
-  // Handle mouse events for crop selection on image - improved to prevent dragging
-  const handleImageMouseDown = (e) => {
+  // Handle mouse events for crop selection on image - improved to prevent dragging and memoized
+  const handleImageMouseDown = useCallback((e) => {
     e.preventDefault(); // Prevent default drag behavior
     
     const currentImage = focusLockState.pollImageUrl || focusLockState.lastImage;
@@ -299,9 +355,9 @@ const FocusLockController = ({ hostIP, hostPort }) => {
       endX: x,
       endY: y
     });
-  };
+  }, [focusLockState.pollImageUrl, focusLockState.lastImage]);
 
-  const handleImageMouseMove = (e) => {
+  const handleImageMouseMove = useCallback((e) => {
     if (!cropSelection.isSelecting) return;
     e.preventDefault();
     
@@ -316,9 +372,9 @@ const FocusLockController = ({ hostIP, hostPort }) => {
       endX: x,
       endY: y
     }));
-  };
+  }, [cropSelection.isSelecting]);
 
-  const handleImageMouseUp = (e) => {
+  const handleImageMouseUp = useCallback((e) => {
     if (!cropSelection.isSelecting) return;
     e.preventDefault();
     
@@ -335,10 +391,12 @@ const FocusLockController = ({ hostIP, hostPort }) => {
     
     // Update crop parameters in backend
     updateCropFrameParameters();
-  };
+  }, [cropSelection.isSelecting, cropSelection.startX, cropSelection.endX, cropSelection.startY, cropSelection.endY, dispatch, updateCropFrameParameters]);
 
-
-  const currentImage = focusLockState.pollImageUrl || focusLockState.lastImage;
+  // Memoize current image to prevent unnecessary recalculations
+  const currentImage = useMemo(() => {
+    return focusLockState.pollImageUrl || focusLockState.lastImage;
+  }, [focusLockState.pollImageUrl, focusLockState.lastImage]);
 
   return (
     <Paper style={{ padding: "24px", maxWidth: 1400, margin: "0 auto" }}>
@@ -380,6 +438,12 @@ const FocusLockController = ({ hostIP, hostPort }) => {
                   }
                   label={`Measurement ${focusLockState.isMeasuring ? 'Running' : 'Stopped'}`}
                 />
+                
+                {pollingError && (
+                  <Alert severity="warning" size="small">
+                    Image polling stopped due to connection error. Check backend connection.
+                  </Alert>
+                )}
                 
                 <Typography variant="body2">
                   Current Focus Value: {focusLockState.currentFocusValue.toFixed(3)}
