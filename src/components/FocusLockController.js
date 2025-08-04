@@ -310,8 +310,7 @@ const FocusLockController = ({ hostIP, hostPort }) => {
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <FormControlLabel
                   control={
-                    <Switch
-                      checked={focusLockState.isFocusLocked}
+                    <Switch // TODO: Switch doesn't work with Redux state yet isFocusLocked is not giving correct state
                       onChange={toggleFocusLock}
                       color="primary"
                     />
