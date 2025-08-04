@@ -138,7 +138,7 @@ const WebSocketHandler = () => {
         */
         //----------------------------------------------
       } else if (dataJson.name == "sigUpdateMotorPosition") {
-        console.log("sigUpdateMotorPosition", dataJson);
+        //console.log("sigUpdateMotorPosition", dataJson);
         //parse
         try {
           const parsedArgs = dataJson.args.p0;
@@ -232,7 +232,7 @@ const WebSocketHandler = () => {
         //console.log("sigUpdateFocusValue", dataJson);
         // Handle focus value updates
         try {
-          const focusData = dataJson.args || {};
+          const focusData = dataJson.args.p0 || {};
           if (typeof focusData === 'object') {
             dispatch(focusLockSlice.addFocusValue({
               focusValue: focusData.focus_value || 0,

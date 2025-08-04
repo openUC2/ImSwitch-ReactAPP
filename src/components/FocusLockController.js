@@ -75,25 +75,15 @@ const FocusLockController = ({ hostIP, hostPort }) => {
     endY: 0 
   });
 
-  // Polling for image updates similar to HistoScan
+  // Polling for image updates every second using loadLastImage, similar to HistoScanController
   useEffect(() => {
-    if (focusLockState.isMeasuring) {
-      const id = setInterval(async () => {
-        try {
-          const res = await fetch(
-            `${hostIP}:${hostPort}/FocusLockController/returnLastImage`
-          );
-          if (res.ok) {
-            const blob = await res.blob();
-            dispatch(focusLockSlice.setPollImageUrl(URL.createObjectURL(blob)));
-          }
-        } catch (error) {
-          console.error("Error polling for image:", error);
-        }
-      }, 1000);
-      return () => clearInterval(id);
-    }
-  }, [focusLockState.isMeasuring, hostIP, hostPort, dispatch]);
+    // Only poll when measuring is active
+    if (!focusLockState.isMeasuring) return;
+    const id = setInterval(() => {
+      loadLastImage();
+    }, 1000);
+    return () => clearInterval(id);
+  }, [focusLockState.isMeasuring, hostIP, hostPort]);
 
   // Load initial parameters on mount
   useEffect(() => {
@@ -251,7 +241,14 @@ const FocusLockController = ({ hostIP, hostPort }) => {
 
   // Chart configuration for focus values
   const chartData = {
-    labels: focusLockState.focusTimepoints.map((t, i) => i), // Use indices as labels
+    // Use a rolling window for the x-axis: show time (relative or absolute) for a moving/scrolling effect
+    labels: focusLockState.focusTimepoints.length > 0
+      ? focusLockState.focusTimepoints.map((t, i) => {
+          // Show seconds since first point for a moving x-axis
+          const t0 = focusLockState.focusTimepoints[0];
+          return ((t - t0) / 1000).toFixed(1); // seconds
+        })
+      : [],
     datasets: [
       {
         label: 'Focus Value',
@@ -340,6 +337,7 @@ const FocusLockController = ({ hostIP, hostPort }) => {
     updateCropFrameParameters();
   };
 
+
   const currentImage = focusLockState.pollImageUrl || focusLockState.lastImage;
 
   return (
@@ -420,7 +418,7 @@ const FocusLockController = ({ hostIP, hostPort }) => {
           <Card>
             <CardHeader 
               title="Focus Value History" 
-              subheader="Chart.js integration showing last 50 data points"
+              subheader="Chart showing last 50 data points"
             />
             <CardContent>
               <Box sx={{ height: 350 }}>
