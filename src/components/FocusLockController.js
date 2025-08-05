@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { 
@@ -16,8 +17,10 @@ import {
   Divider,
   Alert
 } from "@mui/material";
+import streamingPlugin from 'chartjs-plugin-streaming';  
 import * as focusLockSlice from "../state/slices/FocusLockSlice.js";
 import { useTheme } from '@mui/material/styles';
+import 'chartjs-adapter-date-fns';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -54,7 +57,8 @@ ChartJS.register(
   LineElement,
   Title,
   Tooltip,
-  Legend
+  Legend, 
+  streamingPlugin
 );
 
 const FocusLockController = ({ hostIP, hostPort }) => {
@@ -63,8 +67,11 @@ const FocusLockController = ({ hostIP, hostPort }) => {
   const canvasRef = useRef(null);
   const intervalRef = useRef(null);
   const retryCountRef = useRef(0);
+  const imgRef = useRef(null);
+  const latestFocus = useRef(0);
+
+
   const maxRetries = 3;
-  const [imageScale, setImageScale] = useState(1);
   const [pollingError, setPollingError] = useState(false);
   
   // Access Redux state with specific selectors for better performance
@@ -86,22 +93,34 @@ const FocusLockController = ({ hostIP, hostPort }) => {
       dispatch(focusLockSlice.setIsLoadingImage(true));
       setPollingError(false);
       const blob = await apiFocusLockControllerReturnLastImage();
-      
+
       // Clean up previous blob URL to prevent memory leaks
       if (focusLockState.lastImage && focusLockState.lastImage.startsWith('blob:')) {
         URL.revokeObjectURL(focusLockState.lastImage);
       }
-      
+
       const dataUrl = URL.createObjectURL(blob);
       dispatch(focusLockSlice.setLastImage(dataUrl));
       dispatch(focusLockSlice.setShowImageSelector(true));
-      
+
+      // After image loads, set frameSize in Redux to current display size
+      // This will be updated again on image onLoad event for accuracy
+      setTimeout(() => {
+        const img = imgRef.current;
+        if (img) {
+          dispatch(focusLockSlice.setFrameSize([
+            img.clientWidth || img.width || img.naturalWidth,
+            img.clientHeight || img.height || img.naturalHeight
+          ]));
+        }
+      }, 100);
+
       // Reset retry count on success
       retryCountRef.current = 0;
     } catch (error) {
       console.error("Failed to load last image:", error);
       retryCountRef.current += 1;
-      
+
       // Stop polling after max retries to prevent CPU overload
       if (retryCountRef.current >= maxRetries) {
         setPollingError(true);
@@ -116,6 +135,50 @@ const FocusLockController = ({ hostIP, hostPort }) => {
     }
   }, [dispatch, focusLockState.lastImage, maxRetries]);
 
+  /** keep the latest value without causing re-renders */
+  useEffect(() => { latestFocus.current = focusLockState.currentFocusValue; });
+
+/** dataset never recreated => Chart.js keeps the stream alive */
+const streamData = useMemo(() => ({
+  datasets: [
+    {
+      label: 'Focus value',
+      borderColor: theme.palette.primary.main,
+      backgroundColor: theme.palette.primary.light,
+      data: []                        // streaming plugin fills this in
+    }
+  ]
+}), [theme.palette.primary.main, theme.palette.primary.light]);
+
+/** onRefresh is called by the plugin every `refresh` ms */
+const onRefresh = useCallback(chart => {
+  chart.data.datasets[0].data.push({
+    x: Date.now(),
+    y: latestFocus.current           // current focus value
+  });
+}, []);
+
+/** complete streaming config */
+const streamOptions = useMemo(() => ({
+  animation: false,
+  scales: {
+    x: {
+      type: 'realtime',              // ⬅️ required
+      realtime: {
+        duration: 30000,             // 30 s visible
+        refresh: 1000,               // add point every 1 s
+        delay: 2000,                 // 2 s latency
+        onRefresh
+      }
+    },
+    y: {
+      title: { display: true, text: 'Focus value' }
+    }
+  },
+  interaction: { intersect: false },
+  plugins: { legend: { position: 'top' } }
+}), [onRefresh]);
+
   // Polling for image updates with better error handling and cleanup
   useEffect(() => {
     // Clear any existing interval
@@ -125,7 +188,7 @@ const FocusLockController = ({ hostIP, hostPort }) => {
     }
 
     // Only poll when measuring is active and no polling errors
-    if (isMeasuring && !pollingError) {
+    if (!pollingError) { // isMeasuring && 
       intervalRef.current = setInterval(loadLastImage, 1000);
     }
 
@@ -244,16 +307,30 @@ const FocusLockController = ({ hostIP, hostPort }) => {
   }, [focusLockState.gaussianSigma, focusLockState.backgroundThreshold, focusLockState.cropSize, focusLockState.cropCenter]);
 
   // Handle crop frame parameter updates - memoized
+  // Always send cropSize as integer to match backend API signature
+  // Always send frameSize as [width, height] in display coordinates
   const updateCropFrameParameters = useCallback(async () => {
     try {
+      // If frameSize is not set, try to get it from the image
+      let frameSize = focusLockState.frameSize;
+      if (!frameSize || frameSize.length !== 2) {
+        const img = imgRef.current;
+        if (img) {
+          frameSize = [
+            img.clientWidth || img.width || img.naturalWidth,
+            img.clientHeight || img.height || img.naturalHeight
+          ];
+        }
+      }
       await apiFocusLockControllerSetCropFrameParameters({
-        cropSize: focusLockState.cropSize,
-        cropCenter: focusLockState.cropCenter
+        cropSize: Math.round(focusLockState.cropSize),
+        cropCenter: focusLockState.cropCenter,
+        frameSize: frameSize
       });
     } catch (error) {
       console.error("Failed to update crop frame parameters:", error);
     }
-  }, [focusLockState.cropSize, focusLockState.cropCenter]);
+  }, [focusLockState.cropSize, focusLockState.cropCenter, focusLockState.frameSize]);
 
   // Reset crop coordinates - memoized
   const resetCropCoordinates = useCallback(() => {
@@ -294,19 +371,20 @@ const FocusLockController = ({ hostIP, hostPort }) => {
 
   // Chart configuration for focus values - memoized to prevent unnecessary recalculations
   const chartData = useMemo(() => {
+    // Use only the last 50 values for the chart
+    const values = focusLockState.focusValues.slice(-50);
+    const times = focusLockState.focusTimepoints.slice(-50);
     return {
-      // Use a rolling window for the x-axis: show time (relative or absolute) for a moving/scrolling effect
-      labels: focusLockState.focusTimepoints.length > 0
-        ? focusLockState.focusTimepoints.map((t, i) => {
-            // Show seconds since first point for a moving x-axis
-            const t0 = focusLockState.focusTimepoints[0];
-            return ((t - t0) / 1000).toFixed(1); // seconds
+      labels: times.length > 0
+        ? times.map((t, i) => {
+            const t0 = times[0];
+            return ((t - t0) / 1000).toFixed(1);
           })
         : [],
       datasets: [
         {
           label: 'Focus Value',
-          data: focusLockState.focusValues,
+          data: values,
           borderColor: theme.palette.primary.main,
           backgroundColor: theme.palette.primary.light,
           tension: 0.1,
@@ -338,16 +416,15 @@ const FocusLockController = ({ hostIP, hostPort }) => {
   // Handle mouse events for crop selection on image - improved to prevent dragging and memoized
   const handleImageMouseDown = useCallback((e) => {
     e.preventDefault(); // Prevent default drag behavior
-    
-    const currentImage = focusLockState.pollImageUrl || focusLockState.lastImage;
+
+    const currentImage = e.target;
     if (!currentImage) return;
-    
-    const rect = e.target.getBoundingClientRect();
-    const scaleX = e.target.naturalWidth / rect.width;
-    const scaleY = e.target.naturalHeight / rect.height;
-    const x = (e.clientX - rect.left) * scaleX;
-    const y = (e.clientY - rect.top) * scaleY;
-    
+
+    // Always use the image's natural size for coordinates
+    const rect = currentImage.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) * currentImage.naturalWidth) / rect.width;
+    const y = ((e.clientY - rect.top) * currentImage.naturalHeight) / rect.height;
+
     setCropSelection({
       isSelecting: true,
       startX: x,
@@ -355,18 +432,17 @@ const FocusLockController = ({ hostIP, hostPort }) => {
       endX: x,
       endY: y
     });
-  }, [focusLockState.pollImageUrl, focusLockState.lastImage]);
+  }, []);
 
   const handleImageMouseMove = useCallback((e) => {
     if (!cropSelection.isSelecting) return;
     e.preventDefault();
-    
-    const rect = e.target.getBoundingClientRect();
-    const scaleX = e.target.naturalWidth / rect.width;
-    const scaleY = e.target.naturalHeight / rect.height;
-    const x = (e.clientX - rect.left) * scaleX;
-    const y = (e.clientY - rect.top) * scaleY;
-    
+
+    const currentImage = e.target;
+    const rect = currentImage.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) * currentImage.naturalWidth) / rect.width;
+    const y = ((e.clientY - rect.top) * currentImage.naturalHeight) / rect.height;
+
     setCropSelection(prev => ({
       ...prev,
       endX: x,
@@ -377,18 +453,33 @@ const FocusLockController = ({ hostIP, hostPort }) => {
   const handleImageMouseUp = useCallback((e) => {
     if (!cropSelection.isSelecting) return;
     e.preventDefault();
-    
-    const centerX = (cropSelection.startX + cropSelection.endX) / 2;
-    const centerY = (cropSelection.startY + cropSelection.endY) / 2;
-    
+
+    const currentImage = e.target;
+    const rect = currentImage.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) * currentImage.naturalWidth) / rect.width;
+    const y = ((e.clientY - rect.top) * currentImage.naturalHeight) / rect.height;
+
+    // Use the last mouse position as endX/endY
+    const newCrop = {
+      ...cropSelection,
+      endX: x,
+      endY: y
+    };
+
+    const centerX = (newCrop.startX + newCrop.endX) / 2;
+    const centerY = (newCrop.startY + newCrop.endY) / 2;
+
     dispatch(focusLockSlice.setCropCenter([Math.round(centerX), Math.round(centerY)]));
-    dispatch(focusLockSlice.setSelectedCropRegion(cropSelection));
-    
+    dispatch(focusLockSlice.setSelectedCropRegion(newCrop));
+    // update cropSize in focusLockSlice, always as integer
+    const cropSize = Math.round(Math.max(Math.abs(newCrop.endX - newCrop.startX), Math.abs(newCrop.endY - newCrop.startY)));
+    dispatch(focusLockSlice.setCropSize(cropSize));
+
     setCropSelection(prev => ({
       ...prev,
       isSelecting: false
     }));
-    
+
     // Update crop parameters in backend
     updateCropFrameParameters();
   }, [cropSelection.isSelecting, cropSelection.startX, cropSelection.endX, cropSelection.startY, cropSelection.endY, dispatch, updateCropFrameParameters]);
@@ -487,7 +578,7 @@ const FocusLockController = ({ hostIP, hostPort }) => {
             <CardContent>
               <Box sx={{ height: 350 }}>
                 {focusLockState.focusValues.length > 0 ? (
-                  <Line data={chartData} options={chartOptions} />
+                <Line data={streamData} options={streamOptions} />
                 ) : (
                   <Box sx={{ 
                     display: 'flex', 
@@ -500,7 +591,7 @@ const FocusLockController = ({ hostIP, hostPort }) => {
                     gap: 1
                   }}>
                     <Typography variant="h6" color="textSecondary">
-                      📈 Real-time Focus Value Chart
+                       Real-time Focus Value Chart
                     </Typography>
                     <Typography variant="body2" color="textSecondary">
                       (Chart.js integration showing last 50 data points)
@@ -635,6 +726,7 @@ const FocusLockController = ({ hostIP, hostPort }) => {
               {currentImage ? (
                 <Box sx={{ position: 'relative', display: 'inline-block', maxWidth: '100%' }}>
                   <img
+                    ref={imgRef}
                     src={currentImage}
                     alt="Camera preview for focus analysis"
                     style={{ 
@@ -651,51 +743,107 @@ const FocusLockController = ({ hostIP, hostPort }) => {
                     onMouseMove={handleImageMouseMove}
                     onMouseUp={handleImageMouseUp}
                     onDragStart={(e) => e.preventDefault()}
+                    onLoad={e => {
+                      // Update frameSize in Redux when image is loaded
+                      const img = e.target;
+                      dispatch(focusLockSlice.setFrameSize([
+                        img.clientWidth || img.width || img.naturalWidth,
+                        img.clientHeight || img.height || img.naturalHeight
+                      ]));
+                    }}
                   />
                   
                   {/* Show crop selection overlay */}
-                  {cropSelection.isSelecting && (
-                    <div
-                      style={{
-                        position: 'absolute',
-                        left: Math.min(cropSelection.startX / imageScale, cropSelection.endX / imageScale),
-                        top: Math.min(cropSelection.startY / imageScale, cropSelection.endY / imageScale),
-                        width: Math.abs(cropSelection.endX - cropSelection.startX) / imageScale,
-                        height: Math.abs(cropSelection.endY - cropSelection.startY) / imageScale,
-                        border: '2px dashed red',
-                        backgroundColor: 'rgba(255, 0, 0, 0.1)',
-                        pointerEvents: 'none'
-                      }}
-                    />
-                  )}
-                  
-                  {/* Show current crop center */}
-                  <div
-                    style={{
-                      position: 'absolute',
-                      left: focusLockState.cropCenter[0] / imageScale - 5,
-                      top: focusLockState.cropCenter[1] / imageScale - 5,
-                      width: 10,
-                      height: 10,
-                      backgroundColor: 'red',
-                      borderRadius: '50%',
-                      pointerEvents: 'none'
-                    }}
+                  {/*
+                    To ensure overlays are correctly positioned and sized regardless of image scaling,
+                    we must map image pixel coordinates to display coordinates using the rendered image size.
+                  */}
+                  {/*
+                    Use clientWidth/clientHeight for overlay scaling to match the rendered image size on all screens.
+                  */}
+                  <img
+                    ref={canvasRef}
+                    src={currentImage}
+                    alt="hidden for overlay calc"
+                    style={{ display: 'none' }}
+                    onLoad={() => { /* trigger re-render for overlay calc */ }}
                   />
-                  
-                  {/* Show crop size preview */}
-                  <div
-                    style={{
-                      position: 'absolute',
-                      left: focusLockState.cropCenter[0] / imageScale - focusLockState.cropSize / 2,
-                      top: focusLockState.cropCenter[1] / imageScale - focusLockState.cropSize / 2,
-                      width: focusLockState.cropSize,
-                      height: focusLockState.cropSize,
-                      border: '2px solid blue',
-                      backgroundColor: 'rgba(0, 0, 255, 0.1)',
-                      pointerEvents: 'none'
-                    }}
-                  />
+                  {(() => {
+                    // Get the displayed image element
+                    const img = imgRef.current;
+                    if (!img) return null;
+                    // Use clientWidth/clientHeight for actual rendered size
+                    const dispW = img.clientWidth || img.width || img.naturalWidth;
+                    const dispH = img.clientHeight || img.height || img.naturalHeight;
+                    const natW = img.naturalWidth;
+                    const natH = img.naturalHeight;
+                    if (!natW || !natH) return null;
+                    const scaleX = dispW / natW;
+                    const scaleY = dispH / natH;
+
+                    // Helper to map image pixel coordinates to display coordinates
+                    const toDisplayX = x => x * scaleX;
+                    const toDisplayY = y => y * scaleY;
+
+                    // Crop selection overlay
+                    let cropOverlay = null;
+                    if (cropSelection.isSelecting) {
+                      const left = toDisplayX(Math.min(cropSelection.startX, cropSelection.endX));
+                      const top = toDisplayY(Math.min(cropSelection.startY, cropSelection.endY));
+                      const width = Math.abs(toDisplayX(cropSelection.endX) - toDisplayX(cropSelection.startX));
+                      const height = Math.abs(toDisplayY(cropSelection.endY) - toDisplayY(cropSelection.startY));
+                      cropOverlay = (
+                        <div
+                          style={{
+                            position: 'absolute',
+                            left,
+                            top,
+                            width,
+                            height,
+                            border: '2px dashed red',
+                            backgroundColor: 'rgba(255, 0, 0, 0.1)',
+                            pointerEvents: 'none'
+                          }}
+                        />
+                      );
+                    }
+
+                    // Crop center overlay
+                    const centerX = toDisplayX(focusLockState.cropCenter[0]);
+                    const centerY = toDisplayY(focusLockState.cropCenter[1]);
+                    const cropCenterOverlay = (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          left: centerX - 5,
+                          top: centerY - 5,
+                          width: 10,
+                          height: 10,
+                          backgroundColor: 'red',
+                          borderRadius: '50%',
+                          pointerEvents: 'none'
+                        }}
+                      />
+                    );
+
+                    // Crop size preview overlay
+                    const cropSize = focusLockState.cropSize;
+                    const cropSizeOverlay = (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          left: centerX - (cropSize * scaleX) / 2,
+                          top: centerY - (cropSize * scaleY) / 2,
+                          width: cropSize * scaleX,
+                          height: cropSize * scaleY,
+                          border: '2px solid blue',
+                          backgroundColor: 'rgba(0, 0, 255, 0.1)',
+                          pointerEvents: 'none'
+                        }}
+                      />
+                    );
+                    return <>{cropOverlay}{cropCenterOverlay}{cropSizeOverlay}</>;
+                  })()}
                 </Box>
               ) : (
                 <Box sx={{ 

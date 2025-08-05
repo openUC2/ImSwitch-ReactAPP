@@ -17,6 +17,7 @@ const initialFocusLockState = {
   backgroundThreshold: 100.0,
   cropSize: 100,
   cropCenter: [0, 0],
+  frameSize: [640, 480], // Default frame size, can be adjusted
   
   // Images and streaming
   lastImage: null,
@@ -77,6 +78,9 @@ const focusLockSlice = createSlice({
     },
     setCropCenter: (state, action) => {
       state.cropCenter = action.payload;
+    },
+    setFrameSize: (state, action) => {
+      state.frameSize = action.payload;
     },
     
     // Images
@@ -146,6 +150,7 @@ export const {
   setGaussianSigma,
   setBackgroundThreshold,
   setCropSize,
+  setFrameSize,
   setCropCenter,
   setLastImage,
   setLastCroppedImage,
