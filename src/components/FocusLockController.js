@@ -103,14 +103,13 @@ const FocusLockController = ({ hostIP, hostPort }) => {
       dispatch(focusLockSlice.setLastImage(dataUrl));
       dispatch(focusLockSlice.setShowImageSelector(true));
 
-      // After image loads, set frameSize in Redux to current display size
-      // This will be updated again on image onLoad event for accuracy
+      // After image loads, set frameSize in Redux to natural image dimensions for consistency
       setTimeout(() => {
         const img = imgRef.current;
-        if (img) {
+        if (img && img.naturalWidth && img.naturalHeight) {
           dispatch(focusLockSlice.setFrameSize([
-            img.clientWidth || img.width || img.naturalWidth,
-            img.clientHeight || img.height || img.naturalHeight
+            img.naturalWidth,
+            img.naturalHeight
           ]));
         }
       }, 100);
@@ -308,20 +307,19 @@ const streamOptions = useMemo(() => ({
 
   // Handle crop frame parameter updates - memoized
   // Always send cropSize as integer to match backend API signature
-  // Always send frameSize as [width, height] in display coordinates
+  // Always send frameSize as [width, height] in NATURAL image coordinates for consistency
   const updateCropFrameParameters = useCallback(async () => {
     try {
-      // If frameSize is not set, try to get it from the image
+      // Always use natural image dimensions for consistent coordinate system
       let frameSize = focusLockState.frameSize;
-      if (!frameSize || frameSize.length !== 2) {
-        const img = imgRef.current;
-        if (img) {
-          frameSize = [
-            img.clientWidth || img.width || img.naturalWidth,
-            img.clientHeight || img.height || img.naturalHeight
-          ];
-        }
+      const img = imgRef.current;
+      if (img && img.naturalWidth && img.naturalHeight) {
+        // Use natural dimensions to ensure coordinate system consistency
+        frameSize = [img.naturalWidth, img.naturalHeight];
+        // Update Redux with natural dimensions
+        dispatch(focusLockSlice.setFrameSize(frameSize));
       }
+      
       await apiFocusLockControllerSetCropFrameParameters({
         cropSize: Math.round(focusLockState.cropSize),
         cropCenter: focusLockState.cropCenter,
@@ -330,7 +328,7 @@ const streamOptions = useMemo(() => ({
     } catch (error) {
       console.error("Failed to update crop frame parameters:", error);
     }
-  }, [focusLockState.cropSize, focusLockState.cropCenter, focusLockState.frameSize]);
+  }, [focusLockState.cropSize, focusLockState.cropCenter, focusLockState.frameSize, dispatch]);
 
   // Reset crop coordinates - memoized
   const resetCropCoordinates = useCallback(() => {
@@ -682,7 +680,11 @@ const streamOptions = useMemo(() => ({
                 />
                 
                 <Typography variant="body2">
-                  Crop Center: [{focusLockState.cropCenter[0]}, {focusLockState.cropCenter[1]}]
+                  Crop Center: [{focusLockState.cropCenter[0]}, {focusLockState.cropCenter[1]}] (image pixels)
+                </Typography>
+                
+                <Typography variant="body2" color="textSecondary">
+                  Frame Size: [{focusLockState.frameSize[0]}, {focusLockState.frameSize[1]}] (natural dimensions)
                 </Typography>
                 
                 <Box sx={{ display: 'flex', gap: 1 }}>
@@ -744,12 +746,14 @@ const streamOptions = useMemo(() => ({
                     onMouseUp={handleImageMouseUp}
                     onDragStart={(e) => e.preventDefault()}
                     onLoad={e => {
-                      // Update frameSize in Redux when image is loaded
+                      // Update frameSize in Redux with natural image dimensions for coordinate consistency
                       const img = e.target;
-                      dispatch(focusLockSlice.setFrameSize([
-                        img.clientWidth || img.width || img.naturalWidth,
-                        img.clientHeight || img.height || img.naturalHeight
-                      ]));
+                      if (img.naturalWidth && img.naturalHeight) {
+                        dispatch(focusLockSlice.setFrameSize([
+                          img.naturalWidth,
+                          img.naturalHeight
+                        ]));
+                      }
                     }}
                   />
                   

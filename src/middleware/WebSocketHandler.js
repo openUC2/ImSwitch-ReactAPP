@@ -229,25 +229,44 @@ const WebSocketHandler = () => {
           }
         }
       } else if (dataJson.name === "sigUpdateFocusValue") {
-        //console.log("sigUpdateFocusValue", dataJson);
-        // Handle focus value updates
+        console.log("sigUpdateFocusValue received:", dataJson); // Debug log
+        // Handle focus value updates - updated for new library format
         try {
-          const focusData = dataJson.args.p0 || {};
-          if (typeof focusData === 'object') {
-            dispatch(focusLockSlice.addFocusValue({
-              focusValue: focusData.focus_value || 0,
-              setPointSignal: focusData.set_point_signal || 0,
-              timestamp: focusData.timestamp || Date.now()
-            }));
+          // Try the new format first (direct object)
+          let focusData = dataJson.args || {};
+          
+          // If args is available but not an object, try args.p0
+          if (dataJson.args && typeof dataJson.args !== 'object') {
+            focusData = dataJson.args.p0 || {};
           }
+          
+          console.log("Parsed focus data:", focusData); // Debug log
+          
+          // Support both old and new formats
+          const focusValue = focusData.focus_value || focusData.focusValue || 0;
+          const setPointSignal = focusData.set_point_signal || focusData.setPointSignal || 0;
+          const timestamp = focusData.timestamp || Date.now();
+          
+          console.log("Dispatching focus values:", { focusValue, setPointSignal, timestamp }); // Debug log
+          
+          dispatch(focusLockSlice.addFocusValue({
+            focusValue,
+            setPointSignal,
+            timestamp
+          }));
         } catch (error) {
           console.error("Error parsing focus value signal:", error);
         }
       } else if (dataJson.name === "sigFocusLockStateChanged") {
         //console.log("sigFocusLockStateChanged", dataJson);
-        // Handle focus lock state changes
+        // Handle focus lock state changes - updated for new library format
         try {
-          const stateData = dataJson.args || {};
+          // Try to get state data from args directly or args.p0
+          let stateData = dataJson.args || {};
+          if (dataJson.args && dataJson.args.p0) {
+            stateData = dataJson.args.p0;
+          }
+          
           if (typeof stateData === 'object') {
             if (stateData.is_locked !== undefined) {
               dispatch(focusLockSlice.setFocusLocked(stateData.is_locked));
@@ -255,18 +274,27 @@ const WebSocketHandler = () => {
             if (stateData.is_calibrating !== undefined) {
               dispatch(focusLockSlice.setIsCalibrating(stateData.is_calibrating));
             }
+            if (stateData.is_measuring !== undefined) {
+              dispatch(focusLockSlice.setIsMeasuring(stateData.is_measuring));
+            }
           }
         } catch (error) {
           console.error("Error parsing focus lock state signal:", error);
         }
       } else if (dataJson.name === "sigCalibrationProgress") {
         //console.log("sigCalibrationProgress", dataJson);
-        // Handle calibration progress updates
+        // Handle calibration progress updates - updated for new library format
         try {
-          const progressData = dataJson.args || {};
+          // Try to get progress data from args directly or args.p0
+          let progressData = dataJson.args || {};
+          if (dataJson.args && dataJson.args.p0) {
+            progressData = dataJson.args.p0;
+          }
+          
           if (typeof progressData === 'object') {
             // Add calibration progress state to Redux if needed
             console.log("Calibration progress:", progressData);
+            // TODO: Add calibration progress to Redux state if needed
           }
         } catch (error) {
           console.error("Error parsing calibration progress signal:", error);
