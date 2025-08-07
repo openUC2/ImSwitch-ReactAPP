@@ -22,6 +22,7 @@ import StresstestController from "./components/StresstestController";
 import STORMController from "./components/STORMController.js";
 import STORMControllerArkitekt from "./components/STORMControllerArkitekt.js";
 import STORMControllerLocal from "./components/STORMControllerLocal.js";
+import FocusLockController from "./components/FocusLockController.js";
 
 import theme from "./theme";
 import {
@@ -642,6 +643,17 @@ function App() {
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "Stresstest" : ""} />
               </ListItem>
+              {/* FocusLock */}
+              <ListItem
+                button
+                selected={selectedPlugin === "FocusLock"}
+                onClick={() => handlePluginChange("FocusLock")}
+              >
+                <ListItemIcon>
+                  <Icons.CenterFocusStrong />
+                </ListItemIcon>
+                <ListItemText primary={sidebarVisible ? "Focus Lock" : ""} />
+              </ListItem>
               {/* JupyteNotebook */}
               <ListItem
                 button
@@ -911,6 +923,9 @@ function App() {
             )}
             {selectedPlugin === "Stresstest" && (
               <StresstestController hostIP={hostIP} hostPort={apiPort} />
+            )}
+            {selectedPlugin === "FocusLock" && (
+              <FocusLockController hostIP={hostIP} hostPort={apiPort} />
             )}
             {selectedPlugin === "JupyteNotebook" && (
               <JupyterProvider>

@@ -113,12 +113,13 @@ const LiveViewComponent = ({ useFastMode = true }) => {
 
       // Get container dimensions
       const containerRect = container.getBoundingClientRect();
-      const containerWidth = containerRect.width;
-      const containerHeight = containerRect.height;
+      let containerWidth = containerRect.width;
+      let containerHeight = containerRect.height;
 
-      // Ensure container has valid dimensions
+      // If container has no size yet, try again on next animation frame
       if (containerWidth === 0 || containerHeight === 0) {
-        console.warn('Container dimensions not available yet, skipping scale calculation');
+        // Try again soon, but avoid infinite loop
+        window.requestAnimationFrame(() => applyResponsiveSizing(image));
         return;
       }
 

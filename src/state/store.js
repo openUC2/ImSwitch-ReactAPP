@@ -33,6 +33,7 @@ import zarrinitialZarrReducer from "./slices/OmeZarrTileStreamSlice";
 import stresstestReducer from "./slices/StresstestSlice";
 import workflowReducer from "./slices/WorkflowSlice";
 import stormReducer from "./slices/STORMSlice";
+import focusLockReducer from "./slices/FocusLockSlice";
 
 //#####################################################################################
 // Combine reducers
@@ -61,6 +62,7 @@ const rootReducer = combineReducers({
   stresstestState: stresstestReducer,
   workflowState: workflowReducer,
   storm: stormReducer,
+  focusLockState: focusLockReducer,
 });
 
 //#####################################################################################

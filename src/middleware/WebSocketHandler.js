@@ -9,6 +9,7 @@ import * as tileStreamSlice from "../state/slices/TileStreamSlice.js";
 import * as positionSlice from "../state/slices/PositionSlice.js";
 import * as objectiveSlice from "../state/slices/ObjectiveSlice.js";
 import * as omeZarrSlice from "../state/slices/OmeZarrTileStreamSlice.js";
+import * as focusLockSlice from "../state/slices/FocusLockSlice.js";
 
 import { io } from "socket.io-client";
 
@@ -137,7 +138,7 @@ const WebSocketHandler = () => {
         */
         //----------------------------------------------
       } else if (dataJson.name == "sigUpdateMotorPosition") {
-        console.log("sigUpdateMotorPosition", dataJson);
+        //console.log("sigUpdateMotorPosition", dataJson);
         //parse
         try {
           const parsedArgs = dataJson.args.p0;
@@ -226,6 +227,77 @@ const WebSocketHandler = () => {
           } catch (e) {
             console.warn("Failed to parse STORM localization data:", e);
           }
+        }
+      } else if (dataJson.name === "sigUpdateFocusValue") {
+        console.log("sigUpdateFocusValue received:", dataJson); // Debug log
+        // Handle focus value updates - updated for new library format
+        try {
+          // Try the new format first (direct object)
+          let focusData = dataJson.args || {};
+          
+          // If args is available but not an object, try args.p0
+          if (dataJson.args.p0) {
+            focusData = dataJson.args.p0 || {};
+          }
+          
+          console.log("Parsed focus data:", focusData); // Debug log
+          
+          // Support both old and new formats
+          const focusValue = focusData.focus_value || focusData.focusValue || 0;
+          const setPointSignal = focusData.set_point_signal || focusData.setPointSignal || 0;
+          const timestamp = focusData.timestamp || Date.now();
+          
+          console.log("Dispatching focus values:", { focusValue, setPointSignal, timestamp }); // Debug log
+          
+          dispatch(focusLockSlice.addFocusValue({
+            focusValue,
+            setPointSignal,
+            timestamp
+          }));
+        } catch (error) {
+          console.error("Error parsing focus value signal:", error);
+        }
+      } else if (dataJson.name === "sigFocusLockStateChanged") {
+        //console.log("sigFocusLockStateChanged", dataJson);
+        // Handle focus lock state changes - updated for new library format
+        try {
+          // Try to get state data from args directly or args.p0
+          let stateData = dataJson.args || {};
+          if (dataJson.args && dataJson.args.p0) {
+            stateData = dataJson.args.p0;
+          }
+          
+          if (typeof stateData === 'object') {
+            if (stateData.is_locked !== undefined) {
+              dispatch(focusLockSlice.setFocusLocked(stateData.is_locked));
+            }
+            if (stateData.is_calibrating !== undefined) {
+              dispatch(focusLockSlice.setIsCalibrating(stateData.is_calibrating));
+            }
+            if (stateData.is_measuring !== undefined) {
+              dispatch(focusLockSlice.setIsMeasuring(stateData.is_measuring));
+            }
+          }
+        } catch (error) {
+          console.error("Error parsing focus lock state signal:", error);
+        }
+      } else if (dataJson.name === "sigCalibrationProgress") {
+        //console.log("sigCalibrationProgress", dataJson);
+        // Handle calibration progress updates - updated for new library format
+        try {
+          // Try to get progress data from args directly or args.p0
+          let progressData = dataJson.args || {};
+          if (dataJson.args && dataJson.args.p0) {
+            progressData = dataJson.args.p0;
+          }
+          
+          if (typeof progressData === 'object') {
+            // Add calibration progress state to Redux if needed
+            console.log("Calibration progress:", progressData);
+            // TODO: Add calibration progress to Redux state if needed
+          }
+        } catch (error) {
+          console.error("Error parsing calibration progress signal:", error);
         }
       }
       // Name: sigUpdatedSTORMReconstruction => Args: {"p0":[[252.2014923095703,298.37579345703125,2814.840087890625,206508.3125,1.037859320640564]}
