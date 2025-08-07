@@ -236,7 +236,7 @@ const WebSocketHandler = () => {
           let focusData = dataJson.args || {};
           
           // If args is available but not an object, try args.p0
-          if (dataJson.args && typeof dataJson.args !== 'object') {
+          if (dataJson.args.p0) {
             focusData = dataJson.args.p0 || {};
           }
           

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { 
@@ -17,7 +16,6 @@ import {
   Divider,
   Alert
 } from "@mui/material";
-import streamingPlugin from 'chartjs-plugin-streaming';  
 import * as focusLockSlice from "../state/slices/FocusLockSlice.js";
 import { useTheme } from '@mui/material/styles';
 import 'chartjs-adapter-date-fns';
@@ -57,8 +55,7 @@ ChartJS.register(
   LineElement,
   Title,
   Tooltip,
-  Legend, 
-  streamingPlugin
+  Legend
 );
 
 const FocusLockController = ({ hostIP, hostPort }) => {
@@ -73,6 +70,7 @@ const FocusLockController = ({ hostIP, hostPort }) => {
 
   const maxRetries = 3;
   const [pollingError, setPollingError] = useState(false);
+  const [continuousImageLoading, setContinuousImageLoading] = useState(false); // New state for image polling control
   
   // Access Redux state with specific selectors for better performance
   const isMeasuring = useSelector(state => state.focusLockState.isMeasuring);
@@ -112,7 +110,7 @@ const FocusLockController = ({ hostIP, hostPort }) => {
             img.naturalHeight
           ]));
         }
-      }, 100);
+      }, 100); // Reduce timeout from 1000ms to 100ms
 
       // Reset retry count on success
       retryCountRef.current = 0;
@@ -132,43 +130,42 @@ const FocusLockController = ({ hostIP, hostPort }) => {
     } finally {
       dispatch(focusLockSlice.setIsLoadingImage(false));
     }
-  }, [dispatch, focusLockState.lastImage, maxRetries]);
+  }, [dispatch, maxRetries]); // Remove focusLockState.lastImage dependency to prevent frequent re-creation
 
   /** keep the latest value without causing re-renders */
-  useEffect(() => { latestFocus.current = focusLockState.currentFocusValue; });
+  useEffect(() => { 
+    latestFocus.current = focusLockState.currentFocusValue; 
+  }, [focusLockState.currentFocusValue]); // Add dependency array
 
-/** dataset never recreated => Chart.js keeps the stream alive */
-const streamData = useMemo(() => ({
-  datasets: [
-    {
-      label: 'Focus value',
-      borderColor: theme.palette.primary.main,
-      backgroundColor: theme.palette.primary.light,
-      data: []                        // streaming plugin fills this in
-    }
-  ]
-}), [theme.palette.primary.main, theme.palette.primary.light]);
+/** dataset memoized to prevent unnecessary Chart.js re-renders */
+const chartData = useMemo(() => {
+  // Memoize the data transformation to prevent recalculation on every render
+  const transformedData = focusLockState.focusValues.map((v, i) => ({ 
+    x: v.timestamp || i, 
+    y: v.value ?? v 
+  }));
+  
+  return {
+    datasets: [
+      {
+        label: 'Focus value',
+        borderColor: theme.palette.primary.main,
+        backgroundColor: theme.palette.primary.light,
+        data: transformedData,
+        pointRadius: 0,
+        tension: 0.2,
+      }
+    ]
+  };
+}, [theme.palette.primary.main, theme.palette.primary.light, focusLockState.focusValues]);
 
-/** onRefresh is called by the plugin every `refresh` ms */
-const onRefresh = useCallback(chart => {
-  chart.data.datasets[0].data.push({
-    x: Date.now(),
-    y: latestFocus.current           // current focus value
-  });
-}, []);
-
-/** complete streaming config */
-const streamOptions = useMemo(() => ({
+const chartOptions = useMemo(() => ({
   animation: false,
   scales: {
     x: {
-      type: 'realtime',              // ⬅️ required
-      realtime: {
-        duration: 30000,             // 30 s visible
-        refresh: 1000,               // add point every 1 s
-        delay: 2000,                 // 2 s latency
-        onRefresh
-      }
+      type: 'linear',
+      title: { display: true, text: 'Sample' },
+      ticks: { autoSkip: true, maxTicksLimit: 10 },
     },
     y: {
       title: { display: true, text: 'Focus value' }
@@ -176,7 +173,8 @@ const streamOptions = useMemo(() => ({
   },
   interaction: { intersect: false },
   plugins: { legend: { position: 'top' } }
-}), [onRefresh]);
+}), []);
+
 
   // Polling for image updates with better error handling and cleanup
   useEffect(() => {
@@ -186,9 +184,9 @@ const streamOptions = useMemo(() => ({
       intervalRef.current = null;
     }
 
-    // Only poll when measuring is active and no polling errors
-    if (!pollingError) { // isMeasuring && 
-      intervalRef.current = setInterval(loadLastImage, 1000);
+    // Only poll when measuring is active, continuous loading is enabled, and no polling errors
+    if (isMeasuring && continuousImageLoading && !pollingError) { // Fix: Only poll when actually measuring AND continuous loading is enabled
+      intervalRef.current = setInterval(loadLastImage, 2000);
     }
 
     // Cleanup function
@@ -198,7 +196,7 @@ const streamOptions = useMemo(() => ({
         intervalRef.current = null;
       }
     };
-  }, [isMeasuring, pollingError, loadLastImage]);
+  }, [isMeasuring, continuousImageLoading, pollingError, loadLastImage]);
 
   // Load initial parameters on mount
   useEffect(() => {
@@ -308,7 +306,7 @@ const streamOptions = useMemo(() => ({
   // Handle crop frame parameter updates - memoized
   // Always send cropSize as integer to match backend API signature
   // Always send frameSize as [width, height] in NATURAL image coordinates for consistency
-  const updateCropFrameParameters = useCallback(async () => {
+  const updateCropFrameParameters = useCallback(async (overrideCropCenter = null, overrideCropSize = null) => {
     try {
       // Always use natural image dimensions for consistent coordinate system
       let frameSize = focusLockState.frameSize;
@@ -321,8 +319,8 @@ const streamOptions = useMemo(() => ({
       }
       
       await apiFocusLockControllerSetCropFrameParameters({
-        cropSize: Math.round(focusLockState.cropSize),
-        cropCenter: focusLockState.cropCenter,
+        cropSize: Math.round(overrideCropSize ?? focusLockState.cropSize),
+        cropCenter: overrideCropCenter ?? focusLockState.cropCenter,
         frameSize: frameSize
       });
     } catch (error) {
@@ -366,50 +364,6 @@ const streamOptions = useMemo(() => ({
       console.error("Failed to unlock focus:", error);
     }
   }, [dispatch]);
-
-  // Chart configuration for focus values - memoized to prevent unnecessary recalculations
-  const chartData = useMemo(() => {
-    // Use only the last 50 values for the chart
-    const values = focusLockState.focusValues.slice(-50);
-    const times = focusLockState.focusTimepoints.slice(-50);
-    return {
-      labels: times.length > 0
-        ? times.map((t, i) => {
-            const t0 = times[0];
-            return ((t - t0) / 1000).toFixed(1);
-          })
-        : [],
-      datasets: [
-        {
-          label: 'Focus Value',
-          data: values,
-          borderColor: theme.palette.primary.main,
-          backgroundColor: theme.palette.primary.light,
-          tension: 0.1,
-        },
-      ],
-    };
-  }, [focusLockState.focusTimepoints, focusLockState.focusValues, theme.palette.primary.main, theme.palette.primary.light]);
-
-  // Chart options - memoized to prevent unnecessary recalculations
-  const chartOptions = useMemo(() => ({
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: 'top',
-      },
-      title: {
-        display: true,
-        text: 'Real-time Focus Value Chart',
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: false,
-      },
-    },
-  }), []);
 
   // Handle mouse events for crop selection on image - improved to prevent dragging and memoized
   const handleImageMouseDown = useCallback((e) => {
@@ -466,20 +420,21 @@ const streamOptions = useMemo(() => ({
 
     const centerX = (newCrop.startX + newCrop.endX) / 2;
     const centerY = (newCrop.startY + newCrop.endY) / 2;
+    const newCropCenter = [Math.round(centerX), Math.round(centerY)];
+    const newCropSize = Math.round(Math.max(Math.abs(newCrop.endX - newCrop.startX), Math.abs(newCrop.endY - newCrop.startY)));
 
-    dispatch(focusLockSlice.setCropCenter([Math.round(centerX), Math.round(centerY)]));
+    dispatch(focusLockSlice.setCropCenter(newCropCenter));
     dispatch(focusLockSlice.setSelectedCropRegion(newCrop));
     // update cropSize in focusLockSlice, always as integer
-    const cropSize = Math.round(Math.max(Math.abs(newCrop.endX - newCrop.startX), Math.abs(newCrop.endY - newCrop.startY)));
-    dispatch(focusLockSlice.setCropSize(cropSize));
+    dispatch(focusLockSlice.setCropSize(newCropSize));
 
     setCropSelection(prev => ({
       ...prev,
       isSelecting: false
     }));
 
-    // Update crop parameters in backend
-    updateCropFrameParameters();
+    // Update crop parameters in backend with the new values directly to avoid race condition
+    updateCropFrameParameters(newCropCenter, newCropSize);
   }, [cropSelection.isSelecting, cropSelection.startX, cropSelection.endX, cropSelection.startY, cropSelection.endY, dispatch, updateCropFrameParameters]);
 
   // Memoize current image to prevent unnecessary recalculations
@@ -528,6 +483,18 @@ const streamOptions = useMemo(() => ({
                   label={`Measurement ${focusLockState.isMeasuring ? 'Running' : 'Stopped'}`}
                 />
                 
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={continuousImageLoading}
+                      onChange={(e) => setContinuousImageLoading(e.target.checked)}
+                      color="info"
+                      disabled={!focusLockState.isMeasuring} // Only enable when measuring is active
+                    />
+                  }
+                  label={`Continuous Image Loading ${continuousImageLoading ? 'Enabled' : 'Disabled'}`}
+                />
+                
                 {pollingError && (
                   <Alert severity="warning" size="small">
                     Image polling stopped due to connection error. Check backend connection.
@@ -574,19 +541,22 @@ const streamOptions = useMemo(() => ({
               subheader="Chart showing last 50 data points"
             />
             <CardContent>
-              <Box sx={{ height: 350 }}>
-                {focusLockState.focusValues.length > 0 ? (
-                <Line data={streamData} options={streamOptions} />
-                ) : (
+              <Box sx={{ height: 350, position: 'relative' }}>
+                {/* Render chart using Redux slice data */}
+                <Line data={chartData} options={chartOptions} />
+                {focusLockState.focusValues.length === 0 && (
                   <Box sx={{ 
+                    position: 'absolute', 
+                    top: 0, left: 0, right: 0, bottom: 0,
                     display: 'flex', 
                     alignItems: 'center', 
                     justifyContent: 'center', 
-                    height: '100%',
                     border: '2px dashed #ccc',
                     borderRadius: 1,
                     flexDirection: 'column',
-                    gap: 1
+                    gap: 1,
+                    backgroundColor: 'rgba(255,255,255,0.7)',
+                    pointerEvents: 'none',
                   }}>
                     <Typography variant="h6" color="textSecondary">
                        Real-time Focus Value Chart
