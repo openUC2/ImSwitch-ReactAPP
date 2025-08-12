@@ -5,8 +5,8 @@ const initialState = {
   tabIndex: 0,
 
   // Position and movement parameters
-  minPos: 0,
-  maxPos: 1000,
+  minPos: -500,
+  maxPos: 500,
   speed: 1000,
   axis: "A",
 

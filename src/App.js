@@ -23,6 +23,7 @@ import STORMController from "./components/STORMController.js";
 import STORMControllerArkitekt from "./components/STORMControllerArkitekt.js";
 import STORMControllerLocal from "./components/STORMControllerLocal.js";
 import FocusLockController from "./components/FocusLockController.js";
+import WiFiController from "./components/WiFiController.js";
 
 import theme from "./theme";
 import {
@@ -727,13 +728,13 @@ function App() {
               {/* Lightsheet */}
               <ListItem
                 button
-                selected={selectedPlugin === "Lightsheet_"}
-                onClick={() => handlePluginChange("Lightsheet_")}
+                selected={selectedPlugin === "LightSheet"}
+                onClick={() => handlePluginChange("LightSheet")}
               >
                 <ListItemIcon>
                   <ThreeDRotationIcon />
                 </ListItemIcon>
-                <ListItemText primary={sidebarVisible ? "Lightsheet_" : ""} />
+                <ListItemText primary={sidebarVisible ? "LightSheet" : ""} />
               </ListItem>
               {/* FlowStop */}
               <ListItem
@@ -745,6 +746,17 @@ function App() {
                   <AirIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "FlowStop" : ""} />
+              </ListItem>
+              {/* WiFi */}
+              <ListItem
+                button
+                selected={selectedPlugin === "WiFi"}
+                onClick={() => handlePluginChange("WiFi")}
+              >
+                <ListItemIcon>
+                  <WifiSharpIcon />
+                </ListItemIcon>
+                <ListItemText primary={sidebarVisible ? "WiFi" : ""} />
               </ListItem>
               {/* Widgets */}
               <ListItem
@@ -979,8 +991,11 @@ function App() {
                 </div>
               </div>
             )}
-            {selectedPlugin === "Lightsheet_" && (
+            {selectedPlugin === "LightSheet" && (
               <LightsheetController hostIP={hostIP} hostPort={apiPort} />
+            )}
+            {selectedPlugin === "WiFi" && (
+              <WiFiController hostIP={hostIP} hostPort={apiPort} />
             )}
             {plugins.map(
               (p) =>

@@ -34,6 +34,7 @@ import stresstestReducer from "./slices/StresstestSlice";
 import workflowReducer from "./slices/WorkflowSlice";
 import stormReducer from "./slices/STORMSlice";
 import focusLockReducer from "./slices/FocusLockSlice";
+import wifiReducer from "./slices/WiFiSlice";
 
 //#####################################################################################
 // Combine reducers
@@ -63,6 +64,7 @@ const rootReducer = combineReducers({
   workflowState: workflowReducer,
   storm: stormReducer,
   focusLockState: focusLockReducer,
+  wifiState: wifiReducer,
 });
 
 //#####################################################################################
