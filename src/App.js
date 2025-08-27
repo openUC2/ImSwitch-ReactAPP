@@ -35,6 +35,12 @@ import {
   Settings as SettingsIcon,
   SettingsOverscanSharp as SettingsOverscanSharpIcon,
   AccessTime as AccessTimeIcon,
+  ExpandLess,
+  ExpandMore,
+  Apps as AppsIcon,
+  Code as CodeIcon,
+  Computer as ComputerIcon,
+  Folder as FolderIcon,
 } from "@mui/icons-material";
 import * as Icons from "@mui/icons-material";
 import WifiSharpIcon from "@mui/icons-material/WifiSharp";
@@ -86,6 +92,7 @@ import {
   Switch,
   TextField,
   MenuItem,
+  Collapse,
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import CommentIcon from "@mui/icons-material/Comment";
@@ -224,6 +231,23 @@ function App() {
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const [files, setFiles] = useState([]);
+
+  // State for collapsible groups
+  const [groupsOpen, setGroupsOpen] = useState(() => {
+    // English comment: restore from localStorage if available, otherwise start collapsed on first load
+    try {
+      const saved = localStorage.getItem("imswitch.groupsOpen");
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      // English comment: ignore JSON/localStorage errors
+    }
+    return {
+      apps: false,
+      coding: false,
+      system: false,
+      systemSettings: false,
+    };
+  });
 
   /*
   FileManager
@@ -429,6 +453,22 @@ function App() {
     setSelectedPlugin(plugin);
   };
 
+  const toggleGroup = (groupName) => {
+    setGroupsOpen(prev => {
+      const next = {
+        ...prev,
+        [groupName]: !prev[groupName],
+      };
+      // English comment: persist the open/closed state
+      try {
+        localStorage.setItem("imswitch.groupsOpen", JSON.stringify(next));
+      } catch (e) {
+        // ignore storage errors
+      }
+      return next;
+    });
+  };
+
   /*
   PLUGIN LOADING from ImSwitch
   */
@@ -577,246 +617,390 @@ function App() {
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "Live View" : ""} />
               </ListItem>
-              {/* WellPlate */}
-              <ListItem
-                button
-                selected={selectedPlugin === "WellPlate"}
-                onClick={() => handlePluginChange("WellPlate")}
-              >
-                <ListItemIcon>
-                  <SettingsOverscanSharpIcon />
-                </ListItemIcon>
-                <ListItemText primary={sidebarVisible ? "WellPlate" : ""} />
-              </ListItem>
 
-              {/* FileManager */}
+              {/* Apps Group */}
+              <ListItem button onClick={() => toggleGroup('apps')}>
+                <ListItemIcon>
+                  <AppsIcon />
+                </ListItemIcon>
+                <ListItemText primary={sidebarVisible ? "Apps" : ""} />
+                {sidebarVisible && (groupsOpen.apps ? <ExpandLess /> : <ExpandMore />)}
+              </ListItem>
+              <Collapse in={groupsOpen.apps} timeout="auto" unmountOnExit>
+                <List component="div" disablePadding>
+                  {/* WellPlate */}
+                  <ListItem
+                    button
+                    selected={selectedPlugin === "WellPlate"}
+                    onClick={() => handlePluginChange("WellPlate")}
+                    sx={{ pl: 4 }}
+                  >
+                    <ListItemIcon>
+                      <SettingsOverscanSharpIcon />
+                    </ListItemIcon>
+                    <ListItemText primary={sidebarVisible ? "WellPlate" : ""} />
+                  </ListItem>
+
+                  {/* HistoScan */}
+                  <ListItem
+                    button
+                    selected={selectedPlugin === "HistoScan"}
+                    onClick={() => handlePluginChange("HistoScan")}
+                    sx={{ pl: 4 }}
+                  >
+                    <ListItemIcon>
+                      <SettingsOverscanSharpIcon />
+                    </ListItemIcon>
+                    <ListItemText primary={sidebarVisible ? "HistoScan" : ""} />
+                  </ListItem>
+
+                  {/* STORM Local */}
+                  <ListItem
+                    button
+                    selected={selectedPlugin === "STORMLocal"}
+                    onClick={() => handlePluginChange("STORMLocal")}
+                    sx={{ pl: 4 }}
+                  >
+                    <ListItemIcon>  
+                      <SettingsOverscanSharpIcon />
+                    </ListItemIcon>
+                    <ListItemText primary={sidebarVisible ? "STORM Local" : ""} />
+                  </ListItem>
+
+                  {/* STORM Arkitekt */}
+                  <ListItem
+                    button
+                    selected={selectedPlugin === "STORMArkitekt"}
+                    onClick={() => handlePluginChange("STORMArkitekt")}
+                    sx={{ pl: 4 }}
+                  >
+                    <ListItemIcon>  
+                      <SettingsOverscanSharpIcon />
+                    </ListItemIcon>
+                    <ListItemText primary={sidebarVisible ? "STORM Arkitekt" : ""} />
+                  </ListItem>
+
+                  {/* Infinity Scanning */}
+                  <ListItem
+                    button
+                    selected={selectedPlugin === "Infinity Scanning"}
+                    onClick={() => handlePluginChange("Infinity Scanning")}
+                    sx={{ pl: 4 }}
+                  >
+                    <ListItemIcon>
+                      <SettingsOverscanSharpIcon />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={sidebarVisible ? "Infinity Scanning" : ""}
+                    />
+                  </ListItem>
+
+                  {/* Lightsheet */}
+                  <ListItem
+                    button
+                    selected={selectedPlugin === "LightSheet"}
+                    onClick={() => handlePluginChange("LightSheet")}
+                    sx={{ pl: 4 }}
+                  >
+                    <ListItemIcon>
+                      <ThreeDRotationIcon />
+                    </ListItemIcon>
+                    <ListItemText primary={sidebarVisible ? "LightSheet" : ""} />
+                  </ListItem>
+
+                  {/* Timelapse */}
+                  <ListItem
+                    button
+                    selected={selectedPlugin === "Timelapse"}
+                    onClick={() => handlePluginChange("Timelapse")}
+                    sx={{ pl: 4 }}
+                  >
+                    <ListItemIcon>
+                      <AccessTimeIcon />
+                    </ListItemIcon>
+                    <ListItemText primary={sidebarVisible ? "Timelapse" : ""} />
+                  </ListItem>
+
+                  {/* FlowStop */}
+                  <ListItem
+                    button
+                    selected={selectedPlugin === "FlowStop"}
+                    onClick={() => handlePluginChange("FlowStop")}
+                    sx={{ pl: 4 }}
+                  >
+                    <ListItemIcon>
+                      <AirIcon />
+                    </ListItemIcon>
+                    <ListItemText primary={sidebarVisible ? "FlowStop" : ""} />
+                  </ListItem>
+
+                  {/* Lepmon */}
+                  <ListItem
+                    button
+                    selected={selectedPlugin === "Lepmon"}
+                    onClick={() => handlePluginChange("Lepmon")}
+                    sx={{ pl: 4 }}
+                  >
+                    <ListItemIcon>
+                      <AirIcon />
+                    </ListItemIcon>
+                    <ListItemText primary={sidebarVisible ? "Lepmon" : ""} />
+                  </ListItem>
+                </List>
+              </Collapse>
+
+              {/* File Manager */}
               <ListItem
                 button
                 selected={selectedPlugin === "FileManager"}
                 onClick={() => handlePluginChange("FileManager")}
               >
                 <ListItemIcon>
-                  <DevicesIcon />
+                  <FolderIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "File Manager" : ""} />
               </ListItem>
-              {/* HistoScan */}
-              <ListItem
-                button
-                selected={selectedPlugin === "HistoScan"}
-                onClick={() => handlePluginChange("HistoScan")}
-              >
+
+              {/* Coding Group */}
+              <ListItem button onClick={() => toggleGroup('coding')}>
                 <ListItemIcon>
-                  <SettingsOverscanSharpIcon />
+                  <CodeIcon />
                 </ListItemIcon>
-                <ListItemText primary={sidebarVisible ? "HistoScan" : ""} />
+                <ListItemText primary={sidebarVisible ? "Coding" : ""} />
+                {sidebarVisible && (groupsOpen.coding ? <ExpandLess /> : <ExpandMore />)}
               </ListItem>
-              {/* STORM Local */}
-              <ListItem
-                button
-                selected={selectedPlugin === "STORMLocal"}
-                onClick={() => handlePluginChange("STORMLocal")}
-              >
-                <ListItemIcon>  
-                  <SettingsOverscanSharpIcon />
-                </ListItemIcon>
-                <ListItemText primary={sidebarVisible ? "STORM Local" : ""} />
-              </ListItem>
-              {/* STORM Arkitekt */}
-              <ListItem
-                button
-                selected={selectedPlugin === "STORMArkitekt"}
-                onClick={() => handlePluginChange("STORMArkitekt")}
-              >
-                <ListItemIcon>  
-                  <SettingsOverscanSharpIcon />
-                </ListItemIcon>
-                <ListItemText primary={sidebarVisible ? "STORM Arkitekt" : ""} />
-              </ListItem>
-              {/* Stresstest */}
-              <ListItem
-                button
-                selected={selectedPlugin === "Stresstest"}
-                onClick={() => handlePluginChange("Stresstest")}
-              >
+              <Collapse in={groupsOpen.coding} timeout="auto" unmountOnExit>
+                <List component="div" disablePadding>
+                  {/* Fiji (ImJoy) */}
+                  <ListItem
+                    button
+                    selected={selectedPlugin === "ImJoy"}
+                    onClick={() => handlePluginChange("ImJoy")}
+                    sx={{ pl: 4 }}
+                  >
+                    <ListItemIcon>
+                      <BuildIcon />
+                    </ListItemIcon>
+                    <ListItemText primary={sidebarVisible ? "Fiji" : ""} />
+                  </ListItem>
+
+                  {/* Blockly */}
+                  <ListItem
+                    button
+                    selected={selectedPlugin === "Blockly"}
+                    onClick={() => handlePluginChange("Blockly")}
+                    sx={{ pl: 4 }}
+                  >
+                    <ListItemIcon>
+                      <SettingsIcon />
+                    </ListItemIcon>
+                    <ListItemText primary={sidebarVisible ? "Blockly" : ""} />
+                  </ListItem>
+
+                  {/* JupyteNotebook */}
+                  <ListItem
+                    button
+                    selected={selectedPlugin === "JupyteNotebook"}
+                    onClick={() => handlePluginChange("JupyteNotebook")}
+                    sx={{ pl: 4 }}
+                  >
+                    <ListItemIcon>
+                      <SettingsOverscanSharpIcon />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={sidebarVisible ? "JupyteNotebook" : ""}
+                    />
+                  </ListItem>
+                </List>
+              </Collapse>
+
+              {/* System Group */}
+              <ListItem button onClick={() => toggleGroup('system')}>
                 <ListItemIcon>
-                  <SettingsOverscanSharpIcon />
+                  <ComputerIcon />
                 </ListItemIcon>
-                <ListItemText primary={sidebarVisible ? "Stresstest" : ""} />
+                <ListItemText primary={sidebarVisible ? "System" : ""} />
+                {sidebarVisible && (groupsOpen.system ? <ExpandLess /> : <ExpandMore />)}
               </ListItem>
-              {/* FocusLock */}
-              <ListItem
-                button
-                selected={selectedPlugin === "FocusLock"}
-                onClick={() => handlePluginChange("FocusLock")}
-              >
-                <ListItemIcon>
-                  <Icons.CenterFocusStrong />
-                </ListItemIcon>
-                <ListItemText primary={sidebarVisible ? "Focus Lock" : ""} />
-              </ListItem>
-              {/* JupyteNotebook */}
-              <ListItem
-                button
-                selected={selectedPlugin === "JupyterNotebook"}
-                onClick={() => handlePluginChange("JupyteNotebook")}
-              >
-                <ListItemIcon>
-                  <SettingsOverscanSharpIcon />
-                </ListItemIcon>
-                <ListItemText
-                  primary={sidebarVisible ? "JupyteNotebook" : ""}
-                />
-              </ListItem>
-              {/* Infinity Scanning */}
-              <ListItem
-                button
-                selected={selectedPlugin === "Infinity Scanning"}
-                onClick={() => handlePluginChange("Infinity Scanning")}
-              >
-                <ListItemIcon>
-                  <SettingsOverscanSharpIcon />
-                </ListItemIcon>
-                <ListItemText
-                  primary={sidebarVisible ? "Infinity Scanning" : ""}
-                />
-              </ListItem>
-              {/* Blockly */}
-              <ListItem
-                button
-                selected={selectedPlugin === "Blockly"}
-                onClick={() => handlePluginChange("Blockly")}
-              >
+              <Collapse in={groupsOpen.system} timeout="auto" unmountOnExit>
+                <List component="div" disablePadding>
+                  {/* Stresstest */}
+                  <ListItem
+                    button
+                    selected={selectedPlugin === "Stresstest"}
+                    onClick={() => handlePluginChange("Stresstest")}
+                    sx={{ pl: 4 }}
+                  >
+                    <ListItemIcon>
+                      <SettingsOverscanSharpIcon />
+                    </ListItemIcon>
+                    <ListItemText primary={sidebarVisible ? "Stresstest" : ""} />
+                  </ListItem>
+
+                  {/* Objective */}
+                  <ListItem
+                    button
+                    selected={selectedPlugin === "Objective"}
+                    onClick={() => handlePluginChange("Objective")}
+                    sx={{ pl: 4 }}
+                  >
+                    <ListItemIcon>
+                      <ZoomOutMapIcon />
+                    </ListItemIcon>
+                    <ListItemText primary={sidebarVisible ? "Objective" : ""} />
+                  </ListItem>
+
+                  {/* Focus Lock */}
+                  <ListItem
+                    button
+                    selected={selectedPlugin === "FocusLock"}
+                    onClick={() => handlePluginChange("FocusLock")}
+                    sx={{ pl: 4 }}
+                  >
+                    <ListItemIcon>
+                      <Icons.CenterFocusStrong />
+                    </ListItemIcon>
+                    <ListItemText primary={sidebarVisible ? "Focus Lock" : ""} />
+                  </ListItem>
+
+                  {/* SocketView */}
+                  <ListItem
+                    button
+                    selected={selectedPlugin === "SocketView"}
+                    onClick={() => handlePluginChange("SocketView")}
+                    sx={{ pl: 4 }}
+                  >
+                    <ListItemIcon>
+                      <CommentIcon />
+                    </ListItemIcon>
+                    <ListItemText primary={sidebarVisible ? "SocketView" : ""} />
+                  </ListItem>
+
+                  {/* WiFi */}
+                  <ListItem
+                    button
+                    selected={selectedPlugin === "WiFi"}
+                    onClick={() => handlePluginChange("WiFi")}
+                    sx={{ pl: 4 }}
+                  >
+                    <ListItemIcon>
+                      <WifiSharpIcon />
+                    </ListItemIcon>
+                    <ListItemText primary={sidebarVisible ? "WiFi" : ""} />
+                  </ListItem>
+
+                  {/* Connections */}
+                  <ListItem
+                    button
+                    selected={selectedPlugin === "Connectoins"}
+                    onClick={handleOpenDialog}
+                    sx={{ pl: 4 }}
+                  >
+                    <ListItemIcon>
+                      <WifiSharpIcon />
+                    </ListItemIcon>
+                    <ListItemText primary={sidebarVisible ? "Connection Settings" : ""} />
+                  </ListItem>
+
+                  {/* StageOffsetCalibration */}
+                  <ListItem
+                    button
+                    selected={selectedPlugin === "StageOffsetCalibration"}
+                    onClick={() => handlePluginChange("StageOffsetCalibration")}
+                    sx={{ pl: 4 }}
+                  >
+                    <ListItemIcon>
+                      <AirIcon />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={sidebarVisible ? "StageOffsetCalibration" : ""}
+                    />
+                  </ListItem>
+
+                  {/* DetectorTrigger */}
+                  <ListItem
+                    button
+                    selected={selectedPlugin === "DetectorTrigger"}
+                    onClick={() => handlePluginChange("DetectorTrigger")}
+                    sx={{ pl: 4 }}
+                  >
+                    <ListItemIcon>
+                      <AirIcon />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={sidebarVisible ? "DetectorTrigger" : ""}
+                    />
+                  </ListItem>
+
+                  {/* ExtendedLEDMatrix */}
+                  <ListItem
+                    button
+                    selected={selectedPlugin === "ExtendedLEDMatrix"}
+                    onClick={() => handlePluginChange("ExtendedLEDMatrix")}
+                    sx={{ pl: 4 }}
+                  >
+                    <ListItemIcon>
+                      <AirIcon />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={sidebarVisible ? "ExtendedLEDMatrix" : ""}
+                    />
+                  </ListItem>
+                </List>
+              </Collapse>
+
+              {/* System Settings Group */}
+              <ListItem button onClick={() => toggleGroup('systemSettings')}>
                 <ListItemIcon>
                   <SettingsIcon />
                 </ListItemIcon>
-                <ListItemText primary={sidebarVisible ? "Blockly" : ""} />
+                <ListItemText primary={sidebarVisible ? "System Settings" : ""} />
+                {sidebarVisible && (groupsOpen.systemSettings ? <ExpandLess /> : <ExpandMore />)}
               </ListItem>
-              {/* Timelapse */}
-              <ListItem
-                button
-                selected={selectedPlugin === "Timelapse"}
-                onClick={() => handlePluginChange("Timelapse")}
-              >
-                <ListItemIcon>
-                  <AccessTimeIcon />
-                </ListItemIcon>
-                <ListItemText primary={sidebarVisible ? "Timelapse" : ""} />
-              </ListItem>
-              {/* Objective */}
-              <ListItem
-                button
-                selected={selectedPlugin === "Objective"}
-                onClick={() => handlePluginChange("Objective")}
-              >
-                <ListItemIcon>
-                  <ZoomOutMapIcon />
-                </ListItemIcon>
-                <ListItemText primary={sidebarVisible ? "Objective" : ""} />
-              </ListItem>
-              {/* SocketView */}
-              <ListItem
-                button
-                selected={selectedPlugin === "SocketView"}
-                onClick={() => handlePluginChange("SocketView")}
-              >
-                <ListItemIcon>
-                  <CommentIcon />
-                </ListItemIcon>
-                <ListItemText primary={sidebarVisible ? "SocketView" : ""} />
-              </ListItem>
-              {/* Lightsheet */}
-              <ListItem
-                button
-                selected={selectedPlugin === "LightSheet"}
-                onClick={() => handlePluginChange("LightSheet")}
-              >
-                <ListItemIcon>
-                  <ThreeDRotationIcon />
-                </ListItemIcon>
-                <ListItemText primary={sidebarVisible ? "LightSheet" : ""} />
-              </ListItem>
-              {/* FlowStop */}
-              <ListItem
-                button
-                selected={selectedPlugin === "FlowStop"}
-                onClick={() => handlePluginChange("FlowStop")}
-              >
-                <ListItemIcon>
-                  <AirIcon />
-                </ListItemIcon>
-                <ListItemText primary={sidebarVisible ? "FlowStop" : ""} />
-              </ListItem>
-              {/* WiFi */}
-              <ListItem
-                button
-                selected={selectedPlugin === "WiFi"}
-                onClick={() => handlePluginChange("WiFi")}
-              >
-                <ListItemIcon>
-                  <WifiSharpIcon />
-                </ListItemIcon>
-                <ListItemText primary={sidebarVisible ? "WiFi" : ""} />
-              </ListItem>
+              <Collapse in={groupsOpen.systemSettings} timeout="auto" unmountOnExit>
+                <List component="div" disablePadding>
+                  {/* UC2 */}
+                  <ListItem
+                    button
+                    selected={selectedPlugin === "UC2"}
+                    onClick={() => handlePluginChange("UC2")}
+                    sx={{ pl: 4 }}
+                  >
+                    <ListItemIcon>
+                      <AirIcon />
+                    </ListItemIcon>
+                    <ListItemText primary={sidebarVisible ? "UC2" : ""} />
+                  </ListItem>
+
+                  {/* Settings */}
+                  <ListItem
+                    button
+                    selected={selectedPlugin === "SystemSettings"}
+                    onClick={() => handlePluginChange("SystemSettings")}
+                    sx={{ pl: 4 }}
+                  >
+                    <ListItemIcon>
+                      <SettingsIcon />
+                    </ListItemIcon>
+                    <ListItemText primary={sidebarVisible ? "Settings" : ""} />
+                  </ListItem>
+
+                  {/* About */}
+                  <ListItem
+                    button
+                    selected={selectedPlugin === "About"}
+                    onClick={() => handlePluginChange("About")}
+                    sx={{ pl: 4 }}
+                  >
+                    <ListItemIcon>
+                      <InfoIcon />
+                    </ListItemIcon>
+                    <ListItemText primary={sidebarVisible ? "About" : ""} />
+                  </ListItem>
+                </List>
+              </Collapse>
+
               {/* Widgets */}
-              <ListItem
-                button
-                selected={selectedPlugin === "Lepmon"}
-                onClick={() => handlePluginChange("Lepmon")}
-              >
-                <ListItemIcon>
-                  <AirIcon />
-                </ListItemIcon>
-                <ListItemText primary={sidebarVisible ? "Lepmon" : ""} />
-              </ListItem>
-              {/* StageOffsetCalibration */}
-              <ListItem
-                button
-                selected={selectedPlugin === "StageOffsetCalibration"}
-                onClick={() => handlePluginChange("StageOffsetCalibration")}
-              >
-                <ListItemIcon>
-                  <AirIcon />
-                </ListItemIcon>
-                <ListItemText
-                  primary={sidebarVisible ? "StageOffsetCalibration" : ""}
-                />
-              </ListItem>
-              {/* UC2 */}
-              <ListItem
-                button
-                selected={selectedPlugin === "UC2"}
-                onClick={() => handlePluginChange("UC2")}
-              >
-                <ListItemIcon>
-                  <AirIcon />
-                </ListItemIcon>
-                <ListItemText primary={sidebarVisible ? "UC2" : ""} />
-              </ListItem>
-              <ListItem
-                button
-                selected={selectedPlugin === "DetectorTrigger"}
-                onClick={() => handlePluginChange("DetectorTrigger")}
-              >
-                <ListItemIcon>
-                  <AirIcon />
-                </ListItemIcon>
-                <ListItemText
-                  primary={sidebarVisible ? "DetectorTrigger" : ""}
-                />
-              </ListItem>
-              <ListItem
-                button
-                selected={selectedPlugin === "ExtendedLEDMatrix"}
-                onClick={() => handlePluginChange("ExtendedLEDMatrix")}
-              >
-                <ListItemIcon>
-                  <AirIcon />
-                </ListItemIcon>
-                <ListItemText
-                  primary={sidebarVisible ? "ExtendedLEDMatrix" : ""}
-                />
-              </ListItem>
               <ListItem button onClick={() => handlePluginChange("Widgets")}>
                 <ListItemIcon>
                   <DevicesIcon />
@@ -826,51 +1010,7 @@ function App() {
                   primary={sidebarVisible ? "Widgets" : ""}
                 />
               </ListItem>
-              {/* Connections */}
-              <ListItem
-                button
-                selected={selectedPlugin === "Connectoins"}
-                onClick={handleOpenDialog}
-              >
-                <ListItemIcon>
-                  <WifiSharpIcon />
-                </ListItemIcon>
-                <ListItemText primary={sidebarVisible ? "Connections" : ""} />
-              </ListItem>
-              {/* About */}
-              <ListItem
-                button
-                selected={selectedPlugin === "About"}
-                onClick={() => handlePluginChange("About")}
-              >
-                <ListItemIcon>
-                  <InfoIcon />
-                </ListItemIcon>
-                <ListItemText primary={sidebarVisible ? "About" : ""} />
-              </ListItem>
-              {/* System Settings */}
-              <ListItem
-                button
-                selected={selectedPlugin === "SystemSettings"}
-                onClick={() => handlePluginChange("SystemSettings")}
-              >
-                <ListItemIcon>
-                  <SettingsIcon />
-                </ListItemIcon>
-                <ListItemText primary={sidebarVisible ? "Settings" : ""} />
-              </ListItem>
 
-              {/* ImJoy */}
-              <ListItem
-                button
-                selected={selectedPlugin === "ImJoy"}
-                onClick={() => handlePluginChange("ImJoy")}
-              >
-                <ListItemIcon>
-                  <BuildIcon />
-                </ListItemIcon>
-                <ListItemText primary={sidebarVisible ? "Fiji" : ""} />
-              </ListItem>
               {/* Plugins */}
               {plugins.map((p) => (
                 <ListItem
