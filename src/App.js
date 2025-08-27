@@ -233,11 +233,20 @@ function App() {
   const [files, setFiles] = useState([]);
 
   // State for collapsible groups
-  const [groupsOpen, setGroupsOpen] = useState({
-    apps: true,
-    coding: true,
-    system: true,
-    systemSettings: true,
+  const [groupsOpen, setGroupsOpen] = useState(() => {
+    // English comment: restore from localStorage if available, otherwise start collapsed on first load
+    try {
+      const saved = localStorage.getItem("imswitch.groupsOpen");
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      // English comment: ignore JSON/localStorage errors
+    }
+    return {
+      apps: false,
+      coding: false,
+      system: false,
+      systemSettings: false,
+    };
   });
 
   /*
@@ -445,10 +454,19 @@ function App() {
   };
 
   const toggleGroup = (groupName) => {
-    setGroupsOpen(prev => ({
-      ...prev,
-      [groupName]: !prev[groupName]
-    }));
+    setGroupsOpen(prev => {
+      const next = {
+        ...prev,
+        [groupName]: !prev[groupName],
+      };
+      // English comment: persist the open/closed state
+      try {
+        localStorage.setItem("imswitch.groupsOpen", JSON.stringify(next));
+      } catch (e) {
+        // ignore storage errors
+      }
+      return next;
+    });
   };
 
   /*
