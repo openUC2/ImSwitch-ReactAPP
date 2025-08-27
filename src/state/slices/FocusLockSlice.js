@@ -11,6 +11,11 @@ const initialFocusLockState = {
   multiplier: 1.0,
   kp: 0.1,
   ki: 0.01,
+  setPoint: 0.0,
+  safetyDistanceLimit: 500.0,
+  safetyMoveLimit: 3.0,
+  minStepThreshold: 0.002,
+  safetyMotionActive: false,
   
   // Astigmatism parameters
   gaussianSigma: 1.0,
@@ -65,6 +70,21 @@ const focusLockSlice = createSlice({
     setKi: (state, action) => {
       state.ki = action.payload;
     },
+    setSetPoint: (state, action) => {
+      state.setPoint = action.payload;
+    },
+    setSafetyDistanceLimit: (state, action) => {
+      state.safetyDistanceLimit = action.payload;
+    },
+    setSafetyMoveLimit: (state, action) => {
+      state.safetyMoveLimit = action.payload;
+    },
+    setMinStepThreshold: (state, action) => {
+      state.minStepThreshold = action.payload;
+    },
+    setSafetyMotionActive: (state, action) => {
+      state.safetyMotionActive = action.payload;
+    },
     
     // Astigmatism parameters
     setGaussianSigma: (state, action) => {
@@ -114,6 +134,9 @@ const focusLockSlice = createSlice({
       state.focusValues = [];
       state.focusTimepoints = [];
     },
+    setCurrentFocusValue: (state, action) => {
+      state.currentFocusValue = action.payload;
+    },
     
     // UI state
     setSelectedCropRegion: (state, action) => {
@@ -147,6 +170,11 @@ export const {
   setMultiplier,
   setKp,
   setKi,
+  setSetPoint,
+  setSafetyDistanceLimit,
+  setSafetyMoveLimit,
+  setMinStepThreshold,
+  setSafetyMotionActive,
   setGaussianSigma,
   setBackgroundThreshold,
   setCropSize,
@@ -157,6 +185,7 @@ export const {
   setPollImageUrl,
   addFocusValue,
   clearFocusHistory,
+  setCurrentFocusValue,
   setSelectedCropRegion,
   setShowImageSelector,
   setIsLoadingImage,

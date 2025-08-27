@@ -60,6 +60,8 @@ const goToWebsite = () => {
   window.open("https://youseetoo.github.io", "_blank");
 };
 
+
+
 const UC2Controller = ({ hostIP, hostPort }) => {
   // Redux dispatcher
   const dispatch = useDispatch();
@@ -166,6 +168,15 @@ const UC2Controller = ({ hostIP, hostPort }) => {
     // Start checking after 5 seconds
     setTimeout(checkStatus, 5000);
   }, [hostIP, hostPort, dispatch]);
+
+  const restartImSwitch = () => {
+  //https://100.71.92.70:8001/UC2ConfigController/restartImSwitch
+  const url = `${hostIP}:${hostPort}/UC2ConfigController/restartImSwitch`;
+  fetch(url)
+    .then((response) => response.json())
+    .then((data) => console.log(data))
+    .catch((error) => console.error("Error:", error));
+};
 
   useEffect(() => {
     if (!socket) return;
@@ -508,6 +519,14 @@ const UC2Controller = ({ hostIP, hostPort }) => {
       <TabPanel value={tabIndex} index={0}>
         <Grid container spacing={2}>
           <Grid item xs={12}>
+            <Typography variant="h6">Restart ImSwitch</Typography>
+            <Button
+              style={{ marginBottom: "20px" }}
+              variant="contained"
+              onClick={restartImSwitch}
+            >
+              Restart
+            </Button>            
             <Typography variant="h6">Reconnect to UC2 board</Typography>
             <Button
               style={{ marginBottom: "20px" }}
@@ -551,6 +570,7 @@ const UC2Controller = ({ hostIP, hostPort }) => {
                 }}
               />
             </Box>
+
           </Grid>
         </Grid>
       </TabPanel>

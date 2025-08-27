@@ -14,10 +14,13 @@ import {
   CardContent,
   CardHeader,
   Divider,
-  Alert
+  Alert,
+  Tabs,
+  Tab
 } from "@mui/material";
 import * as focusLockSlice from "../state/slices/FocusLockSlice.js";
 import { useTheme } from '@mui/material/styles';
+import { useWebSocket } from "../context/WebSocketContext";
 import 'chartjs-adapter-date-fns';
 import { Line } from 'react-chartjs-2';
 import {
@@ -38,6 +41,7 @@ import apiFocusLockControllerReturnLastImage from "../backendapi/apiFocusLockCon
 import apiFocusLockControllerReturnLastCroppedImage from "../backendapi/apiFocusLockControllerReturnLastCroppedImage.js";
 import apiFocusLockControllerSetCropFrameParameters from "../backendapi/apiFocusLockControllerSetCropFrameParameters.js";
 import apiFocusLockControllerSetPIParameters from "../backendapi/apiFocusLockControllerSetPIParameters.js";
+import apiFocusLockControllerSetPIControllerParams from "../backendapi/apiFocusLockControllerSetPIControllerParams.js";
 import apiFocusLockControllerSetParamsAstigmatism from "../backendapi/apiFocusLockControllerSetParamsAstigmatism.js";
 import apiFocusLockControllerToggleFocus from "../backendapi/apiFocusLockControllerToggleFocus.js";
 import apiFocusLockControllerUnlockFocus from "../backendapi/apiFocusLockControllerUnlockFocus.js";
@@ -46,6 +50,7 @@ import apiFocusLockControllerStopFocusMeasurement from "../backendapi/apiFocusLo
 import apiFocusLockControllerEnableFocusLock from "../backendapi/apiFocusLockControllerEnableFocusLock.js";
 import apiFocusLockControllerGetFocusLockState from "../backendapi/apiFocusLockControllerGetFocusLockState.js";
 import apiFocusLockControllerGetPIParameters from "../backendapi/apiFocusLockControllerGetPIParameters.js";
+import apiFocusLockControllerGetPIControllerParams from "../backendapi/apiFocusLockControllerGetPIControllerParams.js";
 
 // Register Chart.js components
 ChartJS.register(
@@ -58,9 +63,26 @@ ChartJS.register(
   Legend
 );
 
+// TabPanel component for PI parameters
+const TabPanel = (props) => {
+  const { children, value, index, ...other } = props;
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`pi-tabpanel-${index}`}
+      aria-labelledby={`pi-tab-${index}`}
+      {...other}
+    >
+      {value === index && <Box sx={{ p: 2 }}>{children}</Box>}
+    </div>
+  );
+};
+
 const FocusLockController = ({ hostIP, hostPort }) => {
   const dispatch = useDispatch();
   const theme = useTheme();
+  const socket = useWebSocket();
   const canvasRef = useRef(null);
   const intervalRef = useRef(null);
   const retryCountRef = useRef(0);
@@ -71,6 +93,7 @@ const FocusLockController = ({ hostIP, hostPort }) => {
   const maxRetries = 3;
   const [pollingError, setPollingError] = useState(false);
   const [continuousImageLoading, setContinuousImageLoading] = useState(false); // New state for image polling control
+  const [piTabValue, setPiTabValue] = useState(0); // State for PI parameter tabs
   
   // Access Redux state with specific selectors for better performance
   const isMeasuring = useSelector(state => state.focusLockState.isMeasuring);
@@ -215,6 +238,53 @@ const chartOptions = useMemo(() => ({
     };
   }, []);
 
+  // WebSocket handler for laser value updates
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleSignal = (data) => {
+      try {
+        const parsedData = JSON.parse(data);
+        
+        // Check if this is a laser value update
+        // Format: {"p0":"('Laser', 'LED', 'Value')","p1":20812}
+        if (parsedData.p0 && parsedData.p1 !== undefined) {
+          // Parse the p0 string to extract laser information
+          const p0String = parsedData.p0;
+          const value = parsedData.p1;
+          
+          // Extract laser name and type from the tuple string
+          // Expected format: "('Laser', 'LED', 'Value')"
+          const tupleMatch = p0String.match(/\('([^']+)',\s*'([^']+)',\s*'([^']+)'\)/);
+          
+          if (tupleMatch && tupleMatch[1] === 'Laser' && tupleMatch[3] === 'Value') {
+            const laserName = tupleMatch[2]; // e.g., 'LED'
+            
+            // Update current focus value
+            dispatch(focusLockSlice.setCurrentFocusValue(value));
+            
+            // Add focus value to history for display in graph
+            const timestamp = Date.now();
+            dispatch(focusLockSlice.addFocusValue({ 
+              value: value, 
+              timestamp: timestamp 
+            }));
+            
+            console.log(`Laser ${laserName} value updated to: ${value}`);
+          }
+        }
+      } catch (error) {
+        console.error("Error parsing WebSocket laser update:", error);
+      }
+    };
+
+    socket.on("signal", handleSignal);
+    
+    return () => {
+      socket.off("signal", handleSignal);
+    };
+  }, [socket, dispatch]);
+
   // Load astigmatism parameters from backend - memoized
   const loadAstigmatismParameters = useCallback(async () => {
     try {
@@ -233,13 +303,29 @@ const chartOptions = useMemo(() => ({
   // Load PI parameters from backend - memoized
   const loadPIParameters = useCallback(async () => {
     try {
-      const params = await apiFocusLockControllerGetPIParameters();
-      if (params && Array.isArray(params) && params.length >= 2) {
-        dispatch(focusLockSlice.setKp(params[0] || 0.1));
-        dispatch(focusLockSlice.setKi(params[1] || 0.01));
+      // Try to get extended PI controller parameters first
+      const params = await apiFocusLockControllerGetPIControllerParams();
+      if (params) {
+        dispatch(focusLockSlice.setKp(params.kp || 0.1));
+        dispatch(focusLockSlice.setKi(params.ki || 0.01));
+        dispatch(focusLockSlice.setSetPoint(params.setPoint || 0.0));
+        dispatch(focusLockSlice.setSafetyDistanceLimit(params.safetyDistanceLimit || 500.0));
+        dispatch(focusLockSlice.setSafetyMoveLimit(params.safetyMoveLimit || 3.0));
+        dispatch(focusLockSlice.setMinStepThreshold(params.minStepThreshold || 0.002));
+        dispatch(focusLockSlice.setSafetyMotionActive(params.safetyMotionActive || false));
       }
     } catch (error) {
-      console.error("Failed to load PI parameters:", error);
+      console.warn("Extended PI parameters not available, trying legacy API:", error);
+      // Fallback to legacy PI parameters API
+      try {
+        const params = await apiFocusLockControllerGetPIParameters();
+        if (params && Array.isArray(params) && params.length >= 2) {
+          dispatch(focusLockSlice.setKp(params[0] || 0.1));
+          dispatch(focusLockSlice.setKi(params[1] || 0.01));
+        }
+      } catch (legacyError) {
+        console.error("Failed to load PI parameters:", legacyError);
+      }
     }
   }, [dispatch]);
 
@@ -288,6 +374,31 @@ const chartOptions = useMemo(() => ({
       console.error("Failed to update PI parameters:", error);
     }
   }, [focusLockState.kp, focusLockState.ki]);
+
+  // Handle extended PI controller parameter updates - memoized
+  const updatePIControllerParameters = useCallback(async () => {
+    try {
+      await apiFocusLockControllerSetPIControllerParams({
+        kp: focusLockState.kp,
+        ki: focusLockState.ki,
+        setPoint: focusLockState.setPoint,
+        safetyDistanceLimit: focusLockState.safetyDistanceLimit,
+        safetyMoveLimit: focusLockState.safetyMoveLimit,
+        minStepThreshold: focusLockState.minStepThreshold,
+        safetyMotionActive: focusLockState.safetyMotionActive,
+      });
+    } catch (error) {
+      console.error("Failed to update PI controller parameters:", error);
+    }
+  }, [
+    focusLockState.kp, 
+    focusLockState.ki, 
+    focusLockState.setPoint,
+    focusLockState.safetyDistanceLimit,
+    focusLockState.safetyMoveLimit,
+    focusLockState.minStepThreshold,
+    focusLockState.safetyMotionActive
+  ]);
 
   // Handle astigmatism parameter updates - memoized
   const updateAstigmatismParameters = useCallback(async () => {
@@ -583,35 +694,100 @@ const chartOptions = useMemo(() => ({
           <Card>
             <CardHeader title="PI Controller Parameters" />
             <CardContent>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                <Box>
-                  <Typography gutterBottom>Kp (Proportional): {focusLockState.kp}</Typography>
-                  <Slider
-                    value={focusLockState.kp}
-                    onChange={(e, value) => dispatch(focusLockSlice.setKp(value))}
-                    min={0.001}
-                    max={1}
-                    step={0.001}
-                    valueLabelDisplay="auto"
-                  />
+              <Tabs 
+                value={piTabValue} 
+                onChange={(e, newValue) => setPiTabValue(newValue)}
+                aria-label="PI parameters tabs"
+              >
+                <Tab label="Basic (Kp, Ki)" id="pi-tab-0" aria-controls="pi-tabpanel-0" />
+                <Tab label="Extended" id="pi-tab-1" aria-controls="pi-tabpanel-1" />
+              </Tabs>
+              
+              <TabPanel value={piTabValue} index={0}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  <Box>
+                    <Typography gutterBottom>Kp (Proportional): {focusLockState.kp}</Typography>
+                    <Slider
+                      value={focusLockState.kp}
+                      onChange={(e, value) => dispatch(focusLockSlice.setKp(value))}
+                      min={0.}
+                      max={1000}
+                      step={0.1}
+                      valueLabelDisplay="auto"
+                    />
+                  </Box>
+                  
+                  <Box>
+                    <Typography gutterBottom>Ki (Integral): {focusLockState.ki}</Typography>
+                    <Slider
+                      value={focusLockState.ki}
+                      onChange={(e, value) => dispatch(focusLockSlice.setKi(value))}
+                      min={0.}
+                      max={1000}
+                      step={0.1}
+                      valueLabelDisplay="auto"
+                    />
+                  </Box>
+                  
+                  <Button variant="contained" onClick={updatePIParameters}>
+                    Update Basic PI Parameters
+                  </Button>
                 </Box>
-                
-                <Box>
-                  <Typography gutterBottom>Ki (Integral): {focusLockState.ki}</Typography>
-                  <Slider
-                    value={focusLockState.ki}
-                    onChange={(e, value) => dispatch(focusLockSlice.setKi(value))}
-                    min={0.001}
-                    max={0.1}
-                    step={0.001}
-                    valueLabelDisplay="auto"
+              </TabPanel>
+              
+              <TabPanel value={piTabValue} index={1}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  <TextField
+                    label="Set Point"
+                    type="number"
+                    value={focusLockState.setPoint}
+                    onChange={(e) => dispatch(focusLockSlice.setSetPoint(parseFloat(e.target.value) || 0))}
+                    size="small"
+                    inputProps={{ step: 0.1 }}
                   />
+                  
+                  <TextField
+                    label="Safety Distance Limit"
+                    type="number"
+                    value={focusLockState.safetyDistanceLimit}
+                    onChange={(e) => dispatch(focusLockSlice.setSafetyDistanceLimit(parseFloat(e.target.value) || 0))}
+                    size="small"
+                    inputProps={{ step: 1, min: 0 }}
+                  />
+                  
+                  <TextField
+                    label="Safety Move Limit"
+                    type="number"
+                    value={focusLockState.safetyMoveLimit}
+                    onChange={(e) => dispatch(focusLockSlice.setSafetyMoveLimit(parseFloat(e.target.value) || 0))}
+                    size="small"
+                    inputProps={{ step: 0.1, min: 0 }}
+                  />
+                  
+                  <TextField
+                    label="Min Step Threshold"
+                    type="number"
+                    value={focusLockState.minStepThreshold}
+                    onChange={(e) => dispatch(focusLockSlice.setMinStepThreshold(parseFloat(e.target.value) || 0))}
+                    size="small"
+                    inputProps={{ step: 0.001, min: 0 }}
+                  />
+                  
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={focusLockState.safetyMotionActive}
+                        onChange={(e) => dispatch(focusLockSlice.setSafetyMotionActive(e.target.checked))}
+                      />
+                    }
+                    label="Safety Motion Active"
+                  />
+                  
+                  <Button variant="contained" onClick={updatePIControllerParameters}>
+                    Update Extended PI Parameters
+                  </Button>
                 </Box>
-                
-                <Button variant="contained" onClick={updatePIParameters}>
-                  Update PI Parameters
-                </Button>
-              </Box>
+              </TabPanel>
             </CardContent>
           </Card>
         </Grid>
