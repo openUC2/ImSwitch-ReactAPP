@@ -35,6 +35,7 @@ import workflowReducer from "./slices/WorkflowSlice";
 import stormReducer from "./slices/STORMSlice";
 import focusLockReducer from "./slices/FocusLockSlice";
 import wifiReducer from "./slices/WiFiSlice";
+import demoReducer from "./slices/DemoSlice";
 
 //#####################################################################################
 // Combine reducers
@@ -65,6 +66,7 @@ const rootReducer = combineReducers({
   storm: stormReducer,
   focusLockState: focusLockReducer,
   wifiState: wifiReducer,
+  demoState: demoReducer,
 });
 
 //#####################################################################################

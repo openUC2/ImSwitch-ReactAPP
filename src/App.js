@@ -10,6 +10,7 @@ import AboutPage from "./components/AboutPage";
 import SystemSettings from "./components/SystemSettings";
 import Tab_Widgets from "./components/Tab_Widgets";
 import LightsheetController from "./components/LightsheetController";
+import DemoController from "./components/DemoController.js"
 import BlocklyController from "./components/BlocklyController";
 import ImJoyView from "./components/ImJoyView";
 import JupyterExecutor from "./components/JupyterExecutor";
@@ -708,6 +709,19 @@ function App() {
                     <ListItemText primary={sidebarVisible ? "LightSheet" : ""} />
                   </ListItem>
 
+                  {/* Demo */}
+                  <ListItem
+                    button
+                    selected={selectedPlugin === "Demo"}
+                    onClick={() => handlePluginChange("Demo")}
+                    sx={{ pl: 4 }}
+                  >
+                    <ListItemIcon>
+                      <SettingsOverscanSharpIcon />
+                    </ListItemIcon>
+                    <ListItemText primary={sidebarVisible ? "Demo" : ""} />
+                  </ListItem>
+
                   {/* Timelapse */}
                   <ListItem
                     button
@@ -1133,6 +1147,9 @@ function App() {
             )}
             {selectedPlugin === "LightSheet" && (
               <LightsheetController hostIP={hostIP} hostPort={apiPort} />
+            )}
+            {selectedPlugin === "Demo" && (
+              <DemoController hostIP={hostIP} hostPort={apiPort} />
             )}
             {selectedPlugin === "WiFi" && (
               <WiFiController hostIP={hostIP} hostPort={apiPort} />
