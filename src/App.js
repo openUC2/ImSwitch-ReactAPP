@@ -10,7 +10,7 @@ import AboutPage from "./components/AboutPage";
 import SystemSettings from "./components/SystemSettings";
 import Tab_Widgets from "./components/Tab_Widgets";
 import LightsheetController from "./components/LightsheetController";
-import DemoController from "./components/DemoController.js"
+import DemoController from "./components/DemoController.js";
 import BlocklyController from "./components/BlocklyController";
 import ImJoyView from "./components/ImJoyView";
 import JupyterExecutor from "./components/JupyterExecutor";
@@ -20,13 +20,11 @@ import ExtendedLEDMatrixController from "./components/ExtendedLEDMatrixControlle
 import StageOffsetCalibration from "./components/StageOffsetCalibrationController";
 import DetectorTriggerController from "./components/DetectorTriggerController";
 import StresstestController from "./components/StresstestController";
-import STORMController from "./components/STORMController.js";
 import STORMControllerArkitekt from "./components/STORMControllerArkitekt.js";
 import STORMControllerLocal from "./components/STORMControllerLocal.js";
 import FocusLockController from "./components/FocusLockController.js";
 import WiFiController from "./components/WiFiController.js";
 
-import theme from "./theme";
 import {
   Menu as MenuIcon,
   Dashboard as DashboardIcon,
@@ -58,6 +56,7 @@ import WebSocketHandler from "./middleware/WebSocketHandler";
 //redux
 import { useDispatch, useSelector } from "react-redux";
 import * as connectionSettingsSlice from "./state/slices/ConnectionSettingsSlice.js";
+import { toggleTheme, getThemeState } from "./state/slices/ThemeSlice";
 
 // Filemanager
 import FileManager from "./FileManager/FileManager/FileManager";
@@ -77,7 +76,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Container,
   Box,
   Typography,
   AppBar,
@@ -89,7 +87,7 @@ import {
   ListItemIcon,
   ListItemText,
   CssBaseline,
-  Avatar, 
+  Avatar,
   Switch,
   TextField,
   MenuItem,
@@ -198,6 +196,7 @@ function App() {
   const connectionSettingsState = useSelector(
     connectionSettingsSlice.getConnectionSettingsState
   );
+  const { isDarkMode } = useSelector(getThemeState);
 
   /*
   States
@@ -221,7 +220,6 @@ function App() {
 
   const [selectedPlugin, setSelectedPlugin] = useState("LiveView"); // Control which plugin to show
   const [isDialogOpen, setDialogOpen] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(true); // State to toggle between light and dark themes
   const [sharedImage, setSharedImage] = useState(null);
   const [fileManagerInitialPath, setFileManagerInitialPath] = useState("/");
   const [layout, setLayout] = useState([
@@ -441,13 +439,17 @@ function App() {
     handleCloseDialog();
 
     //redux
-    dispatch(connectionSettingsSlice.setIp(`${hostProtocol}${hostIP.replace(/^https?:\/\//, "")}`));
+    dispatch(
+      connectionSettingsSlice.setIp(
+        `${hostProtocol}${hostIP.replace(/^https?:\/\//, "")}`
+      )
+    );
     dispatch(connectionSettingsSlice.setWebsocketPort(websocketPort));
     dispatch(connectionSettingsSlice.setApiPort(apiPort));
   };
 
-  const toggleTheme = () => {
-    setIsDarkMode((prevMode) => !prevMode);
+  const handleToggleTheme = () => {
+    dispatch(toggleTheme());
   };
 
   const handlePluginChange = (plugin) => {
@@ -455,7 +457,7 @@ function App() {
   };
 
   const toggleGroup = (groupName) => {
-    setGroupsOpen(prev => {
+    setGroupsOpen((prev) => {
       const next = {
         ...prev,
         [groupName]: !prev[groupName],
@@ -583,7 +585,7 @@ function App() {
               </Typography>
               <Switch
                 checked={isDarkMode}
-                onChange={toggleTheme}
+                onChange={handleToggleTheme}
                 color="default"
                 inputProps={{ "aria-label": "toggle theme" }}
               />
@@ -620,12 +622,13 @@ function App() {
               </ListItem>
 
               {/* Apps Group */}
-              <ListItem button onClick={() => toggleGroup('apps')}>
+              <ListItem button onClick={() => toggleGroup("apps")}>
                 <ListItemIcon>
                   <AppsIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "Apps" : ""} />
-                {sidebarVisible && (groupsOpen.apps ? <ExpandLess /> : <ExpandMore />)}
+                {sidebarVisible &&
+                  (groupsOpen.apps ? <ExpandLess /> : <ExpandMore />)}
               </ListItem>
               <Collapse in={groupsOpen.apps} timeout="auto" unmountOnExit>
                 <List component="div" disablePadding>
@@ -662,10 +665,12 @@ function App() {
                     onClick={() => handlePluginChange("STORMLocal")}
                     sx={{ pl: 4 }}
                   >
-                    <ListItemIcon>  
+                    <ListItemIcon>
                       <SettingsOverscanSharpIcon />
                     </ListItemIcon>
-                    <ListItemText primary={sidebarVisible ? "STORM Local" : ""} />
+                    <ListItemText
+                      primary={sidebarVisible ? "STORM Local" : ""}
+                    />
                   </ListItem>
 
                   {/* STORM Arkitekt */}
@@ -675,10 +680,12 @@ function App() {
                     onClick={() => handlePluginChange("STORMArkitekt")}
                     sx={{ pl: 4 }}
                   >
-                    <ListItemIcon>  
+                    <ListItemIcon>
                       <SettingsOverscanSharpIcon />
                     </ListItemIcon>
-                    <ListItemText primary={sidebarVisible ? "STORM Arkitekt" : ""} />
+                    <ListItemText
+                      primary={sidebarVisible ? "STORM Arkitekt" : ""}
+                    />
                   </ListItem>
 
                   {/* Infinity Scanning */}
@@ -706,7 +713,9 @@ function App() {
                     <ListItemIcon>
                       <ThreeDRotationIcon />
                     </ListItemIcon>
-                    <ListItemText primary={sidebarVisible ? "LightSheet" : ""} />
+                    <ListItemText
+                      primary={sidebarVisible ? "LightSheet" : ""}
+                    />
                   </ListItem>
 
                   {/* Demo */}
@@ -776,12 +785,13 @@ function App() {
               </ListItem>
 
               {/* Coding Group */}
-              <ListItem button onClick={() => toggleGroup('coding')}>
+              <ListItem button onClick={() => toggleGroup("coding")}>
                 <ListItemIcon>
                   <CodeIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "Coding" : ""} />
-                {sidebarVisible && (groupsOpen.coding ? <ExpandLess /> : <ExpandMore />)}
+                {sidebarVisible &&
+                  (groupsOpen.coding ? <ExpandLess /> : <ExpandMore />)}
               </ListItem>
               <Collapse in={groupsOpen.coding} timeout="auto" unmountOnExit>
                 <List component="div" disablePadding>
@@ -829,12 +839,13 @@ function App() {
               </Collapse>
 
               {/* System Group */}
-              <ListItem button onClick={() => toggleGroup('system')}>
+              <ListItem button onClick={() => toggleGroup("system")}>
                 <ListItemIcon>
                   <ComputerIcon />
                 </ListItemIcon>
                 <ListItemText primary={sidebarVisible ? "System" : ""} />
-                {sidebarVisible && (groupsOpen.system ? <ExpandLess /> : <ExpandMore />)}
+                {sidebarVisible &&
+                  (groupsOpen.system ? <ExpandLess /> : <ExpandMore />)}
               </ListItem>
               <Collapse in={groupsOpen.system} timeout="auto" unmountOnExit>
                 <List component="div" disablePadding>
@@ -848,7 +859,9 @@ function App() {
                     <ListItemIcon>
                       <SettingsOverscanSharpIcon />
                     </ListItemIcon>
-                    <ListItemText primary={sidebarVisible ? "Stresstest" : ""} />
+                    <ListItemText
+                      primary={sidebarVisible ? "Stresstest" : ""}
+                    />
                   </ListItem>
 
                   {/* Objective */}
@@ -874,7 +887,9 @@ function App() {
                     <ListItemIcon>
                       <Icons.CenterFocusStrong />
                     </ListItemIcon>
-                    <ListItemText primary={sidebarVisible ? "Focus Lock" : ""} />
+                    <ListItemText
+                      primary={sidebarVisible ? "Focus Lock" : ""}
+                    />
                   </ListItem>
 
                   {/* SocketView */}
@@ -887,7 +902,9 @@ function App() {
                     <ListItemIcon>
                       <CommentIcon />
                     </ListItemIcon>
-                    <ListItemText primary={sidebarVisible ? "SocketView" : ""} />
+                    <ListItemText
+                      primary={sidebarVisible ? "SocketView" : ""}
+                    />
                   </ListItem>
 
                   {/* WiFi */}
@@ -913,7 +930,9 @@ function App() {
                     <ListItemIcon>
                       <WifiSharpIcon />
                     </ListItemIcon>
-                    <ListItemText primary={sidebarVisible ? "Connection Settings" : ""} />
+                    <ListItemText
+                      primary={sidebarVisible ? "Connection Settings" : ""}
+                    />
                   </ListItem>
 
                   {/* StageOffsetCalibration */}
@@ -964,14 +983,21 @@ function App() {
               </Collapse>
 
               {/* System Settings Group */}
-              <ListItem button onClick={() => toggleGroup('systemSettings')}>
+              <ListItem button onClick={() => toggleGroup("systemSettings")}>
                 <ListItemIcon>
                   <SettingsIcon />
                 </ListItemIcon>
-                <ListItemText primary={sidebarVisible ? "System Settings" : ""} />
-                {sidebarVisible && (groupsOpen.systemSettings ? <ExpandLess /> : <ExpandMore />)}
+                <ListItemText
+                  primary={sidebarVisible ? "System Settings" : ""}
+                />
+                {sidebarVisible &&
+                  (groupsOpen.systemSettings ? <ExpandLess /> : <ExpandMore />)}
               </ListItem>
-              <Collapse in={groupsOpen.systemSettings} timeout="auto" unmountOnExit>
+              <Collapse
+                in={groupsOpen.systemSettings}
+                timeout="auto"
+                unmountOnExit
+              >
                 <List component="div" disablePadding>
                   {/* UC2 */}
                   <ListItem
@@ -1082,10 +1108,10 @@ function App() {
               <HistoScanController hostIP={hostIP} hostPort={apiPort} />
             )}
             {selectedPlugin === "STORMLocal" && (
-                <STORMControllerLocal hostIP={hostIP} hostPort={apiPort} />
+              <STORMControllerLocal hostIP={hostIP} hostPort={apiPort} />
             )}
             {selectedPlugin === "STORMArkitekt" && (
-                <STORMControllerArkitekt hostIP={hostIP} hostPort={apiPort} />
+              <STORMControllerArkitekt hostIP={hostIP} hostPort={apiPort} />
             )}
             {selectedPlugin === "Stresstest" && (
               <StresstestController hostIP={hostIP} hostPort={apiPort} />
@@ -1208,9 +1234,11 @@ function App() {
                 id="protocol"
                 label="Protocol"
                 value={hostProtocol}
-                onChange={e => {
+                onChange={(e) => {
                   setHostProtocol(e.target.value);
-                  setHostIP(`${e.target.value}${hostIP.replace(/^https?:\/\//, "")}`);
+                  setHostIP(
+                    `${e.target.value}${hostIP.replace(/^https?:\/\//, "")}`
+                  );
                 }}
                 fullWidth
               >
