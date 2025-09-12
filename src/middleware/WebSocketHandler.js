@@ -244,14 +244,16 @@ const WebSocketHandler = () => {
           
           // Support both old and new formats
           const focusValue = focusData.focus_value || focusData.focusValue || 0;
+          const currentFocusMotorPosition = focusData.new_absolute_position || 0;
           const setPointSignal = focusData.set_point_signal || focusData.setPointSignal || 0;
           const timestamp = focusData.timestamp || Date.now();
           
-          console.log("Dispatching focus values:", { focusValue, setPointSignal, timestamp }); // Debug log
+          console.log("Dispatching focus values:", { focusValue, setPointSignal, currentFocusMotorPosition, timestamp }); // Debug log
           
           dispatch(focusLockSlice.addFocusValue({
             focusValue,
             setPointSignal,
+            currentFocusMotorPosition,
             timestamp
           }));
         } catch (error) {

@@ -32,10 +32,12 @@ const initialFocusLockState = {
   // Focus values for graph (last 50 points)
   focusValues: [],
   focusTimepoints: [],
+  motorPositions: [], // Add motor position tracking
   maxFocusHistory: 50,
   
   // Current focus value
   currentFocusValue: 0.0,
+  currentFocusMotorPosition: 0.0, // Add current motor position
   setPointSignal: 0.0,
   
   // UI state
@@ -116,26 +118,33 @@ const focusLockSlice = createSlice({
     
     // Focus values
     addFocusValue: (state, action) => {
-      const { focusValue, setPointSignal, timestamp } = action.payload;
+      const { focusValue, setPointSignal, currentFocusMotorPosition, timestamp } = action.payload;
       
       // Add new values
       state.focusValues.push(focusValue);
       state.focusTimepoints.push(timestamp);
+      state.motorPositions.push(currentFocusMotorPosition || 0);
       state.currentFocusValue = focusValue;
+      state.currentFocusMotorPosition = currentFocusMotorPosition || 0;
       state.setPointSignal = setPointSignal;
       
       // Keep only last 50 values
       if (state.focusValues.length > state.maxFocusHistory) {
         state.focusValues.shift();
         state.focusTimepoints.shift();
+        state.motorPositions.shift();
       }
     },
     clearFocusHistory: (state) => {
       state.focusValues = [];
       state.focusTimepoints = [];
+      state.motorPositions = [];
     },
     setCurrentFocusValue: (state, action) => {
       state.currentFocusValue = action.payload;
+    },
+    setCurrentFocusMotorPosition: (state, action) => {
+      state.currentFocusMotorPosition = action.payload;
     },
     
     // UI state
@@ -186,6 +195,7 @@ export const {
   addFocusValue,
   clearFocusHistory,
   setCurrentFocusValue,
+  setCurrentFocusMotorPosition,
   setSelectedCropRegion,
   setShowImageSelector,
   setIsLoadingImage,

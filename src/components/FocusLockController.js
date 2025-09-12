@@ -163,24 +163,47 @@ const FocusLockController = ({ hostIP, hostPort }) => {
 /** dataset memoized to prevent unnecessary Chart.js re-renders */
 const chartData = useMemo(() => {
   // Memoize the data transformation to prevent recalculation on every render
-  const transformedData = focusLockState.focusValues.map((v, i) => ({ 
-    x: v.timestamp || i, 
-    y: v.value ?? v 
+  const transformedFocusData = focusLockState.focusValues.map((v, i) => ({ 
+    x: focusLockState.focusTimepoints[i] || i, 
+    y: v ?? 0 
   }));
+  
+  const transformedMotorData = focusLockState.motorPositions?.map((v, i) => ({ 
+    x: focusLockState.focusTimepoints[i] || i, 
+    y: v ?? 0 
+  })) || [];
   
   return {
     datasets: [
       {
-        label: 'Focus value',
+        label: 'Focus Value',
         borderColor: theme.palette.primary.main,
         backgroundColor: theme.palette.primary.light,
-        data: transformedData,
+        data: transformedFocusData,
         pointRadius: 0,
         tension: 0.2,
+        yAxisID: 'y',
+      },
+      {
+        label: 'Motor Position',
+        borderColor: theme.palette.secondary.main,
+        backgroundColor: theme.palette.secondary.light,
+        data: transformedMotorData,
+        pointRadius: 0,
+        tension: 0.2,
+        yAxisID: 'y1',
       }
     ]
   };
-}, [theme.palette.primary.main, theme.palette.primary.light, focusLockState.focusValues]);
+}, [
+  theme.palette.primary.main, 
+  theme.palette.primary.light,
+  theme.palette.secondary.main,
+  theme.palette.secondary.light,
+  focusLockState.focusValues,
+  focusLockState.motorPositions,
+  focusLockState.focusTimepoints
+]);
 
 const chartOptions = useMemo(() => ({
   animation: false,
@@ -191,8 +214,20 @@ const chartOptions = useMemo(() => ({
       ticks: { autoSkip: true, maxTicksLimit: 10 },
     },
     y: {
-      title: { display: true, text: 'Focus value' }
-    }
+      type: 'linear',
+      display: true,
+      position: 'left',
+      title: { display: true, text: 'Focus Value' },
+    },
+    y1: {
+      type: 'linear',
+      display: true,
+      position: 'right',
+      title: { display: true, text: 'Motor Position (µm)' },
+      grid: {
+        drawOnChartArea: false,
+      },
+    },
   },
   interaction: { intersect: false },
   plugins: { legend: { position: 'top' } }
@@ -617,6 +652,10 @@ const chartOptions = useMemo(() => ({
                 </Typography>
                 
                 <Typography variant="body2">
+                  Current Motor Position: {focusLockState.currentFocusMotorPosition.toFixed(3)} µm
+                </Typography>
+                
+                <Typography variant="body2">
                   Set Point Signal: {focusLockState.setPointSignal.toFixed(3)}
                 </Typography>
                 
@@ -648,8 +687,8 @@ const chartOptions = useMemo(() => ({
         <Grid item xs={12} md={8}>
           <Card>
             <CardHeader 
-              title="Focus Value History" 
-              subheader="Chart showing last 50 data points"
+              title="Focus Value & Motor Position History" 
+              subheader="Chart showing last 50 data points with dual y-axes"
             />
             <CardContent>
               <Box sx={{ height: 350, position: 'relative' }}>
@@ -670,10 +709,10 @@ const chartOptions = useMemo(() => ({
                     pointerEvents: 'none',
                   }}>
                     <Typography variant="h6" color="textSecondary">
-                       Real-time Focus Value Chart
+                       Real-time Focus Value & Motor Position Chart
                     </Typography>
                     <Typography variant="body2" color="textSecondary">
-                      (Chart.js integration showing last 50 data points)
+                      (Dual-axis chart showing focus value and motor position for last 50 data points)
                     </Typography>
                   </Box>
                 )}
@@ -682,8 +721,10 @@ const chartOptions = useMemo(() => ({
                 size="small" 
                 onClick={() => dispatch(focusLockSlice.clearFocusHistory())}
                 sx={{ mt: 1 }}
+                variant="outlined"
+                color="secondary"
               >
-                Clear History
+                Reset Graph Data
               </Button>
             </CardContent>
           </Card>
