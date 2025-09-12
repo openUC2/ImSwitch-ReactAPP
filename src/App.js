@@ -202,8 +202,31 @@ function App() {
   /*
   States
   */
-  const [sidebarVisible, setSidebarVisible] = useState(true); // Sidebar visibility state
-  const drawerWidth = sidebarVisible ? 240 : 60; // Full width when open, minimized when hidden
+  // Hook to detect mobile screens
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [sidebarVisible, setSidebarVisible] = useState(window.innerWidth > 768); // Sidebar visibility state - hidden by default on mobile
+  
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      const newIsMobile = width <= 768;
+      setIsMobile(newIsMobile);
+      
+      // Auto-hide sidebar on mobile by default
+      if (newIsMobile && sidebarVisible) {
+        setSidebarVisible(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    
+    // Set initial state
+    handleResize();
+    
+    return () => window.removeEventListener('resize', handleResize);
+  }, [sidebarVisible]);
+  
+  const drawerWidth = sidebarVisible ? (isMobile ? '100%' : 240) : (isMobile ? 0 : 60); // Full width when open, responsive sizing
 
   // hostIP now always includes protocol (http:// or https://)
   const [hostIP, setHostIP] = useState(
@@ -575,33 +598,62 @@ function App() {
               >
                 <MenuIcon />
               </IconButton>
-              <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: "bold" }}>
-                ImSwitch - {selectedPlugin}
+              <Typography variant="h6" sx={{ 
+                flexGrow: 1, 
+                fontWeight: "bold",
+                fontSize: isMobile ? "1rem" : "1.25rem",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}>
+                {isMobile ? selectedPlugin : `ImSwitch - ${selectedPlugin}`}
               </Typography>
-              <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-                Light/dark
-              </Typography>
+              {!isMobile && (
+                <Typography variant="h6" sx={{ fontWeight: "bold", marginRight: 1 }}>
+                  Light/dark
+                </Typography>
+              )}
               <Switch
                 checked={isDarkMode}
                 onChange={toggleTheme}
                 color="default"
                 inputProps={{ "aria-label": "toggle theme" }}
+                sx={{
+                  "& .MuiSwitch-thumb": {
+                    width: isMobile ? 24 : 20,
+                    height: isMobile ? 24 : 20,
+                  },
+                  "& .MuiSwitch-track": {
+                    minWidth: isMobile ? 48 : 34,
+                    height: isMobile ? 28 : 14,
+                  }
+                }}
               />
               <Avatar src={uc2Logo} />
             </Toolbar>
           </AppBar>
 
-          {/* Sidebar Drawer with minimized mode */}
+          {/* Sidebar Drawer with responsive behavior */}
           <Drawer
-            variant="permanent"
+            variant={isMobile ? "temporary" : "permanent"}
             open={sidebarVisible}
+            onClose={() => setSidebarVisible(false)}
+            ModalProps={{
+              keepMounted: true, // Better open performance on mobile.
+            }}
             sx={{
               width: drawerWidth,
               flexShrink: 0,
               "& .MuiDrawer-paper": {
                 width: drawerWidth,
                 boxSizing: "border-box",
-                top: 64, // Position below the AppBar
+                top: isMobile ? 0 : 64, // Full height on mobile
+                height: isMobile ? "100%" : "calc(100% - 64px)",
+                zIndex: isMobile ? 1300 : 1200,
+                transition: theme => theme.transitions.create('width', {
+                  easing: theme.transitions.easing.sharp,
+                  duration: theme.transitions.duration.enteringScreen,
+                }),
               },
             }}
           >
@@ -1053,7 +1105,18 @@ function App() {
           {/* Main content area */}
           <Box
             component="main"
-            sx={{ flexGrow: 1, p: 3, marginTop: "64px" }} // Push content below AppBar
+            sx={{ 
+              flexGrow: 1, 
+              p: isMobile ? 1 : 3, 
+              marginTop: "64px",
+              marginLeft: !isMobile && sidebarVisible ? 0 : 0,
+              transition: theme => theme.transitions.create(['margin', 'padding'], {
+                easing: theme.transitions.easing.sharp,
+                duration: theme.transitions.duration.leavingScreen,
+              }),
+              minHeight: "calc(100vh - 64px)",
+              overflow: "auto",
+            }}
           >
             {selectedPlugin === "WellPlate" && <AxonTabComponent />}
             <Box
