@@ -788,6 +788,79 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
   };
 
   //##################################################################################
+  // Touch event helpers to normalize touch and mouse events
+  const getEventPosition = (e) => {
+    if (e.touches && e.touches.length > 0) {
+      // Touch event
+      return { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY };
+    } else {
+      // Mouse event
+      return { clientX: e.clientX, clientY: e.clientY };
+    }
+  };
+
+  const getLocalTouchPosition = (e) => {
+    const touch = e.touches[0] || e.changedTouches[0];
+    const rect = canvasRef.current.getBoundingClientRect();
+    return {
+      x: touch.clientX - rect.left,
+      y: touch.clientY - rect.top,
+    };
+  };
+
+  //##################################################################################
+  // Touch event handlers that reuse mouse logic
+  const handleTouchStart = (e) => {
+    e.preventDefault(); // Prevent default touch behaviors
+    console.log("handleTouchStart");
+    
+    if (e.touches.length === 1) {
+      // Single touch - treat as mouse down
+      const fakeMouseEvent = {
+        button: 0, // Left button
+        clientX: e.touches[0].clientX,
+        clientY: e.touches[0].clientY,
+        preventDefault: () => e.preventDefault(),
+        ctrlKey: false, // Touch doesn't have ctrl key
+        shiftKey: false,
+      };
+      handleMouseDown(fakeMouseEvent);
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    e.preventDefault(); // Prevent scrolling
+    console.log("handleTouchMove");
+    
+    if (e.touches.length === 1) {
+      // Single touch - treat as mouse move
+      const fakeMouseEvent = {
+        clientX: e.touches[0].clientX,
+        clientY: e.touches[0].clientY,
+        preventDefault: () => e.preventDefault(),
+        ctrlKey: false,
+        shiftKey: false,
+      };
+      handleMouseMove(fakeMouseEvent);
+    }
+  };
+
+  const handleTouchEnd = (e) => {
+    e.preventDefault();
+    console.log("handleTouchEnd");
+    
+    // Treat as mouse up
+    const fakeMouseEvent = {
+      clientX: e.changedTouches[0]?.clientX || 0,
+      clientY: e.changedTouches[0]?.clientY || 0,
+      preventDefault: () => e.preventDefault(),
+      ctrlKey: false,
+      shiftKey: false,
+    };
+    handleMouseUp(fakeMouseEvent);
+  };
+
+  //##################################################################################
   const handleMouseDown = (e) => {
     console.log("handleMouseDown");
 
@@ -1224,6 +1297,9 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
         onMouseMove={handleMouseMove} // Handle dragging movement
         onMouseUp={handleMouseUp} // Stop dragging
         onMouseLeave={handleMouseUp} // Stop dragging if mouse leaves canvas
+        onTouchStart={handleTouchStart} // Touch start
+        onTouchMove={handleTouchMove} // Touch move
+        onTouchEnd={handleTouchEnd} // Touch end
         onClick={handleClick} // Log local position on click
         onKeyDown={handleKeyDown}
         onKeyUp={handleKeyUp}
@@ -1234,6 +1310,7 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
           height: "100%", // Canvas height will adjust to the parent's height
           cursor: getCursorStyle(),
           display: "block",
+          touchAction: "none", // Prevent default touch behaviors like scrolling
         }}
       />
       {/* canvas end */}
