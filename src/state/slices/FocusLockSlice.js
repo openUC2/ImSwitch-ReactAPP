@@ -33,6 +33,7 @@ const initialFocusLockState = {
   focusValues: [],
   focusTimepoints: [],
   motorPositions: [], // Add motor position tracking
+  setPointSignals: [], // Store setPointSignal history for chart
   maxFocusHistory: 50,
   
   // Current focus value
@@ -121,24 +122,26 @@ const focusLockSlice = createSlice({
       const { focusValue, setPointSignal, currentFocusMotorPosition, timestamp } = action.payload;
       
       // Add new values
-      state.focusValues.push(focusValue);
-      state.focusTimepoints.push(timestamp);
-      state.motorPositions.push(currentFocusMotorPosition || 0);
-      state.currentFocusValue = focusValue;
-      state.currentFocusMotorPosition = currentFocusMotorPosition || 0;
-      state.setPointSignal = setPointSignal;
+        state.focusValues.push(focusValue);
+        state.focusTimepoints.push(timestamp);
+        state.motorPositions.push(currentFocusMotorPosition || 0);
+        state.currentFocusValue = focusValue;
+        state.currentFocusMotorPosition = currentFocusMotorPosition || 0;
+        state.setPointSignals.push(setPointSignal ?? 0);
       
       // Keep only last 50 values
       if (state.focusValues.length > state.maxFocusHistory) {
         state.focusValues.shift();
         state.focusTimepoints.shift();
         state.motorPositions.shift();
-      }
-    },
+          state.setPointSignals.shift();
+    
+      }},
     clearFocusHistory: (state) => {
       state.focusValues = [];
       state.focusTimepoints = [];
       state.motorPositions = [];
+    state.setPointSignals = [];
     },
     setCurrentFocusValue: (state, action) => {
       state.currentFocusValue = action.payload;

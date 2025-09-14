@@ -228,8 +228,8 @@ const WebSocketHandler = () => {
             console.warn("Failed to parse STORM localization data:", e);
           }
         }
-      } else if (dataJson.name === "sigUpdateFocusValue") {
-        console.log("sigUpdateFocusValue received:", dataJson); // Debug log
+      } else if (dataJson.name === "sigFocusValueUpdate") {
+        console.log("sigFocusValueUpdate received:", dataJson); // Debug log
         // Handle focus value updates - updated for new library format
         try {
           // Try the new format first (direct object)
@@ -244,8 +244,8 @@ const WebSocketHandler = () => {
           
           // Support both old and new formats
           const focusValue = focusData.focus_value || focusData.focusValue || 0;
-          const currentFocusMotorPosition = focusData.new_absolute_position || 0;
-          const setPointSignal = focusData.set_point_signal || focusData.setPointSignal || 0;
+          const currentFocusMotorPosition = focusData.current_position || 0;
+          const setPointSignal = focusData.focus_setpoint || focusData.setPointSignal || 0;
           const timestamp = focusData.timestamp || Date.now();
           
           console.log("Dispatching focus values:", { focusValue, setPointSignal, currentFocusMotorPosition, timestamp }); // Debug log

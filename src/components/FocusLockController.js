@@ -51,6 +51,8 @@ import apiFocusLockControllerEnableFocusLock from "../backendapi/apiFocusLockCon
 import apiFocusLockControllerGetFocusLockState from "../backendapi/apiFocusLockControllerGetFocusLockState.js";
 import apiFocusLockControllerGetPIParameters from "../backendapi/apiFocusLockControllerGetPIParameters.js";
 import apiFocusLockControllerGetPIControllerParams from "../backendapi/apiFocusLockControllerGetPIControllerParams.js";
+import apiFocusLockControllerRunFocusCalibrationDynamic from "../backendapi/apiFocusLockControllerRunFocusCalibrationDynamic.js";
+import apiFocusLockControllerGetCalibrationStatus from "../backendapi/apiFocusLockControllerGetCalibrationStatus.js";
 
 // Register Chart.js components
 ChartJS.register(
@@ -80,6 +82,10 @@ const TabPanel = (props) => {
 };
 
 const FocusLockController = ({ hostIP, hostPort }) => {
+  // Calibration polling state
+  const calibrationPollingRef = useRef(null);
+  const calibrationTimeoutRef = useRef(null);
+  const [isCalibrationPolling, setIsCalibrationPolling] = useState(false);
   const dispatch = useDispatch();
   const theme = useTheme();
   const socket = useWebSocket();
@@ -94,6 +100,11 @@ const FocusLockController = ({ hostIP, hostPort }) => {
   const [pollingError, setPollingError] = useState(false);
   const [continuousImageLoading, setContinuousImageLoading] = useState(false); // New state for image polling control
   const [piTabValue, setPiTabValue] = useState(0); // State for PI parameter tabs
+
+  // Calibration parameters exposed to user
+  const [scanRangeUm, setScanRangeUm] = useState(2000);
+  const [numSteps, setNumSteps] = useState(20);
+  const [settleTime, setSettleTime] = useState(0.5);
   
   // Access Redux state with specific selectors for better performance
   const isMeasuring = useSelector(state => state.focusLockState.isMeasuring);
@@ -163,16 +174,31 @@ const FocusLockController = ({ hostIP, hostPort }) => {
 /** dataset memoized to prevent unnecessary Chart.js re-renders */
 const chartData = useMemo(() => {
   // Memoize the data transformation to prevent recalculation on every render
+  // Focus Value
   const transformedFocusData = focusLockState.focusValues.map((v, i) => ({ 
     x: focusLockState.focusTimepoints[i] || i, 
     y: v ?? 0 
   }));
-  
+  // Motor Position
   const transformedMotorData = focusLockState.motorPositions?.map((v, i) => ({ 
     x: focusLockState.focusTimepoints[i] || i, 
     y: v ?? 0 
   })) || [];
-  
+  // Set Point Signal
+  const transformedSetPointData = focusLockState.setPointSignals?.map((v, i) => ({
+    x: focusLockState.focusTimepoints[i] || i,
+    y: v ?? 0
+  })) || [];
+
+  // If setPointSignals is not present, fallback to extracting from focusHistory
+  let setPointData = transformedSetPointData;
+  if (setPointData.length === 0 && Array.isArray(focusLockState.focusHistory)) {
+    setPointData = focusLockState.focusHistory.map((entry, i) => ({
+      x: entry.timestamp || i,
+      y: entry.setPointSignal ?? 0
+    }));
+  }
+
   return {
     datasets: [
       {
@@ -183,6 +209,15 @@ const chartData = useMemo(() => {
         pointRadius: 0,
         tension: 0.2,
         yAxisID: 'y',
+      },
+      {
+        label: 'Set Point Signal',
+        borderColor: 'orange',
+        backgroundColor: 'rgba(255,165,0,0.2)',
+        data: setPointData,
+        pointRadius: 0,
+        tension: 0.2,
+        yAxisID: 'y', // left axis
       },
       {
         label: 'Motor Position',
@@ -202,7 +237,9 @@ const chartData = useMemo(() => {
   theme.palette.secondary.light,
   focusLockState.focusValues,
   focusLockState.motorPositions,
-  focusLockState.focusTimepoints
+  focusLockState.focusTimepoints,
+  focusLockState.setPointSignals,
+  focusLockState.focusHistory
 ]);
 
 const chartOptions = useMemo(() => ({
@@ -494,12 +531,44 @@ const chartOptions = useMemo(() => ({
   const startCalibration = useCallback(async () => {
     try {
       dispatch(focusLockSlice.setIsCalibrating(true));
-      await apiFocusLockControllerFocusCalibrationStart();
+      setIsCalibrationPolling(true);
+      // Use user-provided values for calibration
+      await apiFocusLockControllerRunFocusCalibrationDynamic({
+        scan_range_um: scanRangeUm,
+        num_steps: numSteps,
+        settle_time: settleTime
+      });
+      // Start polling calibration status
+      if (calibrationPollingRef.current) clearInterval(calibrationPollingRef.current);
+      if (calibrationTimeoutRef.current) clearTimeout(calibrationTimeoutRef.current);
+      let elapsed = 0;
+      calibrationPollingRef.current = setInterval(async () => {
+        try {
+          const status = await apiFocusLockControllerGetCalibrationStatus();
+          if (status && status.calibration_active === false) {
+            dispatch(focusLockSlice.setIsCalibrating(false));
+            setIsCalibrationPolling(false);
+            clearInterval(calibrationPollingRef.current);
+            calibrationPollingRef.current = null;
+          }
+        } catch (err) {
+          // Ignore polling errors
+        }
+      }, 1000);
+      calibrationTimeoutRef.current = setTimeout(() => {
+        if (calibrationPollingRef.current) {
+          clearInterval(calibrationPollingRef.current);
+          calibrationPollingRef.current = null;
+        }
+        dispatch(focusLockSlice.setIsCalibrating(false));
+        setIsCalibrationPolling(false);
+      }, 10000);
     } catch (error) {
       console.error("Failed to start calibration:", error);
       dispatch(focusLockSlice.setIsCalibrating(false));
+      setIsCalibrationPolling(false);
     }
-  }, [dispatch]);
+  }, [dispatch, scanRangeUm, numSteps, settleTime]);
 
   // Unlock focus - memoized
   const unlockFocus = useCallback(async () => {
@@ -607,6 +676,34 @@ const chartOptions = useMemo(() => ({
             <CardHeader title="Focus Lock Status" />
             <CardContent>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {/* Calibration parameter inputs */}
+                <TextField
+                  label="Scan Range (µm)"
+                  type="number"
+                  value={scanRangeUm}
+                  onChange={e => setScanRangeUm(Number(e.target.value))}
+                  size="small"
+                  inputProps={{ step: 1, min: 100, max: 10000 }}
+                  sx={{ mb: 1 }}
+                />
+                <TextField
+                  label="Number of Steps"
+                  type="number"
+                  value={numSteps}
+                  onChange={e => setNumSteps(Number(e.target.value))}
+                  size="small"
+                  inputProps={{ step: 1, min: 2, max: 100 }}
+                  sx={{ mb: 1 }}
+                />
+                <TextField
+                  label="Settle Time (s)"
+                  type="number"
+                  value={settleTime}
+                  onChange={e => setSettleTime(Number(e.target.value))}
+                  size="small"
+                  inputProps={{ step: 0.1, min: 0.1, max: 10 }}
+                  sx={{ mb: 2 }}
+                />
                 <FormControlLabel
                   control={
                     <Switch
@@ -663,10 +760,10 @@ const chartOptions = useMemo(() => ({
                   <Button 
                     variant="contained" 
                     onClick={startCalibration}
-                    disabled={focusLockState.isCalibrating}
+                    disabled={focusLockState.isCalibrating || isCalibrationPolling}
                     fullWidth
                   >
-                    {focusLockState.isCalibrating ? 'Calibrating...' : 'Start Calibration'}
+                    {(focusLockState.isCalibrating || isCalibrationPolling) ? 'Calibrating...' : 'Start Calibration'}
                   </Button>
                   
                   <Button 
@@ -752,7 +849,7 @@ const chartOptions = useMemo(() => ({
                       value={focusLockState.kp}
                       onChange={(e, value) => dispatch(focusLockSlice.setKp(value))}
                       min={0.}
-                      max={1000}
+                      max={10}
                       step={0.1}
                       valueLabelDisplay="auto"
                     />
@@ -764,7 +861,7 @@ const chartOptions = useMemo(() => ({
                       value={focusLockState.ki}
                       onChange={(e, value) => dispatch(focusLockSlice.setKi(value))}
                       min={0.}
-                      max={1000}
+                      max={10}
                       step={0.1}
                       valueLabelDisplay="auto"
                     />
