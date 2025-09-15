@@ -68,7 +68,6 @@ import { getAllFilesAPI } from "./FileManager/api/getAllFilesAPI";
 import { downloadFile } from "./FileManager/api/downloadFileAPI";
 import { api } from "./FileManager/api/api";
 import "./FileManager/App.scss";
-import uc2Logo from "./assets/ouc2_logo_qaudratic.png";
 
 import {
   Button,
@@ -77,18 +76,12 @@ import {
   DialogContent,
   DialogActions,
   Box,
-  Typography,
-  AppBar,
-  Toolbar,
-  IconButton,
   Drawer,
   List,
   ListItem,
   ListItemIcon,
   ListItemText,
   CssBaseline,
-  Avatar,
-  Switch,
   TextField,
   MenuItem,
   Collapse,
@@ -98,6 +91,7 @@ import CommentIcon from "@mui/icons-material/Comment";
 import ZoomOutMapIcon from "@mui/icons-material/ZoomOutMap";
 import FlowStopController from "./components/FlowStopController";
 import LepMonController from "./components/LepmonController.js";
+import TopBar from "./components/TopBar";
 
 // Define both light and dark themes
 
@@ -204,28 +198,34 @@ function App() {
   // Hook to detect mobile screens
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [sidebarVisible, setSidebarVisible] = useState(window.innerWidth > 768); // Sidebar visibility state - hidden by default on mobile
-  
+
   useEffect(() => {
     const handleResize = () => {
       const width = window.innerWidth;
       const newIsMobile = width <= 768;
       setIsMobile(newIsMobile);
-      
+
       // Auto-hide sidebar on mobile by default
       if (newIsMobile && sidebarVisible) {
         setSidebarVisible(false);
       }
     };
 
-    window.addEventListener('resize', handleResize);
-    
+    window.addEventListener("resize", handleResize);
+
     // Set initial state
     handleResize();
-    
-    return () => window.removeEventListener('resize', handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
   }, [sidebarVisible]);
-  
-  const drawerWidth = sidebarVisible ? (isMobile ? '100%' : 240) : (isMobile ? 0 : 60); // Full width when open, responsive sizing
+
+  const drawerWidth = sidebarVisible
+    ? isMobile
+      ? "100%"
+      : 240
+    : isMobile
+    ? 0
+    : 60; // Full width when open, responsive sizing
 
   // hostIP now always includes protocol (http:// or https://)
   const [hostIP, setHostIP] = useState(
@@ -587,53 +587,12 @@ function App() {
       <WebSocketProvider hostIP={hostIP}>
         <CssBaseline />
         <Box sx={{ display: "flex" }}>
-          <AppBar
-            position="fixed"
-            sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
-          >
-            <Toolbar>
-              <IconButton
-                edge="start"
-                color="inherit"
-                aria-label="menu"
-                onClick={() => setSidebarVisible(!sidebarVisible)}
-              >
-                <MenuIcon />
-              </IconButton>
-              <Typography variant="h6" sx={{ 
-                flexGrow: 1, 
-                fontWeight: "bold",
-                fontSize: isMobile ? "1rem" : "1.25rem",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}>
-                {isMobile ? selectedPlugin : `ImSwitch - ${selectedPlugin}`}
-              </Typography>
-              {!isMobile && (
-                <Typography variant="h6" sx={{ fontWeight: "bold", marginRight: 1 }}>
-                  Light/dark
-                </Typography>
-              )}
-              <Switch
-                checked={isDarkMode}
-                onChange={handleToggleTheme}
-                color="default"
-                inputProps={{ "aria-label": "toggle theme" }}
-                sx={{
-                  "& .MuiSwitch-thumb": {
-                    width: isMobile ? 24 : 20,
-                    height: isMobile ? 24 : 20,
-                  },
-                  "& .MuiSwitch-track": {
-                    minWidth: isMobile ? 48 : 34,
-                    height: isMobile ? 28 : 14,
-                  }
-                }}
-              />
-              <Avatar src={uc2Logo} />
-            </Toolbar>
-          </AppBar>
+          <TopBar
+            isMobile={isMobile}
+            sidebarVisible={sidebarVisible}
+            setSidebarVisible={setSidebarVisible}
+            selectedPlugin={selectedPlugin}
+          />
 
           {/* Sidebar Drawer with responsive behavior */}
           <Drawer
@@ -652,10 +611,11 @@ function App() {
                 top: isMobile ? 0 : 64, // Full height on mobile
                 height: isMobile ? "100%" : "calc(100% - 64px)",
                 zIndex: isMobile ? 1300 : 1200,
-                transition: theme => theme.transitions.create('width', {
-                  easing: theme.transitions.easing.sharp,
-                  duration: theme.transitions.duration.enteringScreen,
-                }),
+                transition: (theme) =>
+                  theme.transitions.create("width", {
+                    easing: theme.transitions.easing.sharp,
+                    duration: theme.transitions.duration.enteringScreen,
+                  }),
               },
             }}
           >
@@ -1131,15 +1091,16 @@ function App() {
           {/* Main content area */}
           <Box
             component="main"
-            sx={{ 
-              flexGrow: 1, 
-              p: isMobile ? 1 : 3, 
+            sx={{
+              flexGrow: 1,
+              p: isMobile ? 1 : 3,
               marginTop: "64px",
               marginLeft: !isMobile && sidebarVisible ? 0 : 0,
-              transition: theme => theme.transitions.create(['margin', 'padding'], {
-                easing: theme.transitions.easing.sharp,
-                duration: theme.transitions.duration.leavingScreen,
-              }),
+              transition: (theme) =>
+                theme.transitions.create(["margin", "padding"], {
+                  easing: theme.transitions.easing.sharp,
+                  duration: theme.transitions.duration.leavingScreen,
+                }),
               minHeight: "calc(100vh - 64px)",
               overflow: "auto",
             }}
