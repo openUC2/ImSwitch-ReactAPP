@@ -24,6 +24,8 @@ import STORMControllerArkitekt from "./components/STORMControllerArkitekt.js";
 import STORMControllerLocal from "./components/STORMControllerLocal.js";
 import FocusLockController from "./components/FocusLockController.js";
 import WiFiController from "./components/WiFiController.js";
+import ConnectionSettings from "./components/ConnectionSettings";
+import { setIp, setApiPort } from "./state/slices/ConnectionSettingsSlice";
 
 import {
   Menu as MenuIcon,
@@ -70,11 +72,6 @@ import { api } from "./FileManager/api/api";
 import "./FileManager/App.scss";
 
 import {
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Box,
   Drawer,
   List,
@@ -82,19 +79,19 @@ import {
   ListItemIcon,
   ListItemText,
   CssBaseline,
-  TextField,
-  MenuItem,
   Collapse,
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-import CommentIcon from "@mui/icons-material/Comment";
-import ZoomOutMapIcon from "@mui/icons-material/ZoomOutMap";
+import {
+  Link as LinkIcon,
+  Comment as CommentIcon,
+  ZoomOutMap as ZoomOutMapIcon,
+} from "@mui/icons-material";
 import FlowStopController from "./components/FlowStopController";
 import LepMonController from "./components/LepmonController.js";
 import TopBar from "./components/TopBar";
 
 // Define both light and dark themes
-
 const lightTheme = createTheme({
   palette: {
     mode: "light",
@@ -227,22 +224,11 @@ function App() {
     ? 0
     : 60; // Full width when open, responsive sizing
 
-  // hostIP now always includes protocol (http:// or https://)
-  const [hostIP, setHostIP] = useState(
-    connectionSettingsState.ip.startsWith("http")
-      ? connectionSettingsState.ip
-      : `https://${connectionSettingsState.ip}`
-  );
-  const [hostProtocol, setHostProtocol] = useState(
-    connectionSettingsState.ip.startsWith("http://") ? "http://" : "https://"
-  );
-  const [websocketPort, setWebsocketPort] = useState(
-    connectionSettingsState.websocketPort
-  );
-  const [apiPort, setApiPort] = useState(connectionSettingsState.apiPort);
+  const hostIP = connectionSettingsState.ip;
+  const websocketPort = connectionSettingsState.websocketPort;
+  const apiPort = connectionSettingsState.apiPort;
 
   const [selectedPlugin, setSelectedPlugin] = useState("LiveView"); // Control which plugin to show
-  const [isDialogOpen, setDialogOpen] = useState(false);
   const [sharedImage, setSharedImage] = useState(null);
   const [fileManagerInitialPath, setFileManagerInitialPath] = useState("/");
   const [layout, setLayout] = useState([
@@ -347,10 +333,7 @@ function App() {
     setSelectedPlugin("ImJoy");
   };
 
-  /*
-  On Value Changes
-  */
-
+  // On Value Changes
   useEffect(() => {
     const currentHostname = window.location.hostname;
     const portsToCheck = [8001, 8002, 443];
@@ -365,9 +348,8 @@ function App() {
               const url = `${protocol}${currentHostname}:${port}/plugins`;
               const response = await fetch(url, { method: "HEAD" });
               if (response.ok) {
-                setHostIP(`${protocol}${currentHostname}`);
-                setHostProtocol(protocol);
-                setApiPort(port);
+                dispatch(setIp(`${protocol}${currentHostname}`));
+                dispatch(setApiPort(port));
                 found = true;
                 break;
               }
@@ -388,7 +370,7 @@ function App() {
     if (!currentHostname.startsWith("youseetoo.github.io")) {
       findValidPort();
     }
-  }, []);
+  }, [dispatch]);
 
   const checkPortsForApi = async (hostname, ports) => {
     for (const port of ports) {
@@ -407,40 +389,10 @@ function App() {
 
   // change API url/port and update filelist
   useEffect(() => {
-    const apiUrl = `${hostIP}:${apiPort}/plugins`;
     api.defaults.baseURL = `${hostIP}:${apiPort}/FileManager`;
     handleRefresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hostIP, apiPort]);
-
-  // Dialog handlers for the URL / Port settings
-  const handleCloseDialog = () => {
-    setDialogOpen(false);
-  };
-
-  // Open the dialog
-  const handleOpenDialog = () => {
-    setDialogOpen(true);
-  };
-
-  // Handle changes to the IP address (host only, no protocol)
-  const handlehostIPChange = (event) => {
-    let ip = event.target.value.trim();
-    // Remove protocol if user enters it
-    ip = ip.replace(/^https?:\/\//, "");
-    setHostIP(`${hostProtocol}${ip}`);
-  };
-
-  // Handle changes to the IP address
-  const handlehostWebsocketPortChange = (event) => {
-    let port = event.target.value.trim();
-    setWebsocketPort(port);
-  };
-  // Handle changes to the IP address
-  const handlehostApiPortChange = (event) => {
-    let port = event.target.value.trim();
-    setApiPort(port);
-  };
 
   // handle default filemanager path change
   const handleFileManagerInitialPathChange = (event) => {
@@ -450,29 +402,6 @@ function App() {
     setSelectedPlugin("FileManager");
     // Refresh immediately since FileNavigationProvider now handles path changes properly
     handleRefresh();
-  };
-
-  // Save the IP address and port, and allow protocol selection
-  const handleSavehostIP = () => {
-    // hostIP is always protocol + ip
-    setHostIP(`${hostProtocol}${hostIP.replace(/^https?:\/\//, "")}`);
-    setApiPort(apiPort);
-    setWebsocketPort(websocketPort);
-    setHostProtocol(hostProtocol);
-    handleCloseDialog();
-
-    //redux
-    dispatch(
-      connectionSettingsSlice.setIp(
-        `${hostProtocol}${hostIP.replace(/^https?:\/\//, "")}`
-      )
-    );
-    dispatch(connectionSettingsSlice.setWebsocketPort(websocketPort));
-    dispatch(connectionSettingsSlice.setApiPort(apiPort));
-  };
-
-  const handleToggleTheme = () => {
-    dispatch(toggleTheme());
   };
 
   const handlePluginChange = (plugin) => {
@@ -936,11 +865,11 @@ function App() {
                   <ListItem
                     button
                     selected={selectedPlugin === "Connectoins"}
-                    onClick={handleOpenDialog}
+                    onClick={() => handlePluginChange("Connections")}
                     sx={{ pl: 4 }}
                   >
                     <ListItemIcon>
-                      <WifiSharpIcon />
+                      <LinkIcon />
                     </ListItemIcon>
                     <ListItemText
                       primary={sidebarVisible ? "Connection Settings" : ""}
@@ -1246,63 +1175,8 @@ function App() {
                 onLayoutChange={(newLayout) => setLayout(newLayout)}
               />
             )}
+            {selectedPlugin === "Connections" && <ConnectionSettings />}
           </Box>
-
-          {/* IP Address Dialog */}
-          <Dialog open={isDialogOpen} onClose={handleCloseDialog}>
-            <DialogTitle>Enter IP Address</DialogTitle>
-            <DialogContent>
-              <TextField
-                select
-                margin="dense"
-                id="protocol"
-                label="Protocol"
-                value={hostProtocol}
-                onChange={(e) => {
-                  setHostProtocol(e.target.value);
-                  setHostIP(
-                    `${e.target.value}${hostIP.replace(/^https?:\/\//, "")}`
-                  );
-                }}
-                fullWidth
-              >
-                <MenuItem value="https://">https://</MenuItem>
-                <MenuItem value="http://">http://</MenuItem>
-              </TextField>
-              <TextField
-                autoFocus
-                margin="dense"
-                id="ip-address"
-                label="IP Address"
-                type="text"
-                fullWidth
-                value={hostIP.replace(/^https?:\/\//, "")}
-                onChange={handlehostIPChange}
-              />
-              <TextField
-                margin="dense"
-                id="port websocket"
-                label="Port (websocket)"
-                type="text"
-                fullWidth
-                value={websocketPort}
-                onChange={handlehostWebsocketPortChange}
-              />
-              <TextField
-                margin="dense"
-                id="port api"
-                label="Port (API)"
-                type="text"
-                fullWidth
-                value={apiPort}
-                onChange={handlehostApiPortChange}
-              />
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={handleCloseDialog}>Cancel</Button>
-              <Button onClick={handleSavehostIP}>Save</Button>
-            </DialogActions>
-          </Dialog>
         </Box>
       </WebSocketProvider>
     </ThemeProvider>
