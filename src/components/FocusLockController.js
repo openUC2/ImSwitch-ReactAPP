@@ -53,6 +53,10 @@ import apiFocusLockControllerGetPIParameters from "../backendapi/apiFocusLockCon
 import apiFocusLockControllerGetPIControllerParams from "../backendapi/apiFocusLockControllerGetPIControllerParams.js";
 import apiFocusLockControllerRunFocusCalibrationDynamic from "../backendapi/apiFocusLockControllerRunFocusCalibrationDynamic.js";
 import apiFocusLockControllerGetCalibrationStatus from "../backendapi/apiFocusLockControllerGetCalibrationStatus.js";
+import apiFocusLockControllerSetExposureTime from "../backendapi/apiFocusLockControllerSetExposureTime.js";
+import apiFocusLockControllerSetGain from "../backendapi/apiFocusLockControllerSetGain.js";
+import apiFocusLockControllerGetExposureTime from "../backendapi/apiFocusLockControllerGetExposureTime.js";
+import apiFocusLockControllerGetGain from "../backendapi/apiFocusLockControllerGetGain.js";
 
 // Register Chart.js components
 ChartJS.register(
@@ -108,7 +112,39 @@ const FocusLockController = ({ hostIP, hostPort }) => {
   
   // Access Redux state with specific selectors for better performance
   const isMeasuring = useSelector(state => state.focusLockState.isMeasuring);
-  const focusLockState = useSelector(focusLockSlice.getFocusLockState);
+  // Split selectors to prevent unnecessary re-renders when only focus values change
+  const focusLockUI = useSelector(state => ({
+    isFocusLocked: state.focusLockState.isFocusLocked,
+    isCalibrating: state.focusLockState.isCalibrating,
+    gaussianSigma: state.focusLockState.gaussianSigma,
+    backgroundThreshold: state.focusLockState.backgroundThreshold,
+    cropSize: state.focusLockState.cropSize,
+    cropCenter: state.focusLockState.cropCenter,
+    frameSize: state.focusLockState.frameSize,
+    lastImage: state.focusLockState.lastImage,
+    lastCroppedImage: state.focusLockState.lastCroppedImage,
+    showImageSelector: state.focusLockState.showImageSelector,
+    isLoadingImage: state.focusLockState.isLoadingImage,
+    kp: state.focusLockState.kp,
+    ki: state.focusLockState.ki,
+    setPoint: state.focusLockState.setPoint,
+    safetyDistanceLimit: state.focusLockState.safetyDistanceLimit,
+    safetyMoveLimit: state.focusLockState.safetyMoveLimit,
+    minStepThreshold: state.focusLockState.minStepThreshold,
+    safetyMotionActive: state.focusLockState.safetyMotionActive,
+    currentFocusValue: state.focusLockState.currentFocusValue,
+    exposureTime: state.focusLockState.exposureTime,
+    gain: state.focusLockState.gain
+  }));
+  
+  // Separate selector for chart data to minimize re-renders
+  const chartDataSource = useSelector(state => ({
+    focusValues: state.focusLockState.focusValues,
+    focusTimepoints: state.focusLockState.focusTimepoints,
+    motorPositions: state.focusLockState.motorPositions,
+    setPointSignals: state.focusLockState.setPointSignals,
+    focusHistory: state.focusLockState.focusHistory
+  }));
   
   // Local state for image display and crop selection
   const [cropSelection, setCropSelection] = useState({ 
@@ -127,8 +163,8 @@ const FocusLockController = ({ hostIP, hostPort }) => {
       const blob = await apiFocusLockControllerReturnLastImage();
 
       // Clean up previous blob URL to prevent memory leaks
-      if (focusLockState.lastImage && focusLockState.lastImage.startsWith('blob:')) {
-        URL.revokeObjectURL(focusLockState.lastImage);
+      if (focusLockUI.lastImage && focusLockUI.lastImage.startsWith('blob:')) {
+        URL.revokeObjectURL(focusLockUI.lastImage);
       }
 
       const dataUrl = URL.createObjectURL(blob);
@@ -164,36 +200,36 @@ const FocusLockController = ({ hostIP, hostPort }) => {
     } finally {
       dispatch(focusLockSlice.setIsLoadingImage(false));
     }
-  }, [dispatch, maxRetries]); // Remove focusLockState.lastImage dependency to prevent frequent re-creation
+  }, [dispatch, maxRetries]); // Remove focusLockState dependency
 
   /** keep the latest value without causing re-renders */
   useEffect(() => { 
-    latestFocus.current = focusLockState.currentFocusValue; 
-  }, [focusLockState.currentFocusValue]); // Add dependency array
+    latestFocus.current = focusLockUI.currentFocusValue; 
+  }, [focusLockUI.currentFocusValue]); // Add dependency array
 
 /** dataset memoized to prevent unnecessary Chart.js re-renders */
 const chartData = useMemo(() => {
   // Memoize the data transformation to prevent recalculation on every render
   // Focus Value
-  const transformedFocusData = focusLockState.focusValues.map((v, i) => ({ 
-    x: focusLockState.focusTimepoints[i] || i, 
+  const transformedFocusData = chartDataSource.focusValues.map((v, i) => ({ 
+    x: chartDataSource.focusTimepoints[i] || i, 
     y: v ?? 0 
   }));
   // Motor Position
-  const transformedMotorData = focusLockState.motorPositions?.map((v, i) => ({ 
-    x: focusLockState.focusTimepoints[i] || i, 
+  const transformedMotorData = chartDataSource.motorPositions?.map((v, i) => ({ 
+    x: chartDataSource.focusTimepoints[i] || i, 
     y: v ?? 0 
   })) || [];
   // Set Point Signal
-  const transformedSetPointData = focusLockState.setPointSignals?.map((v, i) => ({
-    x: focusLockState.focusTimepoints[i] || i,
+  const transformedSetPointData = chartDataSource.setPointSignals?.map((v, i) => ({
+    x: chartDataSource.focusTimepoints[i] || i,
     y: v ?? 0
   })) || [];
 
   // If setPointSignals is not present, fallback to extracting from focusHistory
   let setPointData = transformedSetPointData;
-  if (setPointData.length === 0 && Array.isArray(focusLockState.focusHistory)) {
-    setPointData = focusLockState.focusHistory.map((entry, i) => ({
+  if (setPointData.length === 0 && Array.isArray(chartDataSource.focusHistory)) {
+    setPointData = chartDataSource.focusHistory.map((entry, i) => ({
       x: entry.timestamp || i,
       y: entry.setPointSignal ?? 0
     }));
@@ -235,11 +271,11 @@ const chartData = useMemo(() => {
   theme.palette.primary.light,
   theme.palette.secondary.main,
   theme.palette.secondary.light,
-  focusLockState.focusValues,
-  focusLockState.motorPositions,
-  focusLockState.focusTimepoints,
-  focusLockState.setPointSignals,
-  focusLockState.focusHistory
+  chartDataSource.focusValues,
+  chartDataSource.motorPositions,
+  chartDataSource.focusTimepoints,
+  chartDataSource.setPointSignals,
+  chartDataSource.focusHistory
 ]);
 
 const chartOptions = useMemo(() => ({
@@ -298,21 +334,22 @@ const chartOptions = useMemo(() => ({
     loadAstigmatismParameters();
     loadPIParameters();
     loadFocusLockState();
+    loadCameraParameters();
     
     // Cleanup blob URLs on unmount
     return () => {
-      if (focusLockState.lastImage && focusLockState.lastImage.startsWith('blob:')) {
-        URL.revokeObjectURL(focusLockState.lastImage);
-      }
-      if (focusLockState.pollImageUrl && focusLockState.pollImageUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(focusLockState.pollImageUrl);
-      }
+      // Cleanup is handled automatically by React when state changes
+      // No need to manually revoke URLs here as they're managed by Redux state
     };
   }, []);
 
-  // WebSocket handler for laser value updates
+  // WebSocket handler for laser value updates - optimized to reduce re-renders
   useEffect(() => {
     if (!socket) return;
+
+    // Throttle mechanism to reduce Redux updates frequency
+    let lastUpdateTime = 0;
+    const UPDATE_THROTTLE_MS = 100; // Update at most every 100ms (10Hz)
 
     const handleSignal = (data) => {
       try {
@@ -331,22 +368,31 @@ const chartOptions = useMemo(() => ({
           
           if (tupleMatch && tupleMatch[1] === 'Laser' && tupleMatch[3] === 'Value') {
             const laserName = tupleMatch[2]; // e.g., 'LED'
+            const now = Date.now();
             
-            // Update current focus value
-            dispatch(focusLockSlice.setCurrentFocusValue(value));
+            // Throttle updates to reduce CPU overhead
+            if (now - lastUpdateTime < UPDATE_THROTTLE_MS) return;
             
-            // Add focus value to history for display in graph
-            const timestamp = Date.now();
-            dispatch(focusLockSlice.addFocusValue({ 
-              value: value, 
-              timestamp: timestamp 
-            }));
-            
-            console.log(`Laser ${laserName} value updated to: ${value}`);
+            // Only update if the value actually changed significantly
+            if (Math.abs(latestFocus.current - value) > 0.001) { // Add threshold to reduce noise
+              lastUpdateTime = now;
+              
+              // Combine both actions into a single dispatch to reduce re-renders
+              dispatch(focusLockSlice.addFocusValue({ 
+                focusValue: value,
+                timestamp: now 
+              }));
+              
+              // Update the ref immediately for next comparison
+              latestFocus.current = value;
+            }
           }
         }
       } catch (error) {
-        console.error("Error parsing WebSocket laser update:", error);
+        // Reduce error logging frequency to prevent console spam
+        if (Math.random() < 0.01) { // Log only 1% of errors
+          console.error("Error parsing WebSocket laser update:", error);
+        }
       }
     };
 
@@ -355,7 +401,7 @@ const chartOptions = useMemo(() => ({
     return () => {
       socket.off("signal", handleSignal);
     };
-  }, [socket, dispatch]);
+  }, [socket, dispatch]); // Remove latestFocus from dependencies to prevent recreation
 
   // Load astigmatism parameters from backend - memoized
   const loadAstigmatismParameters = useCallback(async () => {
@@ -415,10 +461,37 @@ const chartOptions = useMemo(() => ({
     }
   }, [dispatch]);
 
+  // Load camera parameters from backend - memoized
+  const loadCameraParameters = useCallback(async () => {
+    try {
+      // Load exposure time
+      try {
+        const exposureTime = await apiFocusLockControllerGetExposureTime();
+        if (exposureTime !== undefined && exposureTime !== null) {
+          dispatch(focusLockSlice.setExposureTime(exposureTime));
+        }
+      } catch (error) {
+        console.warn("Failed to load exposure time, using default:", error);
+      }
+
+      // Load gain
+      try {
+        const gain = await apiFocusLockControllerGetGain();
+        if (gain !== undefined && gain !== null) {
+          dispatch(focusLockSlice.setGain(gain));
+        }
+      } catch (error) {
+        console.warn("Failed to load gain, using default:", error);
+      }
+    } catch (error) {
+      console.error("Failed to load camera parameters:", error);
+    }
+  }, [dispatch]);
+
   // Start/stop focus measurement - memoized
   const toggleFocusMeasurement = useCallback(async () => {
     try {
-      if (focusLockState.isMeasuring) {
+      if (isMeasuring) {
         await apiFocusLockControllerStopFocusMeasurement();
         dispatch(focusLockSlice.setIsMeasuring(false));
         // Clear any polling errors when manually stopping
@@ -433,58 +506,75 @@ const chartOptions = useMemo(() => ({
     } catch (error) {
       console.error("Failed to toggle focus measurement:", error);
     }
-  }, [focusLockState.isMeasuring, dispatch]);
+  }, [isMeasuring, dispatch]);
 
   // Handle PI parameter updates - memoized
   const updatePIParameters = useCallback(async () => {
     try {
       await apiFocusLockControllerSetPIParameters({
-        kp: focusLockState.kp,
-        ki: focusLockState.ki
+        kp: focusLockUI.kp,
+        ki: focusLockUI.ki
       });
     } catch (error) {
       console.error("Failed to update PI parameters:", error);
     }
-  }, [focusLockState.kp, focusLockState.ki]);
+  }, [focusLockUI.kp, focusLockUI.ki]);
 
   // Handle extended PI controller parameter updates - memoized
   const updatePIControllerParameters = useCallback(async () => {
     try {
       await apiFocusLockControllerSetPIControllerParams({
-        kp: focusLockState.kp,
-        ki: focusLockState.ki,
-        setPoint: focusLockState.setPoint,
-        safetyDistanceLimit: focusLockState.safetyDistanceLimit,
-        safetyMoveLimit: focusLockState.safetyMoveLimit,
-        minStepThreshold: focusLockState.minStepThreshold,
-        safetyMotionActive: focusLockState.safetyMotionActive,
+        kp: focusLockUI.kp,
+        ki: focusLockUI.ki,
+        setPoint: focusLockUI.setPoint,
+        safetyDistanceLimit: focusLockUI.safetyDistanceLimit,
+        safetyMoveLimit: focusLockUI.safetyMoveLimit,
+        minStepThreshold: focusLockUI.minStepThreshold,
+        safetyMotionActive: focusLockUI.safetyMotionActive,
       });
     } catch (error) {
       console.error("Failed to update PI controller parameters:", error);
     }
   }, [
-    focusLockState.kp, 
-    focusLockState.ki, 
-    focusLockState.setPoint,
-    focusLockState.safetyDistanceLimit,
-    focusLockState.safetyMoveLimit,
-    focusLockState.minStepThreshold,
-    focusLockState.safetyMotionActive
+    focusLockUI.kp, 
+    focusLockUI.ki, 
+    focusLockUI.setPoint,
+    focusLockUI.safetyDistanceLimit,
+    focusLockUI.safetyMoveLimit,
+    focusLockUI.minStepThreshold,
+    focusLockUI.safetyMotionActive
   ]);
 
   // Handle astigmatism parameter updates - memoized
   const updateAstigmatismParameters = useCallback(async () => {
     try {
       await apiFocusLockControllerSetParamsAstigmatism({
-        gaussianSigma: focusLockState.gaussianSigma,
-        backgroundThreshold: focusLockState.backgroundThreshold,
-        cropSize: focusLockState.cropSize,
-        cropCenter: focusLockState.cropCenter
+        gaussianSigma: focusLockUI.gaussianSigma,
+        backgroundThreshold: focusLockUI.backgroundThreshold,
+        cropSize: focusLockUI.cropSize,
+        cropCenter: focusLockUI.cropCenter
       });
     } catch (error) {
       console.error("Failed to update astigmatism parameters:", error);
     }
-  }, [focusLockState.gaussianSigma, focusLockState.backgroundThreshold, focusLockState.cropSize, focusLockState.cropCenter]);
+  }, [focusLockUI.gaussianSigma, focusLockUI.backgroundThreshold, focusLockUI.cropSize, focusLockUI.cropCenter]);
+
+  // Handle camera parameter updates - memoized
+  const updateExposureTime = useCallback(async () => {
+    try {
+      await apiFocusLockControllerSetExposureTime(focusLockUI.exposureTime);
+    } catch (error) {
+      console.error("Failed to update exposure time:", error);
+    }
+  }, [focusLockUI.exposureTime]);
+
+  const updateGain = useCallback(async () => {
+    try {
+      await apiFocusLockControllerSetGain(focusLockUI.gain);
+    } catch (error) {
+      console.error("Failed to update gain:", error);
+    }
+  }, [focusLockUI.gain]);
 
   // Handle crop frame parameter updates - memoized
   // Always send cropSize as integer to match backend API signature
@@ -492,7 +582,7 @@ const chartOptions = useMemo(() => ({
   const updateCropFrameParameters = useCallback(async (overrideCropCenter = null, overrideCropSize = null) => {
     try {
       // Always use natural image dimensions for consistent coordinate system
-      let frameSize = focusLockState.frameSize;
+      let frameSize = focusLockUI.frameSize;
       const img = imgRef.current;
       if (img && img.naturalWidth && img.naturalHeight) {
         // Use natural dimensions to ensure coordinate system consistency
@@ -502,14 +592,14 @@ const chartOptions = useMemo(() => ({
       }
       
       await apiFocusLockControllerSetCropFrameParameters({
-        cropSize: Math.round(overrideCropSize ?? focusLockState.cropSize),
-        cropCenter: overrideCropCenter ?? focusLockState.cropCenter,
+        cropSize: Math.round(overrideCropSize ?? focusLockUI.cropSize),
+        cropCenter: overrideCropCenter ?? focusLockUI.cropCenter,
         frameSize: frameSize
       });
     } catch (error) {
       console.error("Failed to update crop frame parameters:", error);
     }
-  }, [focusLockState.cropSize, focusLockState.cropCenter, focusLockState.frameSize, dispatch]);
+  }, [focusLockUI.cropSize, focusLockUI.cropCenter, focusLockUI.frameSize, dispatch]);
 
   // Reset crop coordinates - memoized
   const resetCropCoordinates = useCallback(() => {
@@ -520,12 +610,12 @@ const chartOptions = useMemo(() => ({
   // Toggle focus lock - memoized
   const toggleFocusLock = useCallback(async () => {
     try {
-      await apiFocusLockControllerEnableFocusLock({ enable: !focusLockState.isFocusLocked });
-      dispatch(focusLockSlice.setFocusLocked(!focusLockState.isFocusLocked));
+      await apiFocusLockControllerEnableFocusLock({ enable: !focusLockUI.isFocusLocked });
+      dispatch(focusLockSlice.setFocusLocked(!focusLockUI.isFocusLocked));
     } catch (error) {
       console.error("Failed to toggle focus lock:", error);
     }
-  }, [focusLockState.isFocusLocked, dispatch]);
+  }, [focusLockUI.isFocusLocked, dispatch]);
 
   // Start focus calibration - memoized
   const startCalibration = useCallback(async () => {
@@ -654,8 +744,8 @@ const chartOptions = useMemo(() => ({
 
   // Memoize current image to prevent unnecessary recalculations
   const currentImage = useMemo(() => {
-    return focusLockState.pollImageUrl || focusLockState.lastImage;
-  }, [focusLockState.pollImageUrl, focusLockState.lastImage]);
+    return focusLockUI.lastImage; // Simplified since pollImageUrl not in split state
+  }, [focusLockUI.lastImage]);
 
   return (
     <Paper style={{ padding: "24px", maxWidth: 1400, margin: "0 auto" }}>
@@ -707,23 +797,23 @@ const chartOptions = useMemo(() => ({
                 <FormControlLabel
                   control={
                     <Switch
-                      checked={focusLockState.isFocusLocked}
+                      checked={focusLockUI.isFocusLocked}
                       onChange={toggleFocusLock}
                       color="primary"
                     />
                   }
-                  label={`Focus Lock ${focusLockState.isFocusLocked ? 'Enabled' : 'Disabled'}`}
+                  label={`Focus Lock ${focusLockUI.isFocusLocked ? 'Enabled' : 'Disabled'}`}
                 />
                 
                 <FormControlLabel
                   control={
                     <Switch
-                      checked={focusLockState.isMeasuring}
+                      checked={isMeasuring}
                       onChange={toggleFocusMeasurement}
                       color="secondary"
                     />
                   }
-                  label={`Measurement ${focusLockState.isMeasuring ? 'Running' : 'Stopped'}`}
+                  label={`Measurement ${isMeasuring ? 'Running' : 'Stopped'}`}
                 />
                 
                 <FormControlLabel
@@ -732,7 +822,7 @@ const chartOptions = useMemo(() => ({
                       checked={continuousImageLoading}
                       onChange={(e) => setContinuousImageLoading(e.target.checked)}
                       color="info"
-                      disabled={!focusLockState.isMeasuring} // Only enable when measuring is active
+                      disabled={!isMeasuring} // Only enable when measuring is active
                     />
                   }
                   label={`Continuous Image Loading ${continuousImageLoading ? 'Enabled' : 'Disabled'}`}
@@ -745,31 +835,31 @@ const chartOptions = useMemo(() => ({
                 )}
                 
                 <Typography variant="body2">
-                  Current Focus Value: {focusLockState.currentFocusValue.toFixed(3)}
+                  Current Focus Value: {focusLockUI.currentFocusValue.toFixed(3)}
                 </Typography>
                 
                 <Typography variant="body2">
-                  Current Motor Position: {focusLockState.currentFocusMotorPosition.toFixed(3)} µm
+                  Current Motor Position: 0.000 µm
                 </Typography>
                 
                 <Typography variant="body2">
-                  Set Point Signal: {focusLockState.setPointSignal.toFixed(3)}
+                  Set Point Signal: 0.000
                 </Typography>
                 
                 <Box sx={{ display: 'flex', gap: 1, flexDirection: 'column' }}>
                   <Button 
                     variant="contained" 
                     onClick={startCalibration}
-                    disabled={focusLockState.isCalibrating || isCalibrationPolling}
+                    disabled={focusLockUI.isCalibrating || isCalibrationPolling}
                     fullWidth
                   >
-                    {(focusLockState.isCalibrating || isCalibrationPolling) ? 'Calibrating...' : 'Start Calibration'}
+                    {(focusLockUI.isCalibrating || isCalibrationPolling) ? 'Calibrating...' : 'Start Calibration'}
                   </Button>
                   
                   <Button 
                     variant="outlined" 
                     onClick={unlockFocus}
-                    disabled={!focusLockState.isFocusLocked}
+                    disabled={!focusLockUI.isFocusLocked}
                     fullWidth
                   >
                     Unlock Focus
@@ -791,7 +881,7 @@ const chartOptions = useMemo(() => ({
               <Box sx={{ height: 350, position: 'relative' }}>
                 {/* Render chart using Redux slice data */}
                 <Line data={chartData} options={chartOptions} />
-                {focusLockState.focusValues.length === 0 && (
+                {chartDataSource.focusValues.length === 0 && (
                   <Box sx={{ 
                     position: 'absolute', 
                     top: 0, left: 0, right: 0, bottom: 0,
@@ -844,9 +934,9 @@ const chartOptions = useMemo(() => ({
               <TabPanel value={piTabValue} index={0}>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                   <Box>
-                    <Typography gutterBottom>Kp (Proportional): {focusLockState.kp}</Typography>
+                    <Typography gutterBottom>Kp (Proportional): {focusLockUI.kp}</Typography>
                     <Slider
-                      value={focusLockState.kp}
+                      value={focusLockUI.kp}
                       onChange={(e, value) => dispatch(focusLockSlice.setKp(value))}
                       min={0.}
                       max={10}
@@ -856,9 +946,9 @@ const chartOptions = useMemo(() => ({
                   </Box>
                   
                   <Box>
-                    <Typography gutterBottom>Ki (Integral): {focusLockState.ki}</Typography>
+                    <Typography gutterBottom>Ki (Integral): {focusLockUI.ki}</Typography>
                     <Slider
-                      value={focusLockState.ki}
+                      value={focusLockUI.ki}
                       onChange={(e, value) => dispatch(focusLockSlice.setKi(value))}
                       min={0.}
                       max={10}
@@ -878,7 +968,7 @@ const chartOptions = useMemo(() => ({
                   <TextField
                     label="Set Point"
                     type="number"
-                    value={focusLockState.setPoint}
+                    value={focusLockUI.setPoint}
                     onChange={(e) => dispatch(focusLockSlice.setSetPoint(parseFloat(e.target.value) || 0))}
                     size="small"
                     inputProps={{ step: 0.1 }}
@@ -887,7 +977,7 @@ const chartOptions = useMemo(() => ({
                   <TextField
                     label="Safety Distance Limit"
                     type="number"
-                    value={focusLockState.safetyDistanceLimit}
+                    value={focusLockUI.safetyDistanceLimit}
                     onChange={(e) => dispatch(focusLockSlice.setSafetyDistanceLimit(parseFloat(e.target.value) || 0))}
                     size="small"
                     inputProps={{ step: 1, min: 0 }}
@@ -896,7 +986,7 @@ const chartOptions = useMemo(() => ({
                   <TextField
                     label="Safety Move Limit"
                     type="number"
-                    value={focusLockState.safetyMoveLimit}
+                    value={focusLockUI.safetyMoveLimit}
                     onChange={(e) => dispatch(focusLockSlice.setSafetyMoveLimit(parseFloat(e.target.value) || 0))}
                     size="small"
                     inputProps={{ step: 0.1, min: 0 }}
@@ -905,7 +995,7 @@ const chartOptions = useMemo(() => ({
                   <TextField
                     label="Min Step Threshold"
                     type="number"
-                    value={focusLockState.minStepThreshold}
+                    value={focusLockUI.minStepThreshold}
                     onChange={(e) => dispatch(focusLockSlice.setMinStepThreshold(parseFloat(e.target.value) || 0))}
                     size="small"
                     inputProps={{ step: 0.001, min: 0 }}
@@ -914,7 +1004,7 @@ const chartOptions = useMemo(() => ({
                   <FormControlLabel
                     control={
                       <Switch
-                        checked={focusLockState.safetyMotionActive}
+                        checked={focusLockUI.safetyMotionActive}
                         onChange={(e) => dispatch(focusLockSlice.setSafetyMotionActive(e.target.checked))}
                       />
                     }
@@ -930,6 +1020,65 @@ const chartOptions = useMemo(() => ({
           </Card>
         </Grid>
 
+        {/* Camera Parameters */}
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardHeader title="Camera Parameters" />
+            <CardContent>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                <TextField
+                  label="Exposure Time (ms)"
+                  type="number"
+                  value={focusLockUI.exposureTime}
+                  onChange={(e) => dispatch(focusLockSlice.setExposureTime(parseFloat(e.target.value) || 0))}
+                  size="small"
+                  inputProps={{ step: 1, min: 1, max: 10000 }}
+                  helperText="Camera exposure time in milliseconds"
+                />
+                
+                <TextField
+                  label="Gain"
+                  type="number"
+                  value={focusLockUI.gain}
+                  onChange={(e) => dispatch(focusLockSlice.setGain(parseFloat(e.target.value) || 0))}
+                  size="small"
+                  inputProps={{ step: 0.1, min: 0, max: 100 }}
+                  helperText="Camera gain value"
+                />
+                
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Button 
+                    variant="contained" 
+                    onClick={updateExposureTime}
+                    sx={{ flex: 1 }}
+                  >
+                    Update Exposure
+                  </Button>
+                  
+                  <Button 
+                    variant="contained" 
+                    onClick={updateGain}
+                    sx={{ flex: 1 }}
+                  >
+                    Update Gain
+                  </Button>
+                </Box>
+                
+                <Button 
+                  variant="outlined" 
+                  onClick={() => {
+                    updateExposureTime();
+                    updateGain();
+                  }}
+                  fullWidth
+                >
+                  Update All Camera Parameters
+                </Button>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
         {/* Astigmatism Parameters */}
         <Grid item xs={12} md={6}>
           <Card>
@@ -939,7 +1088,7 @@ const chartOptions = useMemo(() => ({
                 <TextField
                   label="Gaussian Sigma"
                   type="number"
-                  value={focusLockState.gaussianSigma}
+                  value={focusLockUI.gaussianSigma}
                   onChange={(e) => dispatch(focusLockSlice.setGaussianSigma(parseFloat(e.target.value)))}
                   size="small"
                   inputProps={{ step: 0.1, min: 0.1, max: 10 }}
@@ -948,7 +1097,7 @@ const chartOptions = useMemo(() => ({
                 <TextField
                   label="Background Threshold"
                   type="number"
-                  value={focusLockState.backgroundThreshold}
+                  value={focusLockUI.backgroundThreshold}
                   onChange={(e) => dispatch(focusLockSlice.setBackgroundThreshold(parseFloat(e.target.value)))}
                   size="small"
                   inputProps={{ step: 1, min: 0, max: 1000 }}
@@ -957,18 +1106,18 @@ const chartOptions = useMemo(() => ({
                 <TextField
                   label="Crop Size"
                   type="number"
-                  value={focusLockState.cropSize}
+                  value={focusLockUI.cropSize}
                   onChange={(e) => dispatch(focusLockSlice.setCropSize(parseInt(e.target.value)))}
                   size="small"
                   inputProps={{ step: 1, min: 10, max: 500 }}
                 />
                 
                 <Typography variant="body2">
-                  Crop Center: [{focusLockState.cropCenter[0]}, {focusLockState.cropCenter[1]}] (image pixels)
+                  Crop Center: [{focusLockUI.cropCenter[0]}, {focusLockUI.cropCenter[1]}] (image pixels)
                 </Typography>
                 
                 <Typography variant="body2" color="textSecondary">
-                  Frame Size: [{focusLockState.frameSize[0]}, {focusLockState.frameSize[1]}] (natural dimensions)
+                  Frame Size: [{focusLockUI.frameSize[0]}, {focusLockUI.frameSize[1]}] (natural dimensions)
                 </Typography>
                 
                 <Box sx={{ display: 'flex', gap: 1 }}>
@@ -993,6 +1142,65 @@ const chartOptions = useMemo(() => ({
           </Card>
         </Grid>
 
+        {/* Camera Parameters */}
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardHeader title="Camera Parameters" />
+            <CardContent>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                <TextField
+                  label="Exposure Time (ms)"
+                  type="number"
+                  value={focusLockUI.exposureTime}
+                  onChange={(e) => dispatch(focusLockSlice.setExposureTime(parseFloat(e.target.value) || 0))}
+                  size="small"
+                  inputProps={{ step: 1, min: 1, max: 10000 }}
+                  helperText="Camera exposure time in milliseconds"
+                />
+                
+                <TextField
+                  label="Gain"
+                  type="number"
+                  value={focusLockUI.gain}
+                  onChange={(e) => dispatch(focusLockSlice.setGain(parseFloat(e.target.value) || 0))}
+                  size="small"
+                  inputProps={{ step: 0.1, min: 0, max: 100 }}
+                  helperText="Camera gain value"
+                />
+                
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Button 
+                    variant="contained" 
+                    onClick={updateExposureTime}
+                    sx={{ flex: 1 }}
+                  >
+                    Update Exposure
+                  </Button>
+                  
+                  <Button 
+                    variant="contained" 
+                    onClick={updateGain}
+                    sx={{ flex: 1 }}
+                  >
+                    Update Gain
+                  </Button>
+                </Box>
+                
+                <Button 
+                  variant="outlined" 
+                  onClick={() => {
+                    updateExposureTime();
+                    updateGain();
+                  }}
+                  fullWidth
+                >
+                  Update All Camera Parameters
+                </Button>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
         {/* Image Selection and Crop Region */}
         <Grid item xs={12}>
           <Card>
@@ -1002,9 +1210,9 @@ const chartOptions = useMemo(() => ({
                 <Button 
                   variant="outlined" 
                   onClick={loadLastImage}
-                  disabled={focusLockState.isLoadingImage}
+                  disabled={focusLockUI.isLoadingImage}
                 >
-                  {focusLockState.isLoadingImage ? 'Loading...' : 'Load Last Image'}
+                  {focusLockUI.isLoadingImage ? 'Loading...' : 'Load Last Image'}
                 </Button>
               }
             />
@@ -1097,8 +1305,8 @@ const chartOptions = useMemo(() => ({
                     }
 
                     // Crop center overlay
-                    const centerX = toDisplayX(focusLockState.cropCenter[0]);
-                    const centerY = toDisplayY(focusLockState.cropCenter[1]);
+                    const centerX = toDisplayX(focusLockUI.cropCenter[0]);
+                    const centerY = toDisplayY(focusLockUI.cropCenter[1]);
                     const cropCenterOverlay = (
                       <div
                         style={{
@@ -1115,7 +1323,7 @@ const chartOptions = useMemo(() => ({
                     );
 
                     // Crop size preview overlay
-                    const cropSize = focusLockState.cropSize;
+                    const cropSize = focusLockUI.cropSize;
                     const cropSizeOverlay = (
                       <div
                         style={{
@@ -1151,7 +1359,7 @@ const chartOptions = useMemo(() => ({
                     Click "Load Last Image" to view and select crop region for focus analysis<br/>
                     Interactive crop selection with mouse drag
                   </Typography>
-                  {focusLockState.isMeasuring && (
+                  {isMeasuring && (
                     <Typography variant="body2" color="primary">
                       Waiting for camera image...
                     </Typography>

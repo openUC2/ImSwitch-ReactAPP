@@ -176,7 +176,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
       const id = setInterval(async () => {
         try {
           const res = await fetch(
-            `${hostIP}:${hostPort}/HistoScanController/getPreviewCameraImage?resizeFactor=1`
+            `${hostIP}:${hostPort}/HistoScanController/getPreviewCameraImage?resizeFactor=.25y`
           );
           if (res.ok) dispatch(liveViewSlice.setPollImageUrl(URL.createObjectURL(await res.blob())));
         } catch {}

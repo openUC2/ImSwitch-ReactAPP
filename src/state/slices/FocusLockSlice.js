@@ -24,6 +24,10 @@ const initialFocusLockState = {
   cropCenter: [0, 0],
   frameSize: [640, 480], // Default frame size, can be adjusted
   
+  // Camera parameters
+  exposureTime: 100.0, // Default exposure time in milliseconds
+  gain: 0.0, // Default gain value
+  
   // Images and streaming
   lastImage: null,
   lastCroppedImage: null,
@@ -106,6 +110,14 @@ const focusLockSlice = createSlice({
       state.frameSize = action.payload;
     },
     
+    // Camera parameters
+    setExposureTime: (state, action) => {
+      state.exposureTime = action.payload;
+    },
+    setGain: (state, action) => {
+      state.gain = action.payload;
+    },
+    
     // Images
     setLastImage: (state, action) => {
       state.lastImage = action.payload;
@@ -122,21 +134,21 @@ const focusLockSlice = createSlice({
       const { focusValue, setPointSignal, currentFocusMotorPosition, timestamp } = action.payload;
       
       // Add new values
-        state.focusValues.push(focusValue);
-        state.focusTimepoints.push(timestamp);
-        state.motorPositions.push(currentFocusMotorPosition || 0);
-        state.currentFocusValue = focusValue;
-        state.currentFocusMotorPosition = currentFocusMotorPosition || 0;
-        state.setPointSignals.push(setPointSignal ?? 0);
+      state.focusValues.push(focusValue);
+      state.focusTimepoints.push(timestamp);
+      state.motorPositions.push(currentFocusMotorPosition || 0);
+      state.currentFocusValue = focusValue; // Update current value here too
+      state.currentFocusMotorPosition = currentFocusMotorPosition || 0;
+      state.setPointSignals.push(setPointSignal ?? 0);
       
-      // Keep only last 50 values
+      // Keep only last 50 values to prevent memory buildup
       if (state.focusValues.length > state.maxFocusHistory) {
         state.focusValues.shift();
         state.focusTimepoints.shift();
         state.motorPositions.shift();
-          state.setPointSignals.shift();
-    
-      }},
+        state.setPointSignals.shift();
+      }
+    },
     clearFocusHistory: (state) => {
       state.focusValues = [];
       state.focusTimepoints = [];
@@ -192,6 +204,8 @@ export const {
   setCropSize,
   setFrameSize,
   setCropCenter,
+  setExposureTime,
+  setGain,
   setLastImage,
   setLastCroppedImage,
   setPollImageUrl,
