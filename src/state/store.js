@@ -35,6 +35,7 @@ import focusLockReducer from "./slices/FocusLockSlice";
 import wifiReducer from "./slices/WiFiSlice";
 import demoReducer from "./slices/DemoSlice";
 import themeReducer from "./slices/ThemeSlice";
+import notificationReducer from "./slices/NotificationSlice";
 
 //#####################################################################################
 // Combine reducers
@@ -67,6 +68,7 @@ const rootReducer = combineReducers({
   wifiState: wifiReducer,
   demoState: demoReducer,
   themeState: themeReducer,
+  notification: notificationReducer,
 });
 
 //#####################################################################################
