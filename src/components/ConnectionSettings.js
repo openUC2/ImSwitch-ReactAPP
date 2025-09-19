@@ -20,7 +20,7 @@ function ConnectionSettings() {
     (state) => state.connectionSettingsState
   );
 
-  // Lokaler State, initial aus Redux
+  // Local state, initialized from Redux
   const [hostProtocol, setHostProtocol] = useState(
     connectionSettings.ip?.startsWith("http://") ? "http://" : "https://"
   );
