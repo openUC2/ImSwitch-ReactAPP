@@ -864,7 +864,7 @@ function App() {
                   {/* Connections */}
                   <ListItem
                     button
-                    selected={selectedPlugin === "Connectoins"}
+                    selected={selectedPlugin === "Connections"}
                     onClick={() => handlePluginChange("Connections")}
                     sx={{ pl: 4 }}
                   >
