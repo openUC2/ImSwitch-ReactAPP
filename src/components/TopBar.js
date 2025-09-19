@@ -2,7 +2,7 @@ import React from "react";
 import { AppBar, Toolbar, IconButton, Typography, Avatar } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import ThemeSwitcher from "./ThemeSwitcher";
-import uc2Logo from "../assets/ouc2_logo_qaudratic.png";
+import uc2Logo from "../assets/ouc2_logo_quadratic.png";
 
 function TopBar({
   isMobile,
