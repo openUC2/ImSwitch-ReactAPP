@@ -37,10 +37,6 @@ const initialState = {
   validationResult: null,
   configPreview: null,
   showPreviewDialog: false,
-
-  // Status messages
-  statusMessage: "",
-  statusType: "info", // "info", "success", "warning", "error"
 };
 
 const uc2Slice = createSlice({
@@ -136,16 +132,6 @@ const uc2Slice = createSlice({
       state.showPreviewDialog = action.payload;
     },
 
-    // Status messages
-    setStatusMessage: (state, action) => {
-      state.statusMessage = action.payload.message || "";
-      state.statusType = action.payload.type || "info";
-    },
-    clearStatusMessage: (state) => {
-      state.statusMessage = "";
-      state.statusType = "info";
-    },
-
     // Reset actions
     resetFileOperations: (state) => {
       state.newFileName = "";
@@ -194,8 +180,6 @@ export const {
   setValidationResult,
   setConfigPreview,
   setShowPreviewDialog,
-  setStatusMessage,
-  clearStatusMessage,
 } = uc2Slice.actions;
 
 // Export selector

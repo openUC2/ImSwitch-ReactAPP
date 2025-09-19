@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { setNotification } from "../state/slices/NotificationSlice";
 import { useDispatch, useSelector } from "react-redux";
 import {
   setIp,
@@ -31,7 +32,6 @@ function ConnectionSettings() {
     connectionSettings.websocketPort || ""
   );
   const [apiPort, setApiPortState] = useState(connectionSettings.apiPort || "");
-  const [feedback, setFeedback] = useState("");
 
   // Handler
   const handleSave = () => {
@@ -39,9 +39,13 @@ function ConnectionSettings() {
       dispatch(setIp(`${hostProtocol}${hostIP}`));
       dispatch(setWebsocketPort(websocketPort));
       dispatch(setApiPort(apiPort));
-      setFeedback("Settings saved!");
+      dispatch(
+        setNotification({ message: "Settings saved!", type: "success" })
+      );
     } catch (e) {
-      setFeedback("Error saving settings!");
+      dispatch(
+        setNotification({ message: "Error saving settings!", type: "error" })
+      );
     }
   };
 
@@ -111,11 +115,6 @@ function ConnectionSettings() {
         >
           Save
         </Button>
-        {feedback && (
-          <Typography variant="body2" color="green" sx={{ mt: 2 }}>
-            {feedback}
-          </Typography>
-        )}
       </Box>
     </Paper>
   );

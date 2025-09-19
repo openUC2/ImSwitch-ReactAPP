@@ -59,6 +59,11 @@ import WebSocketHandler from "./middleware/WebSocketHandler";
 import { useDispatch, useSelector } from "react-redux";
 import * as connectionSettingsSlice from "./state/slices/ConnectionSettingsSlice.js";
 import { toggleTheme, getThemeState } from "./state/slices/ThemeSlice";
+import StatusMessage from "./components/StatusMessage";
+import {
+  getNotificationState,
+  clearNotification,
+} from "./state/slices/NotificationSlice";
 
 // Filemanager
 import FileManager from "./FileManager/FileManager/FileManager";
@@ -177,6 +182,9 @@ const darkTheme = createTheme({
 });
 
 function App() {
+  // Notification state
+  const notification = useSelector(getNotificationState);
+
   /*
     Redux
     */
@@ -515,6 +523,12 @@ function App() {
       {/* headless */}
       <WebSocketProvider hostIP={hostIP}>
         <CssBaseline />
+        {/* Global Status/Notification Message */}
+        <StatusMessage
+          message={notification.message}
+          type={notification.type}
+          onClose={() => dispatch(clearNotification())}
+        />
         <Box sx={{ display: "flex" }}>
           <TopBar
             isMobile={isMobile}
