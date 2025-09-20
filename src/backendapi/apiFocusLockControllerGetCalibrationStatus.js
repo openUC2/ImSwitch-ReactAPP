@@ -1,14 +1,14 @@
-// Fetches calibration status from backend
-export default async function apiFocusLockControllerGetCalibrationStatus() {
-  const url = 'https://localhost:8001/FocusLockController/getCalibrationStatus';
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'accept': 'application/json'
-    }
-  });
-  if (!response.ok) {
-    throw new Error('Failed to get calibration status');
+import createAxiosInstance from "./createAxiosInstance.js";
+
+const apiFocusLockControllerGetCalibrationStatus = async () => {
+  try {
+    const axiosInstance = createAxiosInstance();
+    const response = await axiosInstance.get('/FocusLockController/getCalibrationStatus');
+    return response.data;
+  } catch (error) {
+    console.error("Error getting calibration status:", error);
+    throw error;
   }
-  return await response.json();
-}
+};
+
+export default apiFocusLockControllerGetCalibrationStatus;

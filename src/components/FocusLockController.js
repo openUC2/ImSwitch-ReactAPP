@@ -53,6 +53,7 @@ import apiFocusLockControllerGetPIParameters from "../backendapi/apiFocusLockCon
 import apiFocusLockControllerGetPIControllerParams from "../backendapi/apiFocusLockControllerGetPIControllerParams.js";
 import apiFocusLockControllerRunFocusCalibrationDynamic from "../backendapi/apiFocusLockControllerRunFocusCalibrationDynamic.js";
 import apiFocusLockControllerGetCalibrationStatus from "../backendapi/apiFocusLockControllerGetCalibrationStatus.js";
+import apiPositionerControllerMovePositioner from "../backendapi/apiPositionerControllerMovePositioner.js";
 import apiFocusLockControllerSetExposureTime from "../backendapi/apiFocusLockControllerSetExposureTime.js";
 import apiFocusLockControllerSetGain from "../backendapi/apiFocusLockControllerSetGain.js";
 import apiFocusLockControllerGetExposureTime from "../backendapi/apiFocusLockControllerGetExposureTime.js";
@@ -317,7 +318,7 @@ const chartOptions = useMemo(() => ({
 
     // Only poll when measuring is active, continuous loading is enabled, and no polling errors
     if (isMeasuring && continuousImageLoading && !pollingError) { // Fix: Only poll when actually measuring AND continuous loading is enabled
-      intervalRef.current = setInterval(loadLastImage, 2000);
+      intervalRef.current = setInterval(loadLastImage, 500);
     }
 
     // Cleanup function
@@ -670,6 +671,27 @@ const chartOptions = useMemo(() => ({
     }
   }, [dispatch]);
 
+  // Z-axis movement functions - memoized
+  const moveZAxis = useCallback(async (distance) => {
+    try {
+      await apiPositionerControllerMovePositioner({
+        positionerName: "ESP32Stage", // Default positioner name, might need adjustment
+        axis: "Z",
+        dist: distance,
+        isAbsolute: false, // Relative movement
+        isBlocking: false, // Non-blocking movement
+        speed: 1000 // Default speed, might need adjustment
+      });
+    } catch (error) {
+      console.error(`Failed to move Z-axis by ${distance}:`, error);
+    }
+  }, []);
+
+  const moveZUp10 = useCallback(() => moveZAxis(10), [moveZAxis]);
+  const moveZDown10 = useCallback(() => moveZAxis(-10), [moveZAxis]);
+  const moveZUp100 = useCallback(() => moveZAxis(100), [moveZAxis]);
+  const moveZDown100 = useCallback(() => moveZAxis(-100), [moveZAxis]);
+
   // Handle mouse events for crop selection on image - improved to prevent dragging and memoized
   const handleImageMouseDown = useCallback((e) => {
     e.preventDefault(); // Prevent default drag behavior
@@ -939,8 +961,8 @@ const chartOptions = useMemo(() => ({
                       value={focusLockUI.kp}
                       onChange={(e, value) => dispatch(focusLockSlice.setKp(value))}
                       min={0.}
-                      max={10}
-                      step={0.1}
+                      max={2}
+                      step={0.01}
                       valueLabelDisplay="auto"
                     />
                   </Box>
@@ -951,8 +973,8 @@ const chartOptions = useMemo(() => ({
                       value={focusLockUI.ki}
                       onChange={(e, value) => dispatch(focusLockSlice.setKi(value))}
                       min={0.}
-                      max={10}
-                      step={0.1}
+                      max={2}
+                      step={0.01}
                       valueLabelDisplay="auto"
                     />
                   </Box>
@@ -1079,6 +1101,74 @@ const chartOptions = useMemo(() => ({
           </Card>
         </Grid>
 
+        {/* Z-Axis Movement Controls */}
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardHeader title="Z-Axis Stage Movement" />
+            <CardContent>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Typography variant="body2" color="textSecondary" gutterBottom>
+                  Manual Z-axis positioning for focus adjustment
+                </Typography>
+                
+                {/* Fine movement controls (+/- 10µm) */}
+                <Box>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Fine Movement (±10µm)
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
+                    <Button 
+                      variant="contained" 
+                      color="primary"
+                      onClick={moveZUp10}
+                      sx={{ minWidth: 100 }}
+                    >
+                      Z +10µm
+                    </Button>
+                    <Button 
+                      variant="contained" 
+                      color="primary"
+                      onClick={moveZDown10}
+                      sx={{ minWidth: 100 }}
+                    >
+                      Z -10µm
+                    </Button>
+                  </Box>
+                </Box>
+                
+                {/* Coarse movement controls (+/- 100µm) */}
+                <Box>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Coarse Movement (±100µm)
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
+                    <Button 
+                      variant="contained" 
+                      color="secondary"
+                      onClick={moveZUp100}
+                      sx={{ minWidth: 100 }}
+                    >
+                      Z +100µm
+                    </Button>
+                    <Button 
+                      variant="contained" 
+                      color="secondary"
+                      onClick={moveZDown100}
+                      sx={{ minWidth: 100 }}
+                    >
+                      Z -100µm
+                    </Button>
+                  </Box>
+                </Box>
+                
+                <Typography variant="caption" color="textSecondary" textAlign="center">
+                  Use fine movements for precise adjustments, coarse movements for larger changes
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
         {/* Astigmatism Parameters */}
         <Grid item xs={12} md={6}>
           <Card>
@@ -1142,78 +1232,21 @@ const chartOptions = useMemo(() => ({
           </Card>
         </Grid>
 
-        {/* Camera Parameters */}
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardHeader title="Camera Parameters" />
-            <CardContent>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                <TextField
-                  label="Exposure Time (ms)"
-                  type="number"
-                  value={focusLockUI.exposureTime}
-                  onChange={(e) => dispatch(focusLockSlice.setExposureTime(parseFloat(e.target.value) || 0))}
-                  size="small"
-                  inputProps={{ step: 1, min: 1, max: 10000 }}
-                  helperText="Camera exposure time in milliseconds"
-                />
-                
-                <TextField
-                  label="Gain"
-                  type="number"
-                  value={focusLockUI.gain}
-                  onChange={(e) => dispatch(focusLockSlice.setGain(parseFloat(e.target.value) || 0))}
-                  size="small"
-                  inputProps={{ step: 0.1, min: 0, max: 100 }}
-                  helperText="Camera gain value"
-                />
-                
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  <Button 
-                    variant="contained" 
-                    onClick={updateExposureTime}
-                    sx={{ flex: 1 }}
-                  >
-                    Update Exposure
-                  </Button>
-                  
-                  <Button 
-                    variant="contained" 
-                    onClick={updateGain}
-                    sx={{ flex: 1 }}
-                  >
-                    Update Gain
-                  </Button>
-                </Box>
-                
-                <Button 
-                  variant="outlined" 
-                  onClick={() => {
-                    updateExposureTime();
-                    updateGain();
-                  }}
-                  fullWidth
-                >
-                  Update All Camera Parameters
-                </Button>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
         {/* Image Selection and Crop Region */}
         <Grid item xs={12}>
           <Card>
             <CardHeader 
               title="Image and Crop Region Selection" 
               action={
-                <Button 
-                  variant="outlined" 
-                  onClick={loadLastImage}
-                  disabled={focusLockUI.isLoadingImage}
-                >
-                  {focusLockUI.isLoadingImage ? 'Loading...' : 'Load Last Image'}
-                </Button>
+                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                  <Button 
+                    variant="outlined" 
+                    onClick={loadLastImage}
+                    disabled={focusLockUI.isLoadingImage}
+                  >
+                    {focusLockUI.isLoadingImage ? 'Loading...' : 'Load Last Image'}
+                  </Button>
+                </Box>
               }
             />
             <CardContent>
