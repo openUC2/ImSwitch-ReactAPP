@@ -24,6 +24,8 @@ import STORMControllerArkitekt from "./components/STORMControllerArkitekt.js";
 import STORMControllerLocal from "./components/STORMControllerLocal.js";
 import FocusLockController from "./components/FocusLockController.js";
 import WiFiController from "./components/WiFiController.js";
+import ConnectionSettings from "./components/ConnectionSettings";
+import { setIp, setApiPort } from "./state/slices/ConnectionSettingsSlice";
 
 import {
   Menu as MenuIcon,
@@ -57,6 +59,11 @@ import WebSocketHandler from "./middleware/WebSocketHandler";
 import { useDispatch, useSelector } from "react-redux";
 import * as connectionSettingsSlice from "./state/slices/ConnectionSettingsSlice.js";
 import { toggleTheme, getThemeState } from "./state/slices/ThemeSlice";
+import StatusMessage from "./components/StatusMessage";
+import {
+  getNotificationState,
+  clearNotification,
+} from "./state/slices/NotificationSlice";
 
 // Filemanager
 import FileManager from "./FileManager/FileManager/FileManager";
@@ -68,39 +75,28 @@ import { getAllFilesAPI } from "./FileManager/api/getAllFilesAPI";
 import { downloadFile } from "./FileManager/api/downloadFileAPI";
 import { api } from "./FileManager/api/api";
 import "./FileManager/App.scss";
-import uc2Logo from "./assets/ouc2_logo_qaudratic.png";
 
 import {
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Box,
-  Typography,
-  AppBar,
-  Toolbar,
-  IconButton,
   Drawer,
   List,
   ListItem,
   ListItemIcon,
   ListItemText,
   CssBaseline,
-  Avatar,
-  Switch,
-  TextField,
-  MenuItem,
   Collapse,
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-import CommentIcon from "@mui/icons-material/Comment";
-import ZoomOutMapIcon from "@mui/icons-material/ZoomOutMap";
+import {
+  Link as LinkIcon,
+  Comment as CommentIcon,
+  ZoomOutMap as ZoomOutMapIcon,
+} from "@mui/icons-material";
 import FlowStopController from "./components/FlowStopController";
 import LepMonController from "./components/LepmonController.js";
+import TopBar from "./components/TopBar";
 
 // Define both light and dark themes
-
 const lightTheme = createTheme({
   palette: {
     mode: "light",
@@ -186,6 +182,9 @@ const darkTheme = createTheme({
 });
 
 function App() {
+  // Notification state
+  const notification = useSelector(getNotificationState);
+
   /*
     Redux
     */
@@ -204,45 +203,40 @@ function App() {
   // Hook to detect mobile screens
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [sidebarVisible, setSidebarVisible] = useState(window.innerWidth > 768); // Sidebar visibility state - hidden by default on mobile
-  
+
   useEffect(() => {
     const handleResize = () => {
       const width = window.innerWidth;
       const newIsMobile = width <= 768;
       setIsMobile(newIsMobile);
-      
+
       // Auto-hide sidebar on mobile by default
       if (newIsMobile && sidebarVisible) {
         setSidebarVisible(false);
       }
     };
 
-    window.addEventListener('resize', handleResize);
-    
+    window.addEventListener("resize", handleResize);
+
     // Set initial state
     handleResize();
-    
-    return () => window.removeEventListener('resize', handleResize);
-  }, [sidebarVisible]);
-  
-  const drawerWidth = sidebarVisible ? (isMobile ? '100%' : 240) : (isMobile ? 0 : 60); // Full width when open, responsive sizing
 
-  // hostIP now always includes protocol (http:// or https://)
-  const [hostIP, setHostIP] = useState(
-    connectionSettingsState.ip.startsWith("http")
-      ? connectionSettingsState.ip
-      : `https://${connectionSettingsState.ip}`
-  );
-  const [hostProtocol, setHostProtocol] = useState(
-    connectionSettingsState.ip.startsWith("http://") ? "http://" : "https://"
-  );
-  const [websocketPort, setWebsocketPort] = useState(
-    connectionSettingsState.websocketPort
-  );
-  const [apiPort, setApiPort] = useState(connectionSettingsState.apiPort);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [sidebarVisible]);
+
+  const drawerWidth = sidebarVisible
+    ? isMobile
+      ? "100%"
+      : 240
+    : isMobile
+    ? 0
+    : 60; // Full width when open, responsive sizing
+
+  const hostIP = connectionSettingsState.ip;
+  const websocketPort = connectionSettingsState.websocketPort;
+  const apiPort = connectionSettingsState.apiPort;
 
   const [selectedPlugin, setSelectedPlugin] = useState("LiveView"); // Control which plugin to show
-  const [isDialogOpen, setDialogOpen] = useState(false);
   const [sharedImage, setSharedImage] = useState(null);
   const [fileManagerInitialPath, setFileManagerInitialPath] = useState("/");
   const [layout, setLayout] = useState([
@@ -347,10 +341,7 @@ function App() {
     setSelectedPlugin("ImJoy");
   };
 
-  /*
-  On Value Changes
-  */
-
+  // On Value Changes
   useEffect(() => {
     const currentHostname = window.location.hostname;
     const portsToCheck = [8001, 8002, 443];
@@ -365,9 +356,8 @@ function App() {
               const url = `${protocol}${currentHostname}:${port}/plugins`;
               const response = await fetch(url, { method: "HEAD" });
               if (response.ok) {
-                setHostIP(`${protocol}${currentHostname}`);
-                setHostProtocol(protocol);
-                setApiPort(port);
+                dispatch(setIp(`${protocol}${currentHostname}`));
+                dispatch(setApiPort(port));
                 found = true;
                 break;
               }
@@ -388,7 +378,7 @@ function App() {
     if (!currentHostname.startsWith("youseetoo.github.io")) {
       findValidPort();
     }
-  }, []);
+  }, [dispatch]);
 
   const checkPortsForApi = async (hostname, ports) => {
     for (const port of ports) {
@@ -407,40 +397,10 @@ function App() {
 
   // change API url/port and update filelist
   useEffect(() => {
-    const apiUrl = `${hostIP}:${apiPort}/plugins`;
     api.defaults.baseURL = `${hostIP}:${apiPort}/FileManager`;
     handleRefresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hostIP, apiPort]);
-
-  // Dialog handlers for the URL / Port settings
-  const handleCloseDialog = () => {
-    setDialogOpen(false);
-  };
-
-  // Open the dialog
-  const handleOpenDialog = () => {
-    setDialogOpen(true);
-  };
-
-  // Handle changes to the IP address (host only, no protocol)
-  const handlehostIPChange = (event) => {
-    let ip = event.target.value.trim();
-    // Remove protocol if user enters it
-    ip = ip.replace(/^https?:\/\//, "");
-    setHostIP(`${hostProtocol}${ip}`);
-  };
-
-  // Handle changes to the IP address
-  const handlehostWebsocketPortChange = (event) => {
-    let port = event.target.value.trim();
-    setWebsocketPort(port);
-  };
-  // Handle changes to the IP address
-  const handlehostApiPortChange = (event) => {
-    let port = event.target.value.trim();
-    setApiPort(port);
-  };
 
   // handle default filemanager path change
   const handleFileManagerInitialPathChange = (event) => {
@@ -450,29 +410,6 @@ function App() {
     setSelectedPlugin("FileManager");
     // Refresh immediately since FileNavigationProvider now handles path changes properly
     handleRefresh();
-  };
-
-  // Save the IP address and port, and allow protocol selection
-  const handleSavehostIP = () => {
-    // hostIP is always protocol + ip
-    setHostIP(`${hostProtocol}${hostIP.replace(/^https?:\/\//, "")}`);
-    setApiPort(apiPort);
-    setWebsocketPort(websocketPort);
-    setHostProtocol(hostProtocol);
-    handleCloseDialog();
-
-    //redux
-    dispatch(
-      connectionSettingsSlice.setIp(
-        `${hostProtocol}${hostIP.replace(/^https?:\/\//, "")}`
-      )
-    );
-    dispatch(connectionSettingsSlice.setWebsocketPort(websocketPort));
-    dispatch(connectionSettingsSlice.setApiPort(apiPort));
-  };
-
-  const handleToggleTheme = () => {
-    dispatch(toggleTheme());
   };
 
   const handlePluginChange = (plugin) => {
@@ -586,54 +523,19 @@ function App() {
       {/* headless */}
       <WebSocketProvider hostIP={hostIP}>
         <CssBaseline />
+        {/* Global Status/Notification Message */}
+        <StatusMessage
+          message={notification.message}
+          type={notification.type}
+          onClose={() => dispatch(clearNotification())}
+        />
         <Box sx={{ display: "flex" }}>
-          <AppBar
-            position="fixed"
-            sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
-          >
-            <Toolbar>
-              <IconButton
-                edge="start"
-                color="inherit"
-                aria-label="menu"
-                onClick={() => setSidebarVisible(!sidebarVisible)}
-              >
-                <MenuIcon />
-              </IconButton>
-              <Typography variant="h6" sx={{ 
-                flexGrow: 1, 
-                fontWeight: "bold",
-                fontSize: isMobile ? "1rem" : "1.25rem",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}>
-                {isMobile ? selectedPlugin : `ImSwitch - ${selectedPlugin}`}
-              </Typography>
-              {!isMobile && (
-                <Typography variant="h6" sx={{ fontWeight: "bold", marginRight: 1 }}>
-                  Light/dark
-                </Typography>
-              )}
-              <Switch
-                checked={isDarkMode}
-                onChange={handleToggleTheme}
-                color="default"
-                inputProps={{ "aria-label": "toggle theme" }}
-                sx={{
-                  "& .MuiSwitch-thumb": {
-                    width: isMobile ? 24 : 20,
-                    height: isMobile ? 24 : 20,
-                  },
-                  "& .MuiSwitch-track": {
-                    minWidth: isMobile ? 48 : 34,
-                    height: isMobile ? 28 : 14,
-                  }
-                }}
-              />
-              <Avatar src={uc2Logo} />
-            </Toolbar>
-          </AppBar>
+          <TopBar
+            isMobile={isMobile}
+            sidebarVisible={sidebarVisible}
+            setSidebarVisible={setSidebarVisible}
+            selectedPlugin={selectedPlugin}
+          />
 
           {/* Sidebar Drawer with responsive behavior */}
           <Drawer
@@ -652,10 +554,11 @@ function App() {
                 top: isMobile ? 0 : 64, // Full height on mobile
                 height: isMobile ? "100%" : "calc(100% - 64px)",
                 zIndex: isMobile ? 1300 : 1200,
-                transition: theme => theme.transitions.create('width', {
-                  easing: theme.transitions.easing.sharp,
-                  duration: theme.transitions.duration.enteringScreen,
-                }),
+                transition: (theme) =>
+                  theme.transitions.create("width", {
+                    easing: theme.transitions.easing.sharp,
+                    duration: theme.transitions.duration.enteringScreen,
+                  }),
               },
             }}
           >
@@ -975,12 +878,12 @@ function App() {
                   {/* Connections */}
                   <ListItem
                     button
-                    selected={selectedPlugin === "Connectoins"}
-                    onClick={handleOpenDialog}
+                    selected={selectedPlugin === "Connections"}
+                    onClick={() => handlePluginChange("Connections")}
                     sx={{ pl: 4 }}
                   >
                     <ListItemIcon>
-                      <WifiSharpIcon />
+                      <LinkIcon />
                     </ListItemIcon>
                     <ListItemText
                       primary={sidebarVisible ? "Connection Settings" : ""}
@@ -1131,15 +1034,16 @@ function App() {
           {/* Main content area */}
           <Box
             component="main"
-            sx={{ 
-              flexGrow: 1, 
-              p: isMobile ? 1 : 3, 
+            sx={{
+              flexGrow: 1,
+              p: isMobile ? 1 : 3,
               marginTop: "64px",
               marginLeft: !isMobile && sidebarVisible ? 0 : 0,
-              transition: theme => theme.transitions.create(['margin', 'padding'], {
-                easing: theme.transitions.easing.sharp,
-                duration: theme.transitions.duration.leavingScreen,
-              }),
+              transition: (theme) =>
+                theme.transitions.create(["margin", "padding"], {
+                  easing: theme.transitions.easing.sharp,
+                  duration: theme.transitions.duration.leavingScreen,
+                }),
               minHeight: "calc(100vh - 64px)",
               overflow: "auto",
             }}
@@ -1285,63 +1189,8 @@ function App() {
                 onLayoutChange={(newLayout) => setLayout(newLayout)}
               />
             )}
+            {selectedPlugin === "Connections" && <ConnectionSettings />}
           </Box>
-
-          {/* IP Address Dialog */}
-          <Dialog open={isDialogOpen} onClose={handleCloseDialog}>
-            <DialogTitle>Enter IP Address</DialogTitle>
-            <DialogContent>
-              <TextField
-                select
-                margin="dense"
-                id="protocol"
-                label="Protocol"
-                value={hostProtocol}
-                onChange={(e) => {
-                  setHostProtocol(e.target.value);
-                  setHostIP(
-                    `${e.target.value}${hostIP.replace(/^https?:\/\//, "")}`
-                  );
-                }}
-                fullWidth
-              >
-                <MenuItem value="https://">https://</MenuItem>
-                <MenuItem value="http://">http://</MenuItem>
-              </TextField>
-              <TextField
-                autoFocus
-                margin="dense"
-                id="ip-address"
-                label="IP Address"
-                type="text"
-                fullWidth
-                value={hostIP.replace(/^https?:\/\//, "")}
-                onChange={handlehostIPChange}
-              />
-              <TextField
-                margin="dense"
-                id="port websocket"
-                label="Port (websocket)"
-                type="text"
-                fullWidth
-                value={websocketPort}
-                onChange={handlehostWebsocketPortChange}
-              />
-              <TextField
-                margin="dense"
-                id="port api"
-                label="Port (API)"
-                type="text"
-                fullWidth
-                value={apiPort}
-                onChange={handlehostApiPortChange}
-              />
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={handleCloseDialog}>Cancel</Button>
-              <Button onClick={handleSavehostIP}>Save</Button>
-            </DialogActions>
-          </Dialog>
         </Box>
       </WebSocketProvider>
     </ThemeProvider>
