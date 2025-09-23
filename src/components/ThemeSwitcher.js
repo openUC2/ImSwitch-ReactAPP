@@ -11,7 +11,7 @@ function ThemeSwitcher({ isMobile }) {
   };
 
   return (
-    <>
+    <div style={{ display: "flex", alignItems: "center", minHeight: 40 }}>
       {!isMobile && (
         <Typography variant="h6" sx={{ fontWeight: "bold", marginRight: 1 }}>
           Light/dark
@@ -23,17 +23,18 @@ function ThemeSwitcher({ isMobile }) {
         color="default"
         inputProps={{ "aria-label": "toggle theme" }}
         sx={{
+          mx: isMobile ? 0 : 1,
           "& .MuiSwitch-thumb": {
-            width: isMobile ? 24 : 20,
-            height: isMobile ? 24 : 20,
+            width: 20,
+            height: 20,
           },
           "& .MuiSwitch-track": {
-            minWidth: isMobile ? 48 : 34,
-            height: isMobile ? 28 : 14,
+            minWidth: 34,
+            height: 14,
           },
         }}
       />
-    </>
+    </div>
   );
 }
 

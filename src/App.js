@@ -1,3 +1,6 @@
+import BlurOnIcon from "@mui/icons-material/BlurOn";
+import LightIcon from "@mui/icons-material/Light";
+import SensorsIcon from "@mui/icons-material/Sensors";
 /* global __webpack_init_sharing__, __webpack_share_scopes__ */
 import React, { Suspense, useEffect, useState, lazy } from "react";
 import LiveView from "./components/LiveView";
@@ -26,7 +29,7 @@ import FocusLockController from "./components/FocusLockController.js";
 import WiFiController from "./components/WiFiController.js";
 import ConnectionSettings from "./components/ConnectionSettings";
 import { setIp, setApiPort } from "./state/slices/ConnectionSettingsSlice";
-
+import SIDEBAR_COLORS from "./constants/sidebarColors";
 import {
   Menu as MenuIcon,
   Dashboard as DashboardIcon,
@@ -42,11 +45,15 @@ import {
   Code as CodeIcon,
   Computer as ComputerIcon,
   Folder as FolderIcon,
+  Extension as ExtensionIcon,
+  Science as ScienceIcon,
+  WifiSharp as WifiSharpIcon,
+  ThreeDRotation as ThreeDRotationIcon,
 } from "@mui/icons-material";
 import * as Icons from "@mui/icons-material";
-import WifiSharpIcon from "@mui/icons-material/WifiSharp";
-import ThreeDRotationIcon from "@mui/icons-material/ThreeDRotation";
 import AirIcon from "@mui/icons-material/Air";
+import StraightenIcon from "@mui/icons-material/Straighten";
+import MemoryIcon from "@mui/icons-material/Memory";
 import axios from "axios";
 import { WebSocketProvider } from "./context/WebSocketContext";
 import { MCTProvider } from "./context/MCTContext";
@@ -81,10 +88,14 @@ import {
   Drawer,
   List,
   ListItem,
+  ListItemButton,
   ListItemIcon,
   ListItemText,
   CssBaseline,
   Collapse,
+  Tooltip,
+  Avatar,
+  Divider,
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import {
@@ -204,25 +215,27 @@ function App() {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [sidebarVisible, setSidebarVisible] = useState(window.innerWidth > 768); // Sidebar visibility state - hidden by default on mobile
 
+  // Track previous isMobile to detect transitions
+  const [prevIsMobile, setPrevIsMobile] = useState(window.innerWidth <= 768);
+
   useEffect(() => {
     const handleResize = () => {
       const width = window.innerWidth;
       const newIsMobile = width <= 768;
       setIsMobile(newIsMobile);
 
-      // Auto-hide sidebar on mobile by default
-      if (newIsMobile && sidebarVisible) {
+      // Only close sidebar if switching from desktop to mobile
+      if (!prevIsMobile && newIsMobile) {
         setSidebarVisible(false);
       }
+      setPrevIsMobile(newIsMobile);
     };
 
     window.addEventListener("resize", handleResize);
-
     // Set initial state
     handleResize();
-
     return () => window.removeEventListener("resize", handleResize);
-  }, [sidebarVisible]);
+  }, [prevIsMobile]);
 
   const drawerWidth = sidebarVisible
     ? isMobile
@@ -230,7 +243,7 @@ function App() {
       : 240
     : isMobile
     ? 0
-    : 60; // Full width when open, responsive sizing
+    : 90; // Full width when open, responsive sizing
 
   const hostIP = connectionSettingsState.ip;
   const websocketPort = connectionSettingsState.websocketPort;
@@ -412,8 +425,10 @@ function App() {
     handleRefresh();
   };
 
+  // Helper: handle menu click, close drawer on mobile
   const handlePluginChange = (plugin) => {
     setSelectedPlugin(plugin);
+    if (isMobile) setSidebarVisible(false);
   };
 
   const toggleGroup = (groupName) => {
@@ -563,470 +578,783 @@ function App() {
             }}
           >
             {/* Sidebar content */}
+
             <List>
               {/* LiveView */}
-              <ListItem
-                button
-                selected={selectedPlugin === "LiveView"}
-                onClick={() => handlePluginChange("LiveView")}
-              >
-                <ListItemIcon>
-                  <DashboardIcon />
-                </ListItemIcon>
-                <ListItemText primary={sidebarVisible ? "Live View" : ""} />
+              <ListItem>
+                <Tooltip title="Live View" placement="right">
+                  <ListItemButton
+                    selected={selectedPlugin === "LiveView"}
+                    onClick={() => handlePluginChange("LiveView")}
+                  >
+                    <ListItemIcon>
+                      <DashboardIcon sx={{ color: SIDEBAR_COLORS.liveView }} />
+                    </ListItemIcon>
+                    <ListItemText primary={sidebarVisible ? "Live View" : ""} />
+                  </ListItemButton>
+                </Tooltip>
               </ListItem>
+              <Divider sx={{ my: 1 }} />
 
               {/* Apps Group */}
-              <ListItem button onClick={() => toggleGroup("apps")}>
-                <ListItemIcon>
-                  <AppsIcon />
-                </ListItemIcon>
-                <ListItemText primary={sidebarVisible ? "Apps" : ""} />
-                {sidebarVisible &&
-                  (groupsOpen.apps ? <ExpandLess /> : <ExpandMore />)}
+              <ListItem>
+                <Tooltip title="Apps" placement="right">
+                  <ListItemButton onClick={() => toggleGroup("apps")}>
+                    <ListItemIcon>
+                      <AppsIcon sx={{ color: SIDEBAR_COLORS.apps }} />
+                    </ListItemIcon>
+                    <ListItemText primary={sidebarVisible ? "Apps" : ""} />
+                    {sidebarVisible &&
+                      (groupsOpen.apps ? <ExpandLess /> : <ExpandMore />)}
+                  </ListItemButton>
+                </Tooltip>
               </ListItem>
               <Collapse in={groupsOpen.apps} timeout="auto" unmountOnExit>
                 <List component="div" disablePadding>
                   {/* WellPlate */}
-                  <ListItem
-                    button
-                    selected={selectedPlugin === "WellPlate"}
-                    onClick={() => handlePluginChange("WellPlate")}
-                    sx={{ pl: 4 }}
-                  >
-                    <ListItemIcon>
-                      <SettingsOverscanSharpIcon />
-                    </ListItemIcon>
-                    <ListItemText primary={sidebarVisible ? "WellPlate" : ""} />
+                  <ListItem>
+                    <Tooltip
+                      title="WellPlate"
+                      placement="right"
+                      disableHoverListener={sidebarVisible}
+                    >
+                      <ListItemButton
+                        selected={selectedPlugin === "WellPlate"}
+                        onClick={() => handlePluginChange("WellPlate")}
+                        sx={{
+                          justifyContent: sidebarVisible
+                            ? "flex-start"
+                            : "center",
+                          minHeight: 48,
+                          px: 2.5,
+                        }}
+                      >
+                        <ListItemIcon
+                          sx={{
+                            minWidth: 0,
+                            mr: sidebarVisible ? 3 : "auto",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <Avatar
+                            sx={{
+                              bgcolor: SIDEBAR_COLORS.apps,
+                              width: 24,
+                              height: 24,
+                              fontSize: 14,
+                            }}
+                          >
+                            WP
+                          </Avatar>
+                        </ListItemIcon>
+                        {sidebarVisible && (
+                          <ListItemText
+                            primary="WellPlate"
+                            sx={{ opacity: 1 }}
+                          />
+                        )}
+                      </ListItemButton>
+                    </Tooltip>
                   </ListItem>
-
                   {/* HistoScan */}
-                  <ListItem
-                    button
-                    selected={selectedPlugin === "HistoScan"}
-                    onClick={() => handlePluginChange("HistoScan")}
-                    sx={{ pl: 4 }}
-                  >
-                    <ListItemIcon>
-                      <SettingsOverscanSharpIcon />
-                    </ListItemIcon>
-                    <ListItemText primary={sidebarVisible ? "HistoScan" : ""} />
+                  <ListItem>
+                    <Tooltip
+                      title="HistoScan"
+                      placement="right"
+                      disableHoverListener={sidebarVisible}
+                    >
+                      <ListItemButton
+                        selected={selectedPlugin === "HistoScan"}
+                        onClick={() => handlePluginChange("HistoScan")}
+                        sx={{
+                          justifyContent: sidebarVisible
+                            ? "flex-start"
+                            : "center",
+                          minHeight: 48,
+                          px: 2.5,
+                        }}
+                      >
+                        <ListItemIcon
+                          sx={{
+                            minWidth: 0,
+                            mr: sidebarVisible ? 3 : "auto",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <Avatar
+                            sx={{
+                              bgcolor: SIDEBAR_COLORS.apps,
+                              width: 24,
+                              height: 24,
+                              fontSize: 14,
+                            }}
+                          >
+                            HS
+                          </Avatar>
+                        </ListItemIcon>
+                        {sidebarVisible && (
+                          <ListItemText
+                            primary="HistoScan"
+                            sx={{ opacity: 1 }}
+                          />
+                        )}
+                      </ListItemButton>
+                    </Tooltip>
                   </ListItem>
-
                   {/* STORM Local */}
-                  <ListItem
-                    button
-                    selected={selectedPlugin === "STORMLocal"}
-                    onClick={() => handlePluginChange("STORMLocal")}
-                    sx={{ pl: 4 }}
-                  >
-                    <ListItemIcon>
-                      <SettingsOverscanSharpIcon />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={sidebarVisible ? "STORM Local" : ""}
-                    />
+                  <ListItem>
+                    <Tooltip
+                      title="STORM Local"
+                      placement="right"
+                      disableHoverListener={sidebarVisible}
+                    >
+                      <ListItemButton
+                        selected={selectedPlugin === "STORMLocal"}
+                        onClick={() => handlePluginChange("STORMLocal")}
+                        sx={{
+                          justifyContent: sidebarVisible
+                            ? "flex-start"
+                            : "center",
+                          minHeight: 48,
+                          px: 2.5,
+                        }}
+                      >
+                        <ListItemIcon
+                          sx={{
+                            minWidth: 0,
+                            mr: sidebarVisible ? 3 : "auto",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <Avatar
+                            sx={{
+                              bgcolor: SIDEBAR_COLORS.apps,
+                              width: 24,
+                              height: 24,
+                              fontSize: 14,
+                            }}
+                          >
+                            SL
+                          </Avatar>
+                        </ListItemIcon>
+                        {sidebarVisible && (
+                          <ListItemText
+                            primary="STORM Local"
+                            sx={{ opacity: 1 }}
+                          />
+                        )}
+                      </ListItemButton>
+                    </Tooltip>
                   </ListItem>
-
                   {/* STORM Arkitekt */}
-                  <ListItem
-                    button
-                    selected={selectedPlugin === "STORMArkitekt"}
-                    onClick={() => handlePluginChange("STORMArkitekt")}
-                    sx={{ pl: 4 }}
-                  >
-                    <ListItemIcon>
-                      <SettingsOverscanSharpIcon />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={sidebarVisible ? "STORM Arkitekt" : ""}
-                    />
+                  <ListItem>
+                    <Tooltip
+                      title="STORM Arkitekt"
+                      placement="right"
+                      disableHoverListener={sidebarVisible}
+                    >
+                      <ListItemButton
+                        selected={selectedPlugin === "STORMArkitekt"}
+                        onClick={() => handlePluginChange("STORMArkitekt")}
+                        sx={{
+                          justifyContent: sidebarVisible
+                            ? "flex-start"
+                            : "center",
+                          minHeight: 48,
+                          px: 2.5,
+                        }}
+                      >
+                        <ListItemIcon
+                          sx={{
+                            minWidth: 0,
+                            mr: sidebarVisible ? 3 : "auto",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <Avatar
+                            sx={{
+                              bgcolor: SIDEBAR_COLORS.apps,
+                              width: 24,
+                              height: 24,
+                              fontSize: 14,
+                            }}
+                          >
+                            SA
+                          </Avatar>
+                        </ListItemIcon>
+                        {sidebarVisible && (
+                          <ListItemText
+                            primary="STORM Arkitekt"
+                            sx={{ opacity: 1 }}
+                          />
+                        )}
+                      </ListItemButton>
+                    </Tooltip>
                   </ListItem>
-
                   {/* Infinity Scanning */}
-                  <ListItem
-                    button
-                    selected={selectedPlugin === "Infinity Scanning"}
-                    onClick={() => handlePluginChange("Infinity Scanning")}
-                    sx={{ pl: 4 }}
-                  >
-                    <ListItemIcon>
-                      <SettingsOverscanSharpIcon />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={sidebarVisible ? "Infinity Scanning" : ""}
-                    />
+                  <ListItem>
+                    <Tooltip
+                      title="Infinity Scanning"
+                      placement="right"
+                      disableHoverListener={sidebarVisible}
+                    >
+                      <ListItemButton
+                        selected={selectedPlugin === "Infinity Scanning"}
+                        onClick={() => handlePluginChange("Infinity Scanning")}
+                        sx={{
+                          justifyContent: sidebarVisible
+                            ? "flex-start"
+                            : "center",
+                          minHeight: 48,
+                          px: 2.5,
+                        }}
+                      >
+                        <ListItemIcon
+                          sx={{
+                            minWidth: 0,
+                            mr: sidebarVisible ? 3 : "auto",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <Avatar
+                            sx={{
+                              bgcolor: SIDEBAR_COLORS.apps,
+                              width: 24,
+                              height: 24,
+                              fontSize: 14,
+                            }}
+                          >
+                            IS
+                          </Avatar>
+                        </ListItemIcon>
+                        {sidebarVisible && (
+                          <ListItemText
+                            primary="Infinity Scanning"
+                            sx={{ opacity: 1 }}
+                          />
+                        )}
+                      </ListItemButton>
+                    </Tooltip>
                   </ListItem>
-
                   {/* Lightsheet */}
-                  <ListItem
-                    button
-                    selected={selectedPlugin === "LightSheet"}
-                    onClick={() => handlePluginChange("LightSheet")}
-                    sx={{ pl: 4 }}
-                  >
-                    <ListItemIcon>
-                      <ThreeDRotationIcon />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={sidebarVisible ? "LightSheet" : ""}
-                    />
+                  <ListItem>
+                    <Tooltip
+                      title="LightSheet"
+                      placement="right"
+                      disableHoverListener={sidebarVisible}
+                    >
+                      <ListItemButton
+                        selected={selectedPlugin === "LightSheet"}
+                        onClick={() => handlePluginChange("LightSheet")}
+                        sx={{
+                          justifyContent: sidebarVisible
+                            ? "flex-start"
+                            : "center",
+                          minHeight: 48,
+                          px: 2.5,
+                        }}
+                      >
+                        <ListItemIcon
+                          sx={{
+                            minWidth: 0,
+                            mr: sidebarVisible ? 3 : "auto",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <ThreeDRotationIcon
+                            sx={{ color: SIDEBAR_COLORS.apps }}
+                          />
+                        </ListItemIcon>
+                        {sidebarVisible && (
+                          <ListItemText
+                            primary="LightSheet"
+                            sx={{ opacity: 1 }}
+                          />
+                        )}
+                      </ListItemButton>
+                    </Tooltip>
                   </ListItem>
-
                   {/* Demo */}
-                  <ListItem
-                    button
-                    selected={selectedPlugin === "Demo"}
-                    onClick={() => handlePluginChange("Demo")}
-                    sx={{ pl: 4 }}
-                  >
-                    <ListItemIcon>
-                      <SettingsOverscanSharpIcon />
-                    </ListItemIcon>
-                    <ListItemText primary={sidebarVisible ? "Demo" : ""} />
+                  <ListItem>
+                    <Tooltip
+                      title="Demo"
+                      placement="right"
+                      disableHoverListener={sidebarVisible}
+                    >
+                      <ListItemButton
+                        selected={selectedPlugin === "Demo"}
+                        onClick={() => handlePluginChange("Demo")}
+                        sx={{
+                          justifyContent: sidebarVisible
+                            ? "flex-start"
+                            : "center",
+                          minHeight: 48,
+                          px: 2.5,
+                        }}
+                      >
+                        <ListItemIcon
+                          sx={{
+                            minWidth: 0,
+                            mr: sidebarVisible ? 3 : "auto",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <Avatar
+                            sx={{
+                              bgcolor: SIDEBAR_COLORS.apps,
+                              width: 24,
+                              height: 24,
+                              fontSize: 14,
+                            }}
+                          >
+                            DM
+                          </Avatar>
+                        </ListItemIcon>
+                        {sidebarVisible && (
+                          <ListItemText primary="Demo" sx={{ opacity: 1 }} />
+                        )}
+                      </ListItemButton>
+                    </Tooltip>
                   </ListItem>
-
                   {/* Timelapse */}
-                  <ListItem
-                    button
-                    selected={selectedPlugin === "Timelapse"}
-                    onClick={() => handlePluginChange("Timelapse")}
-                    sx={{ pl: 4 }}
-                  >
-                    <ListItemIcon>
-                      <AccessTimeIcon />
-                    </ListItemIcon>
-                    <ListItemText primary={sidebarVisible ? "Timelapse" : ""} />
+                  <ListItem>
+                    <Tooltip
+                      title="Timelapse"
+                      placement="right"
+                      disableHoverListener={sidebarVisible}
+                    >
+                      <ListItemButton
+                        selected={selectedPlugin === "Timelapse"}
+                        onClick={() => handlePluginChange("Timelapse")}
+                        sx={{
+                          justifyContent: sidebarVisible
+                            ? "flex-start"
+                            : "center",
+                          minHeight: 48,
+                          px: 2.5,
+                        }}
+                      >
+                        <ListItemIcon
+                          sx={{
+                            minWidth: 0,
+                            mr: sidebarVisible ? 3 : "auto",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <AccessTimeIcon sx={{ color: SIDEBAR_COLORS.apps }} />
+                        </ListItemIcon>
+                        {sidebarVisible && (
+                          <ListItemText
+                            primary="Timelapse"
+                            sx={{ opacity: 1 }}
+                          />
+                        )}
+                      </ListItemButton>
+                    </Tooltip>
                   </ListItem>
-
                   {/* FlowStop */}
-                  <ListItem
-                    button
-                    selected={selectedPlugin === "FlowStop"}
-                    onClick={() => handlePluginChange("FlowStop")}
-                    sx={{ pl: 4 }}
-                  >
-                    <ListItemIcon>
-                      <AirIcon />
-                    </ListItemIcon>
-                    <ListItemText primary={sidebarVisible ? "FlowStop" : ""} />
+                  <ListItem>
+                    <Tooltip
+                      title="FlowStop"
+                      placement="right"
+                      disableHoverListener={sidebarVisible}
+                    >
+                      <ListItemButton
+                        selected={selectedPlugin === "FlowStop"}
+                        onClick={() => handlePluginChange("FlowStop")}
+                        sx={{
+                          justifyContent: sidebarVisible
+                            ? "flex-start"
+                            : "center",
+                          minHeight: 48,
+                          px: 2.5,
+                        }}
+                      >
+                        <ListItemIcon
+                          sx={{
+                            minWidth: 0,
+                            mr: sidebarVisible ? 3 : "auto",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <AirIcon sx={{ color: SIDEBAR_COLORS.apps }} />
+                        </ListItemIcon>
+                        {sidebarVisible && (
+                          <ListItemText
+                            primary="FlowStop"
+                            sx={{ opacity: 1 }}
+                          />
+                        )}
+                      </ListItemButton>
+                    </Tooltip>
                   </ListItem>
-
                   {/* Lepmon */}
-                  <ListItem
-                    button
-                    selected={selectedPlugin === "Lepmon"}
-                    onClick={() => handlePluginChange("Lepmon")}
-                    sx={{ pl: 4 }}
-                  >
-                    <ListItemIcon>
-                      <AirIcon />
-                    </ListItemIcon>
-                    <ListItemText primary={sidebarVisible ? "Lepmon" : ""} />
+                  <ListItem>
+                    <Tooltip
+                      title="Lepmon"
+                      placement="right"
+                      disableHoverListener={sidebarVisible}
+                    >
+                      <ListItemButton
+                        selected={selectedPlugin === "Lepmon"}
+                        onClick={() => handlePluginChange("Lepmon")}
+                        sx={{
+                          justifyContent: sidebarVisible
+                            ? "flex-start"
+                            : "center",
+                          minHeight: 48,
+                          px: 2.5,
+                        }}
+                      >
+                        <ListItemIcon
+                          sx={{
+                            minWidth: 0,
+                            mr: sidebarVisible ? 3 : "auto",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <AirIcon sx={{ color: SIDEBAR_COLORS.apps }} />
+                        </ListItemIcon>
+                        {sidebarVisible && (
+                          <ListItemText primary="Lepmon" sx={{ opacity: 1 }} />
+                        )}
+                      </ListItemButton>
+                    </Tooltip>
                   </ListItem>
                 </List>
               </Collapse>
+              <Divider sx={{ my: 1 }} />
 
               {/* File Manager */}
-              <ListItem
-                button
-                selected={selectedPlugin === "FileManager"}
-                onClick={() => handlePluginChange("FileManager")}
-              >
-                <ListItemIcon>
-                  <FolderIcon />
-                </ListItemIcon>
-                <ListItemText primary={sidebarVisible ? "File Manager" : ""} />
+              <ListItem>
+                <ListItemButton
+                  selected={selectedPlugin === "FileManager"}
+                  onClick={() => handlePluginChange("FileManager")}
+                >
+                  <ListItemIcon>
+                    <FolderIcon sx={{ color: SIDEBAR_COLORS.fileManager }} />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={sidebarVisible ? "File Manager" : ""}
+                  />
+                </ListItemButton>
               </ListItem>
+              <Divider sx={{ my: 1 }} />
 
               {/* Coding Group */}
-              <ListItem button onClick={() => toggleGroup("coding")}>
-                <ListItemIcon>
-                  <CodeIcon />
-                </ListItemIcon>
-                <ListItemText primary={sidebarVisible ? "Coding" : ""} />
-                {sidebarVisible &&
-                  (groupsOpen.coding ? <ExpandLess /> : <ExpandMore />)}
+              <ListItem>
+                <ListItemButton onClick={() => toggleGroup("coding")}>
+                  <ListItemIcon>
+                    <CodeIcon sx={{ color: SIDEBAR_COLORS.coding }} />
+                  </ListItemIcon>
+                  <ListItemText primary={sidebarVisible ? "Coding" : ""} />
+                  {sidebarVisible &&
+                    (groupsOpen.coding ? <ExpandLess /> : <ExpandMore />)}
+                </ListItemButton>
               </ListItem>
               <Collapse in={groupsOpen.coding} timeout="auto" unmountOnExit>
                 <List component="div" disablePadding>
                   {/* Fiji (ImJoy) */}
-                  <ListItem
-                    button
-                    selected={selectedPlugin === "ImJoy"}
-                    onClick={() => handlePluginChange("ImJoy")}
-                    sx={{ pl: 4 }}
-                  >
-                    <ListItemIcon>
-                      <BuildIcon />
-                    </ListItemIcon>
-                    <ListItemText primary={sidebarVisible ? "Fiji" : ""} />
+                  <ListItem>
+                    <ListItemButton
+                      selected={selectedPlugin === "ImJoy"}
+                      onClick={() => handlePluginChange("ImJoy")}
+                    >
+                      <ListItemIcon>
+                        <ScienceIcon sx={{ color: SIDEBAR_COLORS.coding }} />
+                      </ListItemIcon>
+                      <ListItemText primary={sidebarVisible ? "Fiji" : ""} />
+                    </ListItemButton>
                   </ListItem>
-
                   {/* Blockly */}
-                  <ListItem
-                    button
-                    selected={selectedPlugin === "Blockly"}
-                    onClick={() => handlePluginChange("Blockly")}
-                    sx={{ pl: 4 }}
-                  >
-                    <ListItemIcon>
-                      <SettingsIcon />
-                    </ListItemIcon>
-                    <ListItemText primary={sidebarVisible ? "Blockly" : ""} />
+                  <ListItem>
+                    <ListItemButton
+                      selected={selectedPlugin === "Blockly"}
+                      onClick={() => handlePluginChange("Blockly")}
+                    >
+                      <ListItemIcon>
+                        <ExtensionIcon sx={{ color: SIDEBAR_COLORS.coding }} />
+                      </ListItemIcon>
+                      <ListItemText primary={sidebarVisible ? "Blockly" : ""} />
+                    </ListItemButton>
                   </ListItem>
-
                   {/* JupyteNotebook */}
-                  <ListItem
-                    button
-                    selected={selectedPlugin === "JupyteNotebook"}
-                    onClick={() => handlePluginChange("JupyteNotebook")}
-                    sx={{ pl: 4 }}
-                  >
-                    <ListItemIcon>
-                      <SettingsOverscanSharpIcon />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={sidebarVisible ? "JupyteNotebook" : ""}
-                    />
+                  <ListItem>
+                    <ListItemButton
+                      selected={selectedPlugin === "JupyteNotebook"}
+                      onClick={() => handlePluginChange("JupyteNotebook")}
+                    >
+                      <ListItemIcon>
+                        <SettingsOverscanSharpIcon
+                          sx={{ color: SIDEBAR_COLORS.coding }}
+                        />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={sidebarVisible ? "JupyteNotebook" : ""}
+                      />
+                    </ListItemButton>
                   </ListItem>
                 </List>
               </Collapse>
+              <Divider sx={{ my: 1 }} />
 
               {/* System Group */}
-              <ListItem button onClick={() => toggleGroup("system")}>
-                <ListItemIcon>
-                  <ComputerIcon />
-                </ListItemIcon>
-                <ListItemText primary={sidebarVisible ? "System" : ""} />
-                {sidebarVisible &&
-                  (groupsOpen.system ? <ExpandLess /> : <ExpandMore />)}
+              <ListItem>
+                <ListItemButton onClick={() => toggleGroup("system")}>
+                  <ListItemIcon>
+                    <ComputerIcon sx={{ color: SIDEBAR_COLORS.system }} />
+                  </ListItemIcon>
+                  <ListItemText primary={sidebarVisible ? "System" : ""} />
+                  {sidebarVisible &&
+                    (groupsOpen.system ? <ExpandLess /> : <ExpandMore />)}
+                </ListItemButton>
               </ListItem>
               <Collapse in={groupsOpen.system} timeout="auto" unmountOnExit>
                 <List component="div" disablePadding>
                   {/* Stresstest */}
-                  <ListItem
-                    button
-                    selected={selectedPlugin === "Stresstest"}
-                    onClick={() => handlePluginChange("Stresstest")}
-                    sx={{ pl: 4 }}
-                  >
-                    <ListItemIcon>
-                      <SettingsOverscanSharpIcon />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={sidebarVisible ? "Stresstest" : ""}
-                    />
+                  <ListItem>
+                    <ListItemButton
+                      selected={selectedPlugin === "Stresstest"}
+                      onClick={() => handlePluginChange("Stresstest")}
+                    >
+                      <ListItemIcon>
+                        <SettingsOverscanSharpIcon
+                          sx={{ color: SIDEBAR_COLORS.system }}
+                        />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={sidebarVisible ? "Stresstest" : ""}
+                      />
+                    </ListItemButton>
                   </ListItem>
-
                   {/* Objective */}
-                  <ListItem
-                    button
-                    selected={selectedPlugin === "Objective"}
-                    onClick={() => handlePluginChange("Objective")}
-                    sx={{ pl: 4 }}
-                  >
-                    <ListItemIcon>
-                      <ZoomOutMapIcon />
-                    </ListItemIcon>
-                    <ListItemText primary={sidebarVisible ? "Objective" : ""} />
+                  <ListItem>
+                    <ListItemButton
+                      selected={selectedPlugin === "Objective"}
+                      onClick={() => handlePluginChange("Objective")}
+                    >
+                      <ListItemIcon>
+                        <ZoomOutMapIcon sx={{ color: SIDEBAR_COLORS.system }} />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={sidebarVisible ? "Objective" : ""}
+                      />
+                    </ListItemButton>
                   </ListItem>
-
                   {/* Focus Lock */}
-                  <ListItem
-                    button
-                    selected={selectedPlugin === "FocusLock"}
-                    onClick={() => handlePluginChange("FocusLock")}
-                    sx={{ pl: 4 }}
-                  >
-                    <ListItemIcon>
-                      <Icons.CenterFocusStrong />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={sidebarVisible ? "Focus Lock" : ""}
-                    />
+                  <ListItem>
+                    <ListItemButton
+                      selected={selectedPlugin === "FocusLock"}
+                      onClick={() => handlePluginChange("FocusLock")}
+                    >
+                      <ListItemIcon>
+                        <Icons.CenterFocusStrong
+                          sx={{ color: SIDEBAR_COLORS.system }}
+                        />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={sidebarVisible ? "Focus Lock" : ""}
+                      />
+                    </ListItemButton>
                   </ListItem>
-
                   {/* SocketView */}
-                  <ListItem
-                    button
-                    selected={selectedPlugin === "SocketView"}
-                    onClick={() => handlePluginChange("SocketView")}
-                    sx={{ pl: 4 }}
-                  >
-                    <ListItemIcon>
-                      <CommentIcon />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={sidebarVisible ? "SocketView" : ""}
-                    />
+                  <ListItem>
+                    <ListItemButton
+                      selected={selectedPlugin === "SocketView"}
+                      onClick={() => handlePluginChange("SocketView")}
+                    >
+                      <ListItemIcon>
+                        <CommentIcon sx={{ color: SIDEBAR_COLORS.system }} />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={sidebarVisible ? "SocketView" : ""}
+                      />
+                    </ListItemButton>
                   </ListItem>
-
-                  {/* WiFi */}
-                  <ListItem
-                    button
-                    selected={selectedPlugin === "WiFi"}
-                    onClick={() => handlePluginChange("WiFi")}
-                    sx={{ pl: 4 }}
-                  >
-                    <ListItemIcon>
-                      <WifiSharpIcon />
-                    </ListItemIcon>
-                    <ListItemText primary={sidebarVisible ? "WiFi" : ""} />
-                  </ListItem>
-
-                  {/* Connections */}
-                  <ListItem
-                    button
-                    selected={selectedPlugin === "Connections"}
-                    onClick={() => handlePluginChange("Connections")}
-                    sx={{ pl: 4 }}
-                  >
-                    <ListItemIcon>
-                      <LinkIcon />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={sidebarVisible ? "Connection Settings" : ""}
-                    />
-                  </ListItem>
-
                   {/* StageOffsetCalibration */}
-                  <ListItem
-                    button
-                    selected={selectedPlugin === "StageOffsetCalibration"}
-                    onClick={() => handlePluginChange("StageOffsetCalibration")}
-                    sx={{ pl: 4 }}
-                  >
-                    <ListItemIcon>
-                      <AirIcon />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={sidebarVisible ? "StageOffsetCalibration" : ""}
-                    />
+                  <ListItem>
+                    <ListItemButton
+                      selected={selectedPlugin === "StageOffsetCalibration"}
+                      onClick={() =>
+                        handlePluginChange("StageOffsetCalibration")
+                      }
+                    >
+                      <ListItemIcon>
+                        <StraightenIcon sx={{ color: SIDEBAR_COLORS.system }} />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={sidebarVisible ? "StageOffsetCalibration" : ""}
+                      />
+                    </ListItemButton>
                   </ListItem>
-
                   {/* DetectorTrigger */}
-                  <ListItem
-                    button
-                    selected={selectedPlugin === "DetectorTrigger"}
-                    onClick={() => handlePluginChange("DetectorTrigger")}
-                    sx={{ pl: 4 }}
-                  >
-                    <ListItemIcon>
-                      <AirIcon />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={sidebarVisible ? "DetectorTrigger" : ""}
-                    />
+                  <ListItem>
+                    <ListItemButton
+                      selected={selectedPlugin === "DetectorTrigger"}
+                      onClick={() => handlePluginChange("DetectorTrigger")}
+                    >
+                      <ListItemIcon>
+                        <SensorsIcon sx={{ color: SIDEBAR_COLORS.system }} />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={sidebarVisible ? "DetectorTrigger" : ""}
+                      />
+                    </ListItemButton>
                   </ListItem>
-
                   {/* ExtendedLEDMatrix */}
-                  <ListItem
-                    button
-                    selected={selectedPlugin === "ExtendedLEDMatrix"}
-                    onClick={() => handlePluginChange("ExtendedLEDMatrix")}
-                    sx={{ pl: 4 }}
-                  >
-                    <ListItemIcon>
-                      <AirIcon />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={sidebarVisible ? "ExtendedLEDMatrix" : ""}
-                    />
+                  <ListItem>
+                    <ListItemButton
+                      selected={selectedPlugin === "ExtendedLEDMatrix"}
+                      onClick={() => handlePluginChange("ExtendedLEDMatrix")}
+                    >
+                      <ListItemIcon>
+                        <BlurOnIcon sx={{ color: SIDEBAR_COLORS.system }} />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={sidebarVisible ? "ExtendedLEDMatrix" : ""}
+                      />
+                    </ListItemButton>
                   </ListItem>
                 </List>
               </Collapse>
+              <Divider sx={{ my: 1 }} />
 
               {/* System Settings Group */}
-              <ListItem button onClick={() => toggleGroup("systemSettings")}>
-                <ListItemIcon>
-                  <SettingsIcon />
-                </ListItemIcon>
-                <ListItemText
-                  primary={sidebarVisible ? "System Settings" : ""}
-                />
-                {sidebarVisible &&
-                  (groupsOpen.systemSettings ? <ExpandLess /> : <ExpandMore />)}
+              <ListItem>
+                <ListItemButton onClick={() => toggleGroup("systemSettings")}>
+                  <ListItemIcon>
+                    <SettingsIcon
+                      sx={{ color: SIDEBAR_COLORS.systemSettings }}
+                    />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={sidebarVisible ? "System Settings" : ""}
+                  />
+                  {sidebarVisible &&
+                    (groupsOpen.systemSettings ? (
+                      <ExpandLess />
+                    ) : (
+                      <ExpandMore />
+                    ))}
+                </ListItemButton>
               </ListItem>
               <Collapse
                 in={groupsOpen.systemSettings}
                 timeout="auto"
                 unmountOnExit
               >
+                {/* WiFi */}
+                <ListItem>
+                  <ListItemButton
+                    selected={selectedPlugin === "WiFi"}
+                    onClick={() => handlePluginChange("WiFi")}
+                  >
+                    <ListItemIcon>
+                      <WifiSharpIcon
+                        sx={{ color: SIDEBAR_COLORS.systemSettings }}
+                      />
+                    </ListItemIcon>
+                    <ListItemText primary={sidebarVisible ? "WiFi" : ""} />
+                  </ListItemButton>
+                </ListItem>
+                {/* Connections */}
+                <ListItem>
+                  <ListItemButton
+                    selected={selectedPlugin === "Connections"}
+                    onClick={() => handlePluginChange("Connections")}
+                  >
+                    <ListItemIcon>
+                      <LinkIcon sx={{ color: SIDEBAR_COLORS.systemSettings }} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={sidebarVisible ? "Connection Settings" : ""}
+                    />
+                  </ListItemButton>
+                </ListItem>
                 <List component="div" disablePadding>
                   {/* UC2 */}
-                  <ListItem
-                    button
-                    selected={selectedPlugin === "UC2"}
-                    onClick={() => handlePluginChange("UC2")}
-                    sx={{ pl: 4 }}
-                  >
-                    <ListItemIcon>
-                      <AirIcon />
-                    </ListItemIcon>
-                    <ListItemText primary={sidebarVisible ? "UC2" : ""} />
+                  <ListItem>
+                    <ListItemButton
+                      selected={selectedPlugin === "UC2"}
+                      onClick={() => handlePluginChange("UC2")}
+                    >
+                      <ListItemIcon>
+                        <MemoryIcon
+                          sx={{ color: SIDEBAR_COLORS.systemSettings }}
+                        />
+                      </ListItemIcon>
+                      <ListItemText primary={sidebarVisible ? "UC2" : ""} />
+                    </ListItemButton>
                   </ListItem>
-
                   {/* Settings */}
-                  <ListItem
-                    button
-                    selected={selectedPlugin === "SystemSettings"}
-                    onClick={() => handlePluginChange("SystemSettings")}
-                    sx={{ pl: 4 }}
-                  >
-                    <ListItemIcon>
-                      <SettingsIcon />
-                    </ListItemIcon>
-                    <ListItemText primary={sidebarVisible ? "Settings" : ""} />
+                  <ListItem>
+                    <ListItemButton
+                      selected={selectedPlugin === "SystemSettings"}
+                      onClick={() => handlePluginChange("SystemSettings")}
+                    >
+                      <ListItemIcon>
+                        <SettingsIcon
+                          sx={{ color: SIDEBAR_COLORS.systemSettings }}
+                        />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={sidebarVisible ? "Settings" : ""}
+                      />
+                    </ListItemButton>
                   </ListItem>
-
                   {/* About */}
-                  <ListItem
-                    button
-                    selected={selectedPlugin === "About"}
-                    onClick={() => handlePluginChange("About")}
-                    sx={{ pl: 4 }}
-                  >
-                    <ListItemIcon>
-                      <InfoIcon />
-                    </ListItemIcon>
-                    <ListItemText primary={sidebarVisible ? "About" : ""} />
+                  <ListItem>
+                    <ListItemButton
+                      selected={selectedPlugin === "About"}
+                      onClick={() => handlePluginChange("About")}
+                    >
+                      <ListItemIcon>
+                        <InfoIcon
+                          sx={{ color: SIDEBAR_COLORS.systemSettings }}
+                        />
+                      </ListItemIcon>
+                      <ListItemText primary={sidebarVisible ? "About" : ""} />
+                    </ListItemButton>
                   </ListItem>
                 </List>
               </Collapse>
+              <Divider sx={{ my: 1 }} />
 
               {/* Widgets */}
-              <ListItem button onClick={() => handlePluginChange("Widgets")}>
-                <ListItemIcon>
-                  <DevicesIcon />
-                </ListItemIcon>
-                <ListItemText
-                  selected={selectedPlugin === "Widgets"}
-                  primary={sidebarVisible ? "Widgets" : ""}
-                />
+              <ListItem>
+                <ListItemButton onClick={() => handlePluginChange("Widgets")}>
+                  <ListItemIcon>
+                    <DevicesIcon />
+                  </ListItemIcon>
+                  <ListItemText primary={sidebarVisible ? "Widgets" : ""} />
+                </ListItemButton>
               </ListItem>
 
               {/* Plugins */}
               {plugins.map((p) => (
-                <ListItem
-                  button
-                  onClick={() => setSelectedPlugin(p.name)}
-                  key={p.name}
-                >
-                  <ListItemIcon>{React.createElement(BuildIcon)}</ListItemIcon>
-                  <ListItemText primary={sidebarVisible ? p.name : ""} />
+                <ListItem key={p.name}>
+                  <ListItemButton
+                    selected={selectedPlugin === p.name}
+                    onClick={() => setSelectedPlugin(p.name)}
+                  >
+                    <ListItemIcon>
+                      {React.createElement(BuildIcon)}
+                    </ListItemIcon>
+                    <ListItemText primary={sidebarVisible ? p.name : ""} />
+                  </ListItemButton>
                 </ListItem>
               ))}
 
               {/* Add a minimize/maximize button */}
-              <ListItem
-                button
-                onClick={() => setSidebarVisible(!sidebarVisible)}
-              >
-                <ListItemIcon>
-                  <MenuIcon />
-                </ListItemIcon>
-                <ListItemText primary={sidebarVisible ? "Minimize" : ""} />
+              <ListItem>
+                <ListItemButton
+                  onClick={() => setSidebarVisible(!sidebarVisible)}
+                >
+                  <ListItemIcon>
+                    <MenuIcon />
+                  </ListItemIcon>
+                  <ListItemText primary={sidebarVisible ? "Minimize" : ""} />
+                </ListItemButton>
               </ListItem>
             </List>
           </Drawer>
