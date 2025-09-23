@@ -1,5 +1,7 @@
 import { useDispatch, useSelector } from "react-redux";
 import { Switch, Typography } from "@mui/material";
+import LightModeIcon from "@mui/icons-material/LightMode";
+import DarkModeIcon from "@mui/icons-material/DarkMode";
 import { toggleTheme, getThemeState } from "../state/slices/ThemeSlice";
 
 function ThemeSwitcher({ isMobile }) {
@@ -12,10 +14,24 @@ function ThemeSwitcher({ isMobile }) {
 
   return (
     <div style={{ display: "flex", alignItems: "center", minHeight: 40 }}>
-      {!isMobile && (
+      {!isMobile ? (
         <Typography variant="h6" sx={{ fontWeight: "bold", marginRight: 1 }}>
           Light/dark
         </Typography>
+      ) : (
+        <>
+          {isDarkMode ? (
+            <DarkModeIcon sx={{ mr: 1 }} />
+          ) : (
+            <LightModeIcon sx={{ mr: 1 }} />
+          )}
+          <Typography
+            variant="body2"
+            sx={{ fontWeight: "bold", marginRight: 1 }}
+          >
+            {isDarkMode ? "Dark" : "Light"}
+          </Typography>
+        </>
       )}
       <Switch
         checked={isDarkMode}

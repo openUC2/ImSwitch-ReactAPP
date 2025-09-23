@@ -566,8 +566,8 @@ function App() {
               "& .MuiDrawer-paper": {
                 width: drawerWidth,
                 boxSizing: "border-box",
-                top: isMobile ? 0 : 64, // Full height on mobile
-                height: isMobile ? "100%" : "calc(100% - 64px)",
+                top: 64, // Always below TopBar
+                height: "calc(100% - 64px)", // Always below TopBar
                 zIndex: isMobile ? 1300 : 1200,
                 transition: (theme) =>
                   theme.transitions.create("width", {
@@ -578,7 +578,6 @@ function App() {
             }}
           >
             {/* Sidebar content */}
-
             <List>
               {/* LiveView */}
               <ListItem>
@@ -1223,9 +1222,7 @@ function App() {
               <ListItem>
                 <ListItemButton onClick={() => toggleGroup("systemSettings")}>
                   <ListItemIcon>
-                    <SettingsIcon
-                      sx={{ color: SIDEBAR_COLORS.systemSettings }}
-                    />
+                    <SettingsIcon />
                   </ListItemIcon>
                   <ListItemText
                     primary={sidebarVisible ? "System Settings" : ""}
@@ -1250,9 +1247,7 @@ function App() {
                     onClick={() => handlePluginChange("WiFi")}
                   >
                     <ListItemIcon>
-                      <WifiSharpIcon
-                        sx={{ color: SIDEBAR_COLORS.systemSettings }}
-                      />
+                      <WifiSharpIcon />
                     </ListItemIcon>
                     <ListItemText primary={sidebarVisible ? "WiFi" : ""} />
                   </ListItemButton>
@@ -1264,7 +1259,7 @@ function App() {
                     onClick={() => handlePluginChange("Connections")}
                   >
                     <ListItemIcon>
-                      <LinkIcon sx={{ color: SIDEBAR_COLORS.systemSettings }} />
+                      <LinkIcon />
                     </ListItemIcon>
                     <ListItemText
                       primary={sidebarVisible ? "Connection Settings" : ""}
@@ -1279,9 +1274,7 @@ function App() {
                       onClick={() => handlePluginChange("UC2")}
                     >
                       <ListItemIcon>
-                        <MemoryIcon
-                          sx={{ color: SIDEBAR_COLORS.systemSettings }}
-                        />
+                        <MemoryIcon />
                       </ListItemIcon>
                       <ListItemText primary={sidebarVisible ? "UC2" : ""} />
                     </ListItemButton>
@@ -1293,9 +1286,7 @@ function App() {
                       onClick={() => handlePluginChange("SystemSettings")}
                     >
                       <ListItemIcon>
-                        <SettingsIcon
-                          sx={{ color: SIDEBAR_COLORS.systemSettings }}
-                        />
+                        <SettingsIcon />
                       </ListItemIcon>
                       <ListItemText
                         primary={sidebarVisible ? "Settings" : ""}
@@ -1309,9 +1300,7 @@ function App() {
                       onClick={() => handlePluginChange("About")}
                     >
                       <ListItemIcon>
-                        <InfoIcon
-                          sx={{ color: SIDEBAR_COLORS.systemSettings }}
-                        />
+                        <InfoIcon />
                       </ListItemIcon>
                       <ListItemText primary={sidebarVisible ? "About" : ""} />
                     </ListItemButton>
@@ -1319,16 +1308,6 @@ function App() {
                 </List>
               </Collapse>
               <Divider sx={{ my: 1 }} />
-
-              {/* Widgets */}
-              <ListItem>
-                <ListItemButton onClick={() => handlePluginChange("Widgets")}>
-                  <ListItemIcon>
-                    <DevicesIcon />
-                  </ListItemIcon>
-                  <ListItemText primary={sidebarVisible ? "Widgets" : ""} />
-                </ListItemButton>
-              </ListItem>
 
               {/* Plugins */}
               {plugins.map((p) => (
@@ -1508,14 +1487,6 @@ function App() {
             )}
             {selectedPlugin === "SocketView" && (
               <SocketView hostIP={hostIP} hostPort={websocketPort} />
-            )}
-            {selectedPlugin === "Widgets" && (
-              <Tab_Widgets
-                hostIP={hostIP}
-                hostPort={apiPort}
-                layout={layout}
-                onLayoutChange={(newLayout) => setLayout(newLayout)}
-              />
             )}
             {selectedPlugin === "Connections" && <ConnectionSettings />}
           </Box>
