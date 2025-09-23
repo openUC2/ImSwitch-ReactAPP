@@ -243,7 +243,7 @@ function App() {
       : 240
     : isMobile
     ? 0
-    : 90; // Full width when open, responsive sizing
+    : 90; // Collapsed sidebar width on desktop
 
   const hostIP = connectionSettingsState.ip;
   const websocketPort = connectionSettingsState.websocketPort;
