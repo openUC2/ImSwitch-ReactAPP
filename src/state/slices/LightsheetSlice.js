@@ -5,14 +5,23 @@ const initialState = {
   tabIndex: 0,
 
   // Position and movement parameters
-  minPos: 0,
-  maxPos: 1000,
+  minPos: -500,
+  maxPos: 500,
   speed: 1000,
   axis: "A",
 
   // Illumination parameters
   illuSource: -1,
   illuValue: 512,
+
+  // Galvo scanner parameters
+  galvoChannel: 0,
+  galvoFrequency: 1000,
+  galvoOffset: 0,
+  galvoAmplitude: 1000,
+  galvoClkDiv: 1,
+  galvoPhase: 0,
+  galvoInvert: false,
 
   // Imaging state
   vtkImagePrimary: null,
@@ -50,6 +59,29 @@ const lightsheetSlice = createSlice({
       state.illuValue = action.payload;
     },
 
+    // Galvo scanner actions
+    setGalvoChannel: (state, action) => {
+      state.galvoChannel = action.payload;
+    },
+    setGalvoFrequency: (state, action) => {
+      state.galvoFrequency = action.payload;
+    },
+    setGalvoOffset: (state, action) => {
+      state.galvoOffset = action.payload;
+    },
+    setGalvoAmplitude: (state, action) => {
+      state.galvoAmplitude = action.payload;
+    },
+    setGalvoClkDiv: (state, action) => {
+      state.galvoClkDiv = action.payload;
+    },
+    setGalvoPhase: (state, action) => {
+      state.galvoPhase = action.payload;
+    },
+    setGalvoInvert: (state, action) => {
+      state.galvoInvert = action.payload;
+    },
+
     // Imaging actions
     setVtkImagePrimary: (state, action) => {
       state.vtkImagePrimary = action.payload;
@@ -70,6 +102,16 @@ const lightsheetSlice = createSlice({
       const { source, value } = action.payload;
       state.illuSource = source;
       state.illuValue = value;
+    },
+    setGalvoParameters: (state, action) => {
+      const { channel, frequency, offset, amplitude, clkDiv, phase, invert } = action.payload;
+      state.galvoChannel = channel;
+      state.galvoFrequency = frequency;
+      state.galvoOffset = offset;
+      state.galvoAmplitude = amplitude;
+      state.galvoClkDiv = clkDiv;
+      state.galvoPhase = phase;
+      state.galvoInvert = invert;
     },
 
     // Reset actions
@@ -92,10 +134,18 @@ export const {
   setAxis,
   setIlluSource,
   setIlluValue,
+  setGalvoChannel,
+  setGalvoFrequency,
+  setGalvoOffset,
+  setGalvoAmplitude,
+  setGalvoClkDiv,
+  setGalvoPhase,
+  setGalvoInvert,
   setVtkImagePrimary,
   setIsRunning,
   setPositionParameters,
   setIlluminationParameters,
+  setGalvoParameters,
   resetToDefaults,
   resetScan,
 } = lightsheetSlice.actions;

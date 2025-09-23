@@ -5,8 +5,6 @@ import { combineReducers } from "redux";
 
 // storage types
 import storage from "redux-persist/lib/storage";
-import storageSession from "redux-persist/lib/storage/session";
-
 
 // Import slices
 import connectionSettingsReducer from "./slices/ConnectionSettingsSlice";
@@ -33,6 +31,12 @@ import lightsheetReducer from "./slices/LightsheetSlice";
 import zarrinitialZarrReducer from "./slices/OmeZarrTileStreamSlice";
 import stresstestReducer from "./slices/StresstestSlice";
 import workflowReducer from "./slices/WorkflowSlice";
+import stormReducer from "./slices/STORMSlice";
+import focusLockReducer from "./slices/FocusLockSlice";
+import wifiReducer from "./slices/WiFiSlice";
+import demoReducer from "./slices/DemoSlice";
+import themeReducer from "./slices/ThemeSlice";
+import notificationReducer from "./slices/NotificationSlice";
 
 //#####################################################################################
 // Combine reducers
@@ -61,6 +65,12 @@ const rootReducer = combineReducers({
   omeZarrState: zarrinitialZarrReducer,
   stresstestState: stresstestReducer,
   workflowState: workflowReducer,
+  storm: stormReducer,
+  focusLockState: focusLockReducer,
+  wifiState: wifiReducer,
+  demoState: demoReducer,
+  themeState: themeReducer,
+  notification: notificationReducer,
 });
 
 //#####################################################################################
@@ -76,6 +86,7 @@ const persistConfig = {
     "wellSelectorState",
     "positionState",
     "workflowState",
+    "themeState",
   ],
   //blacklist: ['webSocketState'],  // Do not persist these
 };
@@ -110,14 +121,14 @@ const rootReducerWithSync = (state, action) => {
 const syncStateAcrossTabs = () => {
   window.addEventListener("storage", (event) => {
     if (event.key === "persist:root") {
-        console.log("State change from another tab detected!");
+      console.log("State change from another tab detected!");
       const updatedState = JSON.parse(event.newValue);
-        // Check if any slice is stringified and needs parsing
-        Object.keys(updatedState).forEach(sliceKey => {
-            if (typeof updatedState[sliceKey] === "string") {
-              updatedState[sliceKey] = JSON.parse(updatedState[sliceKey]);
-            }
-          });
+      // Check if any slice is stringified and needs parsing
+      Object.keys(updatedState).forEach((sliceKey) => {
+        if (typeof updatedState[sliceKey] === "string") {
+          updatedState[sliceKey] = JSON.parse(updatedState[sliceKey]);
+        }
+      });
       // Dispatch SYNC_STATE action with updated state
       store.dispatch(syncStateAction(updatedState));
     }

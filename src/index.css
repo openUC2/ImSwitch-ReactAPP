@@ -6,6 +6,38 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   zoom: 1;
+  /* Touch optimization */
+  touch-action: manipulation;
+  /* Better text rendering on mobile */
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+}
+
+/* Responsive root container */
+#root {
+  width: 100%;
+  min-height: 100vh;
+  overflow-x: auto;
+}
+
+/* Mobile-specific optimizations */
+@media (max-width: 768px) {
+  body {
+    font-size: 16px; /* Prevent zoom on input focus on iOS */
+  }
+}
+
+/* Touch-friendly scrollbars on mobile */
+@media (hover: none) and (pointer: coarse) {
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 6px;
+  }
 }
 
 code {

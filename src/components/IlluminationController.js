@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Box, Checkbox, Slider, Typography, Paper, Grid } from "@mui/material";
 
@@ -19,6 +19,10 @@ export default function IlluminationController({ hostIP, hostPort }) {
   // Local state for laser active status since it's not in Redux yet
   const [laserActiveStates, setLaserActiveStates] = useState([]);
 
+  // Debounce refs for laser value updates to prevent serial overload
+  const laserTimeoutRefs = useRef([]);
+  const LASER_UPDATE_DEBOUNCE_MS = 300; // Wait 300ms after user stops adjusting
+
   // Initialize experiment params and laser values on mount
   useEffect(() => {
     // Fetch experiment parameters which includes laser sources
@@ -38,8 +42,23 @@ export default function IlluminationController({ hostIP, hostPort }) {
       
       // Initialize active states for each laser (default to false)
       setLaserActiveStates(new Array(parameterRangeState.illuSources.length).fill(false));
+      
+      // Initialize timeout refs array for each laser
+      laserTimeoutRefs.current = new Array(parameterRangeState.illuSources.length).fill(null);
     }
   }, [dispatch, parameterRangeState.illuSources, connectionSettingsState.ip, connectionSettingsState.apiPort, hostIP, hostPort]);
+
+  // Cleanup timeout refs on unmount
+  useEffect(() => {
+    return () => {
+      // Clear all pending timeouts
+      laserTimeoutRefs.current.forEach(timeoutRef => {
+        if (timeoutRef) {
+          clearTimeout(timeoutRef);
+        }
+      });
+    };
+  }, []);
 
   // Fetch laser names, value ranges, and current values from backend and update Redux state
   useEffect(() => {
@@ -102,6 +121,39 @@ export default function IlluminationController({ hostIP, hostPort }) {
     }
   };
 
+  // Debounced laser value update to prevent serial overload
+  const debouncedSetLaserValue = useCallback((idx, val) => {
+    // Update Redux state immediately for UI responsiveness
+    const currentValues = experimentState.parameterValue.illuIntensities || [];
+    const newValues = [...currentValues];
+    newValues[idx] = val;
+    dispatch(experimentSlice.setIlluminationIntensities(newValues));
+    
+    // Clear existing timeout for this laser
+    if (laserTimeoutRefs.current[idx]) {
+      clearTimeout(laserTimeoutRefs.current[idx]);
+    }
+    
+    // Set new timeout to send to backend after user stops adjusting
+    laserTimeoutRefs.current[idx] = setTimeout(async () => {
+      const laserName = parameterRangeState.illuSources[idx];
+      if (laserName) {
+        const ip = connectionSettingsState.ip || hostIP;
+        const port = connectionSettingsState.apiPort || hostPort;
+        
+        if (ip && port) {
+          try {
+            const encodedLaserName = encodeURIComponent(laserName);
+            await fetch(`${ip}:${port}/LaserController/setLaserValue?laserName=${encodedLaserName}&value=${val}`);
+            console.log(`${laserName} intensity updated to: ${val}`);
+          } catch (error) {
+            console.error("Failed to set laser value in backend:", error);
+          }
+        }
+      }
+    }, LASER_UPDATE_DEBOUNCE_MS);
+  }, [dispatch, experimentState.parameterValue.illuIntensities, parameterRangeState.illuSources, connectionSettingsState.ip, connectionSettingsState.apiPort, hostIP, hostPort]);
+
   // Update laser active state
   const setLaserActive = async (idx, active) => {
     // Update local active state (since this isn't in Redux yet)
@@ -135,6 +187,13 @@ export default function IlluminationController({ hostIP, hostPort }) {
   return (
     <Paper sx={{ p: 2 }}>
       <Grid container direction="column" spacing={2}>
+        {/* Rate limiting info */}
+        <Grid item>
+          <Typography variant="caption" color="textSecondary" sx={{ fontStyle: 'italic' }}>
+            📡 Rate-limited: Laser updates sent 300ms after you stop adjusting to prevent serial overload
+          </Typography>
+        </Grid>
+        
         {laserSources.length ? (
           laserSources.map((laserName, idx) => {
             const currentValue = laserValues[idx] || 0;
@@ -152,16 +211,23 @@ export default function IlluminationController({ hostIP, hostPort }) {
                 <Typography sx={{ minWidth: 80 }}>{laserName}</Typography>
 
                 {/* Slider with dynamic min and max */}
-                <Slider
-                  value={currentValue}
-                  min={minValue}
-                  max={maxValue}
-                  onChange={(e) => setLaserValue(idx, e.target.value)}
-                  sx={{ flex: 1 }}
-                />
+                <Box sx={{ flex: 1, px: 1 }}>
+                  <Slider
+                    value={currentValue}
+                    min={minValue}
+                    max={maxValue}
+                    onChange={(e) => debouncedSetLaserValue(idx, e.target.value)}
+                    sx={{ width: '100%' }}
+                    valueLabelDisplay="auto"
+                  />
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="caption" color="textSecondary">{minValue}</Typography>
+                    <Typography variant="caption" color="textSecondary">{maxValue}</Typography>
+                  </Box>
+                </Box>
 
                 {/* Current slider value */}
-                <Typography sx={{ mx: 1 }}>{currentValue}</Typography>
+                <Typography sx={{ minWidth: 60, textAlign: 'center' }}>{currentValue}</Typography>
 
                 {/* Active checkbox */}
                 <Checkbox

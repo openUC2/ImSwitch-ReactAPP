@@ -145,10 +145,16 @@ export default function LepmonController({ hostIP, hostPort }) {
               humidity: _args.humidity
             }));
           break;
-        case "freeSpaceUpdate":
-            const _argsFreeSpace = JSON.parse(data.args.p0.replace(/'/g, '"'));
+        case "freeSpaceUpdate": {
+            let _argsFreeSpace;
+            if (typeof data.args.p0 === "string") {
+              _argsFreeSpace = JSON.parse(data.args.p0.replace(/'/g, '"'));
+            } else {
+              _argsFreeSpace = data.args.p0;
+            }
             dispatch(lepmonSlice.setFreeSpace(_argsFreeSpace.freeSpace));
           break;
+        }
         case "sigFocusSharpness":
           console.log("Fokus-Wert:", data.args.p0);
           dispatch(lepmonSlice.setSharpnessValue(data.args.p0));
@@ -168,17 +174,44 @@ export default function LepmonController({ hostIP, hostPort }) {
         case "sigLightStateChanged":
           // Handle light state changes
           if (data.args && data.args.p0) {
-            const lightData = JSON.parse(data.args.p0.replace(/'/g, '"'));
-            dispatch(lepmonSlice.setLightState({
-              lightName: lightData.lightName,
-              isOn: lightData.state
-            }));
+            let lightData;
+            if (Array.isArray(data.args.p0)) {
+              // If p0 is an array, handle each entry as a light state update
+              data.args.p0.forEach(ld => {
+                dispatch(lepmonSlice.setLightState({
+                  lightName: ld.lightName,
+                  isOn: ld.state
+                }));
+              });
+              break;
+            } else if (typeof data.args.p0 === "string") {
+              lightData = JSON.parse(data.args.p0.replace(/'/g, '"'));
+              dispatch(lepmonSlice.setLightState({
+                lightName: lightData.lightName,
+                isOn: lightData.state
+              }));
+            } else if (typeof data.args.p0 === "object") {
+              lightData = data.args.p0;
+              dispatch(lepmonSlice.setLightState({
+                lightName: lightData.lightName,
+                isOn: lightData.state
+              }));
+            } else {
+              // fallback: do nothing
+            }
           }
           break;
         case "sigLCDDisplayUpdate":
           // Handle LCD display updates
           if (data.args && data.args.p0) {
-            const displayLines = data.args.p0.split('\n');
+            let displayLines;
+            if (typeof data.args.p0 === "string") {
+              displayLines = data.args.p0.split('\n');
+            } else if (Array.isArray(data.args.p0)) {
+              displayLines = data.args.p0;
+            } else {
+              displayLines = ["", "", "", ""];
+            }
             dispatch(lepmonSlice.setLcdDisplay({
               line1: displayLines[0] || "",
               line2: displayLines[1] || "",
@@ -190,7 +223,14 @@ export default function LepmonController({ hostIP, hostPort }) {
         case "sigButtonPressed":
           // Handle button press events
           if (data.args && data.args.p0) {
-            const buttonData = JSON.parse(data.args.p0.replace(/'/g, '"'));
+            let buttonData;
+            if (typeof data.args.p0 === "string") {
+              buttonData = JSON.parse(data.args.p0.replace(/'/g, '"'));
+            } else if (typeof data.args.p0 === "object") {
+              buttonData = data.args.p0;
+            } else {
+              buttonData = {};
+            }
             dispatch(lepmonSlice.setButtonState({
               buttonName: buttonData.buttonName,
               isPressed: buttonData.state
@@ -277,13 +317,17 @@ export default function LepmonController({ hostIP, hostPort }) {
   };
 
   // Light Control Functions (new)
+  // Sends lightName and state as query parameters, as required by OpenAPI spec
   const handleLightToggle = async (lightName, newState) => {
     try {
-      const url = `${hostIP}:${hostPort}/LepmonController/setLightState`;
+      // Build query string
+      const params = new URLSearchParams({
+        lightName: lightName,
+        state: newState
+      });
+      const url = `${hostIP}:${hostPort}/LepmonController/setLightState?${params.toString()}`;
       const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lightName, state: newState })
+        method: "POST"
       });
       const data = await response.json();
       if (data.success) {
@@ -296,11 +340,13 @@ export default function LepmonController({ hostIP, hostPort }) {
 
   const handleAllLightsToggle = async (newState) => {
     try {
-      const url = `${hostIP}:${hostPort}/LepmonController/setAllLightsState`;
+      // Build query string
+      const params = new URLSearchParams({
+        state: newState
+      });
+      const url = `${hostIP}:${hostPort}/LepmonController/setAllLightsState?${params.toString()}`;
       const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ state: newState })
+        method: "POST"
       });
       const data = await response.json();
       if (data.success) {
@@ -397,13 +443,13 @@ export default function LepmonController({ hostIP, hostPort }) {
     }
   };
 
+  // Sends action as query parameter, as required by OpenAPI spec
   const handleUVLedControl = async (action) => {
     try {
-      const url = `${hostIP}:${hostPort}/LepmonController/lepmonUVLed`;
+      const params = new URLSearchParams({ action });
+      const url = `${hostIP}:${hostPort}/LepmonController/lepmonUVLed?${params.toString()}`;
       const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action })
+        method: "POST"
       });
       const data = await response.json();
       if (data.success) {
@@ -414,13 +460,13 @@ export default function LepmonController({ hostIP, hostPort }) {
     }
   };
 
+  // Sends action as query parameter, as required by OpenAPI spec
   const handleVisibleLedControl = async (action) => {
     try {
-      const url = `${hostIP}:${hostPort}/LepmonController/lepmonVisibleLed`;
+      const params = new URLSearchParams({ action });
+      const url = `${hostIP}:${hostPort}/LepmonController/lepmonVisibleLed?${params.toString()}`;
       const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action })
+        method: "POST"
       });
       const data = await response.json();
       if (data.success) {

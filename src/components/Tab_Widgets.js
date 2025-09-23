@@ -9,6 +9,9 @@ import { MCTProvider } from '../context/MCTContext'; // Import the context provi
 import UC2Controller from './UC2Controller';
 import AutofocusController from './AutofocusController';
 import StresstestController from './StresstestController';
+import STORMControllerLocal from './STORMControllerLocal';
+import STORMControllerArkitekt from './STORMControllerArkitekt';
+import DemoController from './DemoController';
 import './Tab_Widgets.css'; // Import the CSS file
 
 const Tab_Widgets = ({ hostIP, hostPort }) => {
@@ -31,6 +34,15 @@ const Tab_Widgets = ({ hostIP, hostPort }) => {
       <Grid item xs={12} sm={6} md={4} className="grid-item">
         <StresstestController hostIP={hostIP} hostPort={hostPort} WindowTitle="Stresstest" />
       </Grid>      
+      <Grid item xs={12} sm={6} md={4} className="grid-item">
+        <STORMControllerLocal hostIP={hostIP} hostPort={hostPort} WindowTitle="STORM Local" />
+      </Grid>
+      <Grid item xs={12} sm={6} md={4} className="grid-item">
+        <STORMControllerArkitekt hostIP={hostIP} hostPort={hostPort} WindowTitle="STORM Arkitekt" />
+      </Grid>
+      <Grid item xs={12} sm={6} md={4} className="grid-item">
+        <DemoController hostIP={hostIP} hostPort={hostPort} title="Demo" />
+      </Grid>
     </Grid>
   );
 };

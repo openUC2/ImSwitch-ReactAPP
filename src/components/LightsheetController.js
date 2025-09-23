@@ -121,84 +121,224 @@ const LightsheetController = ({ hostIP, hostPort }) => {
         aria-label="Lightsheet Controller Tabs"
       >
         <Tab label="Scanning Parameters" />
+        <Tab label="Galvo Scanner" />
         <Tab label="View Latest Stack" />
         <Tab label="VTK Viewer" />
       </Tabs>
 
       <TabPanel value={tabIndex} index={0}>
-        <Grid container spacing={2}>
+        <Grid container spacing={3}>
           <Grid item xs={12}>
             <LiveViewControlWrapper />
+          </Grid>
+          <Grid item xs={12} md={6}>
             <TextField
               label="Min Position"
               value={minPos}
               onChange={(e) => dispatch(lightsheetSlice.setMinPos(e.target.value))}
               fullWidth
+              type="number"
+              variant="outlined"
             />
           </Grid>
-          <Grid item xs={12}>
+          <Grid item xs={12} md={6}>
             <TextField
               label="Max Position"
               value={maxPos}
               onChange={(e) => dispatch(lightsheetSlice.setMaxPos(e.target.value))}
               fullWidth
+              type="number"
+              variant="outlined"
             />
           </Grid>
-          <Grid item xs={12}>
+          <Grid item xs={12} md={6}>
             <TextField
               label="Speed"
               value={speed}
               onChange={(e) => dispatch(lightsheetSlice.setSpeed(e.target.value))}
               fullWidth
+              type="number"
+              variant="outlined"
             />
           </Grid>
-          <Grid item xs={6}>
+          <Grid item xs={12} md={6}>
             <TextField
               label="Axis"
               value={axis}
               onChange={(e) => dispatch(lightsheetSlice.setAxis(e.target.value))}
               fullWidth
+              variant="outlined"
             />
           </Grid>
-          <Grid item xs={6}>
+          <Grid item xs={12} md={6}>
             <TextField
               label="Illumination Source"
               value={illuSource}
               onChange={(e) => dispatch(lightsheetSlice.setIlluSource(e.target.value))}
               fullWidth
+              type="number"
+              variant="outlined"
             />
           </Grid>
-          <Grid item xs={6}>
+          <Grid item xs={12} md={6}>
             <TextField
               label="Illumination Value"
               value={illuValue}
               onChange={(e) => dispatch(lightsheetSlice.setIlluValue(e.target.value))}
               fullWidth
+              type="number"
+              variant="outlined"
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <Box display="flex" alignItems="center" gap={2}>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={startScanning}
+                disabled={isRunning}
+                size="large"
+              >
+                Start Scanning
+              </Button>
+              {isRunning ? (
+                <CheckCircleIcon style={{ color: green[500] }} />
+              ) : (
+                <CancelIcon style={{ color: red[500] }} />
+              )}
+              <Typography variant="body2">
+                {isRunning ? "Scanning in progress..." : "Ready to scan"}
+              </Typography>
+            </Box>
+          </Grid>
+        </Grid>
+      </TabPanel>
+
+      <TabPanel value={tabIndex} index={1}>
+        <Grid container spacing={3}>
+          <Grid item xs={12}>
+            <Typography variant="h6" gutterBottom>
+              Galvo Scanner Configuration
+            </Typography>
+          </Grid>
+          <Grid item xs={12}>
+            <LiveViewControlWrapper />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              label="Channel"
+              value={lightsheetState.galvoChannel || 2}
+              onChange={(e) => dispatch(lightsheetSlice.setGalvoChannel(parseInt(e.target.value)))}
+              fullWidth
+              type="number"
+              variant="outlined"
+              inputProps={{ min: 1, max: 2 }}
+              helperText="Channel: 1 or 2"
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              label="Frequency"
+              value={lightsheetState.galvoFrequency || 20}
+              onChange={(e) => dispatch(lightsheetSlice.setGalvoFrequency(parseFloat(e.target.value)))}
+              fullWidth
+              type="number"
+              variant="outlined"
+              inputProps={{ min: 0, step: 0.1 }}
+              helperText="Frequency (Hz)"
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              label="Offset"
+              value={lightsheetState.galvoOffset || 0}
+              onChange={(e) => dispatch(lightsheetSlice.setGalvoOffset(parseFloat(e.target.value)))}
+              fullWidth
+              type="number"
+              variant="outlined"
+              inputProps={{ step: 0.1 }}
+              helperText="Offset value"
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              label="Amplitude"
+              value={lightsheetState.galvoAmplitude || 2}
+              onChange={(e) => dispatch(lightsheetSlice.setGalvoAmplitude(parseFloat(e.target.value)))}
+              fullWidth
+              type="number"
+              variant="outlined"
+              inputProps={{ min: 0, step: 0.1 }}
+              helperText="Amplitude value"
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              label="Clock Divider"
+              value={lightsheetState.galvoClkDiv || 0}
+              onChange={(e) => dispatch(lightsheetSlice.setGalvoClkDiv(parseInt(e.target.value)))}
+              fullWidth
+              type="number"
+              variant="outlined"
+              inputProps={{ min: 0 }}
+              helperText="Clock divider"
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              label="Phase"
+              value={lightsheetState.galvoPhase || 0}
+              onChange={(e) => dispatch(lightsheetSlice.setGalvoPhase(parseInt(e.target.value)))}
+              fullWidth
+              type="number"
+              variant="outlined"
+              helperText="Phase value"
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              label="Invert"
+              value={lightsheetState.galvoInvert || 1}
+              onChange={(e) => dispatch(lightsheetSlice.setGalvoInvert(parseInt(e.target.value)))}
+              fullWidth
+              type="number"
+              variant="outlined"
+              inputProps={{ min: 0, max: 1 }}
+              helperText="Invert: 0 or 1"
             />
           </Grid>
           <Grid item xs={12}>
             <Button
               variant="contained"
               color="primary"
-              onClick={startScanning}
-              disabled={isRunning}
+              onClick={() => {
+                const channel = lightsheetState.galvoChannel || 1;
+                const frequency = lightsheetState.galvoFrequency || 10;
+                const offset = lightsheetState.galvoOffset || 0;
+                const amplitude = lightsheetState.galvoAmplitude || 1;
+                const clk_div = lightsheetState.galvoClkDiv || 0;
+                const phase = lightsheetState.galvoPhase || 0;
+                const invert = lightsheetState.galvoInvert || 1;
+                
+                const url = `${hostIP}:${hostPort}/LightsheetController/setGalvo?channel=${channel}&frequency=${frequency}&offset=${offset}&amplitude=${amplitude}&clk_div=${clk_div}&phase=${phase}&invert=${invert}`;
+                
+                fetch(url, { method: "GET" })
+                  .then((response) => response.json())
+                  .then((data) => {
+                    console.log("Galvo parameters set:", data);
+                  })
+                  .catch((error) => console.error("Error setting galvo parameters:", error));
+              }}
+              size="large"
             >
-              Start Scanning
+              Apply Galvo Settings
             </Button>
-            {isRunning ? (
-              <CheckCircleIcon style={{ color: green[500], marginLeft: 10 }} />
-            ) : (
-              <CancelIcon style={{ color: red[500], marginLeft: 10 }} />
-            )}
-            <Typography variant="body2" style={{ marginLeft: 10 }}>
-              {isRunning ? "Scanning in progress..." : "Ready to scan"}
-            </Typography>
           </Grid>
         </Grid>
       </TabPanel>
 
-      <TabPanel value={tabIndex} index={1}>
-        <Grid container spacing={2}>
+      <TabPanel value={tabIndex} index={2}>
+        <Grid container spacing={3}>
           <Grid item xs={12}>
             <Button
               variant="contained"
@@ -214,16 +354,17 @@ const LightsheetController = ({ hostIP, hostPort }) => {
               Open Lightsheet Stack Viewer (TIF stack to VTK Viewer - needs
               internet)
             </Button>
-            // add button for downloading the tif 
+          </Grid>
+          <Grid item xs={12}>
             <Button
-            variant="contained"
-            color="primary"
-            onClick={() =>
-              window.open(
-                `${hostIP}:${hostPort}/LightsheetController/getLatestLightsheetStackAsTif`,
-                "_blank"
-              )
-            }
+              variant="contained"
+              color="secondary"
+              onClick={() =>
+                window.open(
+                  `${hostIP}:${hostPort}/LightsheetController/getLatestLightsheetStackAsTif`,
+                  "_blank"
+                )
+              }
             >
               Download Latest Lightsheet Stack (TIF)
             </Button>
@@ -231,7 +372,7 @@ const LightsheetController = ({ hostIP, hostPort }) => {
         </Grid>
       </TabPanel>
 
-      <TabPanel value={tabIndex} index={2}>
+      <TabPanel value={tabIndex} index={3}>
         <ErrorBoundary>
           VTK Viewer
           <VtkViewer
