@@ -1,8 +1,6 @@
-import React from "react";
-import { AppBar, Toolbar, IconButton, Typography, Avatar } from "@mui/material";
+import { Box, Toolbar, IconButton, Typography } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import ThemeSwitcher from "./ThemeSwitcher";
-import uc2Logo from "../assets/ouc2_logo_quadratic.png";
 
 function TopBar({
   isMobile,
@@ -11,16 +9,19 @@ function TopBar({
   selectedPlugin,
 }) {
   return (
-    <AppBar
-      position="fixed"
-      sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
+    <Box
+      sx={(theme) => ({
+        background: theme.palette.background.paper,
+        color: theme.palette.text.primary,
+        borderBottom: "1px solid",
+      })}
     >
       <Toolbar>
         <IconButton
           edge="start"
           color="inherit"
-          aria-label="menu"
           onClick={() => setSidebarVisible(!sidebarVisible)}
+          sx={{ mr: 2 }}
         >
           <MenuIcon />
         </IconButton>
@@ -35,12 +36,11 @@ function TopBar({
             whiteSpace: "nowrap",
           }}
         >
-          {isMobile ? selectedPlugin : `ImSwitch - ${selectedPlugin}`}
+          {isMobile ? selectedPlugin : `ImSwitch UI - ${selectedPlugin}`}
         </Typography>
         <ThemeSwitcher isMobile={isMobile} />
-        <Avatar src={uc2Logo} />
       </Toolbar>
-    </AppBar>
+    </Box>
   );
 }
 

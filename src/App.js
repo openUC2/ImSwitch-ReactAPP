@@ -1,5 +1,4 @@
 import BlurOnIcon from "@mui/icons-material/BlurOn";
-import LightIcon from "@mui/icons-material/Light";
 import SensorsIcon from "@mui/icons-material/Sensors";
 /* global __webpack_init_sharing__, __webpack_share_scopes__ */
 import React, { Suspense, useEffect, useState, lazy } from "react";
@@ -106,6 +105,7 @@ import {
 import FlowStopController from "./components/FlowStopController";
 import LepMonController from "./components/LepmonController.js";
 import TopBar from "./components/TopBar";
+import DrawerHeader from "./components/DrawerHeader";
 
 // Define both light and dark themes
 const lightTheme = createTheme({
@@ -545,13 +545,6 @@ function App() {
           onClose={() => dispatch(clearNotification())}
         />
         <Box sx={{ display: "flex" }}>
-          <TopBar
-            isMobile={isMobile}
-            sidebarVisible={sidebarVisible}
-            setSidebarVisible={setSidebarVisible}
-            selectedPlugin={selectedPlugin}
-          />
-
           {/* Sidebar Drawer with responsive behavior */}
           <Drawer
             variant={isMobile ? "temporary" : "permanent"}
@@ -563,20 +556,26 @@ function App() {
             sx={{
               width: drawerWidth,
               flexShrink: 0,
+              zIndex: (theme) => theme.zIndex.drawer + 3,
               "& .MuiDrawer-paper": {
                 width: drawerWidth,
                 boxSizing: "border-box",
-                top: 64, // Always below TopBar
-                height: "calc(100% - 64px)", // Always below TopBar
-                zIndex: isMobile ? 1300 : 1200,
+                zIndex: (theme) => theme.zIndex.drawer + 3,
                 transition: (theme) =>
                   theme.transitions.create("width", {
                     easing: theme.transitions.easing.sharp,
                     duration: theme.transitions.duration.enteringScreen,
                   }),
+                display: "flex",
+                flexDirection: "column",
               },
             }}
           >
+            <DrawerHeader
+              sidebarVisible={sidebarVisible}
+              setSidebarVisible={setSidebarVisible}
+              isMobile={isMobile}
+            />
             {/* Sidebar content */}
             <List>
               {/* LiveView */}
@@ -1218,6 +1217,21 @@ function App() {
               </Collapse>
               <Divider sx={{ my: 1 }} />
 
+              {/* Plugins */}
+              {plugins.map((p) => (
+                <ListItem key={p.name}>
+                  <ListItemButton
+                    selected={selectedPlugin === p.name}
+                    onClick={() => setSelectedPlugin(p.name)}
+                  >
+                    <ListItemIcon>
+                      {React.createElement(BuildIcon)}
+                    </ListItemIcon>
+                    <ListItemText primary={sidebarVisible ? p.name : ""} />
+                  </ListItemButton>
+                </ListItem>
+              ))}
+
               {/* System Settings Group */}
               <ListItem>
                 <ListItemButton onClick={() => toggleGroup("systemSettings")}>
@@ -1307,36 +1321,16 @@ function App() {
                   </ListItem>
                 </List>
               </Collapse>
-              <Divider sx={{ my: 1 }} />
-
-              {/* Plugins */}
-              {plugins.map((p) => (
-                <ListItem key={p.name}>
-                  <ListItemButton
-                    selected={selectedPlugin === p.name}
-                    onClick={() => setSelectedPlugin(p.name)}
-                  >
-                    <ListItemIcon>
-                      {React.createElement(BuildIcon)}
-                    </ListItemIcon>
-                    <ListItemText primary={sidebarVisible ? p.name : ""} />
-                  </ListItemButton>
-                </ListItem>
-              ))}
-
-              {/* Add a minimize/maximize button */}
-              <ListItem>
-                <ListItemButton
-                  onClick={() => setSidebarVisible(!sidebarVisible)}
-                >
-                  <ListItemIcon>
-                    <MenuIcon />
-                  </ListItemIcon>
-                  <ListItemText primary={sidebarVisible ? "Minimize" : ""} />
-                </ListItemButton>
-              </ListItem>
             </List>
           </Drawer>
+
+          <TopBar
+            isMobile={isMobile}
+            sidebarVisible={sidebarVisible}
+            setSidebarVisible={setSidebarVisible}
+            selectedPlugin={selectedPlugin}
+            drawerWidth={drawerWidth}
+          />
 
           {/* Main content area */}
           <Box
