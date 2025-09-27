@@ -35,7 +35,7 @@ const AutofocusController = ({ hostIP, hostPort }) => {
   }, [socket]);
 
   const handleStart = () => {
-    const url = `${hostIP}:${hostPort}/AufofocusController/autoFocus?rangez=${rangeZ}&resolutionz=${resolutionZ}&defocusz=${defocusZ}`;
+    const url = `${hostIP}:${hostPort}/AutofocusController/autoFocus?rangez=${rangeZ}&resolutionz=${resolutionZ}&defocusz=${defocusZ}`;
     fetch(url, { method: "GET" })
       .then((response) => response.json())
       .then(() => {
@@ -47,7 +47,7 @@ const AutofocusController = ({ hostIP, hostPort }) => {
   };
 
   const handleStop = () => {
-    const url = `${hostIP}:${hostPort}/AufofocusController/stopAutoFocus`;
+    const url = `${hostIP}:${hostPort}/AutofocusController/stopAutoFocus`;
     fetch(url, { method: "GET" })
       .then((response) => response.json())
       .then(() => setIsRunning(false))
