@@ -3,9 +3,11 @@ import { setFovX } from "./ObjectiveSlice";
 
 // Define the initial state
 const initialLiveStreamState = {
-  liveViewImage: "",
+  // Image data removed - handled directly by viewer components
+  // liveViewImage: "", // REMOVED: no longer store pixel data in Redux
   minVal: 0,
-  maxVal: 255,
+  maxVal: 65535, // Updated for 16-bit range
+  gamma: 1.0, // New: gamma correction
   pixelSize: null,
   fovX: 0,
   fovY: 0, 
@@ -13,6 +15,16 @@ const initialLiveStreamState = {
   histogramX: [],
   histogramY: [],
   showHistogram: false,
+  // View transform state (optional - can be local to component)
+  zoom: 1.0,
+  translateX: 0,
+  translateY: 0,
+  // Stream statistics
+  stats: {
+    fps: 0,
+    bps: 0, // bits per second
+    compressionRatio: 0
+  }
 };
 
 // Create slice
@@ -20,18 +32,31 @@ const liveStreamSlice = createSlice({
   name: "liveStreamState",
   initialState: initialLiveStreamState,
   reducers: {
-    setLiveViewImage: (state, action) => {
-      //console.log("setLiveViewImage");
-      //console.log(action.payload);
-      state.liveViewImage = action.payload;
-    },
-
+    // REMOVED: setLiveViewImage - no longer store image data in Redux
+    
     setMinVal: (state, action) => {
       state.minVal = action.payload;
     },
 
     setMaxVal: (state, action) => {
       state.maxVal = action.payload;
+    },
+
+    setGamma: (state, action) => {
+      state.gamma = action.payload;
+    },
+
+    setZoom: (state, action) => {
+      state.zoom = action.payload;
+    },
+
+    setTranslate: (state, action) => {
+      state.translateX = action.payload.x;
+      state.translateY = action.payload.y;
+    },
+
+    setStats: (state, action) => {
+      state.stats = { ...state.stats, ...action.payload };
     },
 
     setPixelSize: (state, action) => {
@@ -57,9 +82,13 @@ const liveStreamSlice = createSlice({
 
 // Export actions from slice
 export const {
-  setLiveViewImage,
+  // setLiveViewImage, // REMOVED - no longer storing image data
   setMinVal,
   setMaxVal,
+  setGamma,
+  setZoom,
+  setTranslate,
+  setStats,
   setPixelSize,
   setFovY,
   setHistogramData,

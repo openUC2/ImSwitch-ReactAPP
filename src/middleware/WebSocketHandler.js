@@ -47,6 +47,12 @@ const WebSocketHandler = () => {
       dispatch(webSocketSlice.setConnected(true));
     });
 
+    // Listen for binary frame events (UC2F packets)
+    socket.on("frame", (buf) => {
+      // Dispatch custom event to viewer components without storing in Redux
+      window.dispatchEvent(new CustomEvent("uc2:frame", { detail: buf }));
+    });
+
     // Listen to signals
     socket.on("signal", (data) => {
       //console.log('WebSocket signal', data);
@@ -57,11 +63,13 @@ const WebSocketHandler = () => {
       const dataJson = JSON.parse(data);
       //console.log(dataJson);
       //----------------------------------------------
-      if (dataJson.name == "sigUpdateImage") {
+      if (dataJson.name === "sigUpdateImage") {
         //console.log("sigUpdateImage", dataJson);
-        //update redux state
+        //update redux state - LEGACY JPEG PATH
         if (dataJson.detectorname) {
-          dispatch(liveStreamSlice.setLiveViewImage(dataJson.image));
+          // Note: Legacy JPEG image handling - kept for backward compatibility
+          // The new LiveViewerGL component uses binary "frame" events instead
+          // dispatch(liveStreamSlice.setLiveViewImage(dataJson.image)); // REMOVED
           
           // Update pixel size if available
           if (dataJson.pixelsize) {
@@ -80,7 +88,7 @@ const WebSocketHandler = () => {
         */
           //----------------------------------------------
         }
-      } else if (dataJson.name == "sigHistogramComputed") {
+      } else if (dataJson.name === "sigHistogramComputed") {
         //console.log("sigHistogramComputed", dataJson);
         // Handle histogram data similar to image updates
         if (dataJson.args && dataJson.args.p0 && dataJson.args.p1) {

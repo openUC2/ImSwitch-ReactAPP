@@ -15,11 +15,17 @@ import {
   Select,
   MenuItem,
   Grid,
+  Slider,
+  Paper,
+  Collapse,
+  IconButton,
 } from "@mui/material";
+import { Settings as SettingsIcon, ExpandMore as ExpandMoreIcon } from "@mui/icons-material";
 import XYZControls from "./XYZControls";
 import AutofocusController from "./AutofocusController";
 import DetectorParameters from "./DetectorParameters";
 import StreamControls from "./StreamControls";
+import StreamSettings from "./StreamSettings";
 import IlluminationController from "./IlluminationController";
 import { useWebSocket } from "../context/WebSocketContext";
 import ObjectiveSwitcher from "./ObjectiveSwitcher";
@@ -71,10 +77,11 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
   // Keep some local state for now (these may need their own slices later)
   const [isRecording, setIsRecording] = useState(false);
   const [histogramActive, setHistogramActive] = useState(false);
-  const [minVal, setMinVal] = useState(0);
-  const [maxVal, setMaxVal] = useState(255);
   const [lastSnapPath, setLastSnapPath] = useState("");
   const [compressionRate, setCompressionRate] = useState(80);
+  
+  // Stream settings panel state
+  const [showStreamSettings, setShowStreamSettings] = useState(false);
 
   // Stage control tabs state
   const [stageControlTab, setStageControlTab] = useState(0); // 0 = Multiple Axis View, 1 = Joystick Control
@@ -155,7 +162,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
     })();
   }, [hostIP, hostPort]);
 
-  /* min/max */
+  /* min/max - update Redux instead of local state */
   useEffect(() => {
     (async () => {
       try {
@@ -164,11 +171,12 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
         );
         if (!r.ok) return;
         const d = await r.json();
-        setMinVal(d.minVal);
-        setMaxVal(d.maxVal);
+        // Update Redux state instead of local state
+        dispatch(liveStreamSlice.setMinVal(d.minVal || 0));
+        dispatch(liveStreamSlice.setMaxVal(d.maxVal || 65535));
       } catch {}
     })();
-  }, [hostIP, hostPort]);
+  }, [hostIP, hostPort, dispatch]);
 
   /* poll second detector */
   useEffect(() => {
@@ -234,15 +242,8 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
   };
 
   /* handlers */
-  const handleRangeChange = (e, v) => {
-    setMinVal(v[0]);
-    setMaxVal(v[1]);
-  };
-  // Note: Backend intensity scaling removed - now handled in frontend
-  const handleRangeCommit = async (e, v) => {
-    // Frontend-only intensity scaling - no backend call needed
-    console.log("Intensity range updated in frontend:", v);
-  };
+  // Note: Range handling now done directly in Redux dispatch - old handlers removed
+  
   const toggleStream = async () => {
     const n = !isStreamRunning;
     try {
@@ -367,6 +368,63 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
         </Box>
 
         <DetectorParameters hostIP={hostIP} hostPort={hostPort} />
+
+        {/* Window/Level Controls for 16-bit streaming */}
+        <Paper sx={{ p: 2, mb: 2 }}>
+          <Typography variant="subtitle1" gutterBottom>
+            Window/Level Controls
+          </Typography>
+          
+          {/* Min/Max sliders */}
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="body2" gutterBottom>
+              Window: {liveStreamState.minVal} - {liveStreamState.maxVal}
+            </Typography>
+            <Slider
+              value={[liveStreamState.minVal, liveStreamState.maxVal]}
+              onChange={(_, value) => {
+                dispatch(liveStreamSlice.setMinVal(value[0]));
+                dispatch(liveStreamSlice.setMaxVal(value[1]));
+              }}
+              valueLabelDisplay="auto"
+              min={0}
+              max={65535}
+              step={1}
+              sx={{ mb: 1 }}
+            />
+          </Box>
+          
+          {/* Gamma slider */}
+          <Box>
+            <Typography variant="body2" gutterBottom>
+              Gamma: {liveStreamState.gamma?.toFixed(2) || 1.0}
+            </Typography>
+            <Slider
+              value={liveStreamState.gamma || 1.0}
+              onChange={(_, value) => dispatch(liveStreamSlice.setGamma(value))}
+              valueLabelDisplay="auto"
+              min={0.1}
+              max={3.0}
+              step={0.1}
+            />
+          </Box>
+        </Paper>
+
+        {/* Stream Settings Toggle */}
+        <Box sx={{ mb: 2 }}>
+          <Button
+            variant="outlined"
+            startIcon={<SettingsIcon />}
+            onClick={() => setShowStreamSettings(!showStreamSettings)}
+            sx={{ mb: 1 }}
+          >
+            Stream Settings
+          </Button>
+          
+          <Collapse in={showStreamSettings}>
+            <StreamSettings />
+          </Collapse>
+        </Box>
 
         {histogramActive && (
           <FormControlLabel
