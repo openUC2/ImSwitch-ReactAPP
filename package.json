@@ -29,6 +29,7 @@
     "date-fns": "^4.1.0",
     "deck.gl": "^9.1.12",
     "json-edit-react": "^1.23.1",
+    "lz4js": "^0.2.0",
     "ol": "^10.3.1",
     "path-browserify": "^1.0.1",
     "plotly.js": "^2.35.3",
