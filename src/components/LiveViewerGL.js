@@ -26,6 +26,7 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
   const [featureSupport, setFeatureSupport] = useState({ webgl2: false, intTextures: false, lz4: false });
   const [stats, setStats] = useState({ fps: 0, bps: 0, compressionRatio: 0 });
   const [isWebGL, setIsWebGL] = useState(false);
+  const [currentImageData, setCurrentImageData] = useState(null); // Store current image for histogram
   
   // FPS counter
   const fpsCounterRef = useRef({
@@ -34,6 +35,9 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
     bytesReceived: 0,
     compressedBytes: 0
   });
+
+  // Histogram computation counter
+  const histogramCounterRef = useRef(0);
 
   // WebGL2 shaders
   const vertexShaderSource = `#version 300 es
@@ -315,6 +319,54 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
     }
   }, [dispatch]);
 
+  // Compute histogram from 16-bit data (client-side)
+  const computeHistogram = useCallback((u16Data, width, height) => {
+    // Only compute histogram every 5th frame to avoid performance issues
+    histogramCounterRef.current++;
+    if (histogramCounterRef.current % 5 !== 0) return;
+
+    // Use requestIdleCallback if available, otherwise setTimeout
+    const computeAsync = (callback) => {
+      if (window.requestIdleCallback) {
+        window.requestIdleCallback(callback);
+      } else {
+        setTimeout(callback, 0);
+      }
+    };
+
+    computeAsync(() => {
+      try {
+        const binCount = 4096; // Coarse histogram for performance
+        const maxValue = 65535; // 16-bit max
+        const binSize = maxValue / binCount;
+        
+        const histogram = new Array(binCount).fill(0);
+        const histogramX = new Array(binCount);
+        
+        // Initialize x-axis values
+        for (let i = 0; i < binCount; i++) {
+          histogramX[i] = Math.round(i * binSize);
+        }
+        
+        // Count pixel values
+        for (let i = 0; i < u16Data.length; i++) {
+          const value = u16Data[i];
+          const bin = Math.min(Math.floor(value / binSize), binCount - 1);
+          histogram[bin]++;
+        }
+        
+        // Update Redux with histogram data
+        dispatch(liveStreamSlice.setHistogramData({
+          x: histogramX,
+          y: histogram
+        }));
+        
+      } catch (error) {
+        console.warn('Histogram computation failed:', error);
+      }
+    });
+  }, [dispatch]);
+
   // Handle binary frame events
   const handleFrameEvent = useCallback((event) => {
     try {
@@ -322,6 +374,7 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
       const packet = processUC2FPacket(buffer);
       
       setImageSize({ width: packet.width, height: packet.height });
+      setCurrentImageData(packet.dataU16); // Store for histogram computation
       
       if (onImageLoad) {
         onImageLoad(packet.width, packet.height);
@@ -329,6 +382,9 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
       
       // Update stats
       updateStats(packet.compSize, packet.dataU16.length * 2);
+      
+      // Compute histogram (async, throttled)
+      computeHistogram(packet.dataU16, packet.width, packet.height);
       
       if (isWebGL) {
         uploadTexture(packet.dataU16, packet.width, packet.height);
@@ -340,7 +396,7 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
     } catch (error) {
       console.error('Frame processing error:', error);
     }
-  }, [isWebGL, uploadTexture, renderFrame, renderCanvas2D, onImageLoad, updateStats]);
+  }, [isWebGL, uploadTexture, renderFrame, renderCanvas2D, onImageLoad, updateStats, computeHistogram]);
 
   // Initialize component
   useEffect(() => {
