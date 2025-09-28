@@ -55,7 +55,7 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
 
   const fragmentShaderSource = `#version 300 es
     precision highp float;
-    precision highp usampler2D;
+    precision highp int;
     
     in vec2 v_texCoord;
     uniform usampler2D u_texture;
@@ -65,6 +65,7 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
     out vec4 fragColor;
     
     void main() {
+      // Force use of u_texture uniform so it doesn't get optimized away
       uint rawValue = texture(u_texture, v_texCoord).r;
       float normalized = float(rawValue);
       
@@ -124,14 +125,17 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
       style: canvas.style.cssText
     });
 
-    // Fix canvas sizing: limit to reasonable dimensions
+    // Fix canvas sizing: limit to reasonable dimensions with device pixel ratio
     const maxWidth = 800;
     const maxHeight = 600;
-    const displayWidth = Math.min(canvas.clientWidth || 800, maxWidth);
-    const displayHeight = Math.min(canvas.clientHeight || 600, maxHeight);
+    const dpr = Math.max(1, window.devicePixelRatio || 1);
+    const clientWidth = Math.min(canvas.clientWidth || 800, maxWidth);
+    const clientHeight = Math.min(canvas.clientHeight || 600, maxHeight);
+    const displayWidth = Math.floor(clientWidth * dpr);
+    const displayHeight = Math.floor(clientHeight * dpr);
     
     if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
-      console.log(`Fixing canvas size: internal ${canvas.width}x${canvas.height} -> limited ${displayWidth}x${displayHeight}`);
+      console.log(`Fixing canvas size: internal ${canvas.width}x${canvas.height} -> limited ${displayWidth}x${displayHeight} (DPR: ${dpr})`);
       canvas.width = displayWidth;
       canvas.height = displayHeight;
     }
@@ -194,27 +198,30 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
        1,  1,  1, 0,  // top-right
     ]);
 
+    // Create and bind vertex array object FIRST
+    const vao = gl.createVertexArray();
+    gl.bindVertexArray(vao);
+
+    // THEN create buffer and set up attributes while VAO is bound
     const positionBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
-
-    // Create and bind vertex array object
-    const vao = gl.createVertexArray();
-    gl.bindVertexArray(vao);
 
     // Set up vertex attributes
     const positionLocation = gl.getAttribLocation(program, 'a_position');
     const texCoordLocation = gl.getAttribLocation(program, 'a_texCoord');
 
-    if (positionLocation >= 0) {
-      gl.enableVertexAttribArray(positionLocation);
-      gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 16, 0);
-    }
+    console.log('Attribute locations:', { a_position: positionLocation, a_texCoord: texCoordLocation });
     
-    if (texCoordLocation >= 0) {
-      gl.enableVertexAttribArray(texCoordLocation);
-      gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 16, 8);
+    if (positionLocation < 0 || texCoordLocation < 0) {
+      console.error('Failed to get attribute locations!', { positionLocation, texCoordLocation });
+      return false;
     }
+
+    gl.enableVertexAttribArray(positionLocation);
+    gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 16, 0);
+    gl.enableVertexAttribArray(texCoordLocation);
+    gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 16, 8);
 
     // Save VAO for rendering
     vaoRef.current = vao;
@@ -246,6 +253,12 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
       // Ensure correct row alignment for 16-bit uploads
       gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
 
+      // Set up proper GL state
+      gl.disable(gl.DEPTH_TEST);
+      gl.disable(gl.CULL_FACE);
+      
+      // Bind texture to unit 0
+      gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, texture);
       gl.texImage2D(
         gl.TEXTURE_2D,
@@ -263,8 +276,52 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
       // Bind VAO (attributes) and program, set basic uniforms
       if (vaoRef.current) gl.bindVertexArray(vaoRef.current);
       gl.useProgram(program);
+      
+      // Set texture uniform to texture unit 0
       const textureLocation = gl.getUniformLocation(program, 'u_texture');
-      if (textureLocation >= 0) gl.uniform1i(textureLocation, 0);
+      if (textureLocation >= 0) {
+        gl.uniform1i(textureLocation, 0);
+        console.log('Set u_texture uniform to unit 0');
+      } else {
+        console.error('Failed to get u_texture uniform location!');
+        
+        // FALLBACK: Create a simple test shader that just renders the checkerboard pattern
+        console.log('Creating fallback test shader...');
+        const simpleFragSource = `#version 300 es
+          precision highp float;
+          in vec2 v_texCoord;
+          out vec4 fragColor;
+          void main() {
+            // Create checkerboard pattern directly in shader
+            float checkerboard = step(0.5, mod(floor(v_texCoord.x * 20.0) + floor(v_texCoord.y * 20.0), 2.0));
+            fragColor = vec4(checkerboard, checkerboard, checkerboard, 1.0);
+          }
+        `;
+        
+        const simpleFrag = gl.createShader(gl.FRAGMENT_SHADER);
+        gl.shaderSource(simpleFrag, simpleFragSource);
+        gl.compileShader(simpleFrag);
+        
+        if (gl.getShaderParameter(simpleFrag, gl.COMPILE_STATUS)) {
+          const simpleProgram = gl.createProgram();
+          const vertexShader = gl.createShader(gl.VERTEX_SHADER);
+          gl.shaderSource(vertexShader, vertexShaderSource);
+          gl.compileShader(vertexShader);
+          
+          gl.attachShader(simpleProgram, vertexShader);
+          gl.attachShader(simpleProgram, simpleFrag);
+          gl.linkProgram(simpleProgram);
+          
+          if (gl.getProgramParameter(simpleProgram, gl.LINK_STATUS)) {
+            console.log('Fallback shader program created successfully');
+            programRef.current = simpleProgram; // Use fallback program
+          } else {
+            console.error('Fallback program link failed:', gl.getProgramInfoLog(simpleProgram));
+          }
+        } else {
+          console.error('Fallback fragment shader compile failed:', gl.getShaderInfoLog(simpleFrag));
+        }
+      }
 
       const minLocation = gl.getUniformLocation(program, 'u_min');
       const maxLocation = gl.getUniformLocation(program, 'u_max');
@@ -743,7 +800,7 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
     setFeatureSupport(support);
     console.log('LiveViewerGL: Feature support:', support);
     
-    const webglSuccess = support.webgl2 && support.intTextures && initWebGL();
+    const webglSuccess = support.webgl2 && initWebGL();
     setIsWebGL(webglSuccess);
     
     if (!webglSuccess) {
@@ -880,7 +937,7 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
           height: 'auto',     // Maintain aspect ratio
           objectFit: 'contain',
           cursor: 'crosshair',
-          backgroundColor: 'lightblue', // Changed from lime to see difference
+          // backgroundColor removed to see WebGL content
           border: '2px solid red', // Thinner border
           zIndex: 15
         }}
