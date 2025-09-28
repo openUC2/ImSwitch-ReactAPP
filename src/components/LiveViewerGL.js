@@ -18,7 +18,7 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
   const glRef = useRef(null);
   const programRef = useRef(null);
   const textureRef = useRef(null);
-  const frameBufferRef = useRef(null);
+  const vaoRef = useRef(null);
   
   // View state
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
@@ -115,6 +115,27 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
       return false;
     }
 
+    // Debug canvas info before GL context creation
+    console.log('Canvas element info:', {
+      width: canvas.width,
+      height: canvas.height,
+      clientWidth: canvas.clientWidth,
+      clientHeight: canvas.clientHeight,
+      style: canvas.style.cssText
+    });
+
+    // Fix canvas sizing: limit to reasonable dimensions
+    const maxWidth = 800;
+    const maxHeight = 600;
+    const displayWidth = Math.min(canvas.clientWidth || 800, maxWidth);
+    const displayHeight = Math.min(canvas.clientHeight || 600, maxHeight);
+    
+    if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
+      console.log(`Fixing canvas size: internal ${canvas.width}x${canvas.height} -> limited ${displayWidth}x${displayHeight}`);
+      canvas.width = displayWidth;
+      canvas.height = displayHeight;
+    }
+
     const gl = canvas.getContext('webgl2');
     if (!gl) {
       console.warn('WebGL2 not supported, falling back to Canvas2D');
@@ -195,6 +216,9 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
       gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 16, 8);
     }
 
+    // Save VAO for rendering
+    vaoRef.current = vao;
+
     // Create texture
     const texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -204,6 +228,80 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     textureRef.current = texture;
 
+    // Upload a random initial 16-bit texture so we can immediately verify the GL pipeline.
+    try {
+      const w = canvas.width;
+      const h = canvas.height;
+      console.log(`Creating initial texture for canvas size: ${w}x${h}`);
+      const size = Math.max(1, w * h);
+      const rand = new Uint16Array(size);
+      for (let i = 0; i < size; i++) {
+        // Create a visible pattern: checkerboard of white and black
+        const x = i % w;
+        const y = Math.floor(i / w);
+        const isWhite = ((Math.floor(x / 50) + Math.floor(y / 50)) % 2) === 0;
+        rand[i] = isWhite ? 65535 : 0; // Full white or full black
+      }
+
+      // Ensure correct row alignment for 16-bit uploads
+      gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.texImage2D(
+        gl.TEXTURE_2D,
+        0,
+        gl.R16UI,
+        w,
+        h,
+        0,
+        gl.RED_INTEGER,
+        gl.UNSIGNED_SHORT,
+        rand
+      );
+
+      // Perform an initial draw to the canvas so the noise is visible immediately
+      // Bind VAO (attributes) and program, set basic uniforms
+      if (vaoRef.current) gl.bindVertexArray(vaoRef.current);
+      gl.useProgram(program);
+      const textureLocation = gl.getUniformLocation(program, 'u_texture');
+      if (textureLocation >= 0) gl.uniform1i(textureLocation, 0);
+
+      const minLocation = gl.getUniformLocation(program, 'u_min');
+      const maxLocation = gl.getUniformLocation(program, 'u_max');
+      const gammaLocation = gl.getUniformLocation(program, 'u_gamma');
+      const transformLocation = gl.getUniformLocation(program, 'u_transform');
+
+      if (minLocation >= 0) gl.uniform1f(minLocation, 0.0);
+      if (maxLocation >= 0) gl.uniform1f(maxLocation, 65535.0);
+      if (gammaLocation >= 0) gl.uniform1f(gammaLocation, 1.0);
+      if (transformLocation >= 0) {
+        const transform = new Float32Array([1,0,0, 0,1,0, 0,0,1]);
+        gl.uniformMatrix3fv(transformLocation, false, transform);
+      }
+
+      gl.viewport(0, 0, w, h);
+      gl.clearColor(0,0,0,1);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      
+      console.log('About to draw - GL state:', {
+        viewport: [0, 0, w, h],
+        canvasSize: [canvas.width, canvas.height],
+        program: !!program,
+        texture: !!texture,
+        vao: !!vaoRef.current
+      });
+      
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+      const err = gl.getError();
+      if (err !== gl.NO_ERROR) console.error('Initial GL draw error:', err);
+      else {
+        console.log(`Initial random texture uploaded and drawn: ${w}x${h}`);
+        console.log('Canvas should now show random noise. If not, check if canvas element is visible in DOM.');
+      }
+    } catch (e) {
+      console.warn('Initial random texture setup failed:', e);
+    }
     console.log('WebGL initialization complete');
     return true;
   }, []);
@@ -237,9 +335,11 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
     }
     console.log(`WebGL upload: ${width}x${height}, ${u16Data.length} pixels, samples: [${samples.join(', ')}]`);
 
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    
+    // Ensure correct row alignment for 16-bit uploads
     try {
+      gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+
+      gl.bindTexture(gl.TEXTURE_2D, texture);
       gl.texImage2D(
         gl.TEXTURE_2D,
         0,                    // level
@@ -251,7 +351,7 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
         gl.UNSIGNED_SHORT,   // type
         u16Data
       );
-      
+
       // Check for WebGL errors
       const error = gl.getError();
       if (error !== gl.NO_ERROR) {
@@ -281,7 +381,28 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
       return;
     }
 
-    // Set viewport
+    console.log('renderFrame called - GL state:', {
+      glContext: !!gl,
+      program: !!program, 
+      texture: !!texture,
+      canvas: !!canvas,
+      canvasSize: [canvas.width, canvas.height],
+      displaySize: [canvas.clientWidth, canvas.clientHeight],
+      isWebGL: isWebGL
+    });
+
+    // Sync canvas internal size with display size, but limit to reasonable dimensions
+    const maxWidth = 800;
+    const maxHeight = 600;
+    const displayWidth = Math.min(canvas.clientWidth || 800, maxWidth);
+    const displayHeight = Math.min(canvas.clientHeight || 600, maxHeight);
+    if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
+      console.log(`Canvas size sync: ${canvas.width}x${canvas.height} -> limited ${displayWidth}x${displayHeight}`);
+      canvas.width = displayWidth;
+      canvas.height = displayHeight;
+    }
+
+    // Set viewport to match canvas size
     gl.viewport(0, 0, canvas.width, canvas.height);
     
     // Clear canvas
@@ -289,7 +410,9 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
     gl.clear(gl.COLOR_BUFFER_BIT);
     
     // Use our program
-    gl.useProgram(program);
+  // Bind VAO (attributes) to ensure correct vertex attributes and texcoords
+  if (vaoRef.current) gl.bindVertexArray(vaoRef.current);
+  gl.useProgram(program);
 
     // Bind texture
     gl.activeTexture(gl.TEXTURE0);
@@ -645,7 +768,7 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
     };
   }, [handleFrameEvent]);
 
-  // Update canvas size when image size changes
+  // Update canvas size when image size changes - but keep minimum size
   useEffect(() => {
     const canvas = canvasRef.current;
     if (canvas && imageSize.width > 0 && imageSize.height > 0) {
@@ -658,6 +781,8 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
       if (isWebGL) {
         renderFrame();
       }
+    } else {
+      console.log(`ImageSize is invalid (${imageSize.width}x${imageSize.height}) - keeping canvas at current size`);
     }
   }, [imageSize, isWebGL, renderFrame]);
 
@@ -724,19 +849,40 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
   }, []);
 
   return (
-    <Box ref={containerRef} sx={{ position: 'relative', width: '100%', height: '100%' }}>
-      {console.log('LiveViewerGL: Rendering component, imageSize:', imageSize)}
+    <Box ref={containerRef} sx={{ position: 'relative', width: '100%', height: '50%', backgroundColor: 'pink' }}>
+      {console.log('LiveViewerGL: Rendering component, imageSize:', imageSize, 'isWebGL:', isWebGL)}
+      {/* DEBUG: Simple text to see if component is visible at all */}
+      <div style={{
+        position: 'absolute', 
+        top: 20, 
+        left: 20, 
+        color: 'white', 
+        backgroundColor: 'blue', 
+        padding: '10px', 
+        zIndex: 20,
+        fontSize: '20px'
+      }}>
+        WEBGL COMPONENT IS HERE - Canvas: {isWebGL ? 'ACTIVE' : 'INACTIVE'}
+      </div>
+      
       <canvas
+        id="live-viewer-canvas"
         ref={canvasRef}
-        width={imageSize.width || 800}
-        height={imageSize.height || 600}
+        width={800}  // Fixed initial size - don't use imageSize which is 0x0
+        height={600} // Fixed initial size - don't use imageSize which is 0x0
         style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          maxWidth: '800px',  // Limit to reasonable size
+          maxHeight: '600px', // Limit to reasonable size
           width: '100%',
-          height: '100%',
+          height: 'auto',     // Maintain aspect ratio
           objectFit: 'contain',
           cursor: 'crosshair',
-          backgroundColor: '#000',
-          border: '1px solid red' // Debug border to see canvas
+          backgroundColor: 'lightblue', // Changed from lime to see difference
+          border: '2px solid red', // Thinner border
+          zIndex: 15
         }}
         onWheel={handleWheel}
         onDoubleClick={handleDoubleClick}
@@ -767,22 +913,42 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
         </Typography>
       </Paper>
       
-      {/* Reset button */}
-      <Box
-        sx={{
-          position: 'absolute',
-          bottom: 10,
-          right: 10,
-          opacity: 0.7,
-          '&:hover': { opacity: 1 },
-          cursor: 'pointer',
-          bgcolor: 'background.paper',
-          p: 1,
-          borderRadius: 1
-        }}
-        onClick={resetView}
-      >
-        <Typography variant="caption">Reset View</Typography>
+      {/* Debug/Reset buttons */}
+      <Box sx={{ position: 'absolute', bottom: 10, right: 10, display: 'flex', flexDirection: 'column', gap: 1 }}>
+        {/* Manual render test button */}
+        {isWebGL && (
+          <Box
+            sx={{
+              opacity: 0.7,
+              '&:hover': { opacity: 1 },
+              cursor: 'pointer',
+              bgcolor: 'background.paper',
+              p: 1,
+              borderRadius: 1
+            }}
+            onClick={() => {
+              console.log('Manual render button clicked');
+              renderFrame();
+            }}
+          >
+            <Typography variant="caption">Test Render</Typography>
+          </Box>
+        )}
+        
+        {/* Reset view button */}
+        <Box
+          sx={{
+            opacity: 0.7,
+            '&:hover': { opacity: 1 },
+            cursor: 'pointer',
+            bgcolor: 'background.paper',
+            p: 1,
+            borderRadius: 1
+          }}
+          onClick={resetView}
+        >
+          <Typography variant="caption">Reset View</Typography>
+        </Box>
       </Box>
     </Box>
   );
