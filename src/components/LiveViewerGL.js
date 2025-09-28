@@ -496,19 +496,34 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
 
   // Handle binary frame events
   const handleFrameEvent = useCallback((event) => {
+    console.log('LiveViewerGL: Received uc2:frame event');
     try {
       // Extract buffer and metadata from event
       const { buffer, metadata } = event.detail;
-      console.log('Processing frame with metadata:', metadata);
+      console.log('LiveViewerGL: Processing frame - buffer size:', buffer?.byteLength, 'metadata:', metadata);
+      
+      if (!buffer) {
+        console.error('LiveViewerGL: No buffer in frame event');
+        return;
+      }
       
       let packet;
       if (metadata && metadata.compressed_bytes) {
+        console.log('LiveViewerGL: Using metadata-based parsing');
         // Use metadata to parse frame correctly
         packet = processUC2FPacketWithMetadata(buffer, metadata);
       } else {
+        console.log('LiveViewerGL: Using standard UC2F parsing');
         // Fallback to original parsing
         packet = processUC2FPacket(buffer);
       }
+      
+      console.log('LiveViewerGL: Successfully parsed packet:', {
+        width: packet.width,
+        height: packet.height,
+        dataLength: packet.dataU16?.length,
+        pixelRange: packet.dataU16?.length > 0 ? [Math.min(...packet.dataU16.slice(0, 100)), Math.max(...packet.dataU16.slice(0, 100))] : [0, 0]
+      });
       
       setImageSize({ width: packet.width, height: packet.height });
       setCurrentImageData(packet.dataU16); // Store for histogram computation
@@ -535,7 +550,7 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
         const autoMax = samples[Math.min(samples.length - 1, maxPercIndex)];
         
         if (autoMax > autoMin) {
-          console.log(`Auto-windowing: setting min=${autoMin}, max=${autoMax} (from pixel range)`);
+          console.log(`LiveViewerGL: Auto-windowing: setting min=${autoMin}, max=${autoMax} (from pixel range)`);
           dispatch(liveStreamSlice.setMinVal(autoMin));
           dispatch(liveStreamSlice.setMaxVal(autoMax));
         }
@@ -552,35 +567,49 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
       computeHistogram(packet.dataU16, packet.width, packet.height);
       
       if (isWebGL) {
+        console.log('LiveViewerGL: Rendering with WebGL2');
         uploadTexture(packet.dataU16, packet.width, packet.height);
         renderFrame();
       } else {
+        console.log('LiveViewerGL: Rendering with Canvas2D fallback');
         renderCanvas2D(packet.dataU16, packet.width, packet.height);
       }
       
     } catch (error) {
-      console.error('Frame processing error:', error);
+      console.error('LiveViewerGL: Frame processing error:', error);
+      console.error('LiveViewerGL: Error stack:', error.stack);
     }
-  }, [isWebGL, uploadTexture, renderFrame, renderCanvas2D, onImageLoad, updateStats, computeHistogram]);
+  }, [isWebGL, uploadTexture, renderFrame, renderCanvas2D, onImageLoad, updateStats, computeHistogram, liveStreamState.minVal, liveStreamState.maxVal, dispatch]);
 
   // Initialize component
   useEffect(() => {
+    console.log('LiveViewerGL: Component mounting and initializing');
+    
     const support = checkFeatureSupport();
     setFeatureSupport(support);
+    console.log('LiveViewerGL: Feature support:', support);
     
     const webglSuccess = support.webgl2 && support.intTextures && initWebGL();
     setIsWebGL(webglSuccess);
     
     if (!webglSuccess) {
-      console.log('Using Canvas2D fallback');
+      console.log('LiveViewerGL: Using Canvas2D fallback');
+    } else {
+      console.log('LiveViewerGL: Using WebGL2 rendering');
     }
   }, [initWebGL]);
 
   // Listen for frame events
   useEffect(() => {
+    console.log('LiveViewerGL: Registering uc2:frame event listener');
+    
     window.addEventListener('uc2:frame', handleFrameEvent);
     
+    // Test that event listener is working
+    console.log('LiveViewerGL: Event listener registered for uc2:frame');
+    
     return () => {
+      console.log('LiveViewerGL: Unregistering uc2:frame event listener');
       window.removeEventListener('uc2:frame', handleFrameEvent);
     };
   }, [handleFrameEvent]);
@@ -665,6 +694,7 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
 
   return (
     <Box ref={containerRef} sx={{ position: 'relative', width: '100%', height: '100%' }}>
+      {console.log('LiveViewerGL: Rendering component, imageSize:', imageSize)}
       <canvas
         ref={canvasRef}
         width={imageSize.width || 800}
@@ -674,7 +704,8 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
           height: '100%',
           objectFit: 'contain',
           cursor: 'crosshair',
-          backgroundColor: '#000'
+          backgroundColor: '#000',
+          border: '1px solid red' // Debug border to see canvas
         }}
         onWheel={handleWheel}
         onDoubleClick={handleDoubleClick}
