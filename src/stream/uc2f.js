@@ -40,7 +40,7 @@ export function parseUC2F(buf) {
   const compSize = view.getUint32(30, true);
   
   // Extract compressed data
-  const compDataOffset = 34; // 30 byte header + 4 byte compSize
+  const compDataOffset = 36; // 32 byte header + 4 byte compSize
   const availableDataSize = buf.byteLength - compDataOffset;
   
   if (compSize > availableDataSize) {
