@@ -6,8 +6,8 @@ import LZ4 from 'lz4js';
  * Backend format: HDR_FMT = "<4sB3xIIIHBBQ" (30 bytes) + u32 compressed_size + compressed_data
  */
 export function parseUC2F(buf) {
-  if (!buf || buf.byteLength < 34) { // 30 byte header + 4 byte compSize minimum
-    throw new Error(`Invalid buffer: expected at least 34 bytes, got ${buf?.byteLength || 0}`);
+  if (!buf || buf.byteLength < 30) { // 30 byte header minimum
+    throw new Error(`Invalid buffer: expected at least 30 bytes, got ${buf?.byteLength || 0}`);
   }
 
   const view = new DataView(buf);
@@ -36,21 +36,36 @@ export function parseUC2F(buf) {
     ts: view.getBigUint64(24, true)    // 64-bit timestamp
   };
   
-  // Read compressed size after header (30 bytes)
-  const compSize = view.getUint32(30, true);
+  // Try to read compressed size after header (30 bytes), but handle cases where it's not present
+  const headerSize = 30;
+  let compSize = 0;
+  let compDataOffset = headerSize;
   
-  // Extract compressed data
-  const compDataOffset = 36; // 32 byte header + 4 byte compSize
-  const availableDataSize = buf.byteLength - compDataOffset;
-  
-  if (compSize > availableDataSize) {
-    console.warn(`CompSize ${compSize} exceeds available data ${availableDataSize}, using available data`);
+  // Check if there's a compressed size field (4 more bytes)
+  if (buf.byteLength >= headerSize + 4) {
+    const potentialCompSize = view.getUint32(30, true);
+    const remainingAfterCompSizeField = buf.byteLength - (headerSize + 4);
+    
+    // If the potential compressed size makes sense (not too large), use it
+    if (potentialCompSize > 0 && potentialCompSize <= remainingAfterCompSizeField) {
+      compSize = potentialCompSize;
+      compDataOffset = headerSize + 4; // After header + u32 compSize
+      console.log('UC2F: Using compressed size field:', compSize);
+    } else {
+      // Compressed size field seems wrong, assume no compressed size field
+      compSize = buf.byteLength - headerSize;
+      compDataOffset = headerSize;
+      console.log('UC2F: Ignoring invalid compressed size field, using remaining data:', compSize);
+    }
+  } else {
+    // No space for compressed size field, use all remaining data
+    compSize = buf.byteLength - headerSize;
+    compDataOffset = headerSize;
+    console.log('UC2F: No compressed size field, using remaining data:', compSize);
   }
   
-  const actualCompSize = Math.min(compSize, availableDataSize);
-  const comp = new Uint8Array(buf, compDataOffset, actualCompSize);
-  
-  const completeHeader = { ...header, compSize: actualCompSize };
+  const comp = new Uint8Array(buf, compDataOffset, compSize);
+  const completeHeader = { ...header, compSize };
   
   console.log('UC2F parsed:', completeHeader);
   return { header: completeHeader, comp };

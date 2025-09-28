@@ -528,31 +528,45 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
       setImageSize({ width: packet.width, height: packet.height });
       setCurrentImageData(packet.dataU16); // Store for histogram computation
       
-      // Auto-adjust window/level if current values are too wide
-      const currentRange = (liveStreamState.maxVal || 65535) - (liveStreamState.minVal || 0);
-      const needsAutoWindow = currentRange >= 60000; // If using near full 16-bit range
-      
-      if (needsAutoWindow && packet.dataU16.length > 0) {
-        // Calculate percentile-based window/level for better contrast
+      // Auto-adjust window/level based on actual pixel data range
+      if (packet.dataU16.length > 0) {
+        // Find actual min/max values from a sample of the data
         const sampleSize = Math.min(10000, packet.dataU16.length);
-        const samples = [];
-        const step = Math.floor(packet.dataU16.length / sampleSize);
+        const step = Math.max(1, Math.floor(packet.dataU16.length / sampleSize));
+        
+        let actualMin = packet.dataU16[0];
+        let actualMax = packet.dataU16[0];
         
         for (let i = 0; i < packet.dataU16.length; i += step) {
-          samples.push(packet.dataU16[i]);
+          const value = packet.dataU16[i];
+          if (value < actualMin) actualMin = value;
+          if (value > actualMax) actualMax = value;
         }
-        samples.sort((a, b) => a - b);
         
-        // Use 1st and 99th percentile for windowing
-        const minPercIndex = Math.floor(samples.length * 0.01);
-        const maxPercIndex = Math.floor(samples.length * 0.99);
-        const autoMin = samples[Math.max(0, minPercIndex)];
-        const autoMax = samples[Math.min(samples.length - 1, maxPercIndex)];
+        console.log(`LiveViewerGL: Actual pixel range: ${actualMin} - ${actualMax}`);
+        console.log(`LiveViewerGL: Current window/level: ${liveStreamState.minVal || 0} - ${liveStreamState.maxVal || 65535}`);
         
-        if (autoMax > autoMin) {
-          console.log(`LiveViewerGL: Auto-windowing: setting min=${autoMin}, max=${autoMax} (from pixel range)`);
-          dispatch(liveStreamSlice.setMinVal(autoMin));
-          dispatch(liveStreamSlice.setMaxVal(autoMax));
+        // Check if current window/level settings are reasonable for this data
+        const currentMin = liveStreamState.minVal || 0;
+        const currentMax = liveStreamState.maxVal || 65535;
+        
+        // Auto-adjust if:
+        // 1. Using default full range (0-65535) - need to optimize for actual data
+        // 2. Current range doesn't contain most of the actual data
+        const needsAutoWindow = (currentMax - currentMin >= 60000) || // Using near full range
+                               (currentMin > actualMax || currentMax < actualMin) || // Range completely off
+                               (actualMax - actualMin > 0 && (currentMax - currentMin) < (actualMax - actualMin) * 0.5); // Range too narrow
+        
+        if (needsAutoWindow) {
+          // Use a slightly expanded range around actual min/max for better contrast
+          const range = actualMax - actualMin;
+          const padding = Math.max(1, range * 0.02); // 2% padding
+          const newMin = Math.max(0, Math.floor(actualMin - padding));
+          const newMax = Math.min(65535, Math.ceil(actualMax + padding));
+          
+          console.log(`LiveViewerGL: Auto-windowing: setting min=${newMin}, max=${newMax} (from actual range ${actualMin}-${actualMax})`);
+          dispatch(liveStreamSlice.setMinVal(newMin));
+          dispatch(liveStreamSlice.setMaxVal(newMax));
         }
       }
       
