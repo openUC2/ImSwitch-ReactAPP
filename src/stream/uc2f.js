@@ -37,13 +37,13 @@ export function parseUC2F(buf) {
   };
   
   // Try to read compressed size after header (30 bytes), but handle cases where it's not present
-  const headerSize = 30;
+  const headerSize = 32;
   let compSize = 0;
   let compDataOffset = headerSize;
   
   // Check if there's a compressed size field (4 more bytes)
   if (buf.byteLength >= headerSize + 4) {
-    const potentialCompSize = view.getUint32(30, true);
+    const potentialCompSize = view.getUint32(headerSize, true);
     const remainingAfterCompSizeField = buf.byteLength - (headerSize + 4);
     
     // If the potential compressed size makes sense (not too large), use it
