@@ -58,7 +58,7 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
     precision highp int;
     
     in vec2 v_texCoord;
-    uniform usampler2D u_texture;
+    uniform highp usampler2D u_texture;
     uniform float u_min;
     uniform float u_max;
     uniform float u_gamma;
@@ -277,50 +277,18 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
       if (vaoRef.current) gl.bindVertexArray(vaoRef.current);
       gl.useProgram(program);
       
+      // Ensure GL state is correct for 2D blitting
+      gl.disable(gl.DEPTH_TEST);
+      gl.disable(gl.CULL_FACE);
+      gl.disable(gl.BLEND);
+      
       // Set texture uniform to texture unit 0
       const textureLocation = gl.getUniformLocation(program, 'u_texture');
       if (textureLocation >= 0) {
         gl.uniform1i(textureLocation, 0);
         console.log('Set u_texture uniform to unit 0');
       } else {
-        console.error('Failed to get u_texture uniform location!');
-        
-        // FALLBACK: Create a simple test shader that just renders the checkerboard pattern
-        console.log('Creating fallback test shader...');
-        const simpleFragSource = `#version 300 es
-          precision highp float;
-          in vec2 v_texCoord;
-          out vec4 fragColor;
-          void main() {
-            // Create checkerboard pattern directly in shader
-            float checkerboard = step(0.5, mod(floor(v_texCoord.x * 20.0) + floor(v_texCoord.y * 20.0), 2.0));
-            fragColor = vec4(checkerboard, checkerboard, checkerboard, 1.0);
-          }
-        `;
-        
-        const simpleFrag = gl.createShader(gl.FRAGMENT_SHADER);
-        gl.shaderSource(simpleFrag, simpleFragSource);
-        gl.compileShader(simpleFrag);
-        
-        if (gl.getShaderParameter(simpleFrag, gl.COMPILE_STATUS)) {
-          const simpleProgram = gl.createProgram();
-          const vertexShader = gl.createShader(gl.VERTEX_SHADER);
-          gl.shaderSource(vertexShader, vertexShaderSource);
-          gl.compileShader(vertexShader);
-          
-          gl.attachShader(simpleProgram, vertexShader);
-          gl.attachShader(simpleProgram, simpleFrag);
-          gl.linkProgram(simpleProgram);
-          
-          if (gl.getProgramParameter(simpleProgram, gl.LINK_STATUS)) {
-            console.log('Fallback shader program created successfully');
-            programRef.current = simpleProgram; // Use fallback program
-          } else {
-            console.error('Fallback program link failed:', gl.getProgramInfoLog(simpleProgram));
-          }
-        } else {
-          console.error('Fallback fragment shader compile failed:', gl.getShaderInfoLog(simpleFrag));
-        }
+        console.warn('u_texture uniform not found in shader - this is expected for fallback shader');
       }
 
       const minLocation = gl.getUniformLocation(program, 'u_min');
@@ -466,12 +434,16 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
     
-    // Use our program
-  // Bind VAO (attributes) to ensure correct vertex attributes and texcoords
-  if (vaoRef.current) gl.bindVertexArray(vaoRef.current);
-  gl.useProgram(program);
+    // Ensure correct GL state for 2D rendering
+    gl.disable(gl.DEPTH_TEST);
+    gl.disable(gl.CULL_FACE);
+    gl.disable(gl.BLEND);
+    
+    // Bind VAO (attributes) to ensure correct vertex attributes and texcoords
+    if (vaoRef.current) gl.bindVertexArray(vaoRef.current);
+    gl.useProgram(program);
 
-    // Bind texture
+    // Bind texture to unit 0
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, texture);
 
@@ -906,7 +878,7 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
   }, []);
 
   return (
-    <Box ref={containerRef} sx={{ position: 'relative', width: '100%', height: '50%', backgroundColor: 'pink' }}>
+    <Box ref={containerRef} sx={{ position: 'relative', width: '100%', height: '50%', backgroundColor: 'black' }}>
       {console.log('LiveViewerGL: Rendering component, imageSize:', imageSize, 'isWebGL:', isWebGL)}
       {/* DEBUG: Simple text to see if component is visible at all */}
       <div style={{
