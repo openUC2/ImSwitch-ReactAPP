@@ -47,10 +47,19 @@ const WebSocketHandler = () => {
       dispatch(webSocketSlice.setConnected(true));
     });
 
+    // Store frame metadata for UC2F parsing
+    let frameMetadata = null;
+    
     // Listen for binary frame events (UC2F packets)
     socket.on("frame", (buf) => {
-      // Dispatch custom event to viewer components without storing in Redux
-      window.dispatchEvent(new CustomEvent("uc2:frame", { detail: buf }));
+      console.log('Received UC2F frame:', buf.byteLength, 'bytes');
+      // Dispatch custom event with metadata for proper parsing
+      window.dispatchEvent(new CustomEvent("uc2:frame", { 
+        detail: { 
+          buffer: buf, 
+          metadata: frameMetadata 
+        }
+      }));
     });
 
     // Listen to signals
@@ -62,6 +71,12 @@ const WebSocketHandler = () => {
       //handle signal
       const dataJson = JSON.parse(data);
       //console.log(dataJson);
+      
+      // Store frame metadata for UC2F parsing
+      if (dataJson.name === "frame_meta" && dataJson.metadata) {
+        console.log('Received frame metadata:', dataJson.metadata);
+        frameMetadata = dataJson.metadata;
+      }
       //----------------------------------------------
       if (dataJson.name === "sigUpdateImage") {
         //console.log("sigUpdateImage", dataJson);

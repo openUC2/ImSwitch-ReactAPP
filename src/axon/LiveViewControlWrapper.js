@@ -44,6 +44,7 @@ const LiveViewControlWrapper = ({ useFastMode = true, useWebGL = true }) => {
   return ( 
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
         <div style={{ position: "relative", top: "0px", left: "0px", zIndex: 1, width: "100%", height: "100%" }}>
+        {/* Re-enable WebGL/UC2F viewer with metadata-assisted parsing */}
         {useWebGL ? (
           <LiveViewerGL 
             onDoubleClick={handleImageDoubleClick}

@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useDispatch, useSelector } from "react-redux";
 import { Box, Slider, Typography, Paper } from "@mui/material";
 import * as liveStreamSlice from "../state/slices/LiveStreamSlice.js";
-import { processUC2FPacket, checkFeatureSupport } from "../stream/uc2f.js";
+import { processUC2FPacket, processUC2FPacketWithMetadata, checkFeatureSupport } from "../stream/uc2f.js";
 
 /**
  * WebGL2-based 16-bit image viewer with window/level controls and zoom/pan
@@ -197,20 +197,55 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
     const gl = glRef.current;
     const texture = textureRef.current;
     
-    if (!gl || !texture) return;
+    if (!gl || !texture) {
+      console.warn('WebGL texture upload failed: missing GL context or texture');
+      return;
+    }
+
+    // Debug: check data validity
+    if (!u16Data || u16Data.length === 0) {
+      console.warn('WebGL texture upload failed: empty or invalid data');
+      return;
+    }
+    
+    const expectedSize = width * height;
+    if (u16Data.length !== expectedSize) {
+      console.warn(`WebGL texture upload: data size mismatch. Expected ${expectedSize}, got ${u16Data.length}`);
+    }
+    
+    // Sample some pixel values to verify data
+    const sampleCount = Math.min(5, u16Data.length);
+    const samples = [];
+    for (let i = 0; i < sampleCount; i++) {
+      samples.push(u16Data[i]);
+    }
+    console.log(`WebGL upload: ${width}x${height}, ${u16Data.length} pixels, samples: [${samples.join(', ')}]`);
 
     gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texImage2D(
-      gl.TEXTURE_2D,
-      0,                    // level
-      gl.R16UI,            // internal format
-      width,
-      height,
-      0,                    // border
-      gl.RED_INTEGER,      // format
-      gl.UNSIGNED_SHORT,   // type
-      u16Data
-    );
+    
+    try {
+      gl.texImage2D(
+        gl.TEXTURE_2D,
+        0,                    // level
+        gl.R16UI,            // internal format
+        width,
+        height,
+        0,                    // border
+        gl.RED_INTEGER,      // format
+        gl.UNSIGNED_SHORT,   // type
+        u16Data
+      );
+      
+      // Check for WebGL errors
+      const error = gl.getError();
+      if (error !== gl.NO_ERROR) {
+        console.error(`WebGL texture upload error: ${error}`);
+      } else {
+        console.log(`WebGL texture uploaded successfully: ${width}x${height}`);
+      }
+    } catch (error) {
+      console.error('WebGL texture upload exception:', error);
+    }
   }, []);
 
   // Render frame with current uniforms
@@ -231,9 +266,25 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
     const gammaLocation = gl.getUniformLocation(program, 'u_gamma');
     const transformLocation = gl.getUniformLocation(program, 'u_transform');
 
-    gl.uniform1f(minLocation, liveStreamState.minVal || 0);
-    gl.uniform1f(maxLocation, liveStreamState.maxVal || 65535);
-    gl.uniform1f(gammaLocation, liveStreamState.gamma || 1.0);
+    // Debug window/level values
+    const minVal = liveStreamState.minVal || 0;
+    const maxVal = liveStreamState.maxVal || 65535;
+    const gamma = liveStreamState.gamma || 1.0;
+    
+    console.log(`WebGL window/level: min=${minVal}, max=${maxVal}, gamma=${gamma}`);
+    
+    // If min and max are the same or invalid, use default range
+    let actualMin = minVal;
+    let actualMax = maxVal;
+    if (actualMin >= actualMax) {
+      console.warn('Invalid window/level range, using defaults');
+      actualMin = 0;
+      actualMax = 65535;
+    }
+
+    gl.uniform1f(minLocation, actualMin);
+    gl.uniform1f(maxLocation, actualMax);
+    gl.uniform1f(gammaLocation, gamma);
 
     // Apply view transform
     const { scale, translateX, translateY } = viewTransform;
@@ -370,11 +421,49 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
   // Handle binary frame events
   const handleFrameEvent = useCallback((event) => {
     try {
-      const buffer = event.detail;
-      const packet = processUC2FPacket(buffer);
+      // Extract buffer and metadata from event
+      const { buffer, metadata } = event.detail;
+      console.log('Processing frame with metadata:', metadata);
+      
+      let packet;
+      if (metadata && metadata.compressed_bytes) {
+        // Use metadata to parse frame correctly
+        packet = processUC2FPacketWithMetadata(buffer, metadata);
+      } else {
+        // Fallback to original parsing
+        packet = processUC2FPacket(buffer);
+      }
       
       setImageSize({ width: packet.width, height: packet.height });
       setCurrentImageData(packet.dataU16); // Store for histogram computation
+      
+      // Auto-adjust window/level if current values are too wide
+      const currentRange = (liveStreamState.maxVal || 65535) - (liveStreamState.minVal || 0);
+      const needsAutoWindow = currentRange >= 60000; // If using near full 16-bit range
+      
+      if (needsAutoWindow && packet.dataU16.length > 0) {
+        // Calculate percentile-based window/level for better contrast
+        const sampleSize = Math.min(10000, packet.dataU16.length);
+        const samples = [];
+        const step = Math.floor(packet.dataU16.length / sampleSize);
+        
+        for (let i = 0; i < packet.dataU16.length; i += step) {
+          samples.push(packet.dataU16[i]);
+        }
+        samples.sort((a, b) => a - b);
+        
+        // Use 1st and 99th percentile for windowing
+        const minPercIndex = Math.floor(samples.length * 0.01);
+        const maxPercIndex = Math.floor(samples.length * 0.99);
+        const autoMin = samples[Math.max(0, minPercIndex)];
+        const autoMax = samples[Math.min(samples.length - 1, maxPercIndex)];
+        
+        if (autoMax > autoMin) {
+          console.log(`Auto-windowing: setting min=${autoMin}, max=${autoMax} (from pixel range)`);
+          dispatch(liveStreamSlice.setMinVal(autoMin));
+          dispatch(liveStreamSlice.setMaxVal(autoMax));
+        }
+      }
       
       if (onImageLoad) {
         onImageLoad(packet.width, packet.height);
