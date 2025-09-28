@@ -546,17 +546,36 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
         console.log(`LiveViewerGL: Actual pixel range: ${actualMin} - ${actualMax}`);
         console.log(`LiveViewerGL: Current window/level: ${liveStreamState.minVal || 0} - ${liveStreamState.maxVal || 65535}`);
         
-        // One-time adjustment for testing if still using default range
+        // Check if current window/level settings are reasonable for this data
         const currentMin = liveStreamState.minVal || 0;
         const currentMax = liveStreamState.maxVal || 65535;
         
-        if (currentMin === 0 && currentMax === 65535 && actualMax - actualMin > 0) {
-          console.log(`LiveViewerGL: TESTING - Setting manual window/level to actual data range for visibility`);
-          console.log(`LiveViewerGL: Setting min=${actualMin}, max=${actualMax} (you can adjust these manually with the sliders)`);
-          dispatch(liveStreamSlice.setMinVal(actualMin));
-          dispatch(liveStreamSlice.setMaxVal(actualMax));
+        // Auto-adjust if:
+        // 1. Using default full range (0-65535) - need to optimize for actual data
+        // 2. Current range doesn't contain most of the actual data
+        // 3. Current range is much narrower than actual data (less than 50% coverage)
+        const actualRange = actualMax - actualMin;
+        const currentRange = currentMax - currentMin;
+        const dataOutsideWindow = (currentMin > actualMin + actualRange * 0.1) || (currentMax < actualMax - actualRange * 0.1);
+        const rangeTooNarrow = actualRange > 0 && currentRange < actualRange * 0.5;
+        
+        const needsAutoWindow = (currentMin === 0 && currentMax === 65535) || // Using default range
+                               dataOutsideWindow || // Data falls outside current window
+                               rangeTooNarrow; // Window is too narrow for the data
+        
+        if (needsAutoWindow && actualRange > 0) {
+          // Use actual range with small padding for better contrast
+          const padding = Math.max(1, actualRange * 0.02); // 2% padding
+          const newMin = Math.max(0, Math.floor(actualMin - padding));
+          const newMax = Math.min(65535, Math.ceil(actualMax + padding));
+          
+          console.log(`LiveViewerGL: Auto-windowing: setting min=${newMin}, max=${newMax} (from actual range ${actualMin}-${actualMax})`);
+          console.log(`LiveViewerGL: Reason: default=${currentMin === 0 && currentMax === 65535}, outside=${dataOutsideWindow}, narrow=${rangeTooNarrow}`);
+          dispatch(liveStreamSlice.setMinVal(newMin));
+          dispatch(liveStreamSlice.setMaxVal(newMax));
         } else {
-          console.log(`LiveViewerGL: Manual window/level control active - no adjustment`);
+          console.log(`LiveViewerGL: Current window/level seems appropriate - no auto-adjustment`);
+          console.log(`LiveViewerGL: ActualRange=${actualRange}, CurrentRange=${currentRange}, Coverage=${actualRange > 0 ? (currentRange/actualRange*100).toFixed(1) : 'N/A'}%`);
         }
       }
       
@@ -574,6 +593,14 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
         console.log('LiveViewerGL: Rendering with WebGL2');
         uploadTexture(packet.dataU16, packet.width, packet.height);
         renderFrame();
+        
+        // Force a re-render after Redux state update to ensure new window/level values are applied
+        setTimeout(() => {
+          if (isWebGL && glRef.current) {
+            console.log('LiveViewerGL: Force re-render with updated window/level values');
+            renderFrame();
+          }
+        }, 10); // Small delay to allow Redux state to update
       } else {
         console.log('LiveViewerGL: Rendering with Canvas2D fallback');
         renderCanvas2D(packet.dataU16, packet.width, packet.height);
