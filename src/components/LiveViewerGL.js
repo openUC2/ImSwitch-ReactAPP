@@ -21,7 +21,7 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
   const vaoRef = useRef(null);
   
   // View state
-  const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
+  const [imageSize, setImageSize] = useState({ width: 100, height: 100 });
   const [viewTransform, setViewTransform] = useState({ scale: 1, translateX: 0, translateY: 0 });
   const [featureSupport, setFeatureSupport] = useState({ webgl2: false, intTextures: false, lz4: false });
   const [stats, setStats] = useState({ fps: 0, bps: 0, compressionRatio: 0 });
@@ -190,7 +190,7 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
 
     programRef.current = program;
 
-    // Set up geometry (fullscreen quad with correct texture coordinates)
+    // Set up geometry (fullscreen quad for triangle strip)
     const positions = new Float32Array([
       -1, -1,  0, 1,  // bottom-left
        1, -1,  1, 1,  // bottom-right  
@@ -218,10 +218,18 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
       return false;
     }
 
+    // Enable and configure vertex attributes with detailed logging
     gl.enableVertexAttribArray(positionLocation);
     gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 16, 0);
+    console.log('Position attribute configured: location=' + positionLocation);
+    
     gl.enableVertexAttribArray(texCoordLocation);
     gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 16, 8);
+    console.log('TexCoord attribute configured: location=' + texCoordLocation);
+    
+    // Verify vertex buffer is still bound
+    const bufferBinding = gl.getParameter(gl.ARRAY_BUFFER_BINDING);
+    console.log('Vertex buffer bound:', !!bufferBinding);
 
     // Save VAO for rendering
     vaoRef.current = vao;
@@ -274,7 +282,12 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
 
       // Perform an initial draw to the canvas so the noise is visible immediately
       // Bind VAO (attributes) and program, set basic uniforms
-      if (vaoRef.current) gl.bindVertexArray(vaoRef.current);
+      if (vaoRef.current) {
+        gl.bindVertexArray(vaoRef.current);
+      }
+      else{
+        console.warn('No VAO available for initial draw');
+      }
       gl.useProgram(program);
       
       // Ensure GL state is correct for 2D blitting
@@ -284,11 +297,13 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
       
       // Set texture uniform to texture unit 0
       const textureLocation = gl.getUniformLocation(program, 'u_texture');
-      if (textureLocation >= 0) {
+      if (textureLocation !== null) {
         gl.uniform1i(textureLocation, 0);
-        console.log('Set u_texture uniform to unit 0');
+        console.log('Set u_texture uniform to unit 0 - SUCCESS');
       } else {
-        console.warn('u_texture uniform not found in shader - this is expected for fallback shader');
+        console.warn('u_texture uniform not found in shader - creating fallback');
+        // The uniform was optimized out, use a simple fallback shader
+        return false; // Let the fallback logic in the caller handle this
       }
 
       const minLocation = gl.getUniformLocation(program, 'u_min');
@@ -305,6 +320,13 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
       }
 
       gl.viewport(0, 0, w, h);
+      
+      // Check for errors before drawing
+      let preDrawError = gl.getError();
+      if (preDrawError !== gl.NO_ERROR) {
+        console.error('GL error before draw:', preDrawError);
+      }
+      
       gl.clearColor(0,0,0,1);
       gl.clear(gl.COLOR_BUFFER_BIT);
       
@@ -313,15 +335,59 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
         canvasSize: [canvas.width, canvas.height],
         program: !!program,
         texture: !!texture,
-        vao: !!vaoRef.current
+        vao: !!vaoRef.current,
+        numVertices: 4,
+        drawMode: 'TRIANGLE_STRIP'
       });
       
-      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      // Check if our vertex attributes are properly enabled
+      console.log('Vertex attributes state:', {
+        position_enabled: gl.getVertexAttrib(0, gl.VERTEX_ATTRIB_ARRAY_ENABLED),
+        texcoord_enabled: gl.getVertexAttrib(1, gl.VERTEX_ATTRIB_ARRAY_ENABLED),
+        position_size: gl.getVertexAttrib(0, gl.VERTEX_ATTRIB_ARRAY_SIZE),
+        texcoord_size: gl.getVertexAttrib(1, gl.VERTEX_ATTRIB_ARRAY_SIZE)
+      });
+      
+      // Check if VAO is properly bound
+      if (!vaoRef.current) {
+        console.error('No VAO bound before draw!');
+        return false;
+      }
+      
+      // Use the uniform locations already declared above
+      gl.useProgram(program);
+      
+      // Validate the GL state before drawing
+      const currentVAO = gl.getParameter(gl.VERTEX_ARRAY_BINDING);
+      if (!currentVAO) {
+        console.error('No VAO bound - cannot draw');
+        return false;
+      }
+      
+      // Validate the program
+      gl.validateProgram(program);
+      if (!gl.getProgramParameter(program, gl.VALIDATE_STATUS)) {
+        console.error('Program validation failed:', gl.getProgramInfoLog(program));
+        return false;
+      }
+      
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); // Use TRIANGLE_STRIP with 4 vertices
 
       const err = gl.getError();
-      if (err !== gl.NO_ERROR) console.error('Initial GL draw error:', err);
-      else {
-        console.log(`Initial random texture uploaded and drawn: ${w}x${h}`);
+      if (err !== gl.NO_ERROR) {
+        console.error('Initial GL draw error:', err, '(1280=INVALID_ENUM, 1281=INVALID_VALUE, 1282=INVALID_OPERATION)');
+        
+        if (err === gl.INVALID_OPERATION) {
+          console.error('GL_INVALID_OPERATION details:');
+          console.error('- Program in use:', gl.getParameter(gl.CURRENT_PROGRAM) === program);
+          console.error('- VAO bound:', !!gl.getParameter(gl.VERTEX_ARRAY_BINDING));
+          console.error('- Texture bound:', !!gl.getParameter(gl.TEXTURE_BINDING_2D));
+          console.error('- Viewport:', gl.getParameter(gl.VIEWPORT));
+          console.error('- Program link status:', gl.getProgramParameter(program, gl.LINK_STATUS));
+          console.error('- Program validate status:', gl.getProgramParameter(program, gl.VALIDATE_STATUS));
+        }
+      } else {
+        console.log(`Initial random texture uploaded and drawn: ${w}x${h} - SUCCESS!`);
         console.log('Canvas should now show random noise. If not, check if canvas element is visible in DOM.');
       }
     } catch (e) {
@@ -455,7 +521,7 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
     const textureLocation = gl.getUniformLocation(program, 'u_texture');
 
     // Set texture uniform
-    if (textureLocation >= 0) {
+    if (textureLocation !== null) {
       gl.uniform1i(textureLocation, 0);
     }
 
@@ -475,14 +541,14 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
       actualMax = 65535;
     }
 
-    // Set uniforms
-    if (minLocation >= 0) gl.uniform1f(minLocation, actualMin);
-    if (maxLocation >= 0) gl.uniform1f(maxLocation, actualMax);
-    if (gammaLocation >= 0) gl.uniform1f(gammaLocation, gamma);
+    // Set uniforms (use !== null for WebGL uniform locations)
+    if (minLocation !== null) gl.uniform1f(minLocation, actualMin);
+    if (maxLocation !== null) gl.uniform1f(maxLocation, actualMax);
+    if (gammaLocation !== null) gl.uniform1f(gammaLocation, gamma);
 
     // Apply view transform
     const { scale, translateX, translateY } = viewTransform;
-    if (transformLocation >= 0) {
+    if (transformLocation !== null) {
       const transform = new Float32Array([
         scale, 0, translateX,
         0, scale, translateY,
@@ -491,15 +557,35 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
       gl.uniformMatrix3fv(transformLocation, false, transform);
     }
 
-    // Draw the quad
+    // Validate GL state before drawing
+    if (!gl.getParameter(gl.VERTEX_ARRAY_BINDING)) {
+      console.error('No VAO bound in renderFrame');
+      return;
+    }
+    
+    if (gl.getParameter(gl.CURRENT_PROGRAM) !== program) {
+      console.error('Wrong program bound in renderFrame');
+      return;
+    }
+
+    // Draw the quad (use TRIANGLE_STRIP with 4 vertices)
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
     // Check for WebGL errors
     const error = gl.getError();
     if (error !== gl.NO_ERROR) {
-      console.error(`WebGL render error: ${error}`);
+      console.error(`WebGL render error: ${error} (1280=INVALID_ENUM, 1281=INVALID_VALUE, 1282=INVALID_OPERATION)`);
+      
+      // Additional debug for 1282 error
+      if (error === 1282) {
+        console.error('GL_INVALID_OPERATION - likely causes:');
+        console.error('- Shader program not properly linked or validated');
+        console.error('- Texture format mismatch with sampler type');
+        console.error('- Uniforms set on wrong program');
+        console.error('- VAO/VBO state inconsistent');
+      }
     }
-  }, [liveStreamState.minVal, liveStreamState.maxVal, liveStreamState.gamma, viewTransform]);
+  }, [liveStreamState.minVal, liveStreamState.maxVal, liveStreamState.gamma, viewTransform.scale, viewTransform.translateX, viewTransform.translateY]);
 
   // Canvas2D fallback rendering
   const renderCanvas2D = useCallback((u16Data, width, height) => {
@@ -797,23 +883,25 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
     };
   }, [handleFrameEvent]);
 
-  // Update canvas size when image size changes - but keep minimum size
+  // Update canvas size when image size changes - but keep minimum size  
   useEffect(() => {
     const canvas = canvasRef.current;
     if (canvas && imageSize.width > 0 && imageSize.height > 0) {
-      // Set canvas internal dimensions to match image
-      canvas.width = imageSize.width;
-      canvas.height = imageSize.height;
-      console.log(`Canvas size updated to ${imageSize.width}x${imageSize.height}`);
-      
-      // Re-render if we have WebGL context
-      if (isWebGL) {
-        renderFrame();
+      // Only update if size actually changed
+      if (canvas.width !== imageSize.width || canvas.height !== imageSize.height) {
+        canvas.width = imageSize.width;
+        canvas.height = imageSize.height;
+        console.log(`Canvas size updated to ${imageSize.width}x${imageSize.height}`);
+        
+        // Re-render if we have WebGL context
+        if (isWebGL && renderFrame) {
+          renderFrame();
+        }
       }
     } else {
       console.log(`ImageSize is invalid (${imageSize.width}x${imageSize.height}) - keeping canvas at current size`);
     }
-  }, [imageSize, isWebGL, renderFrame]);
+  }, [imageSize.width, imageSize.height, isWebGL]); // Removed renderFrame dependency
 
   // Handle mouse interactions for zoom/pan
   const handleWheel = useCallback((event) => {
