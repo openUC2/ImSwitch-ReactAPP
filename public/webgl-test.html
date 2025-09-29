@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebGL2 Checkerboard Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #f0f0f0;
+        }
+        
+        #container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        canvas {
+            border: 2px solid #333;
+            background: black;
+        }
+        
+        .info {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            max-width: 800px;
+        }
+        
+        .status {
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 3px;
+            margin: 5px 0;
+        }
+        
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+        
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <h1>WebGL2 Checkerboard Test</h1>
+        
+        <div class="info">
+            <h3>Test Purpose</h3>
+            <p>This standalone page tests the WebGL2 checkerboard rendering mechanism used in LiveViewerGL component.</p>
+            <p>Expected: A black and white checkerboard pattern should appear in the canvas below.</p>
+        </div>
+        
+        <div id="status"></div>
+        
+        <canvas id="webgl-canvas" width="400" height="300"></canvas>
+        
+        <div>
+            <button onclick="testCheckerboard()">Test Checkerboard</button>
+            <button onclick="testR16UITexture()">Test R16UI Texture</button>
+            <button onclick="clearCanvas()">Clear</button>
+        </div>
+        
+        <div class="info">
+            <h3>Debug Information</h3>
+            <div id="debug-info"></div>
+        </div>
+    </div>
+
+    <script>
+        let gl = null;
+        let program = null;
+        let vao = null;
+        let texture = null;
+        
+        function log(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            const debugDiv = document.getElementById('debug-info');
+            
+            const className = type === 'error' ? 'error' : type === 'warning' ? 'warning' : 'success';
+            const statusMsg = `<div class="status ${className}">${message}</div>`;
+            
+            statusDiv.innerHTML = statusMsg;
+            debugDiv.innerHTML += `<div>[${new Date().toLocaleTimeString()}] ${message}</div>`;
+            
+            console.log(message);
+        }
+        
+        function initWebGL() {
+            const canvas = document.getElementById('webgl-canvas');
+            
+            // Get WebGL2 context
+            gl = canvas.getContext('webgl2');
+            if (!gl) {
+                log('WebGL2 not supported', 'error');
+                return false;
+            }
+            
+            log('WebGL2 context created successfully', 'success');
+            
+            // Check for integer texture support
+            const ext = gl.getExtension('EXT_color_buffer_float');
+            log(`EXT_color_buffer_float: ${ext ? 'supported' : 'not supported'}`, ext ? 'success' : 'warning');
+            
+            // Set viewport
+            gl.viewport(0, 0, canvas.width, canvas.height);
+            
+            return true;
+        }
+        
+        function createShaderProgram() {
+            const vertexShaderSource = `#version 300 es
+                in vec2 a_position;
+                in vec2 a_texCoord;
+                out vec2 v_texCoord;
+                
+                void main() {
+                    gl_Position = vec4(a_position, 0.0, 1.0);
+                    v_texCoord = a_texCoord;
+                }
+            `;
+            
+            const fragmentShaderSource = `#version 300 es
+                precision highp float;
+                precision highp int;
+                
+                uniform highp usampler2D u_texture;
+                uniform float u_min;
+                uniform float u_max;
+                uniform float u_gamma;
+                
+                in vec2 v_texCoord;
+                out vec4 fragColor;
+                
+                void main() {
+                    uint rawValue = texture(u_texture, v_texCoord).r;
+                    float normalized = (float(rawValue) - u_min) / (u_max - u_min);
+                    normalized = clamp(normalized, 0.0, 1.0);
+                    normalized = pow(normalized, 1.0 / u_gamma);
+                    fragColor = vec4(normalized, normalized, normalized, 1.0);
+                }
+            `;
+            
+            function createShader(source, type) {
+                const shader = gl.createShader(type);
+                gl.shaderSource(shader, source);
+                gl.compileShader(shader);
+                
+                if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                    const error = gl.getShaderInfoLog(shader);
+                    log(`Shader compilation failed: ${error}`, 'error');
+                    gl.deleteShader(shader);
+                    return null;
+                }
+                
+                return shader;
+            }
+            
+            const vertexShader = createShader(vertexShaderSource, gl.VERTEX_SHADER);
+            const fragmentShader = createShader(fragmentShaderSource, gl.FRAGMENT_SHADER);
+            
+            if (!vertexShader || !fragmentShader) {
+                return null;
+            }
+            
+            program = gl.createProgram();
+            gl.attachShader(program, vertexShader);
+            gl.attachShader(program, fragmentShader);
+            gl.linkProgram(program);
+            
+            if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+                const error = gl.getProgramInfoLog(program);
+                log(`Program linking failed: ${error}`, 'error');
+                return null;
+            }
+            
+            log('Shaders compiled and linked successfully', 'success');
+            return program;
+        }
+        
+        function createGeometry() {
+            // Create quad vertices (position + texCoord)
+            const vertices = new Float32Array([
+                // Position   TexCoord
+                -1.0, -1.0,   0.0, 0.0,
+                 1.0, -1.0,   1.0, 0.0,
+                -1.0,  1.0,   0.0, 1.0,
+                 1.0,  1.0,   1.0, 1.0
+            ]);
+            
+            // Create VAO FIRST
+            vao = gl.createVertexArray();
+            gl.bindVertexArray(vao);
+            
+            // THEN create and bind buffer
+            const buffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+            gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+            
+            // Set up attributes
+            const positionLocation = gl.getAttribLocation(program, 'a_position');
+            const texCoordLocation = gl.getAttribLocation(program, 'a_texCoord');
+            
+            gl.enableVertexAttribArray(positionLocation);
+            gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 16, 0);
+            
+            gl.enableVertexAttribArray(texCoordLocation);
+            gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 16, 8);
+            
+            // Unbind VAO
+            gl.bindVertexArray(null);
+            
+            log('Geometry created successfully', 'success');
+        }
+        
+        function createCheckerboardTexture() {
+            const width = 8;
+            const height = 8;
+            const data = new Uint16Array(width * height);
+            
+            // Create checkerboard pattern
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const isWhite = (x + y) % 2 === 0;
+                    data[y * width + x] = isWhite ? 65535 : 0;
+                }
+            }
+            
+            texture = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            
+            // Upload as R16UI texture
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.R16UI, width, height, 0, gl.RED_INTEGER, gl.UNSIGNED_SHORT, data);
+            
+            // Set texture parameters
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            
+            gl.bindTexture(gl.TEXTURE_2D, null);
+            
+            log('Checkerboard texture created (8x8, R16UI)', 'success');
+            return texture;
+        }
+        
+        function render() {
+            if (!gl || !program || !vao || !texture) {
+                log('Cannot render: missing WebGL resources', 'error');
+                return;
+            }
+            
+            // Clear
+            gl.clearColor(0.0, 0.0, 0.0, 1.0);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+            
+            // Use shader program
+            gl.useProgram(program);
+            
+            // Bind texture
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            
+            // Set uniforms
+            const textureLocation = gl.getUniformLocation(program, 'u_texture');
+            const minLocation = gl.getUniformLocation(program, 'u_min');
+            const maxLocation = gl.getUniformLocation(program, 'u_max');
+            const gammaLocation = gl.getUniformLocation(program, 'u_gamma');
+            
+            gl.uniform1i(textureLocation, 0);
+            gl.uniform1f(minLocation, 0.0);
+            gl.uniform1f(maxLocation, 65535.0);
+            gl.uniform1f(gammaLocation, 1.0);
+            
+            // Bind VAO and draw
+            gl.bindVertexArray(vao);
+            gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+            gl.bindVertexArray(null);
+            
+            // Check for errors
+            const error = gl.getError();
+            if (error !== gl.NO_ERROR) {
+                log(`WebGL error during render: ${error}`, 'error');
+            } else {
+                log('Render completed successfully', 'success');
+            }
+        }
+        
+        function testCheckerboard() {
+            log('Starting checkerboard test...', 'info');
+            
+            if (!initWebGL()) return;
+            if (!createShaderProgram()) return;
+            
+            createGeometry();
+            createCheckerboardTexture();
+            render();
+        }
+        
+        function testR16UITexture() {
+            log('Testing R16UI texture support...', 'info');
+            
+            if (!gl) {
+                if (!initWebGL()) return;
+            }
+            
+            // Test R16UI texture creation
+            const testTexture = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, testTexture);
+            
+            try {
+                const testData = new Uint16Array([65535, 0, 32768, 16384]);
+                gl.texImage2D(gl.TEXTURE_2D, 0, gl.R16UI, 2, 2, 0, gl.RED_INTEGER, gl.UNSIGNED_SHORT, testData);
+                
+                const error = gl.getError();
+                if (error === gl.NO_ERROR) {
+                    log('R16UI texture support confirmed', 'success');
+                } else {
+                    log(`R16UI texture error: ${error}`, 'error');
+                }
+            } catch (e) {
+                log(`R16UI texture exception: ${e.message}`, 'error');
+            }
+            
+            gl.deleteTexture(testTexture);
+        }
+        
+        function clearCanvas() {
+            if (gl) {
+                gl.clearColor(0.2, 0.2, 0.2, 1.0);
+                gl.clear(gl.COLOR_BUFFER_BIT);
+                log('Canvas cleared', 'info');
+            }
+        }
+        
+        // Auto-run test on page load
+        window.onload = function() {
+            log('Page loaded, running initial test...', 'info');
+            setTimeout(testCheckerboard, 100);
+        };
+    </script>
+</body>
+</html>
