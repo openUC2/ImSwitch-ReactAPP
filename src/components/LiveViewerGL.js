@@ -235,19 +235,19 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     textureRef.current = texture;
 
-    // Upload a random initial 16-bit texture so we can immediately verify the GL pipeline.
+    // Upload initial checkerboard texture for immediate visibility
     try {
-      const w = canvas.width;
-      const h = canvas.height;
-      console.log(`Creating initial texture for canvas size: ${w}x${h}`);
-      const size = Math.max(1, w * h);
-      const rand = new Uint16Array(size);
+      const w = 64; // Fixed small size for reliable testing
+      const h = 64;
+      console.log(`Creating initial checkerboard texture: ${w}x${h}`);
+      const size = w * h;
+      const pattern = new Uint16Array(size);
       for (let i = 0; i < size; i++) {
-        // Create a visible pattern: checkerboard of white and black
+        // Create 8x8 checkerboard pattern
         const x = i % w;
         const y = Math.floor(i / w);
-        const isWhite = ((Math.floor(x / 50) + Math.floor(y / 50)) % 2) === 0;
-        rand[i] = isWhite ? 65535 : 0; // Full white or full black
+        const isWhite = ((Math.floor(x / 8) + Math.floor(y / 8)) % 2) === 0;
+        pattern[i] = isWhite ? 65535 : 0; // Full white or full black
       }
 
       // Ensure correct row alignment for 16-bit uploads
@@ -269,11 +269,13 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
         0,
         gl.RED_INTEGER,
         gl.UNSIGNED_SHORT,
-        rand
+        pattern
       );
 
-      // Perform an initial draw to the canvas so the noise is visible immediately
-      // Bind VAO (attributes) and program, set basic uniforms
+      // Set initial image size to match texture  
+      setImageSize({ width: w, height: h });
+
+      // Perform an initial draw to show checkerboard immediately
       if (vaoRef.current) gl.bindVertexArray(vaoRef.current);
       gl.useProgram(program);
       
