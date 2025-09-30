@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useDispatch } from 'react-redux';
 import {
   Paper,
   Typography,
@@ -15,12 +16,15 @@ import {
 } from '@mui/material';
 import apiSettingsControllerGetStreamParams from '../backendapi/apiSettingsControllerGetStreamParams';
 import apiSettingsControllerSetStreamParams from '../backendapi/apiSettingsControllerSetStreamParams';
+import * as liveStreamSlice from '../state/slices/LiveStreamSlice.js';
 
 /**
  * Stream Settings Panel - Runtime configuration for binary streaming
  * GET/POST /api/settings/getStreamParams and /api/settings/setStreamParams
  */
 const StreamSettings = () => {
+  const dispatch = useDispatch();
+  
   const [settings, setSettings] = useState({
     binary: {
       enabled: true,
@@ -44,6 +48,7 @@ const StreamSettings = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [updatePending, setUpdatePending] = useState(false);
+  const [isLegacyBackend, setIsLegacyBackend] = useState(false);
 
   // Debounced update function
   const debouncedUpdate = useCallback(
@@ -52,20 +57,45 @@ const StreamSettings = () => {
         setUpdatePending(true);
         setError(null);
         
-        await apiSettingsControllerSetStreamParams({
-          throttle_ms: newSettings.binary.throttle_ms,
-          compression: newSettings.binary.compression,
-          subsampling: newSettings.binary.subsampling
-        });
+        // Only try to update binary settings if not in legacy mode
+        if (!isLegacyBackend && newSettings.binary.enabled) {
+          await apiSettingsControllerSetStreamParams({
+            throttle_ms: newSettings.binary.throttle_ms,
+            compression: newSettings.binary.compression,
+            subsampling: newSettings.binary.subsampling
+          });
+        }
         
         console.log('Stream settings updated successfully');
       } catch (err) {
+        console.warn('Binary streaming API failed, detecting legacy backend:', err.message);
+        
+        // Detect legacy backend by API failure
+        if (!isLegacyBackend && (err.message.includes('404') || err.message.includes('Not Found') || err.message.includes('setStreamParams'))) {
+          console.log('Legacy backend detected - switching to JPEG streaming');
+          setIsLegacyBackend(true);
+          
+          // Dispatch to Redux for global state
+          dispatch(liveStreamSlice.setIsLegacyBackend(true));
+          
+          // Automatically switch to JPEG streaming
+          const legacySettings = {
+            ...newSettings,
+            binary: { ...newSettings.binary, enabled: false },
+            jpeg: { ...newSettings.jpeg, enabled: true }
+          };
+          setSettings(legacySettings);
+          
+          setError('Legacy backend detected - automatically switched to JPEG streaming');
+          return;
+        }
+        
         setError(`Failed to update settings: ${err.message}`);
       } finally {
         setUpdatePending(false);
       }
     }, 300),
-    []
+    [isLegacyBackend, dispatch]
   );
 
   // Load initial settings
@@ -74,10 +104,52 @@ const StreamSettings = () => {
       try {
         setLoading(true);
         setError(null);
+        
+        // Try to load binary streaming settings
         const params = await apiSettingsControllerGetStreamParams();
         setSettings(params);
+        console.log('Binary streaming API available - using modern backend');
+        
+        // Dispatch to Redux that we have modern backend capabilities
+        dispatch(liveStreamSlice.setIsLegacyBackend(false));
+        dispatch(liveStreamSlice.setBackendCapabilities({
+          binaryStreaming: true,
+          webglSupported: true
+        }));
       } catch (err) {
-        setError(`Failed to load settings: ${err.message}`);
+        console.warn('Failed to load binary streaming settings:', err.message);
+        
+        // Detect legacy backend
+        if (err.message.includes('404') || err.message.includes('Not Found') || err.message.includes('getStreamParams')) {
+          console.log('Legacy backend detected - using JPEG streaming defaults');
+          setIsLegacyBackend(true);
+          
+          // Dispatch to Redux for global state
+          dispatch(liveStreamSlice.setIsLegacyBackend(true));
+          dispatch(liveStreamSlice.setBackendCapabilities({
+            binaryStreaming: false,
+            webglSupported: false
+          }));
+          
+          // Set legacy default settings
+          setSettings({
+            binary: {
+              enabled: false,
+              compression: { algorithm: 'lz4', level: 0 },
+              subsampling: { factor: 1, auto_max_dim: 0 },
+              throttle_ms: 50,
+              bitdepth_in: 12,
+              pixfmt: 'GRAY16'
+            },
+            jpeg: {
+              enabled: true
+            }
+          });
+          
+          setError('Legacy backend detected - using JPEG streaming');
+        } else {
+          setError(`Failed to load settings: ${err.message}`);
+        }
       } finally {
         setLoading(false);
       }
@@ -119,7 +191,13 @@ const StreamSettings = () => {
   }
 
   return (
-    <Paper sx={{ p: 2, minWidth: 300 }}>
+    <Paper sx={{ 
+      p: 2, 
+      minWidth: 300, 
+      maxHeight: 'calc(100vh - 100px)', 
+      overflowY: 'auto',
+      overflowX: 'hidden'
+    }}>
       <Typography variant="h6" gutterBottom>
         Stream Settings
         {updatePending && (
@@ -128,6 +206,17 @@ const StreamSettings = () => {
           </Typography>
         )}
       </Typography>
+      
+      {/* Legacy Backend Warning */}
+      {isLegacyBackend && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          <Typography variant="body2" fontWeight="bold">Legacy Backend Detected</Typography>
+          <Typography variant="body2">
+            Your backend doesn't support binary streaming. Only JPEG streaming is available.
+            Consider updating your backend for better performance.
+          </Typography>
+        </Alert>
+      )}
       
       {/* Binary Stream Settings */}
       <Box sx={{ mb: 2 }}>
@@ -140,9 +229,10 @@ const StreamSettings = () => {
             <Switch
               checked={settings.binary.enabled}
               onChange={(e) => handleSettingChange('binary.enabled', e.target.checked)}
+              disabled={isLegacyBackend}
             />
           }
-          label="Enable Binary Streaming"
+          label={`Enable Binary Streaming${isLegacyBackend ? ' (Not Available)' : ''}`}
           sx={{ mb: 1 }}
         />
         
@@ -215,7 +305,7 @@ const StreamSettings = () => {
             />
             
             {/* Read-only info */}
-            <Box sx={{ bgcolor: 'grey.100', p: 1, borderRadius: 1 }}>
+            <Box sx={{  p: 1, borderRadius: 1 }}>
               <Typography variant="body2">
                 Bit Depth: {settings.binary.bitdepth_in}-bit
               </Typography>
@@ -246,9 +336,21 @@ const StreamSettings = () => {
         />
         
         {settings.jpeg.enabled && (
-          <Alert severity="info" sx={{ mt: 1 }}>
-            JPEG streaming is legacy. Use binary streaming for better quality and performance.
-          </Alert>
+          <Box sx={{ mt: 1 }}>
+            <Alert severity="info" sx={{ mb: 1 }}>
+              JPEG streaming is legacy. Use binary streaming for better quality and performance.
+            </Alert>
+            
+            <TextField
+              fullWidth
+              type="number"
+              label="Compression Quality"
+              defaultValue={85}
+              inputProps={{ min: 1, max: 100 }}
+              helperText="1 = lowest quality/size, 100 = highest quality/size"
+              sx={{ mb: 1 }}
+            />
+          </Box>
         )}
       </Box>
       

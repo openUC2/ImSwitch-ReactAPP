@@ -5,9 +5,14 @@ import PositionControllerComponent from "./PositionControllerComponent";
 import apiPositionerControllerMovePositioner from "../backendapi/apiPositionerControllerMovePositioner";
 import { useSelector } from "react-redux";
 import * as objectiveSlice from "../state/slices/ObjectiveSlice.js";
+import * as liveStreamSlice from "../state/slices/LiveStreamSlice.js";
 
-const LiveViewControlWrapper = ({ useFastMode = true, useWebGL = true }) => {
+const LiveViewControlWrapper = ({ useFastMode = true }) => {
   const objectiveState = useSelector(objectiveSlice.getObjectiveState);
+  const liveStreamState = useSelector(liveStreamSlice.getLiveStreamState);
+  
+  // Determine if we should use WebGL based on backend capabilities
+  const useWebGL = liveStreamState.backendCapabilities.webglSupported && !liveStreamState.isLegacyBackend;
 
   // Handle double-click for stage movement
   const handleImageDoubleClick = async (pixelX, pixelY) => {
@@ -42,22 +47,36 @@ const LiveViewControlWrapper = ({ useFastMode = true, useWebGL = true }) => {
   };
 
   return ( 
-    <div style={{ position: "relative", width: "100%", height: "100%" }}>
-        <div style={{ position: "relative", top: "0px", left: "0px", zIndex: 1, width: "100%", height: "100%" }}>
+    <div style={{ 
+      position: "relative", 
+      width: "100%", 
+      overflow: "hidden",
+      display: "flex",
+      flexDirection: "column"
+    }}>
+        <div style={{ 
+          position: "relative", 
+          flex: "1",
+          width: "100%", 
+          maxHeight: "calc(100vh - 220px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center"
+        }}>
         {/* Re-enable WebGL/UC2F viewer with metadata-assisted parsing */}
         {useWebGL ? (
           <LiveViewerGL 
             onDoubleClick={handleImageDoubleClick}
             onImageLoad={(width, height) => {
               // Optional: handle image load events
-              console.log(`Image loaded: ${width}x${height}`);
+              //console.log(`Image loaded: ${width}x${height}`);
             }}
           />
         ) : (
           <LiveViewComponent useFastMode={useFastMode} />
         )}
         </div>
-        <div style={{ position: "absolute", bottom: "200px", left: "0px", zIndex: 2, }}>
+        <div style={{ position: "absolute", bottom: "10px", left: "0px", zIndex: 2, opacity: 0.8 }}>
         <PositionControllerComponent />
         </div>
     </div>

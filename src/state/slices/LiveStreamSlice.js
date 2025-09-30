@@ -8,9 +8,16 @@ const initialLiveStreamState = {
   minVal: 0,
   maxVal: 65535, // Updated for 16-bit range
   gamma: 1.0, // New: gamma correction
+  imageFormat: "unknown", // Track image format (jpeg, raw, etc.)
   pixelSize: null,
   fovX: 0,
   fovY: 0, 
+  // Backend capability detection
+  isLegacyBackend: false,
+  backendCapabilities: {
+    binaryStreaming: true,
+    webglSupported: true
+  },
   // Histogram data
   histogramX: [],
   histogramY: [],
@@ -32,7 +39,9 @@ const liveStreamSlice = createSlice({
   name: "liveStreamState",
   initialState: initialLiveStreamState,
   reducers: {
-    // REMOVED: setLiveViewImage - no longer store image data in Redux
+    setLiveViewImage: (state, action) => {
+      state.liveViewImage = action.payload;
+    },
     
     setMinVal: (state, action) => {
       state.minVal = action.payload;
@@ -42,8 +51,25 @@ const liveStreamSlice = createSlice({
       state.maxVal = action.payload;
     },
 
+    setImageFormat: (state, action) => {
+      state.imageFormat = action.payload;
+    },
+
     setGamma: (state, action) => {
       state.gamma = action.payload;
+    },
+
+    setIsLegacyBackend: (state, action) => {
+      state.isLegacyBackend = action.payload;
+      // Automatically disable binary streaming for legacy backends
+      if (action.payload) {
+        state.backendCapabilities.binaryStreaming = false;
+        state.backendCapabilities.webglSupported = false;
+      }
+    },
+
+    setBackendCapabilities: (state, action) => {
+      state.backendCapabilities = { ...state.backendCapabilities, ...action.payload };
     },
 
     setZoom: (state, action) => {
@@ -82,10 +108,13 @@ const liveStreamSlice = createSlice({
 
 // Export actions from slice
 export const {
-  // setLiveViewImage, // REMOVED - no longer storing image data
+  setLiveViewImage,
   setMinVal,
   setMaxVal,
+  setImageFormat,
   setGamma,
+  setIsLegacyBackend,
+  setBackendCapabilities,
   setZoom,
   setTranslate,
   setStats,

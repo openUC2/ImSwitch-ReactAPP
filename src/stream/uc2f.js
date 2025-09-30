@@ -17,8 +17,8 @@ export function parseUC2F(buf) {
   const magicStr = String.fromCharCode(...magic);
   if (magicStr !== 'UC2F') {
     console.warn(`Invalid UC2F magic: got "${magicStr}", expected "UC2F"`);
-    console.log('First 20 bytes (hex):', Array.from(new Uint8Array(buf, 0, Math.min(20, buf.byteLength)))
-      .map(b => b.toString(16).padStart(2, '0')).join(' '));
+    // console.log('First 20 bytes (hex):', Array.from(new Uint8Array(buf, 0, Math.min(20, buf.byteLength)))
+    //.map(b => b.toString(16).padStart(2, '0')).join(' '));
     throw new Error(`Invalid UC2F magic: got "${magicStr}", expected "UC2F"`);
   }
   
@@ -50,24 +50,24 @@ export function parseUC2F(buf) {
     if (potentialCompSize > 0 && potentialCompSize <= remainingAfterCompSizeField) {
       compSize = potentialCompSize;
       compDataOffset = headerSize + 4; // After header + u32 compSize
-      console.log('UC2F: Using compressed size field:', compSize);
+      // console.log('UC2F: Using compressed size field:', compSize);
     } else {
       // Compressed size field seems wrong, assume no compressed size field
       compSize = buf.byteLength - headerSize;
       compDataOffset = headerSize;
-      console.log('UC2F: Ignoring invalid compressed size field, using remaining data:', compSize);
+      // console.log('UC2F: Ignoring invalid compressed size field, using remaining data:', compSize);
     }
   } else {
     // No space for compressed size field, use all remaining data
     compSize = buf.byteLength - headerSize;
     compDataOffset = headerSize;
-    console.log('UC2F: No compressed size field, using remaining data:', compSize);
+    // console.log('UC2F: No compressed size field, using remaining data:', compSize);
   }
   
   const comp = new Uint8Array(buf, compDataOffset, compSize);
   const completeHeader = { ...header, compSize };
   
-  console.log('UC2F parsed:', completeHeader);
+  // console.log('UC2F parsed:', completeHeader);
   return { header: completeHeader, comp };
 }
 
@@ -83,12 +83,12 @@ export function decompressLZ4(comp) {
       
       if (hasLZ4Magic) {
         const decompressed = LZ4.decompress(comp);
-        console.log(`LZ4 decompressed ${comp.length} bytes to ${decompressed.length} bytes`);
+        // console.log(`LZ4 decompressed ${comp.length} bytes to ${decompressed.length} bytes`);
         return decompressed;
       }
     }
     
-    console.log('No LZ4 magic found, treating as uncompressed');
+    // console.log('No LZ4 magic found, treating as uncompressed');
     return new Uint8Array(comp);
   } catch (error) {
     console.warn('LZ4 decompression failed, treating as uncompressed:', error.message);
@@ -103,8 +103,8 @@ export function rawToUint16Array(raw, width, height, stride) {
   const expectedPixels = width * height;
   const expectedBytes = expectedPixels * 2; // 2 bytes per uint16 pixel
   
-  console.log(`rawToUint16Array: raw.length=${raw.length}, width=${width}, height=${height}, stride=${stride}`);
-  console.log(`Expected: ${expectedPixels} pixels (${expectedBytes} bytes)`);
+  // console.log(`rawToUint16Array: raw.length=${raw.length}, width=${width}, height=${height}, stride=${stride}`);
+  // console.log(`Expected: ${expectedPixels} pixels (${expectedBytes} bytes)`);
   
   if (raw.length >= expectedBytes) {
     // We have enough data - extract exactly what we need
@@ -116,7 +116,7 @@ export function rawToUint16Array(raw, width, height, stride) {
     for (let i = 0; i < sampleCount; i++) {
       samples.push(u16Array[i]);
     }
-    console.log(`Sample pixel values: [${samples.join(', ')}]`);
+    // console.log(`Sample pixel values: [${samples.join(', ')}]`);
     
     return u16Array;
   } else {
@@ -141,7 +141,7 @@ export function rawToUint16Array(raw, width, height, stride) {
  */
 export function processUC2FPacket(buf) {
   try {
-    console.log(`Processing UC2F packet: ${buf.byteLength} bytes`);
+    // console.log(`Processing UC2F packet: ${buf.byteLength} bytes`);
     
     const { header, comp } = parseUC2F(buf);
     const raw = decompressLZ4(comp);
@@ -156,7 +156,7 @@ export function processUC2FPacket(buf) {
         if (dataU16[i] < minVal) minVal = dataU16[i];
         if (dataU16[i] > maxVal) maxVal = dataU16[i];
       }
-      console.log(`Pixel value range (first ${sampleSize} pixels): ${minVal} - ${maxVal}`);
+      // console.log(`Pixel value range (first ${sampleSize} pixels): ${minVal} - ${maxVal}`);
     }
     
     return {

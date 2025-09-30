@@ -22,11 +22,16 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
   
   // View state
   const [imageSize, setImageSize] = useState({ width: 100, height: 100 });
+  const [containerSize, setContainerSize] = useState({ width: 800, height: 600 });
   const [viewTransform, setViewTransform] = useState({ scale: 1, translateX: 0, translateY: 0 });
   const [featureSupport, setFeatureSupport] = useState({ webgl2: false, intTextures: false, lz4: false });
   const [stats, setStats] = useState({ fps: 0, bps: 0, compressionRatio: 0 });
   const [isWebGL, setIsWebGL] = useState(false);
   const [currentImageData, setCurrentImageData] = useState(null); // Store current image for histogram
+
+  // Mouse interaction state
+  const [isDragging, setIsDragging] = useState(false);
+  const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
   
   // FPS counter
   const fpsCounterRef = useRef({
@@ -116,28 +121,11 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
       return false;
     }
 
-    // Debug canvas info before GL context creation
-    console.log('Canvas element info:', {
-      width: canvas.width,
-      height: canvas.height,
-      clientWidth: canvas.clientWidth,
-      clientHeight: canvas.clientHeight,
-      style: canvas.style.cssText
-    });
 
-    // Fix canvas sizing: limit to reasonable dimensions with device pixel ratio
-    const maxWidth = 800;
-    const maxHeight = 600;
-    const dpr = Math.max(1, window.devicePixelRatio || 1);
-    const clientWidth = Math.min(canvas.clientWidth || 800, maxWidth);
-    const clientHeight = Math.min(canvas.clientHeight || 600, maxHeight);
-    const displayWidth = Math.floor(clientWidth * dpr);
-    const displayHeight = Math.floor(clientHeight * dpr);
-    
-    if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
-      console.log(`Fixing canvas size: internal ${canvas.width}x${canvas.height} -> limited ${displayWidth}x${displayHeight} (DPR: ${dpr})`);
-      canvas.width = displayWidth;
-      canvas.height = displayHeight;
+    // Set initial canvas size - will be updated when image arrives
+    if (canvas.width === 0 || canvas.height === 0) {
+      canvas.width = 800;
+      canvas.height = 600;
     }
 
     const gl = canvas.getContext('webgl2');
@@ -154,7 +142,6 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
       console.warn('Integer textures not supported, falling back to Canvas2D');
       return false;
     }
-    console.log('Integer texture support confirmed');
 
     // Create and compile shaders
     const vertexShader = gl.createShader(gl.VERTEX_SHADER);
@@ -211,25 +198,16 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
     const positionLocation = gl.getAttribLocation(program, 'a_position');
     const texCoordLocation = gl.getAttribLocation(program, 'a_texCoord');
 
-    console.log('Attribute locations:', { a_position: positionLocation, a_texCoord: texCoordLocation });
-    
     if (positionLocation < 0 || texCoordLocation < 0) {
-      console.error('Failed to get attribute locations!', { positionLocation, texCoordLocation });
+      console.error('Failed to get attribute locations');
       return false;
     }
 
-    // Enable and configure vertex attributes with detailed logging
+    // Configure vertex attributes
     gl.enableVertexAttribArray(positionLocation);
     gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 16, 0);
-    console.log('Position attribute configured: location=' + positionLocation);
-    
     gl.enableVertexAttribArray(texCoordLocation);
     gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 16, 8);
-    console.log('TexCoord attribute configured: location=' + texCoordLocation);
-    
-    // Verify vertex buffer is still bound
-    const bufferBinding = gl.getParameter(gl.ARRAY_BUFFER_BINDING);
-    console.log('Vertex buffer bound:', !!bufferBinding);
 
     // Save VAO for rendering
     vaoRef.current = vao;
@@ -247,16 +225,10 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
     try {
       const w = canvas.width;
       const h = canvas.height;
-      console.log(`Creating initial texture for canvas size: ${w}x${h}`);
+      // Create initial empty texture
       const size = Math.max(1, w * h);
-      const rand = new Uint16Array(size);
-      for (let i = 0; i < size; i++) {
-        // Create a visible pattern: checkerboard of white and black
-        const x = i % w;
-        const y = Math.floor(i / w);
-        const isWhite = ((Math.floor(x / 50) + Math.floor(y / 50)) % 2) === 0;
-        rand[i] = isWhite ? 65535 : 0; // Full white or full black
-      }
+      const emptyData = new Uint16Array(size);
+      emptyData.fill(0); // Start with black
 
       // Ensure correct row alignment for 16-bit uploads
       gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
@@ -277,7 +249,7 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
         0,
         gl.RED_INTEGER,
         gl.UNSIGNED_SHORT,
-        rand
+        emptyData
       );
 
       // Perform an initial draw to the canvas so the noise is visible immediately
@@ -330,23 +302,7 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
       gl.clearColor(0,0,0,1);
       gl.clear(gl.COLOR_BUFFER_BIT);
       
-      console.log('About to draw - GL state:', {
-        viewport: [0, 0, w, h],
-        canvasSize: [canvas.width, canvas.height],
-        program: !!program,
-        texture: !!texture,
-        vao: !!vaoRef.current,
-        numVertices: 4,
-        drawMode: 'TRIANGLE_STRIP'
-      });
-      
-      // Check if our vertex attributes are properly enabled
-      console.log('Vertex attributes state:', {
-        position_enabled: gl.getVertexAttrib(0, gl.VERTEX_ATTRIB_ARRAY_ENABLED),
-        texcoord_enabled: gl.getVertexAttrib(1, gl.VERTEX_ATTRIB_ARRAY_ENABLED),
-        position_size: gl.getVertexAttrib(0, gl.VERTEX_ATTRIB_ARRAY_SIZE),
-        texcoord_size: gl.getVertexAttrib(1, gl.VERTEX_ATTRIB_ARRAY_SIZE)
-      });
+
       
       // Check if VAO is properly bound
       if (!vaoRef.current) {
@@ -375,20 +331,7 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
 
       const err = gl.getError();
       if (err !== gl.NO_ERROR) {
-        console.error('Initial GL draw error:', err, '(1280=INVALID_ENUM, 1281=INVALID_VALUE, 1282=INVALID_OPERATION)');
-        
-        if (err === gl.INVALID_OPERATION) {
-          console.error('GL_INVALID_OPERATION details:');
-          console.error('- Program in use:', gl.getParameter(gl.CURRENT_PROGRAM) === program);
-          console.error('- VAO bound:', !!gl.getParameter(gl.VERTEX_ARRAY_BINDING));
-          console.error('- Texture bound:', !!gl.getParameter(gl.TEXTURE_BINDING_2D));
-          console.error('- Viewport:', gl.getParameter(gl.VIEWPORT));
-          console.error('- Program link status:', gl.getProgramParameter(program, gl.LINK_STATUS));
-          console.error('- Program validate status:', gl.getProgramParameter(program, gl.VALIDATE_STATUS));
-        }
-      } else {
-        console.log(`Initial random texture uploaded and drawn: ${w}x${h} - SUCCESS!`);
-        console.log('Canvas should now show random noise. If not, check if canvas element is visible in DOM.');
+        console.error('WebGL draw error:', err);
       }
     } catch (e) {
       console.warn('Initial random texture setup failed:', e);
@@ -418,13 +361,7 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
       console.warn(`WebGL texture upload: data size mismatch. Expected ${expectedSize}, got ${u16Data.length}`);
     }
     
-    // Sample some pixel values to verify data
-    const sampleCount = Math.min(5, u16Data.length);
-    const samples = [];
-    for (let i = 0; i < sampleCount; i++) {
-      samples.push(u16Data[i]);
-    }
-    console.log(`WebGL upload: ${width}x${height}, ${u16Data.length} pixels, samples: [${samples.join(', ')}]`);
+
 
     // Ensure correct row alignment for 16-bit uploads
     try {
@@ -447,9 +384,7 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
       const error = gl.getError();
       if (error !== gl.NO_ERROR) {
         console.error(`WebGL texture upload error: ${error}`);
-      } else {
-        console.log(`WebGL texture uploaded successfully: ${width}x${height}`);
-      }
+      } 
     } catch (error) {
       console.error('WebGL texture upload exception:', error);
     }
@@ -472,26 +407,10 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
       return;
     }
 
-    console.log('renderFrame called - GL state:', {
-      glContext: !!gl,
-      program: !!program, 
-      texture: !!texture,
-      canvas: !!canvas,
-      canvasSize: [canvas.width, canvas.height],
-      displaySize: [canvas.clientWidth, canvas.clientHeight],
-      isWebGL: isWebGL
-    });
 
-    // Sync canvas internal size with display size, but limit to reasonable dimensions
-    const maxWidth = 800;
-    const maxHeight = 600;
-    const displayWidth = Math.min(canvas.clientWidth || 800, maxWidth);
-    const displayHeight = Math.min(canvas.clientHeight || 600, maxHeight);
-    if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
-      console.log(`Canvas size sync: ${canvas.width}x${canvas.height} -> limited ${displayWidth}x${displayHeight}`);
-      canvas.width = displayWidth;
-      canvas.height = displayHeight;
-    }
+
+    // Canvas size should match image size for proper aspect ratio
+    // The CSS styling will scale it to fit the container while maintaining aspect ratio
 
     // Set viewport to match canvas size
     gl.viewport(0, 0, canvas.width, canvas.height);
@@ -525,25 +444,14 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
       gl.uniform1i(textureLocation, 0);
     }
 
-    // Debug window/level values
+    // Get window/level values (no auto-windowing)
     const minVal = liveStreamState.minVal || 0;
     const maxVal = liveStreamState.maxVal || 65535;
     const gamma = liveStreamState.gamma || 1.0;
-    
-    console.log(`WebGL render: min=${minVal}, max=${maxVal}, gamma=${gamma}`);
-    
-    // Ensure valid window/level range
-    let actualMin = minVal;
-    let actualMax = maxVal;
-    if (actualMin >= actualMax) {
-      console.warn('Invalid window/level range, using defaults');
-      actualMin = 0;
-      actualMax = 65535;
-    }
 
-    // Set uniforms (use !== null for WebGL uniform locations)
-    if (minLocation !== null) gl.uniform1f(minLocation, actualMin);
-    if (maxLocation !== null) gl.uniform1f(maxLocation, actualMax);
+    // Set uniforms
+    if (minLocation !== null) gl.uniform1f(minLocation, minVal);
+    if (maxLocation !== null) gl.uniform1f(maxLocation, maxVal);
     if (gammaLocation !== null) gl.uniform1f(gammaLocation, gamma);
 
     // Apply view transform
@@ -557,35 +465,56 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
       gl.uniformMatrix3fv(transformLocation, false, transform);
     }
 
-    // Validate GL state before drawing
-    if (!gl.getParameter(gl.VERTEX_ARRAY_BINDING)) {
-      console.error('No VAO bound in renderFrame');
-      return;
-    }
-    
-    if (gl.getParameter(gl.CURRENT_PROGRAM) !== program) {
-      console.error('Wrong program bound in renderFrame');
-      return;
-    }
-
     // Draw the quad (use TRIANGLE_STRIP with 4 vertices)
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
     // Check for WebGL errors
     const error = gl.getError();
     if (error !== gl.NO_ERROR) {
-      console.error(`WebGL render error: ${error} (1280=INVALID_ENUM, 1281=INVALID_VALUE, 1282=INVALID_OPERATION)`);
-      
-      // Additional debug for 1282 error
-      if (error === 1282) {
-        console.error('GL_INVALID_OPERATION - likely causes:');
-        console.error('- Shader program not properly linked or validated');
-        console.error('- Texture format mismatch with sampler type');
-        console.error('- Uniforms set on wrong program');
-        console.error('- VAO/VBO state inconsistent');
-      }
+      console.error(`WebGL render error: ${error}`);
     }
   }, [liveStreamState.minVal, liveStreamState.maxVal, liveStreamState.gamma, viewTransform.scale, viewTransform.translateX, viewTransform.translateY]);
+
+  // Mouse event handlers for zoom and pan
+  const handleMouseDown = useCallback((e) => {
+    // Only handle left mouse button for panning
+    if (e.button === 0) {
+      setIsDragging(true);
+      setLastMousePos({ x: e.clientX, y: e.clientY });
+      e.preventDefault();
+    }
+    console.log('Mouse down, xy:', e.clientX, e.clientY);
+  }, []);
+
+  const handleMouseMove = useCallback((e) => {
+    if (!isDragging) return;
+    
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const deltaX = e.clientX - lastMousePos.x;
+    const deltaY = e.clientY - lastMousePos.y;
+    
+    // Convert pixel movement to normalized coordinates
+    const rect = canvas.getBoundingClientRect();
+    const normalizedDeltaX = (deltaX / rect.width) * 2.0;
+    const normalizedDeltaY = -(deltaY / rect.height) * 2.0; // Invert Y
+    console.log(`Mouse move delta: ${deltaX}, ${deltaY} => normalized: ${normalizedDeltaX.toFixed(3)}, ${normalizedDeltaY.toFixed(3)}`);
+    setViewTransform(prev => ({
+      ...prev,
+      translateX: prev.translateX + normalizedDeltaX / prev.scale,
+      translateY: prev.translateY + normalizedDeltaY / prev.scale
+    }));
+    
+    setLastMousePos({ x: e.clientX, y: e.clientY });
+    e.preventDefault();
+  }, [isDragging, lastMousePos]);
+
+  const handleMouseUp = useCallback((e) => {
+    console.log('Mouse up');
+    setIsDragging(false);
+    e.preventDefault();
+  }, []);
 
   // Canvas2D fallback rendering
   const renderCanvas2D = useCallback((u16Data, width, height) => {
@@ -595,9 +524,9 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
       return;
     }
 
-    console.log(`Canvas2D render: ${width}x${height}, ${u16Data.length} pixels`);
+    // console.log(`Canvas2D render: ${width}x${height}, ${u16Data.length} pixels`);
 
-    // Set canvas size to match image if needed
+    // Set canvas size to match image dimensions for proper aspect ratio
     if (canvas.width !== width || canvas.height !== height) {
       canvas.width = width;
       canvas.height = height;
@@ -652,7 +581,6 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.putImageData(imageData, 0, 0);
     
-    console.log('Canvas2D render complete');
   }, [liveStreamState.minVal, liveStreamState.maxVal, liveStreamState.gamma]);
 
   // Update FPS stats
@@ -734,11 +662,9 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
 
   // Handle binary frame events
   const handleFrameEvent = useCallback((event) => {
-    console.log('LiveViewerGL: Received uc2:frame event');
     try {
       // Extract buffer and metadata from event
       const { buffer, metadata } = event.detail;
-      console.log('LiveViewerGL: Processing frame - buffer size:', buffer?.byteLength, 'metadata:', metadata);
       
       if (!buffer) {
         console.error('LiveViewerGL: No buffer in frame event');
@@ -747,22 +673,14 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
       
       let packet;
       if (metadata && metadata.compressed_bytes) {
-        console.log('LiveViewerGL: Using metadata-based parsing');
         // Use metadata to parse frame correctly
         packet = processUC2FPacketWithMetadata(buffer, metadata);
       } else {
-        console.log('LiveViewerGL: Using standard UC2F parsing');
         // Fallback to original parsing
         packet = processUC2FPacket(buffer);
       }
       
-      console.log('LiveViewerGL: Successfully parsed packet:', {
-        width: packet.width,
-        height: packet.height,
-        dataLength: packet.dataU16?.length,
-        pixelRange: packet.dataU16?.length > 0 ? [Math.min(...packet.dataU16.slice(0, 100)), Math.max(...packet.dataU16.slice(0, 100))] : [0, 0]
-      });
-      
+
       setImageSize({ width: packet.width, height: packet.height });
       setCurrentImageData(packet.dataU16); // Store for histogram computation
       
@@ -780,41 +698,8 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
           if (value < actualMin) actualMin = value;
           if (value > actualMax) actualMax = value;
         }
-        
-        console.log(`LiveViewerGL: Actual pixel range: ${actualMin} - ${actualMax}`);
-        console.log(`LiveViewerGL: Current window/level: ${liveStreamState.minVal || 0} - ${liveStreamState.maxVal || 65535}`);
-        
-        // Check if current window/level settings are reasonable for this data
-        const currentMin = liveStreamState.minVal || 0;
-        const currentMax = liveStreamState.maxVal || 65535;
-        
-        // Auto-adjust if:
-        // 1. Using default full range (0-65535) - need to optimize for actual data
-        // 2. Current range doesn't contain most of the actual data
-        // 3. Current range is much narrower than actual data (less than 50% coverage)
-        const actualRange = actualMax - actualMin;
-        const currentRange = currentMax - currentMin;
-        const dataOutsideWindow = (currentMin > actualMin + actualRange * 0.1) || (currentMax < actualMax - actualRange * 0.1);
-        const rangeTooNarrow = actualRange > 0 && currentRange < actualRange * 0.5;
-        
-        const needsAutoWindow = (currentMin === 0 && currentMax === 65535) || // Using default range
-                               dataOutsideWindow || // Data falls outside current window
-                               rangeTooNarrow; // Window is too narrow for the data
-        
-        if (needsAutoWindow && actualRange > 0) {
-          // Use actual range with small padding for better contrast
-          const padding = Math.max(1, actualRange * 0.02); // 2% padding
-          const newMin = Math.max(0, Math.floor(actualMin - padding));
-          const newMax = Math.min(65535, Math.ceil(actualMax + padding));
-          
-          console.log(`LiveViewerGL: Auto-windowing: setting min=${newMin}, max=${newMax} (from actual range ${actualMin}-${actualMax})`);
-          console.log(`LiveViewerGL: Reason: default=${currentMin === 0 && currentMax === 65535}, outside=${dataOutsideWindow}, narrow=${rangeTooNarrow}`);
-          dispatch(liveStreamSlice.setMinVal(newMin));
-          dispatch(liveStreamSlice.setMaxVal(newMax));
-        } else {
-          console.log(`LiveViewerGL: Current window/level seems appropriate - no auto-adjustment`);
-          console.log(`LiveViewerGL: ActualRange=${actualRange}, CurrentRange=${currentRange}, Coverage=${actualRange > 0 ? (currentRange/actualRange*100).toFixed(1) : 'N/A'}%`);
-        }
+                
+        // No auto-windowing - manual window/level control only
       }
       
       if (onImageLoad) {
@@ -828,19 +713,16 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
       computeHistogram(packet.dataU16, packet.width, packet.height);
       
       if (isWebGL) {
-        console.log('LiveViewerGL: Rendering with WebGL2');
         uploadTexture(packet.dataU16, packet.width, packet.height);
         renderFrame();
         
         // Force a re-render after Redux state update to ensure new window/level values are applied
         setTimeout(() => {
           if (isWebGL && glRef.current) {
-            console.log('LiveViewerGL: Force re-render with updated window/level values');
             renderFrame();
           }
         }, 10); // Small delay to allow Redux state to update
       } else {
-        console.log('LiveViewerGL: Rendering with Canvas2D fallback');
         renderCanvas2D(packet.dataU16, packet.width, packet.height);
       }
       
@@ -852,11 +734,9 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
 
   // Initialize component
   useEffect(() => {
-    console.log('LiveViewerGL: Component mounting and initializing');
     
     const support = checkFeatureSupport();
     setFeatureSupport(support);
-    console.log('LiveViewerGL: Feature support:', support);
     
     const webglSuccess = support.webgl2 && initWebGL();
     setIsWebGL(webglSuccess);
@@ -870,15 +750,9 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
 
   // Listen for frame events
   useEffect(() => {
-    console.log('LiveViewerGL: Registering uc2:frame event listener');
-    
     window.addEventListener('uc2:frame', handleFrameEvent);
     
-    // Test that event listener is working
-    console.log('LiveViewerGL: Event listener registered for uc2:frame');
-    
-    return () => {
-      console.log('LiveViewerGL: Unregistering uc2:frame event listener');
+    return () => {      window.removeEventListener('uc2:frame', handleFrameEvent);
       window.removeEventListener('uc2:frame', handleFrameEvent);
     };
   }, [handleFrameEvent]);
@@ -891,7 +765,6 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
       if (canvas.width !== imageSize.width || canvas.height !== imageSize.height) {
         canvas.width = imageSize.width;
         canvas.height = imageSize.height;
-        console.log(`Canvas size updated to ${imageSize.width}x${imageSize.height}`);
         
         // Re-render if we have WebGL context
         if (isWebGL && renderFrame) {
@@ -920,11 +793,9 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
     setViewTransform(prev => {
       const newScale = Math.max(0.1, Math.min(10, prev.scale * zoomFactor));
       
-      // Zoom towards cursor position
-      const mouseX = (x / canvas.width) * 2 - 1;
-      const mouseY = 1 - (y / canvas.height) * 2;
-      
-      const newTranslateX = prev.translateX + (mouseX - prev.translateX) * (1 - zoomFactor);
+    // Zoom towards cursor position
+    const mouseX = (x / rect.width) * 2 - 1;
+    const mouseY = 1 - (y / rect.height) * 2;      const newTranslateX = prev.translateX + (mouseX - prev.translateX) * (1 - zoomFactor);
       const newTranslateY = prev.translateY + (mouseY - prev.translateY) * (1 - zoomFactor);
       
       return {
@@ -947,8 +818,8 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
     const { scale, translateX, translateY } = viewTransform;
     
     // Normalize to [-1, 1] range
-    const normX = (x / canvas.width) * 2 - 1;
-    const normY = 1 - (y / canvas.height) * 2;
+    const normX = (x / rect.width) * 2 - 1;
+    const normY = 1 - (y / rect.height) * 2;
     
     // Apply inverse transform
     const imageX = (normX - translateX) / scale;
@@ -965,44 +836,113 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
     setViewTransform({ scale: 1, translateX: 0, translateY: 0 });
   }, []);
 
+  // Add global mouse event listeners for dragging
+  useEffect(() => {
+    const handleGlobalMouseMove = (e) => {
+      if (!isDragging) return;
+      
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const deltaX = e.clientX - lastMousePos.x;
+      const deltaY = e.clientY - lastMousePos.y;
+      
+      // Convert pixel movement to normalized coordinates
+      const rect = canvas.getBoundingClientRect();
+      const normalizedDeltaX = (deltaX / rect.width) * 2.0;
+      const normalizedDeltaY = -(deltaY / rect.height) * 2.0; // Invert Y
+      
+      setViewTransform(prev => ({
+        ...prev,
+        translateX: prev.translateX + normalizedDeltaX / prev.scale,
+        translateY: prev.translateY + normalizedDeltaY / prev.scale
+      }));
+      
+      setLastMousePos({ x: e.clientX, y: e.clientY });
+      e.preventDefault();
+    };
+
+    const handleGlobalMouseUp = (e) => {
+      if (isDragging) {
+        setIsDragging(false);
+        e.preventDefault();
+      }
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleGlobalMouseMove);
+      document.addEventListener('mouseup', handleGlobalMouseUp);
+      // Prevent context menu during drag
+      document.addEventListener('contextmenu', handleGlobalMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleGlobalMouseMove);
+      document.removeEventListener('mouseup', handleGlobalMouseUp);
+      document.removeEventListener('contextmenu', handleGlobalMouseUp);
+    };
+  }, [isDragging, lastMousePos]);
+
+  // Calculate display dimensions to maximize width while maintaining aspect ratio
+  const getDisplayDimensions = useCallback(() => {
+    if (!imageSize.width || !imageSize.height || !containerSize.width || !containerSize.height) {
+      return { width: 800, height: 600 };
+    }
+
+    const imageAspectRatio = imageSize.width / imageSize.height;
+    const containerAspectRatio = containerSize.width / containerSize.height;
+    
+    let displayWidth, displayHeight;
+    
+    if (imageAspectRatio > containerAspectRatio) {
+      // Image is wider than container - fit to width
+      displayWidth = containerSize.width;
+      displayHeight = containerSize.width / imageAspectRatio;
+    } else {
+      // Image is taller than container - fit to height
+      displayHeight = containerSize.height;
+      displayWidth = containerSize.height * imageAspectRatio;
+    }
+
+    return { width: displayWidth, height: displayHeight };
+  }, [imageSize, containerSize]);
+
+  const displayDimensions = getDisplayDimensions();
+
   return (
-    <Box ref={containerRef} sx={{ position: 'relative', width: '100%', height: '50%', backgroundColor: 'black' }}>
-      {console.log('LiveViewerGL: Rendering component, imageSize:', imageSize, 'isWebGL:', isWebGL)}
-      {/* DEBUG: Simple text to see if component is visible at all */}
-      <div style={{
-        position: 'absolute', 
-        top: 20, 
-        left: 20, 
-        color: 'white', 
-        backgroundColor: 'blue', 
-        padding: '10px', 
-        zIndex: 20,
-        fontSize: '20px'
-      }}>
-        WEBGL COMPONENT IS HERE - Canvas: {isWebGL ? 'ACTIVE' : 'INACTIVE'}
-      </div>
+    <Box ref={containerRef} sx={{ 
+      position: 'relative', 
+      width: '100%', 
+      height: '100%',
+      backgroundColor: 'black',
+      overflow: 'hidden',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    }}>
+
       
       <canvas
         id="live-viewer-canvas"
         ref={canvasRef}
-        width={800}  // Fixed initial size - don't use imageSize which is 0x0
-        height={600} // Fixed initial size - don't use imageSize which is 0x0
+        width={imageSize.width || 800}
+        height={imageSize.height || 600}
         style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          maxWidth: '800px',  // Limit to reasonable size
-          maxHeight: '600px', // Limit to reasonable size
-          width: '100%',
-          height: 'auto',     // Maintain aspect ratio
-          objectFit: 'contain',
-          cursor: 'crosshair',
-          // backgroundColor removed to see WebGL content
-          border: '2px solid red', // Thinner border
-          zIndex: 15
+          cursor: isDragging ? 'grabbing' : 'grab',
+          border: '2px solid red',
+          zIndex: 1,
+          display: 'block',
+          width: displayDimensions.width,
+          height: displayDimensions.height,
+          maxWidth: '100%',
+          maxHeight: '100%'
         }}
         onWheel={handleWheel}
         onDoubleClick={handleDoubleClick}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
       />
       
       {/* HUD */}
@@ -1013,7 +953,8 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
           right: 10, 
           p: 1, 
           opacity: 0.8,
-          fontSize: '12px'
+          fontSize: '12px',
+          zIndex: 2,
         }}
       >
         <Typography variant="caption" display="block">
@@ -1023,49 +964,31 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
           FPS: {stats.fps} | {(stats.bps / 1000000).toFixed(1)} Mbps
         </Typography>
         <Typography variant="caption" display="block">
-          Compression: {stats.compressionRatio}x
-        </Typography>
-        <Typography variant="caption" display="block">
           {imageSize.width}x{imageSize.height} | Zoom: {viewTransform.scale.toFixed(2)}x
         </Typography>
       </Paper>
       
-      {/* Debug/Reset buttons */}
-      <Box sx={{ position: 'absolute', bottom: 10, right: 10, display: 'flex', flexDirection: 'column', gap: 1 }}>
-        {/* Manual render test button */}
-        {isWebGL && (
-          <Box
-            sx={{
-              opacity: 0.7,
-              '&:hover': { opacity: 1 },
-              cursor: 'pointer',
-              bgcolor: 'background.paper',
-              p: 1,
-              borderRadius: 1
-            }}
-            onClick={() => {
-              console.log('Manual render button clicked');
-              renderFrame();
-            }}
-          >
-            <Typography variant="caption">Test Render</Typography>
-          </Box>
-        )}
-        
-        {/* Reset view button */}
-        <Box
-          sx={{
-            opacity: 0.7,
-            '&:hover': { opacity: 1 },
-            cursor: 'pointer',
-            bgcolor: 'background.paper',
-            p: 1,
-            borderRadius: 1
-          }}
-          onClick={resetView}
-        >
-          <Typography variant="caption">Reset View</Typography>
-        </Box>
+      {/* Reset view button */}
+      <Box 
+        sx={{ 
+          position: 'absolute', 
+          bottom: 10, 
+          right: 10,
+          opacity: 0.8,
+          '&:hover': { opacity: 1 },
+          cursor: 'pointer',
+          bgcolor: 'primary.main',
+          color: 'primary.contrastText',
+          px: 2,
+          py: 1,
+          borderRadius: 1,
+          boxShadow: 2, 
+          zIndex: 2,
+
+        }}
+        onClick={resetView}
+      >
+        <Typography variant="body2" fontWeight="bold">Reset View (1:1)</Typography>
       </Box>
     </Box>
   );

@@ -23,7 +23,7 @@ const apiSettingsControllerSetStreamParams = async (params = {}) => {
     const url = `/SettingsController/setStreamParams${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     
     // Send POST request with JSON body
-    const response = await axiosInstance.get(url, requestBody, {
+    const response = await axiosInstance.post(url, requestBody, {
       headers: {
         'Content-Type': 'application/json',
       }

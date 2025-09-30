@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 
 import { useDispatch, useSelector } from "react-redux";
+import store from "../state/store.js";
 import * as connectionSettingsSlice from "../state/slices/ConnectionSettingsSlice.js";
 import * as webSocketSlice from "../state/slices/WebSocketSlice.js";
 import * as experimentStateSlice from "../state/slices/ExperimentStateSlice.js";
@@ -52,10 +53,11 @@ const WebSocketHandler = () => {
     
     // Listen for binary frame events (UC2F packets)
     socket.on("frame", (buf) => {
+      /*
       console.log('WebSocketHandler: Received UC2F frame:', buf.byteLength, 'bytes');
       console.log('WebSocketHandler: Buffer type:', buf.constructor.name);
       console.log('WebSocketHandler: First 20 bytes:', new Uint8Array(buf.slice(0, 20)));
-      
+      */
       // Dispatch custom event with metadata for proper parsing
       window.dispatchEvent(new CustomEvent("uc2:frame", { 
         detail: { 
@@ -63,7 +65,7 @@ const WebSocketHandler = () => {
           metadata: frameMetadata 
         }
       }));
-      console.log('WebSocketHandler: Dispatched uc2:frame event');
+      // console.log('WebSocketHandler: Dispatched uc2:frame event');
     });
 
     // Listen to signals
@@ -78,7 +80,7 @@ const WebSocketHandler = () => {
       
       // Store frame metadata for UC2F parsing
       if (dataJson.name === "frame_meta" && dataJson.metadata) {
-        console.log('Received frame metadata:', dataJson.metadata);
+        // console.log('Received frame metadata:', dataJson.metadata);
         frameMetadata = dataJson.metadata;
       }
       //----------------------------------------------
@@ -88,7 +90,24 @@ const WebSocketHandler = () => {
         if (dataJson.detectorname) {
           // Note: Legacy JPEG image handling - kept for backward compatibility
           // The new LiveViewerGL component uses binary "frame" events instead
-          // dispatch(liveStreamSlice.setLiveViewImage(dataJson.image)); // REMOVED
+          dispatch(liveStreamSlice.setLiveViewImage(dataJson.image)); // REMOVED
+          
+          // Track image format but don't automatically adjust min/max values
+          // This allows users to manually control windowing via sliders
+          if (dataJson.format === "jpeg") {
+            dispatch(liveStreamSlice.setImageFormat("jpeg"));
+            // Only set defaults on first load or if values are at default
+            const currentState = store.getState().liveStreamState;
+            if (currentState.minVal === 0 && currentState.maxVal === 65535) {
+              // Set initial defaults for JPEG, but allow user override
+              dispatch(liveStreamSlice.setMinVal(0));
+              dispatch(liveStreamSlice.setMaxVal(255));
+            }
+          } else {
+            // Non-JPEG images (e.g., 16-bit)
+            dispatch(liveStreamSlice.setImageFormat(dataJson.format || "raw"));
+            // Don't automatically change values - let user control them
+          }
           
           // Update pixel size if available
           if (dataJson.pixelsize) {

@@ -139,13 +139,7 @@ export default function DetectorParameters({ hostIP, hostPort }) {
         <MenuItem value="manual">Manual</MenuItem>
         <MenuItem value="auto">Auto</MenuItem>
       </TextField>
-      <TextField
-        label="Pixel Size"
-        type="number"
-        value={detectorParams.pixelSize}
-        size="small"
-        margin="dense"
-      />
+
     </Box>
   );
 }
