@@ -49,7 +49,7 @@ export default function DetectorParameters({ hostIP, hostPort }) {
             binning: data.binning ?? "",
             blacklevel: data.blacklevel ?? "",
             isRGB: data.isRGB === 1, // Convert 0/1 to boolean
-            mode: data.mode ?? "manual",
+            mode: (data.mode ?? "manual").toLowerCase(), // Normalize to lowercase to match MenuItem values
           });
         }
       } catch (error) {
@@ -139,13 +139,7 @@ export default function DetectorParameters({ hostIP, hostPort }) {
         <MenuItem value="manual">Manual</MenuItem>
         <MenuItem value="auto">Auto</MenuItem>
       </TextField>
-      <TextField
-        label="Pixel Size"
-        type="number"
-        value={detectorParams.pixelSize}
-        size="small"
-        margin="dense"
-      />
+
     </Box>
   );
 }

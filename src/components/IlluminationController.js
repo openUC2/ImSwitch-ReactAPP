@@ -187,12 +187,6 @@ export default function IlluminationController({ hostIP, hostPort }) {
   return (
     <Paper sx={{ p: 2 }}>
       <Grid container direction="column" spacing={2}>
-        {/* Rate limiting info */}
-        <Grid item>
-          <Typography variant="caption" color="textSecondary" sx={{ fontStyle: 'italic' }}>
-            📡 Rate-limited: Laser updates sent 300ms after you stop adjusting to prevent serial overload
-          </Typography>
-        </Grid>
         
         {laserSources.length ? (
           laserSources.map((laserName, idx) => {

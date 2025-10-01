@@ -15,11 +15,17 @@ import {
   Select,
   MenuItem,
   Grid,
+  Slider,
+  Paper,
+  Collapse,
+  IconButton,
 } from "@mui/material";
+import { Settings as SettingsIcon, ExpandMore as ExpandMoreIcon } from "@mui/icons-material";
 import XYZControls from "./XYZControls";
 import AutofocusController from "./AutofocusController";
 import DetectorParameters from "./DetectorParameters";
 import StreamControls from "./StreamControls";
+import StreamSettings from "./StreamSettings";
 import IlluminationController from "./IlluminationController";
 import { useWebSocket } from "../context/WebSocketContext";
 import ObjectiveSwitcher from "./ObjectiveSwitcher";
@@ -71,10 +77,11 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
   // Keep some local state for now (these may need their own slices later)
   const [isRecording, setIsRecording] = useState(false);
   const [histogramActive, setHistogramActive] = useState(false);
-  const [minVal, setMinVal] = useState(0);
-  const [maxVal, setMaxVal] = useState(255);
   const [lastSnapPath, setLastSnapPath] = useState("");
-  const [compressionRate, setCompressionRate] = useState(80);
+  
+  // Stream settings panel state
+  const [showStreamSettings, setShowStreamSettings] = useState(false);
+  const [showWindowLevel, setShowWindowLevel] = useState(true);
 
   // Stage control tabs state
   const [stageControlTab, setStageControlTab] = useState(0); // 0 = Multiple Axis View, 1 = Joystick Control
@@ -155,7 +162,9 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
     })();
   }, [hostIP, hostPort]);
 
-  /* min/max */
+  /* min/max - disabled auto-windowing to allow manual control via slider */
+  // Commented out to prevent overriding manual slider settings
+  /*
   useEffect(() => {
     (async () => {
       try {
@@ -164,11 +173,13 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
         );
         if (!r.ok) return;
         const d = await r.json();
-        setMinVal(d.minVal);
-        setMaxVal(d.maxVal);
+        // Update Redux state instead of local state
+        dispatch(liveStreamSlice.setMinVal(d.minVal || 0));
+        dispatch(liveStreamSlice.setMaxVal(d.maxVal || 65535));
       } catch {}
     })();
-  }, [hostIP, hostPort]);
+  }, [hostIP, hostPort, dispatch]);
+  */
 
   /* poll second detector */
   useEffect(() => {
@@ -200,49 +211,11 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
     })();
   }, [hostIP, hostPort, activeTab, dispatch]);
 
-  // Fetch the current compression rate from backend once
-  useEffect(() => {
-    const fetchCompressionRate = async () => {
-      try {
-        const res = await fetch(
-          `${hostIP}:${hostPort}/SettingsController/getDetectorGlobalParameters`
-        );
-        if (res.ok) {
-          const data = await res.json();
-          if (typeof data.compressionlevel === "number") {
-            setCompressionRate(data.compressionlevel);
-          }
-        }
-      } catch (err) {
-        console.error("Failed to fetch compression rate:", err);
-      }
-    };
-    fetchCompressionRate();
-  }, []);
 
-  // Update local state and backend whenever the user changes the rate
-  const handleCompressionChange = async (e) => {
-    const val = Number(e.target.value);
-    setCompressionRate(val);
-    try {
-      await fetch(
-        `${hostIP}:${hostPort}/SettingsController/setDetectorCompressionrate?compressionrate=${val}`
-      );
-    } catch (err) {
-      console.error("Failed to set compression rate:", err);
-    }
-  };
 
   /* handlers */
-  const handleRangeChange = (e, v) => {
-    setMinVal(v[0]);
-    setMaxVal(v[1]);
-  };
-  // Note: Backend intensity scaling removed - now handled in frontend
-  const handleRangeCommit = async (e, v) => {
-    // Frontend-only intensity scaling - no backend call needed
-    console.log("Intensity range updated in frontend:", v);
-  };
+  // Note: Range handling now done directly in Redux dispatch - old handlers removed
+  
   const toggleStream = async () => {
     const n = !isStreamRunning;
     try {
@@ -348,7 +321,13 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
       }}
     >
       {/* LEFT */}
-      <Box sx={{ width: "60%", height: "100%", p: 2, boxSizing: "border-box" }}>
+      <Box sx={{ 
+        width: "60%", 
+        height: "100%", 
+        display: "flex", 
+        flexDirection: "column", 
+        boxSizing: "border-box" 
+      }}>
         {/* Snap controls with editable file name */}
         <Box sx={{ display: "flex", gap: 1, mb: 2, alignItems: "center" }}>
           {/* Keep StreamControls for other controls */}
@@ -361,8 +340,6 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
             onStopRecord={stopRec}
             onGoToImage={handleGoToImage}
             lastSnapPath={lastSnapPath}
-            compressionRate={compressionRate}
-            setCompressionRate={handleCompressionChange}
           />
         </Box>
 
@@ -390,9 +367,91 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
           ))}
         </Tabs>
 
-        <Box sx={{ width: "100%", height: "calc(100% - 140px)", mt: 1 }}>
+
+        {/* Live View Container - Fixed Height // TODO: This does not look really nice..  */}
+        <Box sx={{ 
+          height: "60%", 
+          mb: 2,
+          position: "relative"
+        }}>
           <LiveViewControlWrapper/>
+        </Box>
+
+        {/* Controls Panel - Scrollable */}
+        <Box sx={{ 
+          flex: 1,
+          overflowY: "auto",
+          p: 2,
+          maxHeight: "calc(40vh)"
+        }}>
+          {/* Window/Level Controls Toggle */}
+          <Box sx={{ mb: 2 }}>
+            <Button
+              variant="outlined"
+              onClick={() => setShowWindowLevel(!showWindowLevel)}
+              sx={{ mb: 1 }}
+            >
+              Window/Level Controls
+            </Button>
           
+          <Collapse in={showWindowLevel}>
+            <Paper sx={{ p: 2, maxHeight: '30vh', overflow: 'auto' }}>
+              {/* Min/Max sliders */}
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body2" gutterBottom>
+                  Manual Window/Level Control: {liveStreamState.minVal} - {liveStreamState.maxVal} 
+                  {liveStreamState.imageFormat && <span style={{fontStyle: 'italic', color: '#666', fontSize: '0.8em'}}> ({liveStreamState.imageFormat})</span>}
+                </Typography>
+                <Slider
+                  value={[liveStreamState.minVal, liveStreamState.maxVal]}
+                  onChange={(_, value) => {
+                    dispatch(liveStreamSlice.setMinVal(value[0]));
+                    dispatch(liveStreamSlice.setMaxVal(value[1]));
+                  }}
+                  valueLabelDisplay="auto"
+                  min={0}
+                  max={liveStreamState.maxVal <= 255 ? 255 : 65535}
+                  step={1}
+                  sx={{ mb: 1 }}
+                />
+                <Typography variant="caption" color="textSecondary" display="block">
+                  Auto-windowing disabled - Full manual control
+                </Typography>
+              </Box>
+              
+              {/* Gamma slider */}
+              <Box>
+                <Typography variant="body2" gutterBottom>
+                  Gamma: {liveStreamState.gamma?.toFixed(2) || 1.0}
+                </Typography>
+                <Slider
+                  value={liveStreamState.gamma || 1.0}
+                  onChange={(_, value) => dispatch(liveStreamSlice.setGamma(value))}
+                  valueLabelDisplay="auto"
+                  min={0.1}
+                  max={3.0}
+                  step={0.1}
+                />
+              </Box>
+            </Paper>
+          </Collapse>
+        </Box>        {/* Stream Settings Toggle */}
+        <Box sx={{ mb: 2 }}>
+          <Button
+            variant="outlined"
+            startIcon={<SettingsIcon />}
+            onClick={() => setShowStreamSettings(!showStreamSettings)}
+            sx={{ mb: 1 }}
+          >
+            Stream Settings
+          </Button>
+          
+          <Collapse in={showStreamSettings}>
+            <Box sx={{ maxHeight: '50vh', overflow: 'auto' }}>
+              <StreamSettings />
+            </Box>
+          </Collapse>
+          </Box>
         </Box>
       </Box>
 
