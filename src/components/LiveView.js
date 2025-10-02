@@ -374,7 +374,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
           mb: 2,
           position: "relative"
         }}>
-          <LiveViewControlWrapper/>
+          <LiveViewControlWrapper hostIP={hostIP} hostPort={hostPort} />
         </Box>
 
         {/* Controls Panel - Scrollable */}
@@ -411,13 +411,14 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
                   valueLabelDisplay="auto"
                   min={0}
                   max={(() => {
-                    // Dynamic range based on backend capabilities and format
+                    // Dynamic range based on stream format
                     if (liveStreamState.imageFormat === "jpeg") {
                       return 255; // 8-bit JPEG
-                    } else if (liveStreamState.backendCapabilities.binaryStreaming) {
-                      return 32768; // 16-bit binary streaming (common range)
+                    } else if (liveStreamState.imageFormat === "binary") {
+                      return 65535; // Full 16-bit binary streaming
                     } else {
-                      return 65535; // Full 16-bit fallback
+                      // Unknown format, use conservative default
+                      return 32768;
                     }
                   })()}
                   step={1}

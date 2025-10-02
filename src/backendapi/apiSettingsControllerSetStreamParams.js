@@ -51,7 +51,6 @@ const setStreamParams = async () => {
       },
       subsampling: {
         factor: 2,
-        auto_max_dim: 1024
       }
     });
     console.log("Stream parameters updated:", result);

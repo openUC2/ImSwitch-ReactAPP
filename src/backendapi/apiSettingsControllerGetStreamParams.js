@@ -38,7 +38,6 @@ const getStreamParams = async () => {
     },
     "subsampling": {
       "factor": 1,
-      "auto_max_dim": 0
     },
     "throttle_ms": 50,
     "bitdepth_in": 12,
