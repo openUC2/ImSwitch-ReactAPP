@@ -427,7 +427,7 @@ const chartOptions = useMemo(() => ({
       const params = await apiFocusLockControllerGetPIControllerParams();
       if (params) {
         dispatch(focusLockSlice.setKp(params.kp || 0.1));
-        dispatch(focusLockSlice.setKi(params.ki || 0.01));
+        dispatch(focusLockSlice.setKi(params.ki || 0.0));
         dispatch(focusLockSlice.setSetPoint(params.setPoint || 0.0));
         dispatch(focusLockSlice.setSafetyDistanceLimit(params.safetyDistanceLimit || 500.0));
         dispatch(focusLockSlice.setSafetyMoveLimit(params.safetyMoveLimit || 3.0));

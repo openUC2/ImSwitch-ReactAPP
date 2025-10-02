@@ -92,21 +92,25 @@ const WebSocketHandler = () => {
           // The new LiveViewerGL component uses binary "frame" events instead
           dispatch(liveStreamSlice.setLiveViewImage(dataJson.image)); // REMOVED
           
-          // Track image format but don't automatically adjust min/max values
-          // This allows users to manually control windowing via sliders
+          // Track image format and set appropriate defaults based on streaming capability
           if (dataJson.format === "jpeg") {
             dispatch(liveStreamSlice.setImageFormat("jpeg"));
             // Only set defaults on first load or if values are at default
             const currentState = store.getState().liveStreamState;
-            if (currentState.minVal === 0 && currentState.maxVal === 65535) {
-              // Set initial defaults for JPEG, but allow user override
+            if (currentState.minVal === 0 && (currentState.maxVal === 65535 || currentState.maxVal === 32768)) {
+              // Set initial defaults for JPEG
               dispatch(liveStreamSlice.setMinVal(0));
               dispatch(liveStreamSlice.setMaxVal(255));
             }
           } else {
-            // Non-JPEG images (e.g., 16-bit)
+            // Binary streaming - use 16-bit range
             dispatch(liveStreamSlice.setImageFormat(dataJson.format || "raw"));
-            // Don't automatically change values - let user control them
+            const currentState = store.getState().liveStreamState;
+            if (currentState.minVal === 0 && currentState.maxVal === 65535 && currentState.backendCapabilities.binaryStreaming) {
+              // Set default range for binary streaming (common 16-bit range)
+              dispatch(liveStreamSlice.setMinVal(0));
+              dispatch(liveStreamSlice.setMaxVal(32768));
+            }
           }
           
           // Update pixel size if available

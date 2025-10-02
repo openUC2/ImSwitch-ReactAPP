@@ -410,13 +410,44 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
                   }}
                   valueLabelDisplay="auto"
                   min={0}
-                  max={liveStreamState.maxVal <= 255 ? 255 : 65535}
+                  max={(() => {
+                    // Dynamic range based on backend capabilities and format
+                    if (liveStreamState.imageFormat === "jpeg") {
+                      return 255; // 8-bit JPEG
+                    } else if (liveStreamState.backendCapabilities.binaryStreaming) {
+                      return 32768; // 16-bit binary streaming (common range)
+                    } else {
+                      return 65535; // Full 16-bit fallback
+                    }
+                  })()}
                   step={1}
                   sx={{ mb: 1 }}
                 />
-                <Typography variant="caption" color="textSecondary" display="block">
-                  Auto-windowing disabled - Full manual control
-                </Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                  <Typography variant="caption" color="textSecondary">
+                    Auto-windowing disabled - Full manual control
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={() => {
+                      // Request histogram data to compute auto contrast
+                      // This will trigger a one-time min/max calculation
+                      fetch(`${hostIP}:${hostPort}/HistogrammController/minmaxvalues`)
+                        .then(r => r.json())
+                        .then(d => {
+                          if (d.minVal !== undefined && d.maxVal !== undefined) {
+                            dispatch(liveStreamSlice.setMinVal(d.minVal));
+                            dispatch(liveStreamSlice.setMaxVal(d.maxVal));
+                          }
+                        })
+                        .catch(err => console.warn('Auto contrast failed:', err));
+                    }}
+                    sx={{ fontSize: '0.7em', minWidth: 'auto', px: 1 }}
+                  >
+                    Auto Contrast
+                  </Button>
+                </Box>
               </Box>
               
               {/* Gamma slider */}

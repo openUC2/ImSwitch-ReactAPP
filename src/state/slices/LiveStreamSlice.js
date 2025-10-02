@@ -6,7 +6,7 @@ const initialLiveStreamState = {
   // Image data removed - handled directly by viewer components
   // liveViewImage: "", // REMOVED: no longer store pixel data in Redux
   minVal: 0,
-  maxVal: 65535, // Updated for 16-bit range
+  maxVal: 32768, // Updated for common 16-bit range with binary streaming
   gamma: 1.0, // New: gamma correction
   imageFormat: "unknown", // Track image format (jpeg, raw, etc.)
   pixelSize: null,
