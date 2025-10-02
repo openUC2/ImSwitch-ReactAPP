@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   Paper,
   Typography,
@@ -16,6 +16,7 @@ import {
 } from '@mui/material';
 import apiSettingsControllerGetStreamParams from '../backendapi/apiSettingsControllerGetStreamParams';
 import apiSettingsControllerSetStreamParams from '../backendapi/apiSettingsControllerSetStreamParams';
+import apiSettingsControllerSetJpegQuality from '../backendapi/apiSettingsControllerSetJpegQuality';
 import * as liveStreamSlice from '../state/slices/LiveStreamSlice.js';
 
 /**
@@ -24,6 +25,7 @@ import * as liveStreamSlice from '../state/slices/LiveStreamSlice.js';
  */
 const StreamSettings = () => {
   const dispatch = useDispatch();
+  const liveStreamState = useSelector(liveStreamSlice.getLiveStreamState);
   
   const [settings, setSettings] = useState({
     binary: {
@@ -58,13 +60,22 @@ const StreamSettings = () => {
         setUpdatePending(true);
         setError(null);
         
-        // Only try to update binary settings if not in legacy mode
+        // Only try to update binary settings if not in legacy mode and binary is enabled
         if (!isLegacyBackend && newSettings.binary.enabled) {
           await apiSettingsControllerSetStreamParams({
             throttle_ms: newSettings.binary.throttle_ms,
             compression: newSettings.binary.compression,
             subsampling: newSettings.binary.subsampling
           });
+        }
+        
+        // Update JPEG quality if JPEG is enabled
+        if (newSettings.jpeg.enabled && newSettings.jpeg.quality !== undefined) {
+          try {
+            await apiSettingsControllerSetJpegQuality(newSettings.jpeg.quality);
+          } catch (err) {
+            console.warn('Failed to set JPEG quality (backend may not support this endpoint):', err.message);
+          }
         }
         
         // Update Redux to track current stream format
@@ -246,8 +257,30 @@ const StreamSettings = () => {
               const isBinary = e.target.value === 'binary';
               handleSettingChange('binary.enabled', isBinary);
               handleSettingChange('jpeg.enabled', !isBinary);
+              
               // Update Redux to track format
               dispatch(liveStreamSlice.setImageFormat(isBinary ? 'binary' : 'jpeg'));
+              
+              // Auto-adjust min/max values when switching formats
+              if (isBinary) {
+                // Switch to binary: expand range to 16-bit if currently at 8-bit
+                const currentMax = liveStreamState.maxVal || 0;
+                if (currentMax <= 255) {
+                  // Scale up from 8-bit to 16-bit
+                  const newMax = Math.min(currentMax * 256, 65535);
+                  dispatch(liveStreamSlice.setMaxVal(newMax));
+                  dispatch(liveStreamSlice.setMinVal(liveStreamState.minVal * 256));
+                }
+              } else {
+                // Switch to JPEG: compress range to 8-bit if currently at 16-bit
+                const currentMax = liveStreamState.maxVal || 0;
+                if (currentMax > 255) {
+                  // Scale down from 16-bit to 8-bit
+                  const newMax = Math.min(Math.floor(currentMax / 256), 255);
+                  dispatch(liveStreamSlice.setMaxVal(newMax));
+                  dispatch(liveStreamSlice.setMinVal(Math.floor(liveStreamState.minVal / 256)));
+                }
+              }
             }}
             disabled={isLegacyBackend}
           >
