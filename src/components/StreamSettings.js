@@ -35,9 +35,8 @@ const StreamSettings = () => {
         level: 0
       },
       subsampling: {
-        factor: 1,
-        auto_max_dim: 0
-      },
+        factor: 5
+            },
       throttle_ms: 50,
       bitdepth_in: 12,
       pixfmt: 'GRAY16'
@@ -72,7 +71,9 @@ const StreamSettings = () => {
         // Update JPEG quality if JPEG is enabled
         if (newSettings.jpeg.enabled && newSettings.jpeg.quality !== undefined) {
           try {
-            await apiSettingsControllerSetJpegQuality(newSettings.jpeg.quality);
+            await apiSettingsControllerSetStreamParams({
+              compression: { algorithm: 'jpeg', level: newSettings.jpeg.quality } // Dummy to ensure JPEG is set
+            })
           } catch (err) {
             console.warn('Failed to set JPEG quality (backend may not support this endpoint):', err.message);
           }
@@ -159,7 +160,7 @@ const StreamSettings = () => {
             binary: {
               enabled: false,
               compression: { algorithm: 'lz4', level: 0 },
-              subsampling: { factor: 1, auto_max_dim: 0 },
+              subsampling: { factor: 4},
               throttle_ms: 50,
               bitdepth_in: 12,
               pixfmt: 'GRAY16'
@@ -341,15 +342,7 @@ const StreamSettings = () => {
                 sx={{ mb: 1 }}
               />
               
-              <TextField
-                fullWidth
-                type="number"
-                label="Auto Max Dimension"
-                value={settings.binary.subsampling.auto_max_dim}
-                onChange={(e) => handleSettingChange('binary.subsampling.auto_max_dim', parseInt(e.target.value) || 0)}
-                inputProps={{ min: 0 }}
-                helperText="0 = disabled, >0 = auto-subsample if larger"
-              />
+
             </Box>
             
             {/* Throttle Settings */}
