@@ -12,7 +12,8 @@ import {
   FormControlLabel,
   Box,
   Alert,
-  Divider
+  Divider,
+  Button
 } from '@mui/material';
 import apiSettingsControllerGetStreamParams from '../backendapi/apiSettingsControllerGetStreamParams';
 import apiSettingsControllerSetStreamParams from '../backendapi/apiSettingsControllerSetStreamParams';
@@ -23,7 +24,7 @@ import * as liveStreamSlice from '../state/slices/LiveStreamSlice.js';
  * Stream Settings Panel - Runtime configuration for binary streaming
  * GET/POST /api/settings/getStreamParams and /api/settings/setStreamParams
  */
-const StreamSettings = () => {
+const StreamSettings = ({ onOpen }) => {
   const dispatch = useDispatch();
   const liveStreamState = useSelector(liveStreamSlice.getLiveStreamState);
   
@@ -140,6 +141,13 @@ const StreamSettings = () => {
       } catch (err) {
         console.warn('Failed to load binary streaming settings:', err.message);
         
+        // Handle timeout errors with retry option
+        if (err.message.includes('timeout')) {
+          setError('Failed to load settings: timeout exceeded. Click to retry.');
+          setLoading(false);
+          return;
+        }
+        
         // Detect legacy backend
         if (err.message.includes('404') || err.message.includes('Not Found') || err.message.includes('getStreamParams')) {
           console.log('Legacy backend detected - using JPEG streaming defaults');
@@ -181,7 +189,25 @@ const StreamSettings = () => {
     };
     
     loadSettings();
-  }, []);
+  }, [dispatch]);
+
+  // Reload settings when component becomes visible (for panels/menus that can be opened)
+  useEffect(() => {
+    if (onOpen) {
+      const handleReload = async () => {
+        try {
+          const params = await apiSettingsControllerGetStreamParams();
+          setSettings(params);
+          setError(null);
+        } catch (err) {
+          console.warn('Failed to reload settings:', err.message);
+        }
+      };
+      
+      // Call reload when onOpen is triggered
+      onOpen(handleReload);
+    }
+  }, [onOpen]);
 
   // Handle setting changes with debounced updates
   const handleSettingChange = useCallback((path, value) => {
@@ -203,6 +229,36 @@ const StreamSettings = () => {
     return (
       <Paper sx={{ p: 2 }}>
         <Typography>Loading stream settings...</Typography>
+      </Paper>
+    );
+  }
+
+  // Handle retry for timeout errors
+  const handleRetry = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params = await apiSettingsControllerGetStreamParams();
+      setSettings(params);
+      const initialFormat = params.binary?.enabled ? 'binary' : 'jpeg';
+      dispatch(liveStreamSlice.setImageFormat(initialFormat));
+    } catch (err) {
+      setError(`Failed to load settings: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (error && error.includes('timeout')) {
+    return (
+      <Paper sx={{ p: 2 }}>
+        <Alert severity="error" action={
+          <Button color="inherit" size="small" onClick={handleRetry}>
+            Retry
+          </Button>
+        }>
+          {error}
+        </Alert>
       </Paper>
     );
   }

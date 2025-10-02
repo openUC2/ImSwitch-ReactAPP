@@ -26,7 +26,7 @@ const StreamControlOverlay = ({ hostIP, hostPort }) => {
   const dispatch = useDispatch();
   const liveStreamState = useSelector(liveStreamSlice.getLiveStreamState);
   
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
   const [showAutoContrast, setShowAutoContrast] = useState(true);
   
   // Calculate max value based on current format
@@ -58,8 +58,8 @@ const StreamControlOverlay = ({ hostIP, hostPort }) => {
       <Box
         sx={{
           position: 'absolute',
-          top: 10,
-          right: 10,
+          bottom: 10,
+          left: 10,
           zIndex: 10
         }}
       >
@@ -86,8 +86,8 @@ const StreamControlOverlay = ({ hostIP, hostPort }) => {
     <Paper
       sx={{
         position: 'absolute',
-        top: 10,
-        right: 10,
+        bottom: 10,
+        left: 10,
         zIndex: 10,
         backgroundColor: 'rgba(0, 0, 0, 0.85)',
         backdropFilter: 'blur(5px)',
