@@ -41,7 +41,8 @@ const StreamSettings = () => {
       pixfmt: 'GRAY16'
     },
     jpeg: {
-      enabled: false
+      enabled: false,
+      quality: 85
     }
   });
   
@@ -65,6 +66,10 @@ const StreamSettings = () => {
             subsampling: newSettings.binary.subsampling
           });
         }
+        
+        // Update Redux to track current stream format
+        const currentFormat = newSettings.binary.enabled ? 'binary' : 'jpeg';
+        dispatch(liveStreamSlice.setImageFormat(currentFormat));
         
         console.log('Stream settings updated successfully');
       } catch (err) {
@@ -116,6 +121,10 @@ const StreamSettings = () => {
           binaryStreaming: true,
           webglSupported: true
         }));
+        
+        // Set initial format based on enabled state
+        const initialFormat = params.binary?.enabled ? 'binary' : 'jpeg';
+        dispatch(liveStreamSlice.setImageFormat(initialFormat));
       } catch (err) {
         console.warn('Failed to load binary streaming settings:', err.message);
         
@@ -131,6 +140,9 @@ const StreamSettings = () => {
             webglSupported: false
           }));
           
+          // Set JPEG as default format
+          dispatch(liveStreamSlice.setImageFormat('jpeg'));
+          
           // Set legacy default settings
           setSettings({
             binary: {
@@ -142,7 +154,8 @@ const StreamSettings = () => {
               pixfmt: 'GRAY16'
             },
             jpeg: {
-              enabled: true
+              enabled: true,
+              quality: 85
             }
           });
           
@@ -218,25 +231,39 @@ const StreamSettings = () => {
         </Alert>
       )}
       
-      {/* Binary Stream Settings */}
+      {/* Stream Format Selector */}
       <Box sx={{ mb: 2 }}>
         <Typography variant="subtitle1" gutterBottom>
-          Binary Stream (16-bit)
+          Stream Format
         </Typography>
         
-        <FormControlLabel
-          control={
-            <Switch
-              checked={settings.binary.enabled}
-              onChange={(e) => handleSettingChange('binary.enabled', e.target.checked)}
-              disabled={isLegacyBackend}
-            />
-          }
-          label={`Enable Binary Streaming${isLegacyBackend ? ' (Not Available)' : ''}`}
-          sx={{ mb: 1 }}
-        />
+        <FormControl fullWidth sx={{ mb: 2 }}>
+          <InputLabel>Stream Type</InputLabel>
+          <Select
+            value={settings.binary.enabled ? 'binary' : 'jpeg'}
+            label="Stream Type"
+            onChange={(e) => {
+              const isBinary = e.target.value === 'binary';
+              handleSettingChange('binary.enabled', isBinary);
+              handleSettingChange('jpeg.enabled', !isBinary);
+              // Update Redux to track format
+              dispatch(liveStreamSlice.setImageFormat(isBinary ? 'binary' : 'jpeg'));
+            }}
+            disabled={isLegacyBackend}
+          >
+            <MenuItem value="binary">Binary (16-bit) - High Quality</MenuItem>
+            <MenuItem value="jpeg">JPEG (8-bit) - Legacy</MenuItem>
+          </Select>
+        </FormControl>
+      </Box>
+      
+      {/* Binary Stream Settings */}
+      {settings.binary.enabled && (
+      <Box sx={{ mb: 2 }}>
+        <Typography variant="subtitle1" gutterBottom>
+          Binary Stream Settings
+        </Typography>
         
-        {settings.binary.enabled && (
           <Box sx={{ ml: 2 }}>
             {/* Compression Settings */}
             <Box sx={{ mb: 2 }}>
@@ -312,47 +339,42 @@ const StreamSettings = () => {
               <Typography variant="body2">
                 Pixel Format: {settings.binary.pixfmt}
               </Typography>
+              <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic', color: 'text.secondary' }}>
+                Note: RGB binary streaming requires backend support
+              </Typography>
             </Box>
           </Box>
-        )}
       </Box>
-      
-      <Divider sx={{ my: 2 }} />
+      )}
       
       {/* JPEG Stream Settings */}
-      <Box>
+      {settings.jpeg.enabled && (
+      <Box sx={{ mb: 2 }}>
+        <Divider sx={{ my: 2 }} />
+        
         <Typography variant="subtitle1" gutterBottom>
-          JPEG Stream (Legacy)
+          JPEG Stream Settings
         </Typography>
         
-        <FormControlLabel
-          control={
-            <Switch
-              checked={settings.jpeg.enabled}
-              onChange={(e) => handleSettingChange('jpeg.enabled', e.target.checked)}
-            />
-          }
-          label="Enable JPEG Streaming"
-        />
+        <Alert severity="info" sx={{ mb: 2 }}>
+          JPEG streaming provides 8-bit images. For scientific imaging with better dynamic range, 
+          consider using binary streaming if your backend supports it.
+        </Alert>
         
-        {settings.jpeg.enabled && (
-          <Box sx={{ mt: 1 }}>
-            <Alert severity="info" sx={{ mb: 1 }}>
-              JPEG streaming is legacy. Use binary streaming for better quality and performance.
-            </Alert>
-            
-            <TextField
-              fullWidth
-              type="number"
-              label="Compression Quality"
-              defaultValue={85}
-              inputProps={{ min: 1, max: 100 }}
-              helperText="1 = lowest quality/size, 100 = highest quality/size"
-              sx={{ mb: 1 }}
-            />
-          </Box>
-        )}
+        <Box sx={{ ml: 2 }}>
+          <TextField
+            fullWidth
+            type="number"
+            label="Compression Quality"
+            value={settings.jpeg.quality}
+            onChange={(e) => handleSettingChange('jpeg.quality', parseInt(e.target.value) || 85)}
+            inputProps={{ min: 1, max: 100 }}
+            helperText="1 = lowest quality/size, 100 = highest quality/size"
+            sx={{ mb: 1 }}
+          />
+        </Box>
       </Box>
+      )}
       
       {error && (
         <Alert severity="error" sx={{ mt: 2 }}>
