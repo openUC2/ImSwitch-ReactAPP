@@ -1,5 +1,4 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { setFovX } from "./ObjectiveSlice";
 
 // Define the initial state
 const initialLiveStreamState = {
@@ -17,6 +16,22 @@ const initialLiveStreamState = {
   backendCapabilities: {
     binaryStreaming: true,
     webglSupported: true
+  },
+  // Persistent stream settings
+  streamSettings: {
+    current_compression_algorithm: "binary",
+    binary: {
+      enabled: true,
+      compression: { algorithm: "lz4", level: 0 },
+      subsampling: { factor: 4 },
+      throttle_ms: 100,
+      bitdepth_in: 12,
+      pixfmt: "GRAY16"
+    },
+    jpeg: {
+      enabled: false,
+      quality: 85
+    }
   },
   // Histogram data
   histogramX: [],
@@ -53,6 +68,14 @@ const liveStreamSlice = createSlice({
 
     setImageFormat: (state, action) => {
       state.imageFormat = action.payload;
+    },
+
+    setStreamSettings: (state, action) => {
+      state.streamSettings = { ...state.streamSettings, ...action.payload };
+      // Update imageFormat based on current compression algorithm
+      if (action.payload.current_compression_algorithm) {
+        state.imageFormat = action.payload.current_compression_algorithm;
+      }
     },
 
     setGamma: (state, action) => {
@@ -112,6 +135,7 @@ export const {
   setMinVal,
   setMaxVal,
   setImageFormat,
+  setStreamSettings,
   setGamma,
   setIsLegacyBackend,
   setBackendCapabilities,
