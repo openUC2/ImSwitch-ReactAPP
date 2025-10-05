@@ -48,115 +48,17 @@ const StreamControlOverlay = ({ hostIP, hostPort, stats, featureSupport, isWebGL
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
   const {
-    imageFormat = 'binary',
     minVal = 0,
-    maxVal = 32768,
+    maxVal = 255,
     gamma = 1.0,
-    streamSettings = {}
-  } = liveStreamState || {};
+    currentImageFormat,
+    streamSettings
+  } = liveStreamState;
 
-  // Initialize draft settings from Redux state
-  useEffect(() => {
-    const initialSettings = JSON.parse(JSON.stringify(streamSettings || {}));
-    // Ensure both binary and jpeg objects exist with proper defaults
-    if (!initialSettings.binary) {
-      initialSettings.binary = {
-        enabled: true,
-        compression: { algorithm: 'lz4', level: 0 },
-        subsampling: { factor: 4 },
-        throttle_ms: 100,
-        bitdepth_in: 12,
-        pixfmt: 'GRAY16'
-      };
-    }
-    if (!initialSettings.jpeg) {
-      initialSettings.jpeg = {
-        enabled: false,
-        quality: 85
-      };
-    }
-    if (!initialSettings.current_compression_algorithm) {
-      initialSettings.current_compression_algorithm = initialSettings.binary.enabled ? 'binary' : 'jpeg';
-    }
-    setDraftSettings(initialSettings);
-  }, [streamSettings]);
-
-  // Handle draft setting changes
-  const handleDraftChange = useCallback((path, value) => {
-    const newDraftSettings = JSON.parse(JSON.stringify(draftSettings));
-    
-    // Navigate to the nested property and update it
-    const keys = path.split('.');
-    let current = newDraftSettings;
-    for (let i = 0; i < keys.length - 1; i++) {
-      if (!current[keys[i]]) current[keys[i]] = {};
-      current = current[keys[i]];
-    }
-    current[keys[keys.length - 1]] = value;
-    
-    setDraftSettings(newDraftSettings);
-    setSubmitError(null);
-    setSubmitSuccess(false);
-  }, [draftSettings]);
-
-  // Submit settings to backend
-  const handleSubmitSettings = useCallback(async () => {
-    try {
-      setIsSubmitting(true);
-      setSubmitError(null);
-      
-      // Prepare parameters in the correct format for the API
-      if (draftSettings.binary?.enabled) {
-        // Binary streaming parameters
-        await apiSettingsControllerSetStreamParams({
-          throttle_ms: draftSettings.binary.throttle_ms,
-          compression: draftSettings.binary.compression,
-          subsampling: draftSettings.binary.subsampling
-        });
-      } else {
-        // JPEG streaming - set compression to "jpeg"
-        await apiSettingsControllerSetStreamParams({
-          compression: { algorithm: 'jpeg', level: 0 }
-        });
-      }
-      
-      // Update Redux state only after successful backend submission
-      dispatch(setStreamSettings(draftSettings));
-      
-      // Update image format in Redux
-      const newFormat = draftSettings.binary?.enabled ? 'binary' : 'jpeg';
-      dispatch(setImageFormat(newFormat));
-      
-      setSubmitSuccess(true);
-      
-      // Hide success message after 3 seconds
-      setTimeout(() => setSubmitSuccess(false), 3000);
-      
-    } catch (err) {
-      console.warn('Stream settings API failed:', err.message);
-      
-      // Detect legacy backend by API failure  
-      if (err.message.includes('404') || err.message.includes('Not Found') || err.message.includes('setStreamParams')) {
-        setSubmitError('Legacy backend detected - binary streaming not supported. Please use JPEG mode.');
-      } else {
-        setSubmitError(`Failed to submit settings: ${err.message}`);
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [draftSettings, dispatch]);
-
-  // Reset draft to current Redux state
-  const handleResetSettings = useCallback(() => {
-    setDraftSettings(JSON.parse(JSON.stringify(streamSettings || {})));
-    setSubmitError(null);
-    setSubmitSuccess(false);
-  }, [streamSettings]);
-
-  // Determine format and range based on imageFormat
-  const isJpeg = imageFormat === 'jpeg';
-  const formatLabel = isJpeg ? 'JPEG' : 'BINARY';
-  const maxRange = isJpeg ? 255 : 32768;
+  // Determine if we're in JPEG mode
+  const isJpeg = currentImageFormat === 'jpeg';
+  const maxRange = isJpeg ? 255 : 65535;
+  const formatLabel = isJpeg ? 'JPEG' : 'Binary';
   const rangeLabel = `0–${maxRange}`;
 
   // Auto contrast function
@@ -168,6 +70,39 @@ const StreamControlOverlay = ({ hostIP, hostPort, stats, featureSupport, isWebGL
       dispatch(setMinVal(0));
       dispatch(setMaxVal(32768));
     }
+  };
+
+  // Settings handlers
+  const handleSubmitSettings = async () => {
+    setIsSubmitting(true);
+    setSubmitError(null);
+    setSubmitSuccess(false);
+
+    try {
+      // Apply format change
+      const newFormat = draftSettings.binary?.enabled ? 'binary' : 'jpeg';
+      dispatch(setImageFormat(newFormat));
+
+      // Submit to backend
+      await apiSettingsControllerSetStreamParams({
+        hostIP,
+        hostPort,
+        streamParams: draftSettings
+      });
+
+      setSubmitSuccess(true);
+      setTimeout(() => setSubmitSuccess(false), 3000);
+    } catch (error) {
+      setSubmitError(error.message || 'Failed to submit settings');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResetSettings = () => {
+    setDraftSettings({});
+    setSubmitError(null);
+    setSubmitSuccess(false);
   };
 
   return (
@@ -197,20 +132,16 @@ const StreamControlOverlay = ({ hostIP, hostPort, stats, featureSupport, isWebGL
       <Box sx={{ 
         p: isExpanded ? 2 : 1.5, 
         pb: isExpanded ? 1 : 1.5,
-        flexShrink: 0 // Prevent header from shrinking
+        flexShrink: 0
       }}>
         {!isExpanded ? (
-          // Collapsed state - only show info icon
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-            <InfoIcon sx={{ fontSize: 28, color: 'secondary.contrastText' }} />
-          </Box>
+          <SettingsIcon sx={{ color: 'primary.main' }} />
         ) : (
-          // Expanded state - full header
           <>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-              <SettingsIcon sx={{ fontSize: 18 }} />
-              <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-                Stream Control
+            {/* Header Controls */}
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+              <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '1rem' }}>
+                Stream Controls
               </Typography>
               <IconButton
                 size="small"
@@ -239,28 +170,6 @@ const StreamControlOverlay = ({ hostIP, hostPort, stats, featureSupport, isWebGL
                 color="info"
               />
             </Box>
-            
-            {/* Binary Stream Info */}
-            {!isJpeg && draftSettings?.binary && (
-              <Box sx={{ 
-                mt: 1, 
-                p: 1, 
-                backgroundColor: theme.palette.mode === 'dark' 
-                  ? 'rgba(255,255,255,0.05)' 
-                  : 'rgba(0,0,0,0.05)', 
-                borderRadius: 1 
-              }}>
-                <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
-                  {draftSettings.binary.compression?.algorithm?.toUpperCase() || 'LZ4'} • 
-                  Level {draftSettings.binary.compression?.level || 0} • 
-                  {draftSettings.binary.subsampling?.factor || 4}x Sub • 
-                  {draftSettings.binary.throttle_ms || 100}ms
-                </Typography>
-                <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
-                  {draftSettings.binary.bitdepth_in || 12}-bit {draftSettings.binary.pixfmt || 'GRAY16'}
-                </Typography>
-              </Box>
-            )}
           </>
         )}
       </Box>
@@ -268,10 +177,10 @@ const StreamControlOverlay = ({ hostIP, hostPort, stats, featureSupport, isWebGL
       {/* Expandable Controls */}
       <Collapse in={isExpanded} sx={{ 
         overflow: 'hidden', 
-        flexGrow: 1, 
+        flex: 1, 
         display: 'flex', 
         flexDirection: 'column',
-        minHeight: 0 // Important for proper flex behavior
+        minHeight: 0
       }}>
         <Divider sx={{ flexShrink: 0 }} />
         
@@ -316,7 +225,7 @@ const StreamControlOverlay = ({ hostIP, hostPort, stats, featureSupport, isWebGL
         }}>
           {/* Controls Tab */}
           {activeTab === 0 && (
-            <Box sx={{ p: 2, pt: 1 }}>
+            <Box sx={{ p: 2 }}>
               {/* Window/Level Controls */}
               <Box sx={{ mb: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
@@ -335,7 +244,7 @@ const StreamControlOverlay = ({ hostIP, hostPort, stats, featureSupport, isWebGL
                 </Box>
 
                 {/* Window Slider */}
-                <Box sx={{ mb: 1 }}>
+                <Box sx={{ mb: 2 }}>
                   <Typography variant="caption" color="textSecondary">
                     Window: {minVal}
                   </Typography>
@@ -351,7 +260,7 @@ const StreamControlOverlay = ({ hostIP, hostPort, stats, featureSupport, isWebGL
                 </Box>
 
                 {/* Level Slider */}
-                <Box sx={{ mb: 1 }}>
+                <Box sx={{ mb: 2 }}>
                   <Typography variant="caption" color="textSecondary">
                     Level: {maxVal}
                   </Typography>
@@ -365,207 +274,167 @@ const StreamControlOverlay = ({ hostIP, hostPort, stats, featureSupport, isWebGL
                     size="small"
                   />
                 </Box>
-              </Box>
 
-              {/* Gamma Control */}
-              <Box sx={{ mb: 1 }}>
-                <Typography variant="caption" color="textSecondary">
-                  Gamma: {gamma?.toFixed(2) || 1.0}
-                </Typography>
-                <Slider
-                  value={gamma || 1.0}
-                  onChange={(_, value) => dispatch(setGamma(value))}
-                  min={0.1}
-                  max={3.0}
-                  step={0.1}
-                  valueLabelDisplay="auto"
-                  size="small"
-                />
+                {/* Gamma Slider - if applicable */}
+                {!isJpeg && (
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="caption" color="textSecondary">
+                      Gamma: {gamma?.toFixed(2) || 1.0}
+                    </Typography>
+                    <Slider
+                      value={gamma || 1.0}
+                      onChange={(_, value) => dispatch(setGamma(value))}
+                      min={0.1}
+                      max={3.0}
+                      step={0.1}
+                      valueLabelDisplay="auto"
+                      size="small"
+                    />
+                  </Box>
+                )}
               </Box>
             </Box>
           )}
 
           {/* Settings Tab */}
           {activeTab === 1 && (
-            <Box sx={{ p: 2, pt: 1 }}>
-            <>
-              {/* Stream Format Selection */}
+            <Box sx={{ p: 2 }}>
+              <Typography variant="body2" sx={{ mb: 2, fontWeight: 'medium' }}>
+                Stream Settings
+              </Typography>
+
+              {/* Format Toggle */}
               <Box sx={{ mb: 2 }}>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Stream Format</InputLabel>
-                  <Select
-                    value={draftSettings?.binary?.enabled === false ? 'jpeg' : 'binary'}
-                    label="Stream Format"
-                    onChange={(e) => {
-                      const isBinary = e.target.value === 'binary';
-                      const newDraftSettings = JSON.parse(JSON.stringify(draftSettings));
-                      
-                      // Ensure objects exist
-                      if (!newDraftSettings.binary) newDraftSettings.binary = {};
-                      if (!newDraftSettings.jpeg) newDraftSettings.jpeg = {};
-                      
-                      // Set the enabled states
-                      newDraftSettings.binary.enabled = isBinary;
-                      newDraftSettings.jpeg.enabled = !isBinary;
-                      newDraftSettings.current_compression_algorithm = e.target.value;
-                      
-                      setDraftSettings(newDraftSettings);
-                      setSubmitError(null);
-                      setSubmitSuccess(false);
-                    }}
-                  >
-                    <MenuItem value="jpeg">JPEG</MenuItem>
-                    <MenuItem value="binary">Binary</MenuItem>
-                  </Select>
-                </FormControl>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={!draftSettings?.binary?.enabled}
+                      onChange={(e) => setDraftSettings(prev => ({
+                        ...prev,
+                        binary: { ...prev.binary, enabled: !e.target.checked }
+                      }))}
+                    />
+                  }
+                  label="JPEG Mode"
+                />
               </Box>
-              
-              {/* JPEG Quality (when JPEG is selected) */}
-              {!draftSettings?.binary?.enabled && (
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="caption" color="textSecondary">
-                    JPEG Quality: {draftSettings?.jpeg?.quality || 85}
-                  </Typography>
-                  <Slider
-                    value={draftSettings?.jpeg?.quality || 85}
-                    onChange={(_, value) => handleDraftChange('jpeg.quality', value)}
-                    min={10}
-                    max={100}
-                    step={5}
-                    valueLabelDisplay="auto"
-                    size="small"
-                  />
-                </Box>
-              )}
-              
-              {/* Binary Settings (when Binary is selected) */}
+
+              {/* Binary Stream Settings */}
               {draftSettings?.binary?.enabled && (
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" sx={{ mb: 1, fontWeight: 'medium' }}>
-                    Binary Settings
-                  </Typography>
-                  
-                  {/* Compression Algorithm */}
-                  <FormControl fullWidth size="small" sx={{ mb: 1 }}>
-                    <InputLabel>Compression Algorithm</InputLabel>
+                <Box sx={{ mb: 3 }}>
+                  <FormControl fullWidth sx={{ mb: 2 }} size="small">
+                    <InputLabel>Compression</InputLabel>
                     <Select
-                      value={draftSettings?.binary?.compression?.algorithm || 'lz4'}
-                      label="Compression Algorithm"
-                      onChange={(e) => handleDraftChange('binary.compression.algorithm', e.target.value)}
+                      value={draftSettings.binary?.compression?.algorithm || 'lz4'}
+                      onChange={(e) => setDraftSettings(prev => ({
+                        ...prev,
+                        binary: {
+                          ...prev.binary,
+                          compression: { ...prev.binary?.compression, algorithm: e.target.value }
+                        }
+                      }))}
                     >
                       <MenuItem value="lz4">LZ4</MenuItem>
-                      <MenuItem value="zstd">ZSTD</MenuItem>
+                      <MenuItem value="zstd">Zstandard</MenuItem>
                       <MenuItem value="none">None</MenuItem>
                     </Select>
                   </FormControl>
-                  
-                  {/* Compression Level */}
-                  <Box sx={{ mb: 1 }}>
-                    <Typography variant="caption" color="textSecondary">
-                      Compression Level: {draftSettings?.binary?.compression?.level || 0}
+
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 1 }}>
+                      Compression Level: {draftSettings.binary?.compression?.level || 0}
                     </Typography>
                     <Slider
-                      value={draftSettings?.binary?.compression?.level || 0}
-                      onChange={(_, value) => handleDraftChange('binary.compression.level', value)}
+                      value={draftSettings.binary?.compression?.level || 0}
+                      onChange={(_, value) => setDraftSettings(prev => ({
+                        ...prev,
+                        binary: {
+                          ...prev.binary,
+                          compression: { ...prev.binary?.compression, level: value }
+                        }
+                      }))}
                       min={0}
                       max={9}
                       step={1}
+                      marks
                       valueLabelDisplay="auto"
                       size="small"
                     />
                   </Box>
-                  
-                  {/* Subsampling Factor */}
-                  <FormControl fullWidth size="small" sx={{ mb: 1 }}>
-                    <InputLabel>Subsampling Factor</InputLabel>
-                    <Select
-                      value={draftSettings?.binary?.subsampling?.factor || 4}
-                      label="Subsampling Factor"
-                      onChange={(e) => handleDraftChange('binary.subsampling.factor', parseInt(e.target.value))}
-                    >
-                      <MenuItem value={1}>1x (No subsampling)</MenuItem>
-                      <MenuItem value={2}>2x</MenuItem>
-                      <MenuItem value={4}>4x</MenuItem>
-                      <MenuItem value={8}>8x</MenuItem>
-                    </Select>
-                  </FormControl>
-                  
-                  {/* Throttle Time */}
-                  <Box sx={{ mb: 1 }}>
-                    <Typography variant="caption" color="textSecondary">
-                      Throttle: {draftSettings?.binary?.throttle_ms || 100}ms
+
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 1 }}>
+                      Subsampling: {draftSettings.binary?.subsampling?.factor || 4}x
                     </Typography>
                     <Slider
-                      value={draftSettings?.binary?.throttle_ms || 100}
-                      onChange={(_, value) => handleDraftChange('binary.throttle_ms', value)}
-                      min={50}
-                      max={1000}
-                      step={50}
+                      value={draftSettings.binary?.subsampling?.factor || 4}
+                      onChange={(_, value) => setDraftSettings(prev => ({
+                        ...prev,
+                        binary: {
+                          ...prev.binary,
+                          subsampling: { ...prev.binary?.subsampling, factor: value }
+                        }
+                      }))}
+                      min={1}
+                      max={8}
+                      step={1}
+                      marks
                       valueLabelDisplay="auto"
                       size="small"
                     />
                   </Box>
-                  
-                  {/* Bit Depth */}
-                  <FormControl fullWidth size="small" sx={{ mb: 1 }}>
-                    <InputLabel>Bit Depth</InputLabel>
-                    <Select
-                      value={draftSettings?.binary?.bitdepth_in || 12}
-                      label="Bit Depth"
-                      onChange={(e) => handleDraftChange('binary.bitdepth_in', parseInt(e.target.value))}
-                    >
-                      <MenuItem value={8}>8-bit</MenuItem>
-                      <MenuItem value={12}>12-bit</MenuItem>
-                      <MenuItem value={16}>16-bit</MenuItem>
-                    </Select>
-                  </FormControl>
-                  
-                  {/* Pixel Format */}
-                  <FormControl fullWidth size="small" sx={{ mb: 1 }}>
-                    <InputLabel>Pixel Format</InputLabel>
-                    <Select
-                      value={draftSettings?.binary?.pixfmt || 'GRAY16'}
-                      label="Pixel Format"
-                      onChange={(e) => handleDraftChange('binary.pixfmt', e.target.value)}
-                    >
-                      <MenuItem value="GRAY8">GRAY8</MenuItem>
-                      <MenuItem value="GRAY16">GRAY16</MenuItem>
-                      <MenuItem value="RGB24">RGB24</MenuItem>
-                    </Select>
-                  </FormControl>
+
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 1 }}>
+                      Throttle: {draftSettings.binary?.throttle_ms || 100}ms
+                    </Typography>
+                    <Slider
+                      value={draftSettings.binary?.throttle_ms || 100}
+                      onChange={(_, value) => setDraftSettings(prev => ({
+                        ...prev,
+                        binary: { ...prev.binary, throttle_ms: value }
+                      }))}
+                      min={16}
+                      max={1000}
+                      step={16}
+                      valueLabelDisplay="auto"
+                      size="small"
+                    />
+                  </Box>
                 </Box>
               )}
-              
-              {/* Submit/Reset Buttons */}
-              <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+
+              {/* Submit Button */}
+              <Box sx={{ display: 'flex', gap: 1, mt: 3 }}>
                 <Button
                   variant="contained"
-                  size="small"
-                  startIcon={isSubmitting ? <CircularProgress size={16} /> : <SaveIcon />}
+                  startIcon={<SaveIcon />}
                   onClick={handleSubmitSettings}
+                  disabled={isSubmitting}
+                  size="small"
                   sx={{ flex: 1 }}
                 >
-                  {isSubmitting ? 'Submitting...' : 'Submit'}
+                  {isSubmitting ? <CircularProgress size={16} /> : 'Submit'}
                 </Button>
                 <Button
                   variant="outlined"
-                  size="small"
                   startIcon={<RefreshIcon />}
                   onClick={handleResetSettings}
-                  sx={{ flex: 1 }}
+                  size="small"
                 >
                   Reset
                 </Button>
               </Box>
-              
+
               {/* Status Messages */}
               {submitError && (
-                <Alert severity="error" sx={{ mb: 1, fontSize: '0.75rem' }}>
+                <Alert severity="error" sx={{ mt: 1 }} onClose={() => setSubmitError(null)}>
                   {submitError}
                 </Alert>
               )}
+              
               {submitSuccess && (
-                <Alert severity="success" sx={{ mb: 1, fontSize: '0.75rem' }}>
+                <Alert severity="success" sx={{ mt: 1 }} onClose={() => setSubmitSuccess(false)}>
                   Settings submitted successfully!
                 </Alert>
               )}
@@ -574,13 +443,19 @@ const StreamControlOverlay = ({ hostIP, hostPort, stats, featureSupport, isWebGL
 
           {/* Info Tab */}
           {activeTab === 2 && (
-            <Box sx={{ p: 2, pt: 1 }}>
+            <Box sx={{ p: 2 }}>
               {/* Stream Performance Info */}
               <Box sx={{ mb: 2 }}>
                 <Typography variant="body2" sx={{ mb: 1, fontWeight: 'medium' }}>
                   Performance
                 </Typography>
-                <Box sx={{ p: 1, backgroundColor: 'rgba(0,0,0,0.05)', borderRadius: 1 }}>
+                <Box sx={{ 
+                  p: 1, 
+                  backgroundColor: theme.palette.mode === 'dark' 
+                    ? 'rgba(255,255,255,0.05)' 
+                    : 'rgba(0,0,0,0.05)', 
+                  borderRadius: 1 
+                }}>
                   <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
                     {isWebGL ? 'WebGL2' : 'Canvas2D'} | {featureSupport?.lz4 ? 'LZ4' : 'No LZ4'}
                   </Typography>
@@ -595,7 +470,13 @@ const StreamControlOverlay = ({ hostIP, hostPort, stats, featureSupport, isWebGL
                 <Typography variant="body2" sx={{ mb: 1, fontWeight: 'medium' }}>
                   Image
                 </Typography>
-                <Box sx={{ p: 1, backgroundColor: 'rgba(0,0,0,0.05)', borderRadius: 1 }}>
+                <Box sx={{ 
+                  p: 1, 
+                  backgroundColor: theme.palette.mode === 'dark' 
+                    ? 'rgba(255,255,255,0.05)' 
+                    : 'rgba(0,0,0,0.05)', 
+                  borderRadius: 1 
+                }}>
                   <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
                     Resolution: {imageSize?.width || 0}x{imageSize?.height || 0}
                   </Typography>
@@ -613,7 +494,13 @@ const StreamControlOverlay = ({ hostIP, hostPort, stats, featureSupport, isWebGL
                 <Typography variant="body2" sx={{ mb: 1, fontWeight: 'medium' }}>
                   Backend
                 </Typography>
-                <Box sx={{ p: 1, backgroundColor: 'rgba(0,0,0,0.05)', borderRadius: 1 }}>
+                <Box sx={{ 
+                  p: 1, 
+                  backgroundColor: theme.palette.mode === 'dark' 
+                    ? 'rgba(255,255,255,0.05)' 
+                    : 'rgba(0,0,0,0.05)', 
+                  borderRadius: 1 
+                }}>
                   <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
                     Host: {hostIP}:{hostPort}
                   </Typography>
@@ -621,14 +508,18 @@ const StreamControlOverlay = ({ hostIP, hostPort, stats, featureSupport, isWebGL
                     Legacy: {liveStreamState.isLegacyBackend ? 'Yes' : 'No'}
                   </Typography>
                   <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
-                    Binary Support: {liveStreamState.backendCapabilities.binaryStreaming ? 'Yes' : 'No'}
+                    Binary Support: {liveStreamState.backendCapabilities?.binaryStreaming ? 'Yes' : 'No'}
                   </Typography>
                 </Box>
               </Box>
 
               {/* Stream Info */}
               {streamSettings && (
-                <Box sx={{ mt: 2, pt: 1, borderTop: '1px solid rgba(0,0,0,0.1)' }}>
+                <Box sx={{ 
+                  mt: 2, 
+                  pt: 1, 
+                  borderTop: `1px solid ${theme.palette.divider}` 
+                }}>
                   <Typography variant="caption" color="textSecondary">
                     Quality: {streamSettings.quality || 'N/A'} | 
                     FPS: {streamSettings.fps || 'N/A'}
