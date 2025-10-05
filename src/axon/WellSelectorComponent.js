@@ -76,6 +76,12 @@ const WellSelectorComponent = () => {
   };
 
   //##################################################################################
+  const handleResetHistory = () => {
+    //call child method to reset position history
+    childRef.current.resetHistory();
+  };
+
+  //##################################################################################
   const handleOverlapWidthSpinnerChange = (event) => {
     // Update the spinner value
     const value = parseFloat(event.target.value, 10);
@@ -230,6 +236,14 @@ const WellSelectorComponent = () => {
 
         <Button variant="contained" onClick={() => handleResetView()}>
           reset view
+        </Button>
+
+        <Button 
+          variant="contained" 
+          onClick={() => handleResetHistory()}
+          style={{ marginLeft: "10px" }}
+        >
+          reset history
         </Button>
 
         <label style={{ fontSize: "14px" }}>

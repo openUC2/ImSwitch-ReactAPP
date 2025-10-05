@@ -1,4 +1,5 @@
 
+import React, { useState, useCallback } from "react";
 import LiveViewComponent from "./LiveViewComponent";
 import LiveViewerGL from "../components/LiveViewerGL";
 import PositionControllerComponent from "./PositionControllerComponent";
@@ -11,6 +12,15 @@ import * as liveStreamSlice from "../state/slices/LiveStreamSlice.js";
 const LiveViewControlWrapper = ({ useFastMode = true, hostIP, hostPort }) => {
   const objectiveState = useSelector(objectiveSlice.getObjectiveState);
   const liveStreamState = useSelector(liveStreamSlice.getLiveStreamState);
+  
+  // State for HUD data from LiveViewerGL
+  const [hudData, setHudData] = useState({
+    stats: { fps: 0, bps: 0 },
+    featureSupport: { webgl2: false, lz4: false },
+    isWebGL: false,
+    imageSize: { width: 0, height: 0 },
+    viewTransform: { scale: 1, translateX: 0, translateY: 0 }
+  });
   
   // Determine if we should use WebGL based on backend capabilities
   const useWebGL = liveStreamState.backendCapabilities.webglSupported && !liveStreamState.isLegacyBackend;
@@ -57,6 +67,27 @@ const LiveViewControlWrapper = ({ useFastMode = true, hostIP, hostPort }) => {
     }
   };
 
+  // Handle HUD data updates from LiveViewerGL
+  const handleHudDataUpdate = useCallback((data) => {
+    setHudData(prevData => {
+      // Only update if data has actually changed to prevent unnecessary re-renders
+      if (!prevData) return data;
+      
+      const hasChanged = 
+        prevData.stats?.fps !== data.stats?.fps ||
+        prevData.stats?.bps !== data.stats?.bps ||
+        prevData.imageSize?.width !== data.imageSize?.width ||
+        prevData.imageSize?.height !== data.imageSize?.height ||
+        prevData.viewTransform?.scale !== data.viewTransform?.scale ||
+        prevData.viewTransform?.translateX !== data.viewTransform?.translateX ||
+        prevData.viewTransform?.translateY !== data.viewTransform?.translateY ||
+        prevData.isWebGL !== data.isWebGL ||
+        JSON.stringify(prevData.featureSupport) !== JSON.stringify(data.featureSupport);
+      
+      return hasChanged ? data : prevData;
+    });
+  }, []);
+
   return ( 
     <div style={{ 
       position: "relative", 
@@ -82,6 +113,7 @@ const LiveViewControlWrapper = ({ useFastMode = true, hostIP, hostPort }) => {
               // Optional: handle image load events
               //console.log(`Image loaded: ${width}x${height}`);
             }}
+            onHudDataUpdate={handleHudDataUpdate}
           />
         ) : (
           <LiveViewComponent 
@@ -92,7 +124,15 @@ const LiveViewControlWrapper = ({ useFastMode = true, hostIP, hostPort }) => {
         
         {/* Stream Control Overlay - only show if hostIP and hostPort are available */}
         {hostIP && hostPort && (
-          <StreamControlOverlay hostIP={hostIP} hostPort={hostPort} />
+          <StreamControlOverlay 
+            hostIP={hostIP} 
+            hostPort={hostPort}
+            stats={hudData.stats}
+            featureSupport={hudData.featureSupport}
+            isWebGL={hudData.isWebGL}
+            imageSize={hudData.imageSize}
+            viewTransform={hudData.viewTransform}
+          />
         )}
         </div>
         <div style={{ position: "absolute", bottom: "10px", left: "0px", zIndex: 2, opacity: 0.8 }}>

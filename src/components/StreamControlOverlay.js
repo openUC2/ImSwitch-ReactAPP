@@ -18,7 +18,8 @@ import {
   Switch,
   FormControlLabel,
   Alert,
-  CircularProgress
+  CircularProgress,
+  useTheme
 } from '@mui/material';
 import {
   ExpandMore as ExpandMoreIcon,
@@ -26,17 +27,19 @@ import {
   AutoMode as AutoModeIcon,
   Settings as SettingsIcon,
   Save as SaveIcon,
-  Refresh as RefreshIcon
+  Refresh as RefreshIcon,
+  Info as InfoIcon
 } from '@mui/icons-material';
 import { useSelector, useDispatch } from 'react-redux';
 import { setMinVal, setMaxVal, setGamma, getLiveStreamState, setStreamSettings, setImageFormat } from '../state/slices/LiveStreamSlice.js';
 import apiSettingsControllerSetStreamParams from '../backendapi/apiSettingsControllerSetStreamParams';
 
-const StreamControlOverlay = ({ hostIP, hostPort }) => {
+const StreamControlOverlay = ({ hostIP, hostPort, stats, featureSupport, isWebGL, imageSize, viewTransform }) => {
+  const theme = useTheme();
   const dispatch = useDispatch();
   const liveStreamState = useSelector(getLiveStreamState);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [activeTab, setActiveTab] = useState(0); // 0 = Controls, 1 = Settings
+  const [activeTab, setActiveTab] = useState(0); // 0 = Controls, 1 = Settings, 2 = Info
   
   // Draft mode for settings
   const [draftSettings, setDraftSettings] = useState({});
@@ -113,8 +116,7 @@ const StreamControlOverlay = ({ hostIP, hostPort }) => {
       } else {
         // JPEG streaming - set compression to "jpeg"
         await apiSettingsControllerSetStreamParams({
-          compression: "jpeg",
-          quality: draftSettings.jpeg?.quality || 85
+          compression: { algorithm: 'jpeg', level: 0 }
         });
       }
       
@@ -152,7 +154,7 @@ const StreamControlOverlay = ({ hostIP, hostPort }) => {
   }, [streamSettings]);
 
   // Determine format and range based on imageFormat
-  const isJpeg = imageFormat === 'JPEG';
+  const isJpeg = imageFormat === 'jpeg';
   const formatLabel = isJpeg ? 'JPEG' : 'BINARY';
   const maxRange = isJpeg ? 255 : 32768;
   const rangeLabel = `0–${maxRange}`;
@@ -173,25 +175,34 @@ const StreamControlOverlay = ({ hostIP, hostPort }) => {
       elevation={3}
       sx={{
         position: 'absolute',
-        bottom: 16,
-        left: 16,
-        minWidth: isExpanded ? 320 : 60,
-        maxWidth: isExpanded ? 400 : 60,
+        top: 16,
+        right: 16,
+        width: isExpanded ? 400 : 60,
         height: isExpanded ? 'auto' : 60,
+        maxHeight: isExpanded ? '85vh' : 60,
+        backgroundColor: theme.palette.background.paper,
+        color: theme.palette.text.primary,
+        border: `1px solid ${theme.palette.divider}`,
+        borderRadius: 2,
         zIndex: 1000,
-        backgroundColor: isExpanded ? 'rgba(255, 255, 255, 0.7)' : 'rgba(255, 255, 255, 0.9)',
-        backdropFilter: 'blur(4px)',
         transition: 'all 0.3s ease-in-out',
-        cursor: isExpanded ? 'default' : 'pointer'
+        cursor: isExpanded ? 'default' : 'pointer',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column'
       }}
       onClick={!isExpanded ? () => setIsExpanded(true) : undefined}
     >
       {/* Header with Status Information */}
-      <Box sx={{ p: isExpanded ? 2 : 1.5, pb: isExpanded ? 1 : 1.5 }}>
+      <Box sx={{ 
+        p: isExpanded ? 2 : 1.5, 
+        pb: isExpanded ? 1 : 1.5,
+        flexShrink: 0 // Prevent header from shrinking
+      }}>
         {!isExpanded ? (
-          // Collapsed state - only show gear icon
+          // Collapsed state - only show info icon
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-            <SettingsIcon sx={{ fontSize: 28, color: 'primary.main' }} />
+            <InfoIcon sx={{ fontSize: 28, color: 'secondary.contrastText' }} />
           </Box>
         ) : (
           // Expanded state - full header
@@ -231,7 +242,14 @@ const StreamControlOverlay = ({ hostIP, hostPort }) => {
             
             {/* Binary Stream Info */}
             {!isJpeg && draftSettings?.binary && (
-              <Box sx={{ mt: 1, p: 1, backgroundColor: 'rgba(0,0,0,0.05)', borderRadius: 1 }}>
+              <Box sx={{ 
+                mt: 1, 
+                p: 1, 
+                backgroundColor: theme.palette.mode === 'dark' 
+                  ? 'rgba(255,255,255,0.05)' 
+                  : 'rgba(0,0,0,0.05)', 
+                borderRadius: 1 
+              }}>
                 <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
                   {draftSettings.binary.compression?.algorithm?.toUpperCase() || 'LZ4'} • 
                   Level {draftSettings.binary.compression?.level || 0} • 
@@ -248,24 +266,57 @@ const StreamControlOverlay = ({ hostIP, hostPort }) => {
       </Box>
 
       {/* Expandable Controls */}
-      <Collapse in={isExpanded}>
-        <Divider />
+      <Collapse in={isExpanded} sx={{ 
+        overflow: 'hidden', 
+        flexGrow: 1, 
+        display: 'flex', 
+        flexDirection: 'column',
+        minHeight: 0 // Important for proper flex behavior
+      }}>
+        <Divider sx={{ flexShrink: 0 }} />
         
         {/* Tabs */}
         <Tabs 
           value={activeTab} 
           onChange={(_, newValue) => setActiveTab(newValue)}
           variant="fullWidth"
-          sx={{ borderBottom: 1, borderColor: 'divider' }}
+          sx={{ 
+            borderBottom: 1, 
+            borderColor: 'divider',
+            flexShrink: 0
+          }}
         >
           <Tab label="Controls" />
           <Tab label="Settings" />
+          <Tab label="Info" />
         </Tabs>
         
-        <Box sx={{ p: 2, pt: 1 }}>
+        {/* Scrollable Content Area */}
+        <Box sx={{ 
+          flex: 1,
+          minHeight: 0,
+          overflow: 'auto',
+          '&::-webkit-scrollbar': {
+            width: 6,
+          },
+          '&::-webkit-scrollbar-track': {
+            backgroundColor: 'transparent',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: theme.palette.mode === 'dark' 
+              ? 'rgba(255,255,255,0.3)' 
+              : 'rgba(0,0,0,0.3)',
+            borderRadius: 3,
+          },
+          '&::-webkit-scrollbar-thumb:hover': {
+            backgroundColor: theme.palette.mode === 'dark' 
+              ? 'rgba(255,255,255,0.5)' 
+              : 'rgba(0,0,0,0.5)',
+          },
+        }}>
           {/* Controls Tab */}
           {activeTab === 0 && (
-            <>
+            <Box sx={{ p: 2, pt: 1 }}>
               {/* Window/Level Controls */}
               <Box sx={{ mb: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
@@ -331,11 +382,12 @@ const StreamControlOverlay = ({ hostIP, hostPort }) => {
                   size="small"
                 />
               </Box>
-            </>
+            </Box>
           )}
-          
+
           {/* Settings Tab */}
           {activeTab === 1 && (
+            <Box sx={{ p: 2, pt: 1 }}>
             <>
               {/* Stream Format Selection */}
               <Box sx={{ mb: 2 }}>
@@ -517,16 +569,72 @@ const StreamControlOverlay = ({ hostIP, hostPort }) => {
                   Settings submitted successfully!
                 </Alert>
               )}
-            </>
+            </Box>
           )}
 
-          {/* Stream Info */}
-          {streamSettings && (
-            <Box sx={{ mt: 2, pt: 1, borderTop: '1px solid rgba(0,0,0,0.1)' }}>
-              <Typography variant="caption" color="textSecondary">
-                Quality: {streamSettings.quality || 'N/A'} | 
-                FPS: {streamSettings.fps || 'N/A'}
-              </Typography>
+          {/* Info Tab */}
+          {activeTab === 2 && (
+            <Box sx={{ p: 2, pt: 1 }}>
+              {/* Stream Performance Info */}
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body2" sx={{ mb: 1, fontWeight: 'medium' }}>
+                  Performance
+                </Typography>
+                <Box sx={{ p: 1, backgroundColor: 'rgba(0,0,0,0.05)', borderRadius: 1 }}>
+                  <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
+                    {isWebGL ? 'WebGL2' : 'Canvas2D'} | {featureSupport?.lz4 ? 'LZ4' : 'No LZ4'}
+                  </Typography>
+                  <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
+                    FPS: {stats?.fps || 0} | {((stats?.bps || 0) / 1000000).toFixed(1)} Mbps
+                  </Typography>
+                </Box>
+              </Box>
+              
+              {/* Image Info */}
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body2" sx={{ mb: 1, fontWeight: 'medium' }}>
+                  Image
+                </Typography>
+                <Box sx={{ p: 1, backgroundColor: 'rgba(0,0,0,0.05)', borderRadius: 1 }}>
+                  <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
+                    Resolution: {imageSize?.width || 0}x{imageSize?.height || 0}
+                  </Typography>
+                  <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
+                    Zoom: {(viewTransform?.scale || 1).toFixed(2)}x
+                  </Typography>
+                  <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
+                    Pan: X={((viewTransform?.translateX || 0)).toFixed(0)}, Y={((viewTransform?.translateY || 0)).toFixed(0)}
+                  </Typography>
+                </Box>
+              </Box>
+              
+              {/* Backend Info */}
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body2" sx={{ mb: 1, fontWeight: 'medium' }}>
+                  Backend
+                </Typography>
+                <Box sx={{ p: 1, backgroundColor: 'rgba(0,0,0,0.05)', borderRadius: 1 }}>
+                  <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
+                    Host: {hostIP}:{hostPort}
+                  </Typography>
+                  <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
+                    Legacy: {liveStreamState.isLegacyBackend ? 'Yes' : 'No'}
+                  </Typography>
+                  <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
+                    Binary Support: {liveStreamState.backendCapabilities.binaryStreaming ? 'Yes' : 'No'}
+                  </Typography>
+                </Box>
+              </Box>
+
+              {/* Stream Info */}
+              {streamSettings && (
+                <Box sx={{ mt: 2, pt: 1, borderTop: '1px solid rgba(0,0,0,0.1)' }}>
+                  <Typography variant="caption" color="textSecondary">
+                    Quality: {streamSettings.quality || 'N/A'} | 
+                    FPS: {streamSettings.fps || 'N/A'}
+                  </Typography>
+                </Box>
+              )}
             </Box>
           )}
         </Box>
