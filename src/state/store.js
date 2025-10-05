@@ -34,6 +34,7 @@ import stormReducer from "./slices/STORMSlice";
 import focusLockReducer from "./slices/FocusLockSlice";
 import wifiReducer from "./slices/WiFiSlice";
 import demoReducer from "./slices/DemoSlice";
+import mazeGameReducer from "./slices/MazeGameSlice";
 import themeReducer from "./slices/ThemeSlice";
 import notificationReducer from "./slices/NotificationSlice";
 
@@ -67,6 +68,7 @@ const rootReducer = combineReducers({
   focusLockState: focusLockReducer,
   wifiState: wifiReducer,
   demoState: demoReducer,
+  mazeGameState: mazeGameReducer,
   themeState: themeReducer,
   notification: notificationReducer,
 });
