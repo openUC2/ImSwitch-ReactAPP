@@ -33,7 +33,7 @@ ChartJS.register(
  * 
  * @param {boolean} useFastMode - Use optimized processing for better performance (default: true)
  */
-const LiveViewComponent = ({ useFastMode = true }) => {
+const LiveViewComponent = ({ useFastMode = true, onDoubleClick }) => {
     // redux dispatcher
     const dispatch = useDispatch();
 
@@ -284,10 +284,9 @@ const LiveViewComponent = ({ useFastMode = true }) => {
     // Handle double-click to move to position
     const handleCanvasDoubleClick = useCallback((event) => {
       const canvas = canvasRef.current;
-      const adaptivePixelSize = getAdaptivePixelSize();
       
-      if (!canvas || !adaptivePixelSize) {
-        console.warn('Canvas or field of view (fovX) not available for position calculation');
+      if (!canvas) {
+        console.warn('Canvas not available for position calculation');
         return;
       }
 
@@ -298,6 +297,20 @@ const LiveViewComponent = ({ useFastMode = true }) => {
       
       const clickX = (event.clientX - rect.left) * scaleX;
       const clickY = (event.clientY - rect.top) * scaleY;
+
+      // If external handler is provided, use it with image dimensions
+      if (onDoubleClick) {
+        onDoubleClick(clickX, clickY, canvas.width, canvas.height);
+        return;
+      }
+
+      // Fallback to original logic if no external handler
+      const adaptivePixelSize = getAdaptivePixelSize();
+      
+      if (!adaptivePixelSize) {
+        console.warn('Field of view (fovX) not available for position calculation');
+        return;
+      }
 
       // Convert pixel coordinates to real-world coordinates
       // Center of image is (0,0) in real coordinates
@@ -314,7 +327,7 @@ const LiveViewComponent = ({ useFastMode = true }) => {
       // Move to the calculated position
       // Note: Y direction might need to be inverted depending on stage orientation
       moveToPosition(-realX, -realY); // Inverting Y as microscope Y often goes opposite to image Y
-    }, [getAdaptivePixelSize, moveToPosition, objectiveState.fovX]);
+    }, [onDoubleClick, getAdaptivePixelSize, moveToPosition, objectiveState.fovX]);
 
     // Calculate scale bar dimensions - using adaptive pixel size
     const scaleBarPx = 50;

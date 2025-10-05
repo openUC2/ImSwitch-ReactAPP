@@ -25,7 +25,6 @@ import XYZControls from "./XYZControls";
 import AutofocusController from "./AutofocusController";
 import DetectorParameters from "./DetectorParameters";
 import StreamControls from "./StreamControls";
-import StreamSettings from "./StreamSettings";
 import IlluminationController from "./IlluminationController";
 import { useWebSocket } from "../context/WebSocketContext";
 import ObjectiveSwitcher from "./ObjectiveSwitcher";
@@ -78,9 +77,18 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
   const [isRecording, setIsRecording] = useState(false);
   const [histogramActive, setHistogramActive] = useState(false);
   const [lastSnapPath, setLastSnapPath] = useState("");
+  // Save format state for recording and snap
+  const [saveFormat, setSaveFormat] = useState(4); // Default: MP4
+  const saveFormatOptions = [
+    { value: 1, label: 'TIFF' },
+    { value: 2, label: 'HDF5' },
+    { value: 3, label: 'ZARR' },
+    { value: 4, label: 'MP4' },
+    { value: 5, label: 'PNG' },
+    { value: 6, label: 'JPG' },
+  ];
   
   // Stream settings panel state
-  const [showStreamSettings, setShowStreamSettings] = useState(false);
   const [showWindowLevel, setShowWindowLevel] = useState(true);
 
   // Stage control tabs state
@@ -228,7 +236,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
   async function snap() {
     // English comment: Example fetch for snapping an image
     const response = await fetch(
-      `${hostIP}:${hostPort}/RecordingController/snapImageToPath?fileName=openUC2_snapshot`
+      `${hostIP}:${hostPort}/RecordingController/snapImageToPath?fileName=openUC2_snapshot&mSaveFormat=${saveFormat}`
     );
     const data = await response.json();
     // data.relativePath might be "recordings/2025_05_20-11-12-44_PM"
@@ -242,7 +250,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
   const startRec = async () => {
     setIsRecording(true);
     fetch(
-      `${hostIP}:${hostPort}/RecordingController/startRecording?mSaveFormat=4`
+      `${hostIP}:${hostPort}/RecordingController/startRecording?mSaveFormat=${saveFormat}`
     ).catch(() => {});
   };
   const stopRec = async () => {
@@ -328,8 +336,22 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
         flexDirection: "column", 
         boxSizing: "border-box" 
       }}>
-        {/* Snap controls with editable file name */}
+        {/* Snap controls with editable file name and save format dropdown */}
         <Box sx={{ display: "flex", gap: 1, mb: 2, alignItems: "center" }}>
+          <FormControl size="small" sx={{ minWidth: 120 }}>
+            <InputLabel id="save-format-label">Save Format</InputLabel>
+            <Select
+              labelId="save-format-label"
+              id="save-format-select"
+              value={saveFormat}
+              label="Save Format"
+              onChange={(e) => setSaveFormat(e.target.value)}
+            >
+              {saveFormatOptions.map((opt) => (
+                <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
           {/* Keep StreamControls for other controls */}
           <StreamControls
             isStreamRunning={isStreamRunning}
@@ -374,7 +396,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
           mb: 2,
           position: "relative"
         }}>
-          <LiveViewControlWrapper/>
+          <LiveViewControlWrapper hostIP={hostIP} hostPort={hostPort} />
         </Box>
 
         {/* Controls Panel - Scrollable */}
@@ -384,104 +406,9 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
           p: 2,
           maxHeight: "calc(40vh)"
         }}>
-          {/* Window/Level Controls Toggle */}
+          {/* Note: Window/Level Controls moved to StreamControlOverlay */}
           <Box sx={{ mb: 2 }}>
-            <Button
-              variant="outlined"
-              onClick={() => setShowWindowLevel(!showWindowLevel)}
-              sx={{ mb: 1 }}
-            >
-              Window/Level Controls
-            </Button>
-          
-          <Collapse in={showWindowLevel}>
-            <Paper sx={{ p: 2, maxHeight: '30vh', overflow: 'auto' }}>
-              {/* Min/Max sliders */}
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" gutterBottom>
-                  Manual Window/Level Control: {liveStreamState.minVal} - {liveStreamState.maxVal} 
-                  {liveStreamState.imageFormat && <span style={{fontStyle: 'italic', color: '#666', fontSize: '0.8em'}}> ({liveStreamState.imageFormat})</span>}
-                </Typography>
-                <Slider
-                  value={[liveStreamState.minVal, liveStreamState.maxVal]}
-                  onChange={(_, value) => {
-                    dispatch(liveStreamSlice.setMinVal(value[0]));
-                    dispatch(liveStreamSlice.setMaxVal(value[1]));
-                  }}
-                  valueLabelDisplay="auto"
-                  min={0}
-                  max={(() => {
-                    // Dynamic range based on backend capabilities and format
-                    if (liveStreamState.imageFormat === "jpeg") {
-                      return 255; // 8-bit JPEG
-                    } else if (liveStreamState.backendCapabilities.binaryStreaming) {
-                      return 32768; // 16-bit binary streaming (common range)
-                    } else {
-                      return 65535; // Full 16-bit fallback
-                    }
-                  })()}
-                  step={1}
-                  sx={{ mb: 1 }}
-                />
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                  <Typography variant="caption" color="textSecondary">
-                    Auto-windowing disabled - Full manual control
-                  </Typography>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    onClick={() => {
-                      // Request histogram data to compute auto contrast
-                      // This will trigger a one-time min/max calculation
-                      fetch(`${hostIP}:${hostPort}/HistogrammController/minmaxvalues`)
-                        .then(r => r.json())
-                        .then(d => {
-                          if (d.minVal !== undefined && d.maxVal !== undefined) {
-                            dispatch(liveStreamSlice.setMinVal(d.minVal));
-                            dispatch(liveStreamSlice.setMaxVal(d.maxVal));
-                          }
-                        })
-                        .catch(err => console.warn('Auto contrast failed:', err));
-                    }}
-                    sx={{ fontSize: '0.7em', minWidth: 'auto', px: 1 }}
-                  >
-                    Auto Contrast
-                  </Button>
-                </Box>
-              </Box>
-              
-              {/* Gamma slider */}
-              <Box>
-                <Typography variant="body2" gutterBottom>
-                  Gamma: {liveStreamState.gamma?.toFixed(2) || 1.0}
-                </Typography>
-                <Slider
-                  value={liveStreamState.gamma || 1.0}
-                  onChange={(_, value) => dispatch(liveStreamSlice.setGamma(value))}
-                  valueLabelDisplay="auto"
-                  min={0.1}
-                  max={3.0}
-                  step={0.1}
-                />
-              </Box>
-            </Paper>
-          </Collapse>
-        </Box>        {/* Stream Settings Toggle */}
-        <Box sx={{ mb: 2 }}>
-          <Button
-            variant="outlined"
-            startIcon={<SettingsIcon />}
-            onClick={() => setShowStreamSettings(!showStreamSettings)}
-            sx={{ mb: 1 }}
-          >
-            Stream Settings
-          </Button>
-          
-          <Collapse in={showStreamSettings}>
-            <Box sx={{ maxHeight: '50vh', overflow: 'auto' }}>
-              <StreamSettings />
-            </Box>
-          </Collapse>
+
           </Box>
         </Box>
       </Box>

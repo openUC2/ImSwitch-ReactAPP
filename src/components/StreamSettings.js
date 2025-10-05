@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   Paper,
   Typography,
@@ -12,172 +12,227 @@ import {
   FormControlLabel,
   Box,
   Alert,
-  Divider
+  Divider,
+  Button
 } from '@mui/material';
 import apiSettingsControllerGetStreamParams from '../backendapi/apiSettingsControllerGetStreamParams';
 import apiSettingsControllerSetStreamParams from '../backendapi/apiSettingsControllerSetStreamParams';
+import apiSettingsControllerSetJpegQuality from '../backendapi/apiSettingsControllerSetJpegQuality';
 import * as liveStreamSlice from '../state/slices/LiveStreamSlice.js';
 
 /**
  * Stream Settings Panel - Runtime configuration for binary streaming
  * GET/POST /api/settings/getStreamParams and /api/settings/setStreamParams
  */
-const StreamSettings = () => {
+const StreamSettings = ({ onOpen }) => {
   const dispatch = useDispatch();
+  const liveStreamState = useSelector(liveStreamSlice.getLiveStreamState);
   
-  const [settings, setSettings] = useState({
-    binary: {
-      enabled: true,
-      compression: {
-        algorithm: 'lz4',
-        level: 0
-      },
-      subsampling: {
-        factor: 1,
-        auto_max_dim: 0
-      },
-      throttle_ms: 50,
-      bitdepth_in: 12,
-      pixfmt: 'GRAY16'
-    },
-    jpeg: {
-      enabled: false
-    }
-  });
-  
+  // Use persistent settings from Redux, with local draft for editing
+  const [draftSettings, setDraftSettings] = useState(liveStreamState.streamSettings);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [updatePending, setUpdatePending] = useState(false);
-  const [isLegacyBackend, setIsLegacyBackend] = useState(false);
+  const [isLegacyBackend, setIsLegacyBackend] = useState(liveStreamState.isLegacyBackend);
+  
+  // Auto-retry timeout errors
+  const [retryCount, setRetryCount] = useState(0);
+  const maxRetries = 3;
 
-  // Debounced update function
-  const debouncedUpdate = useCallback(
-    debounce(async (newSettings) => {
-      try {
-        setUpdatePending(true);
-        setError(null);
-        
-        // Only try to update binary settings if not in legacy mode
-        if (!isLegacyBackend && newSettings.binary.enabled) {
-          await apiSettingsControllerSetStreamParams({
-            throttle_ms: newSettings.binary.throttle_ms,
-            compression: newSettings.binary.compression,
-            subsampling: newSettings.binary.subsampling
-          });
-        }
-        
-        console.log('Stream settings updated successfully');
-      } catch (err) {
-        console.warn('Binary streaming API failed, detecting legacy backend:', err.message);
-        
-        // Detect legacy backend by API failure
-        if (!isLegacyBackend && (err.message.includes('404') || err.message.includes('Not Found') || err.message.includes('setStreamParams'))) {
-          console.log('Legacy backend detected - switching to JPEG streaming');
-          setIsLegacyBackend(true);
-          
-          // Dispatch to Redux for global state
-          dispatch(liveStreamSlice.setIsLegacyBackend(true));
-          
-          // Automatically switch to JPEG streaming
-          const legacySettings = {
-            ...newSettings,
-            binary: { ...newSettings.binary, enabled: false },
-            jpeg: { ...newSettings.jpeg, enabled: true }
-          };
-          setSettings(legacySettings);
-          
-          setError('Legacy backend detected - automatically switched to JPEG streaming');
-          return;
-        }
-        
-        setError(`Failed to update settings: ${err.message}`);
-      } finally {
-        setUpdatePending(false);
+  // Submit settings to backend and update Redux
+  const handleSubmit = useCallback(async () => {
+    try {
+      setUpdatePending(true);
+      setError(null);
+      
+      // Only try to update binary settings if not in legacy mode and binary is enabled
+      if (!isLegacyBackend && draftSettings.binary.enabled) {
+        await apiSettingsControllerSetStreamParams({
+          throttle_ms: draftSettings.binary.throttle_ms,
+          compression: draftSettings.binary.compression,
+          subsampling: draftSettings.binary.subsampling
+        });
       }
-    }, 300),
-    [isLegacyBackend, dispatch]
-  );
+      
+      // Update JPEG quality if JPEG is enabled
+      if (draftSettings.jpeg.enabled && draftSettings.jpeg.quality !== undefined) {
+        try {
+          await apiSettingsControllerSetJpegQuality(draftSettings.jpeg.quality);
+        } catch (err) {
+          console.warn('Failed to set JPEG quality:', err.message);
+        }
+      }
+      
+      // Update Redux with persistent settings
+      dispatch(liveStreamSlice.setStreamSettings(draftSettings));
+      
+      // Update format in Redux
+      const currentFormat = draftSettings.binary.enabled ? 'binary' : 'jpeg';
+      dispatch(liveStreamSlice.setImageFormat(currentFormat));
+      
+      setHasUnsavedChanges(false);
+      console.log('Stream settings submitted successfully');
+    } catch (err) {
+      setError(`Failed to submit settings: ${err.message}`);
+    } finally {
+      setUpdatePending(false);
+    }
+  }, [draftSettings, isLegacyBackend, dispatch]);
+  
+  // Reset to defaults
+  const handleReset = useCallback(() => {
+    const defaultSettings = {
+      current_compression_algorithm: "binary",
+      binary: {
+        enabled: true,
+        compression: { algorithm: "lz4", level: 0 },
+        subsampling: { factor: 4 },
+        throttle_ms: 100,
+        bitdepth_in: 12,
+        pixfmt: "GRAY16"
+      },
+      jpeg: {
+        enabled: false,
+        quality: 85
+      }
+    };
+    setDraftSettings(defaultSettings);
+    setHasUnsavedChanges(true);
+  }, []);
+  
+  // Load settings from backend with auto-retry
+  const loadSettings = useCallback(async (isRetry = false) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Try to load binary streaming settings
+      const params = await apiSettingsControllerGetStreamParams();
+      
+      // Merge with Redux settings for persistence
+      const mergedSettings = {
+        ...liveStreamState.streamSettings,
+        ...params
+      };
+      
+      setDraftSettings(mergedSettings);
+      dispatch(liveStreamSlice.setStreamSettings(mergedSettings));
+      
+      console.log('Stream settings loaded successfully');
+      
+      // Reset retry count on success
+      setRetryCount(0);
+      
+      // Dispatch backend capabilities
+      dispatch(liveStreamSlice.setIsLegacyBackend(false));
+      dispatch(liveStreamSlice.setBackendCapabilities({
+        binaryStreaming: true,
+        webglSupported: true
+      }));
+      
+    } catch (err) {
+      console.warn('Failed to load stream settings:', err.message);
+      
+      // Handle timeout with auto-retry
+      if (err.message.includes('timeout') && retryCount < maxRetries && !isRetry) {
+        setRetryCount(prev => prev + 1);
+        setTimeout(() => loadSettings(true), 2000 * retryCount); // Exponential backoff
+        setError(`Connection timeout. Retrying... (${retryCount + 1}/${maxRetries})`);
+        return;
+      }
+      
+      // Detect legacy backend
+      if (err.message.includes('404') || err.message.includes('Not Found')) {
+        console.log('Legacy backend detected');
+        setIsLegacyBackend(true);
+        dispatch(liveStreamSlice.setIsLegacyBackend(true));
+        
+        // Use Redux settings or defaults for legacy
+        const legacySettings = {
+          ...liveStreamState.streamSettings,
+          binary: { ...liveStreamState.streamSettings.binary, enabled: false },
+          jpeg: { ...liveStreamState.streamSettings.jpeg, enabled: true }
+        };
+        setDraftSettings(legacySettings);
+        
+        setError('Legacy backend detected - binary streaming not available');
+      } else {
+        setError(`Failed to load settings: ${err.message}`);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [retryCount, liveStreamState.streamSettings, dispatch]);
 
   // Load initial settings
   useEffect(() => {
-    const loadSettings = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // Try to load binary streaming settings
-        const params = await apiSettingsControllerGetStreamParams();
-        setSettings(params);
-        console.log('Binary streaming API available - using modern backend');
-        
-        // Dispatch to Redux that we have modern backend capabilities
-        dispatch(liveStreamSlice.setIsLegacyBackend(false));
-        dispatch(liveStreamSlice.setBackendCapabilities({
-          binaryStreaming: true,
-          webglSupported: true
-        }));
-      } catch (err) {
-        console.warn('Failed to load binary streaming settings:', err.message);
-        
-        // Detect legacy backend
-        if (err.message.includes('404') || err.message.includes('Not Found') || err.message.includes('getStreamParams')) {
-          console.log('Legacy backend detected - using JPEG streaming defaults');
-          setIsLegacyBackend(true);
-          
-          // Dispatch to Redux for global state
-          dispatch(liveStreamSlice.setIsLegacyBackend(true));
-          dispatch(liveStreamSlice.setBackendCapabilities({
-            binaryStreaming: false,
-            webglSupported: false
-          }));
-          
-          // Set legacy default settings
-          setSettings({
-            binary: {
-              enabled: false,
-              compression: { algorithm: 'lz4', level: 0 },
-              subsampling: { factor: 1, auto_max_dim: 0 },
-              throttle_ms: 50,
-              bitdepth_in: 12,
-              pixfmt: 'GRAY16'
-            },
-            jpeg: {
-              enabled: true
-            }
-          });
-          
-          setError('Legacy backend detected - using JPEG streaming');
-        } else {
-          setError(`Failed to load settings: ${err.message}`);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-    
     loadSettings();
   }, []);
+  
 
-  // Handle setting changes with debounced updates
+  // Auto-retry on menu open for timeout errors
+  useEffect(() => {
+    if (onOpen && error && error.includes('timeout')) {
+      const handleMenuOpen = () => {
+        if (retryCount < maxRetries) {
+          loadSettings();
+        }
+      };
+      onOpen(handleMenuOpen);
+    }
+  }, [onOpen, error, retryCount, loadSettings]);
+
+  // Handle setting changes in draft mode (no auto-submit)
   const handleSettingChange = useCallback((path, value) => {
-    const newSettings = { ...settings };
+    // Create a proper deep copy to avoid frozen object issues
+    const newDraftSettings = JSON.parse(JSON.stringify(draftSettings));
     
     // Navigate to the nested property and update it
     const keys = path.split('.');
-    let current = newSettings;
+    let current = newDraftSettings;
     for (let i = 0; i < keys.length - 1; i++) {
       current = current[keys[i]];
     }
     current[keys[keys.length - 1]] = value;
     
-    setSettings(newSettings);
-    debouncedUpdate(newSettings);
-  }, [settings, debouncedUpdate]);
+    setDraftSettings(newDraftSettings);
+    setHasUnsavedChanges(true);
+  }, [draftSettings]);
 
   if (loading) {
     return (
       <Paper sx={{ p: 2 }}>
         <Typography>Loading stream settings...</Typography>
+      </Paper>
+    );
+  }
+
+  // Handle retry for timeout errors
+  const handleRetry = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params = await apiSettingsControllerGetStreamParams();
+      setDraftSettings(params);
+      const initialFormat = params.binary?.enabled ? 'binary' : 'jpeg';
+      dispatch(liveStreamSlice.setImageFormat(initialFormat));
+    } catch (err) {
+      setError(`Failed to load settings: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (error && error.includes('timeout')) {
+    return (
+      <Paper sx={{ p: 2 }}>
+        <Alert severity="error" action={
+          <Button color="inherit" size="small" onClick={handleRetry}>
+            Retry
+          </Button>
+        }>
+          {error}
+        </Alert>
       </Paper>
     );
   }
@@ -202,10 +257,36 @@ const StreamSettings = () => {
         Stream Settings
         {updatePending && (
           <Typography component="span" sx={{ ml: 1, fontSize: '0.8em', color: 'text.secondary' }}>
-            (updating...)
+            (submitting...)
           </Typography>
         )}
+        
       </Typography>
+      
+      {/* Submit/Reset Buttons */}
+      <Box sx={{ mb: 2, display: 'flex', gap: 1 }}>
+        <Button 
+          variant="contained" 
+          onClick={handleSubmit}
+          size="small"
+        >
+          Submit Settings
+        </Button>
+        <Button 
+          variant="outlined" 
+          onClick={handleReset}
+          size="small"
+        >
+          Reset to Defaults
+        </Button>
+      </Box>
+      
+      {/* Current Status */}
+      <Box sx={{ mb: 2, p: 1, bgcolor: 'grey.100', borderRadius: 1 }}>
+        <Typography variant="body2" fontWeight="bold">
+          Current: Format={liveStreamState.imageFormat?.toUpperCase() || 'UNKNOWN'}, Range: {liveStreamState.minVal}–{liveStreamState.maxVal}
+        </Typography>
+      </Box>
       
       {/* Legacy Backend Warning */}
       {isLegacyBackend && (
@@ -218,32 +299,48 @@ const StreamSettings = () => {
         </Alert>
       )}
       
-      {/* Binary Stream Settings */}
+      {/* Stream Format Selector */}
       <Box sx={{ mb: 2 }}>
         <Typography variant="subtitle1" gutterBottom>
-          Binary Stream (16-bit)
+          Stream Format
         </Typography>
         
-        <FormControlLabel
-          control={
-            <Switch
-              checked={settings.binary.enabled}
-              onChange={(e) => handleSettingChange('binary.enabled', e.target.checked)}
-              disabled={isLegacyBackend}
-            />
-          }
-          label={`Enable Binary Streaming${isLegacyBackend ? ' (Not Available)' : ''}`}
-          sx={{ mb: 1 }}
-        />
+        <FormControl fullWidth sx={{ mb: 2 }}>
+          <InputLabel>Stream Type</InputLabel>
+          <Select
+            value={draftSettings.binary.enabled ? 'binary' : 'jpeg'}
+            label="Stream Type"
+            onChange={(e) => {
+              const isBinary = e.target.value === 'binary';
+              handleSettingChange('binary.enabled', isBinary);
+              handleSettingChange('jpeg.enabled', !isBinary);
+              
+              // Update compression algorithm in draft
+              const newAlgorithm = isBinary ? 'binary' : 'jpeg';
+              handleSettingChange('current_compression_algorithm', newAlgorithm);
+            }}
+            disabled={isLegacyBackend}
+          >
+            <MenuItem value="binary">Binary (16-bit) - High Quality</MenuItem>
+            <MenuItem value="jpeg">JPEG (8-bit) - Legacy</MenuItem>
+          </Select>
+        </FormControl>
+      </Box>
+      
+      {/* Binary Stream Settings */}
+      {draftSettings.binary.enabled && (
+      <Box sx={{ mb: 2 }}>
+        <Typography variant="subtitle1" gutterBottom>
+          Binary Stream Settings
+        </Typography>
         
-        {settings.binary.enabled && (
           <Box sx={{ ml: 2 }}>
             {/* Compression Settings */}
             <Box sx={{ mb: 2 }}>
               <FormControl fullWidth sx={{ mb: 1 }}>
                 <InputLabel>Compression Algorithm</InputLabel>
                 <Select
-                  value={settings.binary.compression.algorithm}
+                  value={draftSettings.binary.compression.algorithm}
                   label="Compression Algorithm"
                   onChange={(e) => handleSettingChange('binary.compression.algorithm', e.target.value)}
                 >
@@ -253,12 +350,12 @@ const StreamSettings = () => {
                 </Select>
               </FormControl>
               
-              {settings.binary.compression.algorithm !== 'none' && (
+              {draftSettings.binary.compression.algorithm !== 'none' && (
                 <TextField
                   fullWidth
                   type="number"
                   label="Compression Level"
-                  value={settings.binary.compression.level}
+                  value={draftSettings.binary.compression.level}
                   onChange={(e) => handleSettingChange('binary.compression.level', parseInt(e.target.value) || 0)}
                   inputProps={{ min: 0, max: 9 }}
                   helperText="0 = fastest, 9 = best compression"
@@ -274,21 +371,11 @@ const StreamSettings = () => {
                 fullWidth
                 type="number"
                 label="Subsampling Factor"
-                value={settings.binary.subsampling.factor}
+                value={draftSettings.binary.subsampling.factor}
                 onChange={(e) => handleSettingChange('binary.subsampling.factor', parseInt(e.target.value) || 1)}
                 inputProps={{ min: 1, max: 4 }}
                 helperText="1 = full resolution, 2 = half, etc."
                 sx={{ mb: 1 }}
-              />
-              
-              <TextField
-                fullWidth
-                type="number"
-                label="Auto Max Dimension"
-                value={settings.binary.subsampling.auto_max_dim}
-                onChange={(e) => handleSettingChange('binary.subsampling.auto_max_dim', parseInt(e.target.value) || 0)}
-                inputProps={{ min: 0 }}
-                helperText="0 = disabled, >0 = auto-subsample if larger"
               />
             </Box>
             
@@ -297,7 +384,7 @@ const StreamSettings = () => {
               fullWidth
               type="number"
               label="Throttle (ms)"
-              value={settings.binary.throttle_ms}
+              value={draftSettings.binary.throttle_ms}
               onChange={(e) => handleSettingChange('binary.throttle_ms', parseInt(e.target.value) || 50)}
               inputProps={{ min: 1, max: 1000 }}
               helperText="Minimum time between frames"
@@ -307,52 +394,47 @@ const StreamSettings = () => {
             {/* Read-only info */}
             <Box sx={{  p: 1, borderRadius: 1 }}>
               <Typography variant="body2">
-                Bit Depth: {settings.binary.bitdepth_in}-bit
+                Bit Depth: {draftSettings.binary.bitdepth_in}-bit
               </Typography>
               <Typography variant="body2">
-                Pixel Format: {settings.binary.pixfmt}
+                Pixel Format: {draftSettings.binary.pixfmt}
+              </Typography>
+              <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic', color: 'text.secondary' }}>
+                Note: RGB binary streaming requires backend support
               </Typography>
             </Box>
           </Box>
-        )}
       </Box>
-      
-      <Divider sx={{ my: 2 }} />
+      )}
       
       {/* JPEG Stream Settings */}
-      <Box>
+      {draftSettings.jpeg.enabled && (
+      <Box sx={{ mb: 2 }}>
+        <Divider sx={{ my: 2 }} />
+        
         <Typography variant="subtitle1" gutterBottom>
-          JPEG Stream (Legacy)
+          JPEG Stream Settings
         </Typography>
         
-        <FormControlLabel
-          control={
-            <Switch
-              checked={settings.jpeg.enabled}
-              onChange={(e) => handleSettingChange('jpeg.enabled', e.target.checked)}
-            />
-          }
-          label="Enable JPEG Streaming"
-        />
+        <Alert severity="info" sx={{ mb: 2 }}>
+          JPEG streaming provides 8-bit images. For scientific imaging with better dynamic range, 
+          consider using binary streaming if your backend supports it.
+        </Alert>
         
-        {settings.jpeg.enabled && (
-          <Box sx={{ mt: 1 }}>
-            <Alert severity="info" sx={{ mb: 1 }}>
-              JPEG streaming is legacy. Use binary streaming for better quality and performance.
-            </Alert>
-            
-            <TextField
-              fullWidth
-              type="number"
-              label="Compression Quality"
-              defaultValue={85}
-              inputProps={{ min: 1, max: 100 }}
-              helperText="1 = lowest quality/size, 100 = highest quality/size"
-              sx={{ mb: 1 }}
-            />
-          </Box>
-        )}
+        <Box sx={{ ml: 2 }}>
+          <TextField
+            fullWidth
+            type="number"
+            label="Compression Quality"
+            value={draftSettings.jpeg.quality}
+            onChange={(e) => handleSettingChange('jpeg.quality', parseInt(e.target.value) || 85)}
+            inputProps={{ min: 1, max: 100 }}
+            helperText="1 = lowest quality/size, 100 = highest quality/size"
+            sx={{ mb: 1 }}
+          />
+        </Box>
       </Box>
+      )}
       
       {error && (
         <Alert severity="error" sx={{ mt: 2 }}>

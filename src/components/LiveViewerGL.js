@@ -9,7 +9,7 @@ import { processUC2FPacket, processUC2FPacketWithMetadata, checkFeatureSupport }
  * Receives binary UC2F packets via window events and renders via WebGL2 R16UI textures
  * Falls back to Canvas2D for unsupported browsers
  */
-const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
+const LiveViewerGL = ({ onDoubleClick, onImageLoad, onHudDataUpdate }) => {
   const dispatch = useDispatch();
   const liveStreamState = useSelector(liveStreamSlice.getLiveStreamState);
   
@@ -757,6 +757,20 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
     };
   }, [handleFrameEvent]);
 
+  // Send HUD data to parent component
+  useEffect(() => {
+    if (onHudDataUpdate) {
+      const hudData = {
+        stats,
+        featureSupport,
+        isWebGL,
+        imageSize,
+        viewTransform
+      };
+      onHudDataUpdate(hudData);
+    }
+  }, [stats.fps, stats.bps, featureSupport, isWebGL, imageSize.width, imageSize.height, viewTransform.scale, viewTransform.translateX, viewTransform.translateY, onHudDataUpdate]);
+
   // Update canvas size when image size changes - but keep minimum size  
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -829,7 +843,7 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
     const pixelX = ((imageX + 1) / 2) * imageSize.width;
     const pixelY = ((1 - imageY) / 2) * imageSize.height;
     
-    onDoubleClick(pixelX, pixelY);
+    onDoubleClick(pixelX, pixelY, imageSize.width, imageSize.height);
   }, [viewTransform, imageSize, onDoubleClick]);
 
   const resetView = useCallback(() => {
@@ -944,29 +958,6 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
       />
-      
-      {/* HUD */}
-      <Paper 
-        sx={{ 
-          position: 'absolute', 
-          top: 10, 
-          right: 10, 
-          p: 1, 
-          opacity: 0.8,
-          fontSize: '12px',
-          zIndex: 2,
-        }}
-      >
-        <Typography variant="caption" display="block">
-          {isWebGL ? 'WebGL2' : 'Canvas2D'} | {featureSupport.lz4 ? 'LZ4' : 'No LZ4'}
-        </Typography>
-        <Typography variant="caption" display="block">
-          FPS: {stats.fps} | {(stats.bps / 1000000).toFixed(1)} Mbps
-        </Typography>
-        <Typography variant="caption" display="block">
-          {imageSize.width}x{imageSize.height} | Zoom: {viewTransform.scale.toFixed(2)}x
-        </Typography>
-      </Paper>
       
       {/* Reset view button */}
       <Box 
