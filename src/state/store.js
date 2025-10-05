@@ -87,6 +87,7 @@ const persistConfig = {
     "positionState",
     "workflowState",
     "themeState",
+    "mazeGameState",
   ],
   //blacklist: ['webSocketState'],  // Do not persist these
 };
