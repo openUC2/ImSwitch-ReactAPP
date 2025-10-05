@@ -54,7 +54,28 @@ const StreamControlOverlay = ({ hostIP, hostPort }) => {
 
   // Initialize draft settings from Redux state
   useEffect(() => {
-    setDraftSettings(JSON.parse(JSON.stringify(streamSettings || {})));
+    const initialSettings = JSON.parse(JSON.stringify(streamSettings || {}));
+    // Ensure both binary and jpeg objects exist with proper defaults
+    if (!initialSettings.binary) {
+      initialSettings.binary = {
+        enabled: true,
+        compression: { algorithm: 'lz4', level: 0 },
+        subsampling: { factor: 4 },
+        throttle_ms: 100,
+        bitdepth_in: 12,
+        pixfmt: 'GRAY16'
+      };
+    }
+    if (!initialSettings.jpeg) {
+      initialSettings.jpeg = {
+        enabled: false,
+        quality: 85
+      };
+    }
+    if (!initialSettings.current_compression_algorithm) {
+      initialSettings.current_compression_algorithm = initialSettings.binary.enabled ? 'binary' : 'jpeg';
+    }
+    setDraftSettings(initialSettings);
   }, [streamSettings]);
 
   // Handle draft setting changes
@@ -154,47 +175,76 @@ const StreamControlOverlay = ({ hostIP, hostPort }) => {
         position: 'absolute',
         bottom: 16,
         left: 16,
-        minWidth: 320,
-        maxWidth: 400,
+        minWidth: isExpanded ? 320 : 60,
+        maxWidth: isExpanded ? 400 : 60,
+        height: isExpanded ? 'auto' : 60,
         zIndex: 1000,
-        backgroundColor: "textSecondary",
-        backdropFilter: 'blur(4px)'
+        backgroundColor: isExpanded ? 'rgba(255, 255, 255, 0.7)' : 'rgba(255, 255, 255, 0.9)',
+        backdropFilter: 'blur(4px)',
+        transition: 'all 0.3s ease-in-out',
+        cursor: isExpanded ? 'default' : 'pointer'
       }}
+      onClick={!isExpanded ? () => setIsExpanded(true) : undefined}
     >
       {/* Header with Status Information */}
-      <Box sx={{ p: 2, pb: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-          <SettingsIcon sx={{ fontSize: 18 }} />
-          <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-            Stream Control
-          </Typography>
-          <IconButton
-            size="small"
-            onClick={() => setIsExpanded(!isExpanded)}
-            sx={{ ml: 'auto' }}
-          >
-            {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-          </IconButton>
-        </Box>
+      <Box sx={{ p: isExpanded ? 2 : 1.5, pb: isExpanded ? 1 : 1.5 }}>
+        {!isExpanded ? (
+          // Collapsed state - only show gear icon
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <SettingsIcon sx={{ fontSize: 28, color: 'primary.main' }} />
+          </Box>
+        ) : (
+          // Expanded state - full header
+          <>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <SettingsIcon sx={{ fontSize: 18 }} />
+              <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+                Stream Control
+              </Typography>
+              <IconButton
+                size="small"
+                onClick={() => setIsExpanded(false)}
+                sx={{ ml: 'auto' }}
+              >
+                <ExpandLessIcon />
+              </IconButton>
+            </Box>
 
-        {/* Status Chips */}
-        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-          <Chip 
-            label={`Format: ${formatLabel}`} 
-            size="small" 
-            color={isJpeg ? 'primary' : 'secondary'}
-          />
-          <Chip 
-            label={`Range: ${rangeLabel}`} 
-            size="small" 
-            variant="outlined"
-          />
-          <Chip 
-            label={`Window: ${minVal}–${maxVal}`} 
-            size="small" 
-            color="info"
-          />
-        </Box>
+            {/* Status Chips */}
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              <Chip 
+                label={`Format: ${formatLabel}`} 
+                size="small" 
+                color={isJpeg ? 'primary' : 'secondary'}
+              />
+              <Chip 
+                label={`Range: ${rangeLabel}`} 
+                size="small" 
+                variant="outlined"
+              />
+              <Chip 
+                label={`Window: ${minVal}–${maxVal}`} 
+                size="small" 
+                color="info"
+              />
+            </Box>
+            
+            {/* Binary Stream Info */}
+            {!isJpeg && draftSettings?.binary && (
+              <Box sx={{ mt: 1, p: 1, backgroundColor: 'rgba(0,0,0,0.05)', borderRadius: 1 }}>
+                <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
+                  {draftSettings.binary.compression?.algorithm?.toUpperCase() || 'LZ4'} • 
+                  Level {draftSettings.binary.compression?.level || 0} • 
+                  {draftSettings.binary.subsampling?.factor || 4}x Sub • 
+                  {draftSettings.binary.throttle_ms || 100}ms
+                </Typography>
+                <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
+                  {draftSettings.binary.bitdepth_in || 12}-bit {draftSettings.binary.pixfmt || 'GRAY16'}
+                </Typography>
+              </Box>
+            )}
+          </>
+        )}
       </Box>
 
       {/* Expandable Controls */}
@@ -292,13 +342,24 @@ const StreamControlOverlay = ({ hostIP, hostPort }) => {
                 <FormControl fullWidth size="small">
                   <InputLabel>Stream Format</InputLabel>
                   <Select
-                    value={draftSettings?.binary?.enabled ? 'binary' : 'jpeg'}
+                    value={draftSettings?.binary?.enabled === false ? 'jpeg' : 'binary'}
                     label="Stream Format"
                     onChange={(e) => {
                       const isBinary = e.target.value === 'binary';
-                      handleDraftChange('binary.enabled', isBinary);
-                      handleDraftChange('jpeg.enabled', !isBinary);
-                      handleDraftChange('current_compression_algorithm', e.target.value);
+                      const newDraftSettings = JSON.parse(JSON.stringify(draftSettings));
+                      
+                      // Ensure objects exist
+                      if (!newDraftSettings.binary) newDraftSettings.binary = {};
+                      if (!newDraftSettings.jpeg) newDraftSettings.jpeg = {};
+                      
+                      // Set the enabled states
+                      newDraftSettings.binary.enabled = isBinary;
+                      newDraftSettings.jpeg.enabled = !isBinary;
+                      newDraftSettings.current_compression_algorithm = e.target.value;
+                      
+                      setDraftSettings(newDraftSettings);
+                      setSubmitError(null);
+                      setSubmitSuccess(false);
                     }}
                   >
                     <MenuItem value="jpeg">JPEG</MenuItem>

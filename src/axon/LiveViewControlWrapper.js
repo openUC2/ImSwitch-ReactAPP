@@ -16,17 +16,27 @@ const LiveViewControlWrapper = ({ useFastMode = true, hostIP, hostPort }) => {
   const useWebGL = liveStreamState.backendCapabilities.webglSupported && !liveStreamState.isLegacyBackend;
 
   // Handle double-click for stage movement
-  const handleImageDoubleClick = async (pixelX, pixelY) => {
+  const handleImageDoubleClick = async (pixelX, pixelY, imageWidth, imageHeight) => {
     try {
       // Calculate real-world position from pixel coordinates
-      // This assumes the image is centered and uses the FOV to calculate movement
+      // Use the actual image dimensions and center coordinates properly
       const fovX = objectiveState.fovX || 1000; // fallback FOV in microns
+      const fovY = objectiveState.fovY || (fovX * imageHeight / imageWidth); // calculate FOV Y based on aspect ratio
       
-      // For now, use a simple calculation - this may need adjustment based on camera orientation
-      const moveX = (pixelX - 400) * (fovX / 800); // assuming 800px width, center at 400
-      const moveY = (pixelY - 300) * (fovX / 800) * (3/4); // assuming 600px height, 4:3 aspect ratio
+      // Calculate the center of the image
+      const centerX = imageWidth / 2;
+      const centerY = imageHeight / 2;
       
-      console.log(`Moving stage by: X=${moveX.toFixed(2)}µm, Y=${moveY.toFixed(2)}µm`);
+      // Calculate relative movement from image center
+      const relativeX = (pixelX - centerX) / imageWidth;  // -0.5 to 0.5
+      const relativeY = (pixelY - centerY) / imageHeight; // -0.5 to 0.5
+      
+      // Convert to microns
+      const moveX = relativeX * fovX;
+      const moveY = relativeY * fovY;
+      
+      console.log(`Image: ${imageWidth}x${imageHeight}, Click: (${pixelX}, ${pixelY}), Center: (${centerX}, ${centerY})`);
+      console.log(`Relative: (${relativeX.toFixed(3)}, ${relativeY.toFixed(3)}), Moving stage by: X=${moveX.toFixed(2)}µm, Y=${moveY.toFixed(2)}µm`);
       
       // Move stage to the clicked position (relative movement)
       await apiPositionerControllerMovePositioner({
@@ -74,7 +84,10 @@ const LiveViewControlWrapper = ({ useFastMode = true, hostIP, hostPort }) => {
             }}
           />
         ) : (
-          <LiveViewComponent useFastMode={useFastMode} />
+          <LiveViewComponent 
+            useFastMode={useFastMode} 
+            onDoubleClick={handleImageDoubleClick}
+          />
         )}
         
         {/* Stream Control Overlay - only show if hostIP and hostPort are available */}

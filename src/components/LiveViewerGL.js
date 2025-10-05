@@ -829,7 +829,7 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad }) => {
     const pixelX = ((imageX + 1) / 2) * imageSize.width;
     const pixelY = ((1 - imageY) / 2) * imageSize.height;
     
-    onDoubleClick(pixelX, pixelY);
+    onDoubleClick(pixelX, pixelY, imageSize.width, imageSize.height);
   }, [viewTransform, imageSize, onDoubleClick]);
 
   const resetView = useCallback(() => {
