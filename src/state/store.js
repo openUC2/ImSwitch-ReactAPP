@@ -25,6 +25,7 @@ import widgetReducer from "./slices/WidgetSlice";
 import lepmonReducer from "./slices/LepmonSlice";
 import uc2Reducer from "./slices/UC2Slice";
 import stageOffsetCalibrationReducer from "./slices/StageOffsetCalibrationSlice";
+import stageCenterCalibrationReducer from "./slices/StageCenterCalibrationSlice";
 import flowStopReducer from "./slices/FlowStopSlice";
 import lightsheetReducer from "./slices/LightsheetSlice";
 import zarrinitialZarrReducer from "./slices/OmeZarrTileStreamSlice";
@@ -58,6 +59,7 @@ const rootReducer = combineReducers({
   lepmon: lepmonReducer,
   uc2State: uc2Reducer,
   stageOffsetCalibration: stageOffsetCalibrationReducer,
+  stageCenterCalibration: stageCenterCalibrationReducer,
   flowStop: flowStopReducer,
   lightsheet: lightsheetReducer,
   omeZarrState: zarrinitialZarrReducer,

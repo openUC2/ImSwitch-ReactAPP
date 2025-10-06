@@ -8,9 +8,14 @@ import {
   Typography,
   Card,
   CardContent,
+  Box,
 } from "@mui/material";
 import { useWebSocket } from "../context/WebSocketContext";
 import * as stageOffsetCalibrationSlice from "../state/slices/StageOffsetCalibrationSlice.js";
+import * as stageCenterCalibrationSlice from "../state/slices/StageCenterCalibrationSlice.js";
+import StageCenterCalibrationWizard from "./StageCenterCalibrationWizard";
+import JoystickController from "./JoystickController";
+
 
 const StageOffsetCalibration = ({ hostIP, hostPort }) => {
   const socket = useWebSocket(); 
@@ -207,113 +212,67 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
   return (
     <Paper style={{ padding: "20px", margin: "20px" }}>
       <Grid container spacing={3}>
-        {/* Live Image */}
+        {/* Title and Prominent Wizard Button */}
         <Grid item xs={12}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6">Live Stream</Typography>
-              {/* If there's only one detector feed, you can do: */}
-              {imageUrls[detectors[0]] && (
-                <img
-                  src={imageUrls[detectors[0]]}
-                  alt="Live Stream"
-                  style={{ maxWidth: "100%", maxHeight: "400px" }}
-                />
-              )}
-              {/* Or map over multiple detectors if needed */}
-            </CardContent>
-          </Card>
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'center', 
+            mb: 3, 
+            p: 3,
+            background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+            borderRadius: 2,
+            boxShadow: 2
+          }}>
+            <Typography variant="h4" gutterBottom sx={{ 
+              fontWeight: 'bold', 
+              background: 'linear-gradient(45deg,rgb(0, 0, 0) 30%,rgb(53, 53, 53) 90%)',
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              mb: 2 
+            }}>
+              Stage Offset Calibration
+            </Typography>
+            <Button 
+              variant="contained" 
+              color="primary" 
+              size="large"
+              onClick={() => dispatch(stageCenterCalibrationSlice.setWizardOpen(true))}
+              sx={{
+                fontSize: '1.2rem',
+                py: 2,
+                px: 4,
+                background: 'linear-gradient(45deg,rgb(193, 193, 193) 30%,rgb(137, 137, 137) 90%)',
+                boxShadow: '0 4px 20px 0 rgba(33, 150, 243, 0.4)',
+                '&:hover': {
+                  background: 'linear-gradient(45deg, rgb(134, 134, 134),rgb(181, 181, 181) 90%)',
+                  boxShadow: '0 6px 25px 0 rgba(33, 150, 243, 0.6)',
+                  transform: 'translateY(-2px)',
+                },
+                transition: 'all 0.3s ease-in-out'
+              }}
+            >
+              🔍 Launch Stage Center Wizard
+            </Button>
+            <Typography variant="body2" sx={{ mt: 1, textAlign: 'center', color: 'text.secondary' }}>
+              Use the guided wizard to find your stage center with automatic detection
+            </Typography>
+          </Box>
         </Grid>
 
-        {/* Joystick Controls (cross layout) */}
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Joystick Controls
-              </Typography>
-              <Grid container spacing={2} justifyContent="center">
-                <Grid item xs={12} style={{ textAlign: "center" }}>
-                  <Button
-                    variant="contained"
-                    onClick={() => moveStage("Y", 100)}
-                  >
-                    Y +100
-                  </Button>
-                </Grid>
-                <Grid item xs={6} style={{ textAlign: "center" }}>
-                  <Button
-                    variant="contained"
-                    onClick={() => moveStage("X", -100)}
-                  >
-                    X -100
-                  </Button>
-                </Grid>
-                <Grid item xs={6} style={{ textAlign: "center" }}>
-                  <Button
-                    variant="contained"
-                    onClick={() => moveStage("X", 100)}
-                  >
-                    X +100
-                  </Button>
-                </Grid>
-                <Grid item xs={12} style={{ textAlign: "center" }}>
-                  <Button
-                    variant="contained"
-                    onClick={() => moveStage("Y", -100)}
-                  >
-                    Y -100
-                  </Button>
-                </Grid>
-              </Grid>
 
-              <Typography variant="subtitle1" style={{ marginTop: 16 }}>
-                Fine Moves
-              </Typography>
-              <Grid container spacing={2} justifyContent="center">
-                <Grid item xs={12} style={{ textAlign: "center" }}>
-                  <Button
-                    variant="contained"
-                    onClick={() => moveStage("Y", 10)}
-                  >
-                    Y +10
-                  </Button>
-                </Grid>
-                <Grid item xs={6} style={{ textAlign: "center" }}>
-                  <Button
-                    variant="contained"
-                    onClick={() => moveStage("X", -10)}
-                  >
-                    X -10
-                  </Button>
-                </Grid>
-                <Grid item xs={6} style={{ textAlign: "center" }}>
-                  <Button
-                    variant="contained"
-                    onClick={() => moveStage("X", 10)}
-                  >
-                    X +10
-                  </Button>
-                </Grid>
-                <Grid item xs={12} style={{ textAlign: "center" }}>
-                  <Button
-                    variant="contained"
-                    onClick={() => moveStage("Y", -10)}
-                  >
-                    Y -10
-                  </Button>
-                </Grid>
-              </Grid>
-            </CardContent>
-          </Card>
+        {/* Joystick Controller - Full Width */}
+        <Grid item xs={12}>
+          <JoystickController hostIP={hostIP} hostPort={hostPort} />
         </Grid>
 
         {/* Stage Offset Calibration */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
-                Stage Offset Calibration
+                Manual Stage Offset Calibration
               </Typography>
               <Grid container spacing={2}>
                 <Grid item xs={6}>
@@ -490,6 +449,12 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
           </Card>
         </Grid>
       </Grid>
+      
+      {/* Stage Center Calibration Wizard */}
+      <StageCenterCalibrationWizard
+        hostIP={hostIP}
+        hostPort={hostPort}
+      />
     </Paper>
   );
 };
