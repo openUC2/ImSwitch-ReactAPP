@@ -46,7 +46,7 @@ export default function IlluminationController({ hostIP, hostPort }) {
       // Initialize timeout refs array for each laser
       laserTimeoutRefs.current = new Array(parameterRangeState.illuSources.length).fill(null);
     }
-  }, [dispatch, parameterRangeState.illuSources, connectionSettingsState.ip, connectionSettingsState.apiPort, hostIP, hostPort]);
+  }, [parameterRangeState.illuSources, connectionSettingsState.ip, connectionSettingsState.apiPort]);
 
   // Cleanup timeout refs on unmount
   useEffect(() => {
@@ -96,30 +96,6 @@ export default function IlluminationController({ hostIP, hostPort }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hostIP, hostPort, dispatch]);
 
-  // Update laser value using Redux and backend
-  const setLaserValue = async (idx, val) => {
-    // Update Redux state
-    const currentValues = experimentState.parameterValue.illuIntensities || [];
-    const newValues = [...currentValues];
-    newValues[idx] = val;
-    dispatch(experimentSlice.setIlluminationIntensities(newValues));
-    
-    // Update backend
-    const laserName = parameterRangeState.illuSources[idx];
-    if (laserName) {
-      const ip = connectionSettingsState.ip || hostIP;
-      const port = connectionSettingsState.apiPort || hostPort;
-      
-      if (ip && port) {
-        try {
-          const encodedLaserName = encodeURIComponent(laserName);
-          await fetch(`${ip}:${port}/LaserController/setLaserValue?laserName=${encodedLaserName}&value=${val}`);
-        } catch (error) {
-          console.error("Failed to set laser value in backend:", error);
-        }
-      }
-    }
-  };
 
   // Debounced laser value update to prevent serial overload
   const debouncedSetLaserValue = useCallback((idx, val) => {

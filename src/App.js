@@ -54,6 +54,7 @@ import * as Icons from "@mui/icons-material";
 import AirIcon from "@mui/icons-material/Air";
 import StraightenIcon from "@mui/icons-material/Straighten";
 import MemoryIcon from "@mui/icons-material/Memory";
+import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import axios from "axios";
 import { WebSocketProvider } from "./context/WebSocketContext";
 import { MCTProvider } from "./context/MCTContext";
@@ -105,6 +106,7 @@ import {
 } from "@mui/icons-material";
 import FlowStopController from "./components/FlowStopController";
 import LepMonController from "./components/LepmonController.js";
+import MazeGameController from "./components/MazeGameController.js";
 import TopBar from "./components/TopBar";
 
 // Define both light and dark themes
@@ -1020,6 +1022,39 @@ function App() {
                       </ListItemButton>
                     </Tooltip>
                   </ListItem>
+                  {/* MazeGame */}
+                  <ListItem>
+                    <Tooltip
+                      title="Maze Game"
+                      placement="right"
+                      disableHoverListener={sidebarVisible}
+                    >
+                      <ListItemButton
+                        selected={selectedPlugin === "MazeGame"}
+                        onClick={() => handlePluginChange("MazeGame")}
+                        sx={{
+                          justifyContent: sidebarVisible
+                            ? "flex-start"
+                            : "center",
+                          minHeight: 48,
+                          px: 2.5,
+                        }}
+                      >
+                        <ListItemIcon
+                          sx={{
+                            minWidth: 0,
+                            mr: sidebarVisible ? 3 : "auto",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <SportsEsportsIcon sx={{ color: SIDEBAR_COLORS.apps }} />
+                        </ListItemIcon>
+                        {sidebarVisible && (
+                          <ListItemText primary="Maze Game" sx={{ opacity: 1 }} />
+                        )}
+                      </ListItemButton>
+                    </Tooltip>
+                  </ListItem>
                 </List>
               </Collapse>
               <Divider sx={{ my: 1 }} />
@@ -1484,6 +1519,9 @@ function App() {
             )}
             {selectedPlugin === "Lepmon" && (
               <LepMonController hostIP={hostIP} hostPort={apiPort} />
+            )}
+            {selectedPlugin === "MazeGame" && (
+              <MazeGameController hostIP={hostIP} hostPort={apiPort} />
             )}
             {selectedPlugin === "SocketView" && (
               <SocketView hostIP={hostIP} hostPort={websocketPort} />

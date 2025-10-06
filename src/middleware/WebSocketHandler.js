@@ -11,6 +11,7 @@ import * as positionSlice from "../state/slices/PositionSlice.js";
 import * as objectiveSlice from "../state/slices/ObjectiveSlice.js";
 import * as omeZarrSlice from "../state/slices/OmeZarrTileStreamSlice.js";
 import * as focusLockSlice from "../state/slices/FocusLockSlice.js";
+import * as mazeGameSlice from "../state/slices/MazeGameSlice.js";
 
 import { io } from "socket.io-client";
 
@@ -350,6 +351,70 @@ const WebSocketHandler = () => {
           }
         } catch (error) {
           console.error("Error parsing calibration progress signal:", error);
+        }
+      } else if (dataJson.name === "sigGameState") {
+        // Handle maze game state updates
+        try {
+          const gameState = dataJson.args?.p0 || dataJson.args || {};
+          dispatch(mazeGameSlice.setGameState(gameState));
+        } catch (error) {
+          console.error("Error parsing game state signal:", error);
+        }
+      } else if (dataJson.name === "sigCounterUpdated") {
+        // Handle maze game counter updates
+        try {
+          const counter = dataJson.args?.p0 ?? dataJson.counter ?? dataJson.value ?? 0;
+          dispatch(mazeGameSlice.setCounter(counter));
+        } catch (error) {
+          console.error("Error parsing counter signal:", error);
+        }
+      } else if (dataJson.name === "sigPreviewUpdated") {
+        // Handle maze game preview updates
+        try {
+          if (dataJson.args.p0) {
+            let rawImage = dataJson.args.p0.jpeg_b64;
+            
+            // Remove the b'...' wrapper if present
+            if (typeof rawImage === 'string' && rawImage.startsWith("b'") && rawImage.endsWith("'")) {
+              rawImage = rawImage.slice(2, -1);
+              
+              // Convert escaped hex sequences (\xHH) to actual bytes
+              const bytes = [];
+              let i = 0;
+              while (i < rawImage.length) {
+                if (rawImage[i] === '\\' && rawImage[i + 1] === 'x') {
+                  // Parse hex escape sequence
+                  const hex = rawImage.slice(i + 2, i + 4);
+                  bytes.push(parseInt(hex, 16));
+                  i += 4;
+                } else if (rawImage[i] === '\\' && rawImage[i + 1] === 'r') {
+                  bytes.push(13); // \r
+                  i += 2;
+                } else if (rawImage[i] === '\\' && rawImage[i + 1] === 'n') {
+                  bytes.push(10); // \n
+                  i += 2;
+                } else {
+                  bytes.push(rawImage.charCodeAt(i));
+                  i += 1;
+                }
+              }
+              
+              // Convert bytes to Base64
+              const uint8Array = new Uint8Array(bytes);
+              let binaryString = '';
+              for (let i = 0; i < uint8Array.length; i++) {
+                binaryString += String.fromCharCode(uint8Array[i]);
+              }
+              const base64 = btoa(binaryString);
+              
+              dispatch(mazeGameSlice.setPreviewImage(`data:image/png;base64,${base64}`));
+            } else {
+              // If it's already a base64 string, use it directly
+              dispatch(mazeGameSlice.setPreviewImage(`data:image/png;base64,${rawImage}`));
+            }
+          }
+        } catch (error) {
+          console.error("Error processing preview image:", error);
         }
       }
       // Name: sigUpdatedSTORMReconstruction => Args: {"p0":[[252.2014923095703,298.37579345703125,2814.840087890625,206508.3125,1.037859320640564]}
