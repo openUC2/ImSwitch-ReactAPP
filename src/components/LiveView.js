@@ -338,12 +338,8 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
   return (
     <Box
       sx={{
-        position: "absolute",
-        top: appBarHeight,
-        left: drawerWidth,
-        width: `calc(100% - ${drawerWidth}px)`,
-        height: `calc(100vh - ${appBarHeight}px)`,
         display: "flex",
+        flex: 1,
         overflow: "hidden",
       }}
     >

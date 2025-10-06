@@ -10,7 +10,6 @@ import TimelapseController from "./components/TimelapseController";
 import ObjectiveController from "./components/ObjectiveController.js";
 import AboutPage from "./components/AboutPage";
 import SystemSettings from "./components/SystemSettings";
-import Tab_Widgets from "./components/Tab_Widgets";
 import LightsheetController from "./components/LightsheetController";
 import DemoController from "./components/DemoController.js";
 import BlocklyController from "./components/BlocklyController";
@@ -64,7 +63,7 @@ import WebSocketHandler from "./middleware/WebSocketHandler";
 //redux
 import { useDispatch, useSelector } from "react-redux";
 import * as connectionSettingsSlice from "./state/slices/ConnectionSettingsSlice.js";
-import { toggleTheme, getThemeState } from "./state/slices/ThemeSlice";
+import { getThemeState } from "./state/slices/ThemeSlice";
 import StatusMessage from "./components/StatusMessage";
 import {
   getNotificationState,
@@ -1011,7 +1010,16 @@ function App() {
                             justifyContent: "center",
                           }}
                         >
-                          <AirIcon sx={{ color: SIDEBAR_COLORS.apps }} />
+                          <Avatar
+                            sx={{
+                              bgcolor: SIDEBAR_COLORS.apps,
+                              width: 24,
+                              height: 24,
+                              fontSize: 14,
+                            }}
+                          >
+                            LM
+                          </Avatar>
                         </ListItemIcon>
                         {sidebarVisible && (
                           <ListItemText primary="Lepmon" sx={{ opacity: 1 }} />
@@ -1336,9 +1344,14 @@ function App() {
           <Box
             component="main"
             sx={{
+              top: 64,
               flexGrow: 1,
+              display: "flex",
+              position: "absolute",
               p: isMobile ? 1 : 3,
-              marginTop: "64px",
+              left: drawerWidth,
+              width: "calc(100% - " + drawerWidth + "px)",
+              height: "calc(100vh - 64px)",
               marginLeft: !isMobile && sidebarVisible ? 0 : 0,
               transition: (theme) =>
                 theme.transitions.create(["margin", "padding"], {
@@ -1346,13 +1359,10 @@ function App() {
                   duration: theme.transitions.duration.leavingScreen,
                 }),
               minHeight: "calc(100vh - 64px)",
-              overflow: "auto",
+              overflow: "hidden",
             }}
           >
-            {selectedPlugin === "WellPlate" && <AxonTabComponent />}
-            <Box
-              sx={{ display: selectedPlugin === "LiveView" ? "block" : "none" }}
-            >
+            {selectedPlugin === "LiveView" && (
               <LiveView
                 hostIP={hostIP}
                 hostPort={apiPort}
@@ -1362,16 +1372,17 @@ function App() {
                 setSelectedPlugin={setSelectedPlugin}
                 setFileManagerInitialPath={handleFileManagerInitialPathChange} // pass function
               />
-            </Box>
-            <Box
-              sx={{ display: selectedPlugin === "ImJoy" ? "block" : "none" }}
-            >
+            )}
+
+            {selectedPlugin === "WellPlate" && <AxonTabComponent />}
+
+            {selectedPlugin === "ImJoy" && (
               <ImJoyView
                 hostIP={hostIP}
                 hostPort={apiPort}
                 sharedImage={sharedImage}
               />
-            </Box>
+            )}
             {selectedPlugin === "HistoScan" && (
               <HistoScanController hostIP={hostIP} hostPort={apiPort} />
             )}

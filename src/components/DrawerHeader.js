@@ -1,9 +1,6 @@
-
-import React from "react";
 import { Box, IconButton, Typography, Avatar } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
-import MenuIcon from "@mui/icons-material/Menu";
-import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import MenuOpen from "@mui/icons-material/MenuOpen";
 import uc2Logo from "../assets/ouc2_logo_quadratic.png";
 
 function DrawerHeader({ sidebarVisible, setSidebarVisible, isMobile }) {
@@ -40,7 +37,11 @@ function DrawerHeader({ sidebarVisible, setSidebarVisible, isMobile }) {
         sx={{ ml: 1 }}
         aria-label={sidebarVisible ? "Close sidebar" : "Open sidebar"}
       >
-        {sidebarVisible ? <ChevronLeftIcon /> : <MenuIcon />}
+        {sidebarVisible ? (
+          <MenuOpen />
+        ) : (
+          <MenuOpen sx={{ transform: "scaleX(-1)" }} />
+        )}
       </IconButton>
     </Box>
   );

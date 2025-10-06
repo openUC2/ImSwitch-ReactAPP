@@ -14,25 +14,16 @@ function ThemeSwitcher({ isMobile }) {
 
   return (
     <div style={{ display: "flex", alignItems: "center", minHeight: 40 }}>
-      {!isMobile ? (
-        <Typography variant="h6" sx={{ fontWeight: "bold", marginRight: 1 }}>
-          Light/dark
+      <>
+        {isDarkMode ? (
+          <DarkModeIcon sx={{ mr: 1 }} />
+        ) : (
+          <LightModeIcon sx={{ mr: 1 }} />
+        )}
+        <Typography variant="body2" sx={{ fontWeight: "bold", marginRight: 1 }}>
+          {isDarkMode ? "Dark" : "Light"}
         </Typography>
-      ) : (
-        <>
-          {isDarkMode ? (
-            <DarkModeIcon sx={{ mr: 1 }} />
-          ) : (
-            <LightModeIcon sx={{ mr: 1 }} />
-          )}
-          <Typography
-            variant="body2"
-            sx={{ fontWeight: "bold", marginRight: 1 }}
-          >
-            {isDarkMode ? "Dark" : "Light"}
-          </Typography>
-        </>
-      )}
+      </>
       <Switch
         checked={isDarkMode}
         onChange={handleToggle}

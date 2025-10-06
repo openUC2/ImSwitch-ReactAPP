@@ -1,5 +1,5 @@
 import { Box, Toolbar, IconButton, Typography } from "@mui/material";
-import MenuIcon from "@mui/icons-material/Menu";
+import MenuOpen from "@mui/icons-material/MenuOpen";
 import ThemeSwitcher from "./ThemeSwitcher";
 
 function TopBar({
@@ -11,20 +11,30 @@ function TopBar({
   return (
     <Box
       sx={(theme) => ({
+        width: "100%",
         background: theme.palette.background.paper,
         color: theme.palette.text.primary,
         borderBottom: "1px solid",
       })}
     >
-      <Toolbar>
-        <IconButton
-          edge="start"
-          color="inherit"
-          onClick={() => setSidebarVisible(!sidebarVisible)}
-          sx={{ mr: 2 }}
-        >
-          <MenuIcon />
-        </IconButton>
+      <Toolbar
+        sx={{ width: "100%", display: "flex", alignItems: "center", px: 2 }}
+      >
+        <>
+          {isMobile ? (
+            <IconButton
+              edge="start"
+              color="inherit"
+              onClick={() => setSidebarVisible(!sidebarVisible)}
+              sx={{ mr: 2 }}
+            >
+              <MenuOpen sx={{ transform: "scaleX(-1)" }} />
+            </IconButton>
+          ) : (
+            <></>
+          )}
+        </>
+
         <Typography
           variant="h6"
           sx={{
@@ -38,7 +48,10 @@ function TopBar({
         >
           {isMobile ? selectedPlugin : `ImSwitch UI - ${selectedPlugin}`}
         </Typography>
-        <ThemeSwitcher isMobile={isMobile} />
+
+        <Box sx={{ ml: "auto" }}>
+          <ThemeSwitcher isMobile={isMobile} />
+        </Box>
       </Toolbar>
     </Box>
   );
