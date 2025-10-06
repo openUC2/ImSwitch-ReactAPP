@@ -1366,7 +1366,6 @@ function App() {
               <LiveView
                 hostIP={hostIP}
                 hostPort={apiPort}
-                drawerWidth={drawerWidth}
                 // pass down a setter or context for the image if needed
                 onImageUpdate={(img) => setSharedImage(img)}
                 setSelectedPlugin={setSelectedPlugin}
