@@ -26,6 +26,9 @@ const initialMazeGameState = {
   // XY trace data
   xyTrace: [], // Array of {x, y, timestamp}
   
+  // Preview image
+  previewImage: null, // Base64 encoded preview image
+  
   // Hall of Fame (stored locally)
   hallOfFame: [], // Array of {playerName, time, counter, trace, timestamp}
 };
@@ -90,6 +93,11 @@ const mazeGameSlice = createSlice({
       state.xyTrace = [];
     },
     
+    // Preview image
+    setPreviewImage: (state, action) => {
+      state.previewImage = action.payload;
+    },
+    
     // Game state bulk setter
     setGameState: (state, action) => {
       const gameState = action.payload;
@@ -136,6 +144,7 @@ export const {
   setSmoothMean,
   addTracePoint,
   clearTrace,
+  setPreviewImage,
   setGameState,
   addToHallOfFame,
   clearHallOfFame,

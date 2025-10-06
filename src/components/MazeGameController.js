@@ -122,6 +122,7 @@ const MazeGameController = ({ hostIP, hostPort, title = "Maze Game" }) => {
     counter,
     elapsed,
     smoothMean,
+    previewImage,
     xyTrace,
     hallOfFame,
   } = mazeGameState;
@@ -131,7 +132,6 @@ const MazeGameController = ({ hostIP, hostPort, title = "Maze Game" }) => {
 
   // Local state
   const [tabIndex, setTabIndex] = useState(0);
-  const [previewImage, setPreviewImage] = useState(null);
   const [countdown, setCountdown] = useState(null);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [nameInputValue, setNameInputValue] = useState("");
@@ -169,32 +169,6 @@ const MazeGameController = ({ hostIP, hostPort, title = "Maze Game" }) => {
     fetchInitialState();
   }, [dispatch]);
 
-  // Start preview polling when game is running
-  useEffect(() => {
-    if (running) {
-      // Start preview polling
-      previewIntervalRef.current = setInterval(async () => {
-        try {
-          const preview = await apiMazeGameControllerGetLatestProcessedPreview();
-          if (preview && preview.jpeg_b64) {
-            setPreviewImage(`data:image/jpeg;base64,${preview.jpeg_b64}`);
-          }
-        } catch (error) {
-          console.error("Error fetching preview:", error);
-        }
-      }, pollInterval);
-    } else {
-      // Clear interval when not running
-      if (previewIntervalRef.current) {
-        clearInterval(previewIntervalRef.current);
-        previewIntervalRef.current = null;
-      }
-    }
-
-    return () => {
-      if (previewIntervalRef.current) clearInterval(previewIntervalRef.current);
-    };
-  }, [running, pollInterval]);
 
   // Track position changes and add to trace when game is running
   useEffect(() => {
@@ -238,6 +212,9 @@ const MazeGameController = ({ hostIP, hostPort, title = "Maze Game" }) => {
     try {
       // Clear previous trace
       dispatch(mazeGameSlice.clearTrace());
+
+      // set min/max value for levels (use destructured values from state)
+      await apiMazeGameControllerSetJumpThresholds(jumpLow, jumpHigh);
 
       // Start countdown
       await startCountdown();
@@ -542,7 +519,7 @@ const MazeGameController = ({ hostIP, hostPort, title = "Maze Game" }) => {
                         <Typography variant="h6" color="textSecondary">
                           Smooth Mean
                         </Typography>
-                        <Typography variant="h3">{smoothMean.toFixed(2)}</Typography>
+                        <Typography variant="h3">{(smoothMean ?? 0).toFixed(2)}</Typography>
                       </CardContent>
                     </Card>
                   </Grid>
@@ -588,84 +565,81 @@ const MazeGameController = ({ hostIP, hostPort, title = "Maze Game" }) => {
                   </Box>
                 </Box>
 
-                {/* XY Trajectory Plot */}
-                <Box sx={{ mb: 3 }}>
-                  <Typography variant="h6" gutterBottom>
-                    Your Path
-                  </Typography>
-                  <Box sx={{ height: 300 }}>
-                    {xyTrace.length > 0 ? (
-                      <Line
-                        data={trajectoryChartData}
-                        options={trajectoryChartOptions}
-                      />
-                    ) : (
-                      <Box
-                        sx={{
-                          height: "100%",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          border: "1px solid #ccc",
-                          borderRadius: 1,
-                        }}
-                      >
-                        <Typography color="textSecondary">
-                          Path will be displayed here during the game
-                        </Typography>
-                      </Box>
-                    )}
-                  </Box>
-                </Box>
+                {/* Trajectory + Joystick side-by-side (responsive) */}
+                <Grid container spacing={2} sx={{ mb: 3 }}>
+                  <Grid item xs={12} md={8}>
+                    <Typography variant="h6" gutterBottom>
+                      Your Path
+                    </Typography>
+                    <Box sx={{ height: 300 }}>
+                      {xyTrace.length > 0 ? (
+                        <Line
+                          data={trajectoryChartData}
+                          options={trajectoryChartOptions}
+                        />
+                      ) : (
+                        <Box
+                          sx={{
+                            height: "100%",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            border: "1px solid #ccc",
+                            borderRadius: 1,
+                          }}
+                        >
+                          <Typography color="textSecondary">
+                            Path will be displayed here during the game
+                          </Typography>
+                        </Box>
+                      )}
+                    </Box>
+                  </Grid>
 
-                {/* Simple Joystick */}
-                <Box>
-                  <Typography variant="h6" gutterBottom>
-                    Joystick Control
-                  </Typography>
-                  <Box
-                    sx={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(3, 80px)",
-                      gap: 1,
-                      justifyContent: "center",
-                    }}
-                  >
-                    <Box />
-                    <Button
-                      variant="contained"
-                      onClick={() => handleJoystickMove("Y", 100)}
-                      disabled={!running}
+                  <Grid item xs={12} md={4}>
+                    <Typography variant="h6" gutterBottom>
+                      Joystick Control
+                    </Typography>
+                    <Box
+                      sx={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(3, 80px)",
+                        gap: 1,
+                        justifyContent: "center",
+                      }}
                     >
-                      ↑
-                    </Button>
-                    <Box />
-                    <Button
-                      variant="contained"
-                      onClick={() => handleJoystickMove("X", -100)}
-                      disabled={!running}
-                    >
-                      ←
-                    </Button>
-                    <Box />
-                    <Button
-                      variant="contained"
-                      onClick={() => handleJoystickMove("X", 100)}
-                      disabled={!running}
-                    >
-                      →
-                    </Button>
-                    <Box />
-                    <Button
-                      variant="contained"
-                      onClick={() => handleJoystickMove("Y", -100)}
-                      disabled={!running}
-                    >
-                      ↓
-                    </Button>
-                    <Box />
-                  </Box>
-                </Box>
+                      <Box />
+                      <Button
+                        variant="contained"
+                        onClick={() => handleJoystickMove("Y", 100)}
+                        >
+                        ↑
+                      </Button>
+                      <Box />
+                      <Button
+                        variant="contained"
+                        onClick={() => handleJoystickMove("X", 100)}
+                        >
+                        ←
+                      </Button>
+                      <Box />
+                      <Button
+                        variant="contained"
+                        onClick={() => handleJoystickMove("X", -100)}
+                        >
+                        →
+                      </Button>
+                      <Box />
+                      <Button
+                        variant="contained"
+                        onClick={() => handleJoystickMove("Y", -100)}
+                        >
+                        ↓
+                      </Button>
+                      <Box />
+                    </Box>
+                  </Grid>
+                </Grid>
               </CardContent>
             </Card>
           </Grid>
@@ -677,8 +651,8 @@ const MazeGameController = ({ hostIP, hostPort, title = "Maze Game" }) => {
                 <Typography variant="h6" gutterBottom>
                   Current Position
                 </Typography>
-                <Typography>X: {currentPosition.x.toFixed(2)}</Typography>
-                <Typography>Y: {currentPosition.y.toFixed(2)}</Typography>
+                <Typography>X: {(currentPosition.x ?? 0).toFixed(2)}</Typography>
+                <Typography>Y: {(currentPosition.y ?? 0).toFixed(2)}</Typography>
               </CardContent>
             </Card>
 
@@ -778,19 +752,6 @@ const MazeGameController = ({ hostIP, hostPort, title = "Maze Game" }) => {
                     sx={{ mb: 3 }}
                   />
 
-                  <Typography gutterBottom>
-                    Poll Interval: {pollInterval}ms
-                  </Typography>
-                  <Slider
-                    value={pollInterval}
-                    onChange={(e, val) => handlePollIntervalChange(val)}
-                    min={100}
-                    max={1000}
-                    step={50}
-                    disabled={running}
-                    sx={{ mb: 3 }}
-                  />
-
                   <Typography gutterBottom>Step Size: {stepSize}</Typography>
                   <Slider
                     value={stepSize}
@@ -798,7 +759,6 @@ const MazeGameController = ({ hostIP, hostPort, title = "Maze Game" }) => {
                     min={10}
                     max={500}
                     step={10}
-                    disabled={running}
                   />
                 </CardContent>
               </Card>
