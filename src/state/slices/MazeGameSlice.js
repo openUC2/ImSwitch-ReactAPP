@@ -6,11 +6,11 @@ const initialMazeGameState = {
   playerName: "",
   
   // Game parameters
-  cropSize: 100,
-  jumpLow: 10,
-  jumpHigh: 50,
-  history: 50,
-  downscale: 2,
+  cropSize: 20,
+  jumpLow: 2,
+  jumpHigh: 10,
+  history: 2,
+  downscale: 1,
   pollInterval: 250,
   
   // Game state
