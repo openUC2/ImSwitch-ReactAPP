@@ -25,14 +25,15 @@ import {
   DialogContent,
   Chip,
 } from "@mui/material";
-import { green, red, blue } from "@mui/material/colors";
+import { green, red, blue, grey } from "@mui/material/colors";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import StopIcon from "@mui/icons-material/Stop";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import { Line } from "react-chartjs-2";
-import { useWebSocket } from "../context/WebSocketContext";
+import { useTheme } from "@mui/material/styles";
 import * as mazeGameSlice from "../state/slices/MazeGameSlice.js";
+import * as positionSlice from "../state/slices/PositionSlice.js";
 import apiMazeGameControllerStartGame from "../backendapi/apiMazeGameControllerStartGame.js";
 import apiMazeGameControllerStopGame from "../backendapi/apiMazeGameControllerStopGame.js";
 import apiMazeGameControllerResetGame from "../backendapi/apiMazeGameControllerResetGame.js";
@@ -44,7 +45,6 @@ import apiMazeGameControllerSetJumpThresholds from "../backendapi/apiMazeGameCon
 import apiMazeGameControllerSetHistory from "../backendapi/apiMazeGameControllerSetHistory.js";
 import apiMazeGameControllerSetDownscale from "../backendapi/apiMazeGameControllerSetDownscale.js";
 import apiMazeGameControllerSetPollInterval from "../backendapi/apiMazeGameControllerSetPollInterval.js";
-import apiPositionerControllerGetPositions from "../backendapi/apiPositionerControllerGetPositions.js";
 import apiPositionerControllerMovePositioner from "../backendapi/apiPositionerControllerMovePositioner.js";
 
 const TabPanel = (props) => {
@@ -103,8 +103,9 @@ const CountdownOverlay = ({ countdown }) => {
 
 const MazeGameController = ({ hostIP, hostPort, title = "Maze Game" }) => {
   const dispatch = useDispatch();
-  const socket = useWebSocket();
+  const theme = useTheme();
   const mazeGameState = useSelector(mazeGameSlice.getMazeGameState);
+  const positionState = useSelector(positionSlice.getPositionState);
 
   // Destructure state
   const {
@@ -115,22 +116,26 @@ const MazeGameController = ({ hostIP, hostPort, title = "Maze Game" }) => {
     history,
     downscale,
     pollInterval,
+    stepSize,
+    startPosition,
     running,
     counter,
     elapsed,
+    smoothMean,
     xyTrace,
     hallOfFame,
   } = mazeGameState;
 
+  // Get current position from Redux
+  const currentPosition = { x: positionState.x || 0, y: positionState.y || 0 };
+
   // Local state
   const [tabIndex, setTabIndex] = useState(0);
   const [previewImage, setPreviewImage] = useState(null);
-  const [currentPosition, setCurrentPosition] = useState({ x: 0, y: 0 });
   const [countdown, setCountdown] = useState(null);
-  const [startPosition, setStartPosition] = useState({ x: 0, y: 0 });
   const [selectedPlayer, setSelectedPlayer] = useState(null);
+  const [nameInputValue, setNameInputValue] = useState("");
   const previewIntervalRef = useRef(null);
-  const positionIntervalRef = useRef(null);
 
   // Load hall of fame from localStorage on mount
   useEffect(() => {
@@ -164,34 +169,44 @@ const MazeGameController = ({ hostIP, hostPort, title = "Maze Game" }) => {
     fetchInitialState();
   }, [dispatch]);
 
-  // WebSocket signal handlers
+  // Start preview polling when game is running
   useEffect(() => {
-    if (!socket) return;
-
-    const handleSignal = (rawData) => {
-      try {
-        const data = JSON.parse(rawData);
-
-        if (data.name === "sigGameState") {
-          dispatch(mazeGameSlice.setGameState(data.args.p0));
-        } else if (data.name === "sigCounterUpdated") {
-          dispatch(mazeGameSlice.setCounter(data.counter || data.value || 0));
-        } else if (data.name === "sigPreviewUpdated") {
-          // Decode the raw byte string and set it as a Base64 image
-          if (data.args.p0.jpeg_b64) {
-            setPreviewImage(`data:image/jpeg;base64,${data.args.p0.jpeg_b64}`);
+    if (running) {
+      // Start preview polling
+      previewIntervalRef.current = setInterval(async () => {
+        try {
+          const preview = await apiMazeGameControllerGetLatestProcessedPreview();
+          if (preview && preview.jpeg_b64) {
+            setPreviewImage(`data:image/jpeg;base64,${preview.jpeg_b64}`);
           }
+        } catch (error) {
+          console.error("Error fetching preview:", error);
         }
-      } catch (error) {
-        console.error("Error parsing signal data:", error);
+      }, pollInterval);
+    } else {
+      // Clear interval when not running
+      if (previewIntervalRef.current) {
+        clearInterval(previewIntervalRef.current);
+        previewIntervalRef.current = null;
       }
-    };
+    }
 
-    socket.on("signal", handleSignal);
     return () => {
-      socket.off("signal", handleSignal);
+      if (previewIntervalRef.current) clearInterval(previewIntervalRef.current);
     };
-  }, [socket, dispatch]);
+  }, [running, pollInterval]);
+
+  // Track position changes and add to trace when game is running
+  useEffect(() => {
+    if (running && (currentPosition.x !== 0 || currentPosition.y !== 0)) {
+      // Add current position to trace
+      dispatch(mazeGameSlice.addTracePoint({
+        x: currentPosition.x,
+        y: currentPosition.y,
+        timestamp: Date.now(),
+      }));
+    }
+  }, [running, currentPosition.x, currentPosition.y, dispatch]);
 
   // Handle countdown animation
   const startCountdown = () => {
@@ -263,6 +278,7 @@ const MazeGameController = ({ hostIP, hostPort, title = "Maze Game" }) => {
       dispatch(mazeGameSlice.setRunning(false));
       dispatch(mazeGameSlice.setCounter(0));
       dispatch(mazeGameSlice.setElapsed(0));
+      dispatch(mazeGameSlice.setSmoothMean(0));
       dispatch(mazeGameSlice.clearTrace());
     } catch (error) {
       console.error("Error resetting game:", error);
@@ -332,7 +348,7 @@ const MazeGameController = ({ hostIP, hostPort, title = "Maze Game" }) => {
     try {
       await apiPositionerControllerMovePositioner({
         axis,
-        dist: distance,
+        dist: distance * stepSize / 100, // Use stepSize from slice, scaled by 100
         isAbsolute: false,
         isBlocking: false,
       });
@@ -428,11 +444,20 @@ const MazeGameController = ({ hostIP, hostPort, title = "Maze Game" }) => {
                     <TextField
                       fullWidth
                       label="Enter Your Name"
-                      value={playerName}
-                      onChange={(e) =>
-                        dispatch(mazeGameSlice.setPlayerName(e.target.value))
-                      }
+                      value={nameInputValue}
+                      onChange={(e) => setNameInputValue(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter' && nameInputValue.trim()) {
+                          dispatch(mazeGameSlice.setPlayerName(nameInputValue.trim()));
+                        }
+                      }}
+                      onBlur={() => {
+                        if (nameInputValue.trim()) {
+                          dispatch(mazeGameSlice.setPlayerName(nameInputValue.trim()));
+                        }
+                      }}
                       disabled={running}
+                      placeholder="Press Enter to confirm"
                     />
                   </Box>
                 )}
@@ -489,8 +514,8 @@ const MazeGameController = ({ hostIP, hostPort, title = "Maze Game" }) => {
 
                 {/* Timer and Counter */}
                 <Grid container spacing={2} sx={{ mb: 3 }}>
-                  <Grid item xs={6}>
-                    <Card sx={{ bgcolor: green[50] }}>
+                  <Grid item xs={4}>
+                    <Card sx={{ bgcolor: theme.palette.mode === 'dark' ? grey[800] : green[50] }}>
                       <CardContent>
                         <Typography variant="h6" color="textSecondary">
                           Timer
@@ -501,13 +526,23 @@ const MazeGameController = ({ hostIP, hostPort, title = "Maze Game" }) => {
                       </CardContent>
                     </Card>
                   </Grid>
-                  <Grid item xs={6}>
-                    <Card sx={{ bgcolor: red[50] }}>
+                  <Grid item xs={4}>
+                    <Card sx={{ bgcolor: theme.palette.mode === 'dark' ? grey[800] : red[50] }}>
                       <CardContent>
                         <Typography variant="h6" color="textSecondary">
                           Wall Hits
                         </Typography>
                         <Typography variant="h3">{counter}</Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={4}>
+                    <Card sx={{ bgcolor: theme.palette.mode === 'dark' ? grey[800] : blue[50] }}>
+                      <CardContent>
+                        <Typography variant="h6" color="textSecondary">
+                          Smooth Mean
+                        </Typography>
+                        <Typography variant="h3">{smoothMean.toFixed(2)}</Typography>
                       </CardContent>
                     </Card>
                   </Grid>
@@ -658,10 +693,10 @@ const MazeGameController = ({ hostIP, hostPort, title = "Maze Game" }) => {
                   type="number"
                   value={startPosition.x}
                   onChange={(e) =>
-                    setStartPosition({
+                    dispatch(mazeGameSlice.setStartPosition({
                       ...startPosition,
                       x: parseFloat(e.target.value) || 0,
-                    })
+                    }))
                   }
                   disabled={running}
                   sx={{ mb: 2 }}
@@ -672,10 +707,10 @@ const MazeGameController = ({ hostIP, hostPort, title = "Maze Game" }) => {
                   type="number"
                   value={startPosition.y}
                   onChange={(e) =>
-                    setStartPosition({
+                    dispatch(mazeGameSlice.setStartPosition({
                       ...startPosition,
                       y: parseFloat(e.target.value) || 0,
-                    })
+                    }))
                   }
                   disabled={running}
                   sx={{ mb: 2 }}
@@ -752,6 +787,17 @@ const MazeGameController = ({ hostIP, hostPort, title = "Maze Game" }) => {
                     min={100}
                     max={1000}
                     step={50}
+                    disabled={running}
+                    sx={{ mb: 3 }}
+                  />
+
+                  <Typography gutterBottom>Step Size: {stepSize}</Typography>
+                  <Slider
+                    value={stepSize}
+                    onChange={(e, val) => dispatch(mazeGameSlice.setStepSize(val))}
+                    min={10}
+                    max={500}
+                    step={10}
                     disabled={running}
                   />
                 </CardContent>

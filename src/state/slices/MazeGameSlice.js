@@ -12,11 +12,16 @@ const initialMazeGameState = {
   history: 2,
   downscale: 1,
   pollInterval: 250,
+  stepSize: 100, // Joystick step size
+  
+  // Start position
+  startPosition: { x: 0, y: 0 },
   
   // Game state
   running: false,
   counter: 0,
   elapsed: 0,
+  smoothMean: 0, // smooth_mean from backend
   
   // XY trace data
   xyTrace: [], // Array of {x, y, timestamp}
@@ -54,6 +59,14 @@ const mazeGameSlice = createSlice({
     setPollInterval: (state, action) => {
       state.pollInterval = action.payload;
     },
+    setStepSize: (state, action) => {
+      state.stepSize = action.payload;
+    },
+    
+    // Start position
+    setStartPosition: (state, action) => {
+      state.startPosition = action.payload;
+    },
     
     // Game state setters
     setRunning: (state, action) => {
@@ -64,6 +77,9 @@ const mazeGameSlice = createSlice({
     },
     setElapsed: (state, action) => {
       state.elapsed = action.payload;
+    },
+    setSmoothMean: (state, action) => {
+      state.smoothMean = action.payload;
     },
     
     // XY trace
@@ -80,6 +96,7 @@ const mazeGameSlice = createSlice({
       state.running = gameState.running ?? state.running;
       state.counter = gameState.counter ?? state.counter;
       state.elapsed = gameState.elapsed_s ?? state.elapsed;
+      state.smoothMean = gameState.smooth_mean ?? state.smoothMean;
     },
     
     // Hall of Fame
@@ -111,9 +128,12 @@ export const {
   setHistory,
   setDownscale,
   setPollInterval,
+  setStepSize,
+  setStartPosition,
   setRunning,
   setCounter,
   setElapsed,
+  setSmoothMean,
   addTracePoint,
   clearTrace,
   setGameState,

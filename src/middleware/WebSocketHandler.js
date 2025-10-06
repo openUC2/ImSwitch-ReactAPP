@@ -11,6 +11,7 @@ import * as positionSlice from "../state/slices/PositionSlice.js";
 import * as objectiveSlice from "../state/slices/ObjectiveSlice.js";
 import * as omeZarrSlice from "../state/slices/OmeZarrTileStreamSlice.js";
 import * as focusLockSlice from "../state/slices/FocusLockSlice.js";
+import * as mazeGameSlice from "../state/slices/MazeGameSlice.js";
 
 import { io } from "socket.io-client";
 
@@ -351,6 +352,26 @@ const WebSocketHandler = () => {
         } catch (error) {
           console.error("Error parsing calibration progress signal:", error);
         }
+      } else if (dataJson.name === "sigGameState") {
+        // Handle maze game state updates
+        try {
+          const gameState = dataJson.args?.p0 || dataJson.args || {};
+          dispatch(mazeGameSlice.setGameState(gameState));
+        } catch (error) {
+          console.error("Error parsing game state signal:", error);
+        }
+      } else if (dataJson.name === "sigCounterUpdated") {
+        // Handle maze game counter updates
+        try {
+          const counter = dataJson.args?.p0 ?? dataJson.counter ?? dataJson.value ?? 0;
+          dispatch(mazeGameSlice.setCounter(counter));
+        } catch (error) {
+          console.error("Error parsing counter signal:", error);
+        }
+      } else if (dataJson.name === "sigPreviewUpdated") {
+        // Handle maze game preview updates - this is for the preview display only
+        // The actual image is handled separately
+        console.log("sigPreviewUpdated received");
       }
       // Name: sigUpdatedSTORMReconstruction => Args: {"p0":[[252.2014923095703,298.37579345703125,2814.840087890625,206508.3125,1.037859320640564]}
 
