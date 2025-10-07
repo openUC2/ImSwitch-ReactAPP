@@ -21,7 +21,7 @@ const JupyterExecutor = ({ hostIP, hostPort }) => {
         } else {
           const updatedUrl = notebookUrl.replace(
             /https?:\/\/[^:]+/,
-            `${hostIP}`
+            `${hostIP.replace("https://", "http://")}`
           );
           setJupyterUrl(updatedUrl);
         }

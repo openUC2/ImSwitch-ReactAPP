@@ -107,7 +107,7 @@ const FocusLockController = ({ hostIP, hostPort }) => {
   const [piTabValue, setPiTabValue] = useState(0); // State for PI parameter tabs
 
   // Calibration parameters exposed to user
-  const [scanRangeUm, setScanRangeUm] = useState(2000);
+  const [scanRangeUm, setScanRangeUm] = useState(200);
   const [numSteps, setNumSteps] = useState(20);
   const [settleTime, setSettleTime] = useState(0.5);
   
@@ -161,6 +161,7 @@ const FocusLockController = ({ hostIP, hostPort }) => {
     try {
       dispatch(focusLockSlice.setIsLoadingImage(true));
       setPollingError(false);
+      
       const blob = await apiFocusLockControllerReturnLastImage();
 
       // Clean up previous blob URL to prevent memory leaks
@@ -426,7 +427,7 @@ const chartOptions = useMemo(() => ({
       const params = await apiFocusLockControllerGetPIControllerParams();
       if (params) {
         dispatch(focusLockSlice.setKp(params.kp || 0.1));
-        dispatch(focusLockSlice.setKi(params.ki || 0.01));
+        dispatch(focusLockSlice.setKi(params.ki || 0.0));
         dispatch(focusLockSlice.setSetPoint(params.setPoint || 0.0));
         dispatch(focusLockSlice.setSafetyDistanceLimit(params.safetyDistanceLimit || 500.0));
         dispatch(focusLockSlice.setSafetyMoveLimit(params.safetyMoveLimit || 3.0));
@@ -816,6 +817,7 @@ const chartOptions = useMemo(() => ({
                   inputProps={{ step: 0.1, min: 0.1, max: 10 }}
                   sx={{ mb: 2 }}
                 />
+                
                 <FormControlLabel
                   control={
                     <Switch

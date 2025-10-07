@@ -49,6 +49,9 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
   const [mouseDownPosition, setMouseDownPosition] = useState({ x: 0, y: 0 });
   const [mouseMovePosition, setMouseMovePosition] = useState({ x: 0, y: 0 });
 
+  // Position history for trace drawing
+  const [positionHistory, setPositionHistory] = useState([]);
+
   const [isCtrlKeyPressed, setIsCtrlKeyPressed] = useState(false);
   const [isShiftKeyPressed, setIsShiftKeyPressed] = useState(false);
 
@@ -72,6 +75,10 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
       //reset scale and offset
       setScale(1);
       setOffset({ x: 0, y: 0 });
+    },
+    resetHistory: () => {
+      //clear position history
+      setPositionHistory([]);
     },
   }));
 
@@ -103,6 +110,25 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
 
   //##################################################################################
   useEffect(() => {
+    // Track position changes and add to history
+    if (positionState.x !== undefined && positionState.y !== undefined) {
+      const newPosition = { x: positionState.x, y: positionState.y };
+      
+      // Only add if position actually changed (avoid duplicates)
+      setPositionHistory(prevHistory => {
+        const lastPosition = prevHistory[prevHistory.length - 1];
+        if (!lastPosition || lastPosition.x !== newPosition.x || lastPosition.y !== newPosition.y) {
+          // Limit history to prevent memory issues (keep last 1000 points)
+          const updatedHistory = [...prevHistory, newPosition];
+          return updatedHistory.length > 1000 ? updatedHistory.slice(-1000) : updatedHistory;
+        }
+        return prevHistory;
+      });
+    }
+  }, [positionState.x, positionState.y]);
+
+  //##################################################################################
+  useEffect(() => {
     // Draw canvas content when state changed
     renderCanvas();
   }, [
@@ -115,6 +141,7 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
     mouseMovePosition,
     positionState,
     objectiveState,
+    positionHistory,
   ]);
 
   //##################################################################################
@@ -747,7 +774,34 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
       );
     }*/
 
+    //------------ draw position trace
+    drawPositionTrace(ctx);
+
     //ctx.restore();
+  };
+
+  //##################################################################################
+  const drawPositionTrace = (ctx) => {
+    if (positionHistory.length < 2) return; // Need at least 2 points to draw a line
+    
+    ctx.strokeStyle = "rgba(255, 100, 100, 0.7)"; // Light red with transparency
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    
+    ctx.beginPath();
+    
+    // Convert first position to pixel coordinates and move to it
+    const firstPos = positionHistory[0];
+    ctx.moveTo(calcPhy2Px(firstPos.x), calcPhy2Px(firstPos.y));
+    
+    // Draw lines to all subsequent positions
+    for (let i = 1; i < positionHistory.length; i++) {
+      const pos = positionHistory[i];
+      ctx.lineTo(calcPhy2Px(pos.x), calcPhy2Px(pos.y));
+    }
+    
+    ctx.stroke();
   };
 
   //##################################################################################

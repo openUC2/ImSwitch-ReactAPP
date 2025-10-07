@@ -1,18 +1,52 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { setFovX } from "./ObjectiveSlice";
 
 // Define the initial state
 const initialLiveStreamState = {
-  liveViewImage: "",
+  // Image data removed - handled directly by viewer components
+  // liveViewImage: "", // REMOVED: no longer store pixel data in Redux
   minVal: 0,
-  maxVal: 255,
+  maxVal: 65535, // Default to full 16-bit range for binary streaming
+  gamma: 1.0, // New: gamma correction
+  imageFormat: "binary", // Track image format (jpeg, binary, etc.) - default to binary
   pixelSize: null,
   fovX: 0,
   fovY: 0, 
+  // Backend capability detection
+  isLegacyBackend: false,
+  backendCapabilities: {
+    binaryStreaming: true,
+    webglSupported: true
+  },
+  // Persistent stream settings
+  streamSettings: {
+    current_compression_algorithm: "binary",
+    binary: {
+      enabled: true,
+      compression: { algorithm: "lz4", level: 0 },
+      subsampling: { factor: 4 },
+      throttle_ms: 100,
+      bitdepth_in: 12,
+      pixfmt: "GRAY16"
+    },
+    jpeg: {
+      enabled: false,
+      quality: 85
+    }
+  },
   // Histogram data
   histogramX: [],
   histogramY: [],
   showHistogram: false,
+  // View transform state (optional - can be local to component)
+  zoom: 1.0,
+  translateX: 0,
+  translateY: 0,
+  // Stream statistics
+  stats: {
+    fps: 0,
+    bps: 0, // bits per second
+    compressionRatio: 0
+  }
 };
 
 // Create slice
@@ -21,17 +55,57 @@ const liveStreamSlice = createSlice({
   initialState: initialLiveStreamState,
   reducers: {
     setLiveViewImage: (state, action) => {
-      //console.log("setLiveViewImage");
-      //console.log(action.payload);
       state.liveViewImage = action.payload;
     },
-
+    
     setMinVal: (state, action) => {
       state.minVal = action.payload;
     },
 
     setMaxVal: (state, action) => {
       state.maxVal = action.payload;
+    },
+
+    setImageFormat: (state, action) => {
+      state.imageFormat = action.payload;
+    },
+
+    setStreamSettings: (state, action) => {
+      state.streamSettings = { ...state.streamSettings, ...action.payload };
+      // Update imageFormat based on current compression algorithm
+      if (action.payload.current_compression_algorithm) {
+        state.imageFormat = action.payload.current_compression_algorithm;
+      }
+    },
+
+    setGamma: (state, action) => {
+      state.gamma = action.payload;
+    },
+
+    setIsLegacyBackend: (state, action) => {
+      state.isLegacyBackend = action.payload;
+      // Automatically disable binary streaming for legacy backends
+      if (action.payload) {
+        state.backendCapabilities.binaryStreaming = false;
+        state.backendCapabilities.webglSupported = false;
+      }
+    },
+
+    setBackendCapabilities: (state, action) => {
+      state.backendCapabilities = { ...state.backendCapabilities, ...action.payload };
+    },
+
+    setZoom: (state, action) => {
+      state.zoom = action.payload;
+    },
+
+    setTranslate: (state, action) => {
+      state.translateX = action.payload.x;
+      state.translateY = action.payload.y;
+    },
+
+    setStats: (state, action) => {
+      state.stats = { ...state.stats, ...action.payload };
     },
 
     setPixelSize: (state, action) => {
@@ -60,6 +134,14 @@ export const {
   setLiveViewImage,
   setMinVal,
   setMaxVal,
+  setImageFormat,
+  setStreamSettings,
+  setGamma,
+  setIsLegacyBackend,
+  setBackendCapabilities,
+  setZoom,
+  setTranslate,
+  setStats,
   setPixelSize,
   setFovY,
   setHistogramData,

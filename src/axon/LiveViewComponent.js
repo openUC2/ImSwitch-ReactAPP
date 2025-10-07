@@ -33,7 +33,7 @@ ChartJS.register(
  * 
  * @param {boolean} useFastMode - Use optimized processing for better performance (default: true)
  */
-const LiveViewComponent = ({ useFastMode = true }) => {
+const LiveViewComponent = ({ useFastMode = true, onDoubleClick }) => {
     // redux dispatcher
     const dispatch = useDispatch();
 
@@ -44,62 +44,97 @@ const LiveViewComponent = ({ useFastMode = true }) => {
     const canvasRef = useRef(null);
     const containerRef = useRef(null);
     const [imageLoaded, setImageLoaded] = useState(false);
+    const [containerSize, setContainerSize] = useState({ width: 800, height: 600 });
     const [displayScale, setDisplayScale] = useState(1);
     const [canvasStyle, setCanvasStyle] = useState({});
 
-    // Optimized intensity windowing - proper scientific image processing
+        // Optimized intensity windowing - proper scientific image processing
     const applyIntensityWindowing = useCallback((image, minVal, maxVal) => {
       const canvas = canvasRef.current;
       if (!canvas || !image) return;
 
-      const ctx = canvas.getContext('2d');
       canvas.width = image.width;
       canvas.height = image.height;
+
+      const ctx = canvas.getContext('2d');
       ctx.drawImage(image, 0, 0);
 
-      // Skip processing if min/max are at full range (no scaling needed)
-      if (minVal <= 0 && maxVal >= 255) return;
-
-      // Get image data for pixel manipulation
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const data = imageData.data;
 
-      // Avoid division by zero
-      if (maxVal <= minVal) return;
+      // Calculate the intensity range
+      const range = Math.max(1, maxVal - minVal); // Avoid division by zero
+      const scale = 255.0 / range;
 
-      // Calculate scaling factor for intensity windowing
-      const scale = 255 / (maxVal - minVal);
-
-      // Optimized intensity windowing: map [minVal, maxVal] → [0, 255]
+      // Apply linear intensity windowing: [minVal, maxVal] → [0, 255]
       for (let i = 0; i < data.length; i += 4) {
-        // For each pixel (RGBA)
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
-
-        // Convert to grayscale for intensity calculation
-        const gray = 0.299 * r + 0.587 * g + 0.114 * b;
-
-        // Apply intensity windowing: linear mapping [minVal, maxVal] → [0, 255]
-        let scaledGray;
-        if (gray <= minVal) {
-          scaledGray = 0; // Clip values below minimum
-        } else if (gray >= maxVal) {
-          scaledGray = 255; // Clip values above maximum
+        // Get original intensity (assuming grayscale, use red channel)
+        const originalIntensity = data[i];
+        
+        // Apply windowing
+        let adjustedIntensity;
+        if (originalIntensity <= minVal) {
+          adjustedIntensity = 0;
+        } else if (originalIntensity >= maxVal) {
+          adjustedIntensity = 255;
         } else {
-          scaledGray = (gray - minVal) * scale; // Linear scaling in between
+          adjustedIntensity = (originalIntensity - minVal) * scale;
         }
-
-        // Apply back to RGB channels
-        data[i] = scaledGray;     // R
-        data[i + 1] = scaledGray; // G
-        data[i + 2] = scaledGray; // B
+        
+        // Apply to all color channels (grayscale)
+        data[i] = adjustedIntensity;     // Red
+        data[i + 1] = adjustedIntensity; // Green  
+        data[i + 2] = adjustedIntensity; // Blue
         // Alpha channel (i + 3) remains unchanged
       }
 
-      // Put the modified image data back
       ctx.putImageData(imageData, 0, 0);
     }, []);
+
+    // Monitor container size changes
+    useEffect(() => {
+      const container = containerRef.current;
+      if (!container) return;
+
+      const resizeObserver = new ResizeObserver(entries => {
+        for (let entry of entries) {
+          const { width, height } = entry.contentRect;
+          setContainerSize({ width, height });
+        }
+      });
+
+      resizeObserver.observe(container);
+
+      // Initial size
+      const rect = container.getBoundingClientRect();
+      setContainerSize({ width: rect.width, height: rect.height });
+
+      return () => resizeObserver.disconnect();
+    }, []);
+
+    // Calculate responsive canvas dimensions
+    const getDisplayDimensions = useCallback((imageWidth, imageHeight) => {
+      
+      if (!imageWidth || !imageHeight) {
+        console.log('Missing image dimensions, using fallback');
+        return { width: 400, height: 300 };
+      }
+      
+      if (!containerSize.width || !containerSize.height) {
+        console.log('Missing container size, using fallback');
+        return { width: 400, height: 300 };
+      }
+
+      const imageAspectRatio = imageWidth / imageHeight;
+      
+      // Match container width exactly as requested
+      // Always use the full container width and scale height accordingly
+      const displayWidth = Math.floor(containerSize.width);
+      const displayHeight = Math.floor(containerSize.width / imageAspectRatio);
+      
+      
+      return { width: displayWidth, height: displayHeight };
+    }, [containerSize]);
 
     // Legacy pixel-perfect intensity scaling (for compatibility)
     const applyPixelIntensityScaling = useCallback((image, minVal, maxVal) => {
@@ -108,53 +143,26 @@ const LiveViewComponent = ({ useFastMode = true }) => {
     }, [applyIntensityWindowing]);
     // Apply responsive sizing to the image
     const applyResponsiveSizing = useCallback((image) => {
-      const container = containerRef.current;
-      if (!image || !container) return;
+      if (!image) return;
 
-      // Get container dimensions
-      const containerRect = container.getBoundingClientRect();
-      let containerWidth = containerRect.width;
-      let containerHeight = containerRect.height;
-
-      // If container has no size yet, try again on next animation frame
-      if (containerWidth === 0 || containerHeight === 0) {
-        // Try again soon, but avoid infinite loop
-        window.requestAnimationFrame(() => applyResponsiveSizing(image));
-        return;
-      }
-
-      // Calculate scale to fit while maintaining aspect ratio
-      const imageAspectRatio = image.width / image.height;
-      const containerAspectRatio = containerWidth / containerHeight;
-
-      let displayWidth, displayHeight;
-
-      if (imageAspectRatio > containerAspectRatio) {
-        // Image is wider than container - fit to width
-        displayWidth = containerWidth;
-        displayHeight = containerWidth / imageAspectRatio;
-      } else {
-        // Image is taller than container - fit to height
-        displayHeight = containerHeight;
-        displayWidth = containerHeight * imageAspectRatio;
-      }
-
+      // Get display dimensions based on current container size
+      const displayDimensions = getDisplayDimensions(image.width, image.height);
+      
       // Calculate display scale factor for scale bar based on actual display size
-      const scale = displayWidth > 0 && image.width > 0 ? displayWidth / image.width : 1;
+      const scale = displayDimensions.width > 0 && image.width > 0 ? displayDimensions.width / image.width : 1;
       setDisplayScale(scale);
 
       // Apply proper intensity windowing (scientific image processing)
       applyIntensityWindowing(image, liveStreamState.minVal, liveStreamState.maxVal);
       
       setCanvasStyle({
-        width: `${displayWidth}px`,
-        height: `${displayHeight}px`,
-        maxWidth: '100%',
-        maxHeight: '100%',
+        width: `${displayDimensions.width}px`,
+        height: `${displayDimensions.height}px`,
         display: 'block',
-        margin: '0 auto', // Center the canvas horizontally
+        margin: '20px auto', // Center the canvas horizontally
+        objectFit: 'contain'
       });
-    }, [applyIntensityWindowing, liveStreamState.minVal, liveStreamState.maxVal]);
+    }, [applyIntensityWindowing, getDisplayDimensions, liveStreamState.minVal, liveStreamState.maxVal, containerSize]);
 
     // Load and process image when it changes
     useEffect(() => {
@@ -189,6 +197,15 @@ const LiveViewComponent = ({ useFastMode = true }) => {
         setCanvasStyle({}); // Reset canvas style when no image
       }
     }, [liveStreamState.liveViewImage, applyResponsiveSizing]);
+
+    // Reapply sizing when container size changes
+    useEffect(() => {
+      if (imageLoaded && liveStreamState.liveViewImage) {
+        const img = new Image();
+        img.onload = () => applyResponsiveSizing(img);
+        img.src = `data:image/jpeg;base64,${liveStreamState.liveViewImage}`;
+      }
+    }, [containerSize, imageLoaded, liveStreamState.liveViewImage, applyResponsiveSizing]);
 
     // Update intensity windowing when min/max values change
     useEffect(() => {
@@ -267,10 +284,9 @@ const LiveViewComponent = ({ useFastMode = true }) => {
     // Handle double-click to move to position
     const handleCanvasDoubleClick = useCallback((event) => {
       const canvas = canvasRef.current;
-      const adaptivePixelSize = getAdaptivePixelSize();
       
-      if (!canvas || !adaptivePixelSize) {
-        console.warn('Canvas or field of view (fovX) not available for position calculation');
+      if (!canvas) {
+        console.warn('Canvas not available for position calculation');
         return;
       }
 
@@ -281,6 +297,20 @@ const LiveViewComponent = ({ useFastMode = true }) => {
       
       const clickX = (event.clientX - rect.left) * scaleX;
       const clickY = (event.clientY - rect.top) * scaleY;
+
+      // If external handler is provided, use it with image dimensions
+      if (onDoubleClick) {
+        onDoubleClick(clickX, clickY, canvas.width, canvas.height);
+        return;
+      }
+
+      // Fallback to original logic if no external handler
+      const adaptivePixelSize = getAdaptivePixelSize();
+      
+      if (!adaptivePixelSize) {
+        console.warn('Field of view (fovX) not available for position calculation');
+        return;
+      }
 
       // Convert pixel coordinates to real-world coordinates
       // Center of image is (0,0) in real coordinates
@@ -297,7 +327,7 @@ const LiveViewComponent = ({ useFastMode = true }) => {
       // Move to the calculated position
       // Note: Y direction might need to be inverted depending on stage orientation
       moveToPosition(-realX, -realY); // Inverting Y as microscope Y often goes opposite to image Y
-    }, [getAdaptivePixelSize, moveToPosition, objectiveState.fovX]);
+    }, [onDoubleClick, getAdaptivePixelSize, moveToPosition, objectiveState.fovX]);
 
     // Calculate scale bar dimensions - using adaptive pixel size
     const scaleBarPx = 50;
@@ -330,7 +360,16 @@ const LiveViewComponent = ({ useFastMode = true }) => {
     };
 
   return (
-    <Box ref={containerRef} sx={{ position: "relative", width: "100%", height: "100%" }}>
+    <Box ref={containerRef} sx={{ 
+      position: "relative", 
+      width: "80%", 
+      height: "100%",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "black",
+      overflow: "hidden"
+    }}>
       {/* Canvas for intensity-scaled image */}
       {liveStreamState.liveViewImage ? (
         <canvas
@@ -353,9 +392,8 @@ const LiveViewComponent = ({ useFastMode = true }) => {
         <Box
           sx={{
             position: "absolute",
-            bottom: 100,
-            left: "60%",
-            transform: "translateX(-50%)",
+            bottom: 50,
+            transform: "translateX(-10%)",
             color: "#fff",
             display: "flex",
             alignItems: "center",
@@ -368,38 +406,6 @@ const LiveViewComponent = ({ useFastMode = true }) => {
           <Typography variant="body2">{scaleBarMicrons} µm</Typography>
         </Box>
       )}
-      {/* Intensity scaling sliders */}
-      <Box
-        sx={{
-          position: "absolute",
-          top: 10,
-          right: 10,
-          height: "80%",
-          display: "flex",
-          alignItems: "center",
-          zIndex: 6,
-          backgroundColor: "rgba(0, 0, 0, 0.3)",
-          borderRadius: 1,
-          p: 1,
-        }}
-      >
-        <Slider
-          orientation="vertical"
-          value={[liveStreamState.minVal, liveStreamState.maxVal]}
-          onChange={handleRangeChange}
-          min={0}
-          max={255}
-          valueLabelDisplay="on"
-          valueLabelFormat={(v, i) => (i ? `Max: ${v}` : `Min: ${v}`)}
-          sx={{ height: "80%", mr: 1 }}
-        />
-        <Typography
-          variant="body2"
-          sx={{ color: "#fff", writingMode: "vertical-rl", transform: "rotate(180deg)" }}
-        >
-          Intensity
-        </Typography>
-      </Box>
 
       {/* Histogram Overlay */}
       {liveStreamState.showHistogram && liveStreamState.histogramX.length > 0 && liveStreamState.histogramY.length > 0 && (

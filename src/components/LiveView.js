@@ -15,7 +15,15 @@ import {
   Select,
   MenuItem,
   Grid,
+  Slider,
+  Paper,
+  Collapse,
+  IconButton,
 } from "@mui/material";
+import {
+  Settings as SettingsIcon,
+  ExpandMore as ExpandMoreIcon,
+} from "@mui/icons-material";
 import XYZControls from "./XYZControls";
 import AutofocusController from "./AutofocusController";
 import DetectorParameters from "./DetectorParameters";
@@ -73,10 +81,20 @@ export default function LiveView({
   // Keep some local state for now (these may need their own slices later)
   const [isRecording, setIsRecording] = useState(false);
   const [histogramActive, setHistogramActive] = useState(false);
-  const [minVal, setMinVal] = useState(0);
-  const [maxVal, setMaxVal] = useState(255);
   const [lastSnapPath, setLastSnapPath] = useState("");
-  const [compressionRate, setCompressionRate] = useState(80);
+  // Save format state for recording and snap
+  const [saveFormat, setSaveFormat] = useState(4); // Default: MP4
+  const saveFormatOptions = [
+    { value: 1, label: "TIFF" },
+    { value: 2, label: "HDF5" },
+    { value: 3, label: "ZARR" },
+    { value: 4, label: "MP4" },
+    { value: 5, label: "PNG" },
+    { value: 6, label: "JPG" },
+  ];
+
+  // Stream settings panel state
+  const [showWindowLevel, setShowWindowLevel] = useState(true);
 
   // Stage control tabs state
   const [stageControlTab, setStageControlTab] = useState(0); // 0 = Multiple Axis View, 1 = Joystick Control
@@ -161,7 +179,9 @@ export default function LiveView({
     })();
   }, [hostIP, hostPort]);
 
-  /* min/max */
+  /* min/max - disabled auto-windowing to allow manual control via slider */
+  // Commented out to prevent overriding manual slider settings
+  /*
   useEffect(() => {
     (async () => {
       try {
@@ -170,11 +190,13 @@ export default function LiveView({
         );
         if (!r.ok) return;
         const d = await r.json();
-        setMinVal(d.minVal);
-        setMaxVal(d.maxVal);
+        // Update Redux state instead of local state
+        dispatch(liveStreamSlice.setMinVal(d.minVal || 0));
+        dispatch(liveStreamSlice.setMaxVal(d.maxVal || 65535));
       } catch {}
     })();
-  }, [hostIP, hostPort]);
+  }, [hostIP, hostPort, dispatch]);
+  */
 
   /* poll second detector */
   useEffect(() => {
@@ -211,49 +233,9 @@ export default function LiveView({
     })();
   }, [hostIP, hostPort, activeTab, dispatch]);
 
-  // Fetch the current compression rate from backend once
-  useEffect(() => {
-    const fetchCompressionRate = async () => {
-      try {
-        const res = await fetch(
-          `${hostIP}:${hostPort}/SettingsController/getDetectorGlobalParameters`
-        );
-        if (res.ok) {
-          const data = await res.json();
-          if (typeof data.compressionlevel === "number") {
-            setCompressionRate(data.compressionlevel);
-          }
-        }
-      } catch (err) {
-        console.error("Failed to fetch compression rate:", err);
-      }
-    };
-    fetchCompressionRate();
-  }, []);
-
-  // Update local state and backend whenever the user changes the rate
-  const handleCompressionChange = async (e) => {
-    const val = Number(e.target.value);
-    setCompressionRate(val);
-    try {
-      await fetch(
-        `${hostIP}:${hostPort}/SettingsController/setDetectorCompressionrate?compressionrate=${val}`
-      );
-    } catch (err) {
-      console.error("Failed to set compression rate:", err);
-    }
-  };
-
   /* handlers */
-  const handleRangeChange = (e, v) => {
-    setMinVal(v[0]);
-    setMaxVal(v[1]);
-  };
-  // Note: Backend intensity scaling removed - now handled in frontend
-  const handleRangeCommit = async (e, v) => {
-    // Frontend-only intensity scaling - no backend call needed
-    console.log("Intensity range updated in frontend:", v);
-  };
+  // Note: Range handling now done directly in Redux dispatch - old handlers removed
+
   const toggleStream = async () => {
     const n = !isStreamRunning;
     try {
@@ -266,7 +248,7 @@ export default function LiveView({
   async function snap() {
     // English comment: Example fetch for snapping an image
     const response = await fetch(
-      `${hostIP}:${hostPort}/RecordingController/snapImageToPath?fileName=openUC2_snapshot`
+      `${hostIP}:${hostPort}/RecordingController/snapImageToPath?fileName=openUC2_snapshot&mSaveFormat=${saveFormat}`
     );
     const data = await response.json();
     // data.relativePath might be "recordings/2025_05_20-11-12-44_PM"
@@ -280,7 +262,7 @@ export default function LiveView({
   const startRec = async () => {
     setIsRecording(true);
     fetch(
-      `${hostIP}:${hostPort}/RecordingController/startRecording?mSaveFormat=4`
+      `${hostIP}:${hostPort}/RecordingController/startRecording?mSaveFormat=${saveFormat}`
     ).catch(() => {});
   };
   const stopRec = async () => {
@@ -354,9 +336,33 @@ export default function LiveView({
       }}
     >
       {/* LEFT */}
-      <Box sx={{ width: "60%", height: "100%", p: 2, boxSizing: "border-box" }}>
-        {/* Snap controls with editable file name */}
+      <Box
+        sx={{
+          width: "60%",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          boxSizing: "border-box",
+        }}
+      >
+        {/* Snap controls with editable file name and save format dropdown */}
         <Box sx={{ display: "flex", gap: 1, mb: 2, alignItems: "center" }}>
+          <FormControl size="small" sx={{ minWidth: 120 }}>
+            <InputLabel id="save-format-label">Save Format</InputLabel>
+            <Select
+              labelId="save-format-label"
+              id="save-format-select"
+              value={saveFormat}
+              label="Save Format"
+              onChange={(e) => setSaveFormat(e.target.value)}
+            >
+              {saveFormatOptions.map((opt) => (
+                <MenuItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
           {/* Keep StreamControls for other controls */}
           <StreamControls
             isStreamRunning={isStreamRunning}
@@ -367,8 +373,6 @@ export default function LiveView({
             onStopRecord={stopRec}
             onGoToImage={handleGoToImage}
             lastSnapPath={lastSnapPath}
-            compressionRate={compressionRate}
-            setCompressionRate={handleCompressionChange}
           />
         </Box>
 
@@ -398,8 +402,28 @@ export default function LiveView({
           ))}
         </Tabs>
 
-        <Box sx={{ width: "100%", height: "calc(100% - 140px)", mt: 1 }}>
-          <LiveViewControlWrapper />
+        {/* Live View Container - Fixed Height // TODO: This does not look really nice..  */}
+        <Box
+          sx={{
+            height: "60%",
+            mb: 2,
+            position: "relative",
+          }}
+        >
+          <LiveViewControlWrapper hostIP={hostIP} hostPort={hostPort} />
+        </Box>
+
+        {/* Controls Panel - Scrollable */}
+        <Box
+          sx={{
+            flex: 1,
+            overflowY: "auto",
+            p: 2,
+            maxHeight: "calc(40vh)",
+          }}
+        >
+          {/* Note: Window/Level Controls moved to StreamControlOverlay */}
+          <Box sx={{ mb: 2 }}></Box>
         </Box>
       </Box>
 
