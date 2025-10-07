@@ -341,6 +341,7 @@ export default function LiveView({
           width: "60%",
           height: "100%",
           display: "flex",
+          paddingTop: 1,
           flexDirection: "column",
           boxSizing: "border-box",
         }}
