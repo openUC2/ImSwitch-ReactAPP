@@ -33,7 +33,7 @@ const AboutPage = () => {
         <Grid item xs={12}>
           <Typography variant="h6">App Version</Typography>
           <Typography variant="body2">
-            Version: {process.env.REACT_APP_VERSION}
+            Version: {process.env.REACT_APP_VERSION || "Unknown"}
           </Typography>
         </Grid>
         <Grid item xs={12}>
