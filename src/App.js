@@ -1423,25 +1423,19 @@ function App() {
             {selectedPlugin === "FocusLock" && <FocusLockController />}
             {selectedPlugin === "JupyteNotebook" && (
               <JupyterProvider>
-                <JupyterExecutor hostIP={hostIP} hostPort={apiPort} />
+                <JupyterExecutor />
               </JupyterProvider>
             )}
             {selectedPlugin === "Infinity Scanning" && (
-              <LargeFovScanController hostIP={hostIP} hostPort={apiPort} />
+              <LargeFovScanController />
             )}
             {selectedPlugin === "Blockly" && <BlocklyController />}
             {selectedPlugin === "Timelapse" && (
               <MCTProvider>
-                <TimelapseController
-                  hostIP={hostIP}
-                  hostPort={apiPort}
-                  title="Timelapse"
-                />
+                <TimelapseController />
               </MCTProvider>
             )}
-            {selectedPlugin === "Objective" && (
-              <ObjectiveController hostIP={hostIP} hostPort={apiPort} />
-            )}
+            {selectedPlugin === "Objective" && <ObjectiveController />}
             {selectedPlugin === "About" && <AboutPage />}
             {selectedPlugin === "SystemSettings" && <SystemSettings />}
             {selectedPlugin === "FileManager" && (
@@ -1488,9 +1482,7 @@ function App() {
                   </Suspense>
                 )
             )}
-            {selectedPlugin === "FlowStop" && (
-              <FlowStopController hostIP={hostIP} hostPort={apiPort} />
-            )}
+            {selectedPlugin === "FlowStop" && <FlowStopController />}
             {selectedPlugin === "StageOffsetCalibration" && (
               <StageOffsetCalibration hostIP={hostIP} hostPort={apiPort} />
             )}

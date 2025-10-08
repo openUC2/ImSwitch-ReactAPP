@@ -16,6 +16,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
 import { useWebSocket } from "../context/WebSocketContext";
 import * as flowStopSlice from "../state/slices/FlowStopSlice.js";
+import { getConnectionSettingsState } from "../state/slices/ConnectionSettingsSlice";
 
 const TabPanel = (props) => {
   const { children, value, index, ...other } = props;
@@ -33,13 +34,17 @@ const TabPanel = (props) => {
   );
 };
 
-const FlowStopController = ({ hostIP, hostPort, WindowTitle }) => {
+const FlowStopController = () => {
+  // Get connection settings from Redux
+  const connectionSettings = useSelector(getConnectionSettingsState);
+  const hostIP = connectionSettings.ip;
+  const hostPort = connectionSettings.apiPort;
   // Redux dispatcher
   const dispatch = useDispatch();
-  
+
   // Access global Redux state
   const flowStopState = useSelector(flowStopSlice.getFlowStopState);
-  
+
   // Use Redux state instead of local useState
   const tabIndex = flowStopState.tabIndex;
   const timeStamp = flowStopState.timeStamp;
@@ -76,11 +81,17 @@ const FlowStopController = ({ hostIP, hostPort, WindowTitle }) => {
         const data = await response.json();
         dispatch(flowStopSlice.setTimeStamp(data.timeStamp));
         dispatch(flowStopSlice.setExperimentName(data.experimentName));
-        dispatch(flowStopSlice.setExperimentDescription("Add some description here"));
+        dispatch(
+          flowStopSlice.setExperimentDescription("Add some description here")
+        );
         dispatch(flowStopSlice.setUniqueId(parseFloat(data.uniqueId, 1)));
         dispatch(flowStopSlice.setNumImages(parseFloat(data.numImages, -1)));
-        dispatch(flowStopSlice.setVolumePerImage(parseFloat(data.volumePerImage, 1000)));
-        dispatch(flowStopSlice.setTimeToStabilize(parseFloat(data.timeToStabilize, 1)));
+        dispatch(
+          flowStopSlice.setVolumePerImage(parseFloat(data.volumePerImage, 1000))
+        );
+        dispatch(
+          flowStopSlice.setTimeToStabilize(parseFloat(data.timeToStabilize, 1))
+        );
         dispatch(flowStopSlice.setPumpSpeed(parseFloat(data.pumpSpeed, 1000)));
       } catch (error) {
         console.error("Error fetching experiment parameters:", error);
@@ -98,9 +109,9 @@ const FlowStopController = ({ hostIP, hostPort, WindowTitle }) => {
     socket.on("signal", (data) => {
       const jdata = JSON.parse(data);
       if (jdata.name === "sigImagesTaken") {
-          dispatch(flowStopSlice.setCurrentImageCount(jdata.args.p0));
-        }
-      if (jdata.name === "sigIsRunning") {
+        dispatch(flowStopSlice.setCurrentImageCount(jdata.args.p0));
+      }
+      if (jdata.name === "sigIsRunning") {
         dispatch(flowStopSlice.setIsRunning(jdata.args.p0));
       }
     });
@@ -111,11 +122,10 @@ const FlowStopController = ({ hostIP, hostPort, WindowTitle }) => {
       }
     };
   }, [socket]);
-  
 
   const startExperiment = () => {
     // https://localhost:8001/FlowStopController/startFlowStopExperimentFastAPI?timeStamp=asdf&experimentName=adf&experimentDescription=asdf&uniqueId=asdf&numImages=19&volumePerImage=199&timeToStabilize=1&delayToStart=1&frameRate=1&filePath=.%2F&fileFormat=TIF&isRecordVideo=true&pumpSpeed=10000
-
+    // Build URL from Redux connection settings
     const url = `${hostIP}:${hostPort}/FlowStopController/startFlowStopExperimentFastAPI?timeStamp=${timeStamp}&experimentName=${experimentName}&experimentDescription=${experimentDescription}&uniqueId=${uniqueId}&numImages=${numImages}&volumePerImage=${volumePerImage}&timeToStabilize=${timeToStabilize}&isRecordVideo=true&pumpSpeed=${pumpSpeed}`;
     fetch(url, { method: "GET" })
       .then((response) => response.json())
@@ -170,7 +180,9 @@ const FlowStopController = ({ hostIP, hostPort, WindowTitle }) => {
               style={{ marginBottom: "20px" }}
               label="Time Stamp Name"
               value={timeStamp}
-              onChange={(e) => dispatch(flowStopSlice.setTimeStamp(e.target.value))}
+              onChange={(e) =>
+                dispatch(flowStopSlice.setTimeStamp(e.target.value))
+              }
               fullWidth
             />
           </Grid>
@@ -179,7 +191,9 @@ const FlowStopController = ({ hostIP, hostPort, WindowTitle }) => {
               style={{ marginBottom: "20px" }}
               label="Experiment Name"
               value={experimentName}
-              onChange={(e) => dispatch(flowStopSlice.setExperimentName(e.target.value))}
+              onChange={(e) =>
+                dispatch(flowStopSlice.setExperimentName(e.target.value))
+              }
               fullWidth
             />
           </Grid>
@@ -188,7 +202,9 @@ const FlowStopController = ({ hostIP, hostPort, WindowTitle }) => {
               style={{ marginBottom: "20px" }}
               label="Experiment Description"
               value={experimentDescription}
-              onChange={(e) => dispatch(flowStopSlice.setExperimentDescription(e.target.value))}
+              onChange={(e) =>
+                dispatch(flowStopSlice.setExperimentDescription(e.target.value))
+              }
               fullWidth
             />
           </Grid>
@@ -197,7 +213,9 @@ const FlowStopController = ({ hostIP, hostPort, WindowTitle }) => {
               style={{ marginBottom: "20px" }}
               label="Volume Per Image"
               value={volumePerImage}
-              onChange={(e) => dispatch(flowStopSlice.setVolumePerImage(e.target.value))}
+              onChange={(e) =>
+                dispatch(flowStopSlice.setVolumePerImage(e.target.value))
+              }
               fullWidth
             />
           </Grid>
@@ -206,7 +224,9 @@ const FlowStopController = ({ hostIP, hostPort, WindowTitle }) => {
               style={{ marginBottom: "20px" }}
               label="Time to stabilize"
               value={timeToStabilize}
-              onChange={(e) => dispatch(flowStopSlice.setTimeToStabilize(e.target.value))}
+              onChange={(e) =>
+                dispatch(flowStopSlice.setTimeToStabilize(e.target.value))
+              }
               fullWidth
             />
           </Grid>
@@ -215,7 +235,9 @@ const FlowStopController = ({ hostIP, hostPort, WindowTitle }) => {
               style={{ marginBottom: "20px" }}
               label="Pump Speed"
               value={pumpSpeed}
-              onChange={(e) => dispatch(flowStopSlice.setPumpSpeed(e.target.value))}
+              onChange={(e) =>
+                dispatch(flowStopSlice.setPumpSpeed(e.target.value))
+              }
               fullWidth
             />
           </Grid>
@@ -224,7 +246,9 @@ const FlowStopController = ({ hostIP, hostPort, WindowTitle }) => {
               style={{ marginBottom: "20px" }}
               label="Number of Images"
               value={numImages}
-              onChange={(e) => dispatch(flowStopSlice.setNumImages(e.target.value))}
+              onChange={(e) =>
+                dispatch(flowStopSlice.setNumImages(e.target.value))
+              }
               fullWidth
             />
           </Grid>
