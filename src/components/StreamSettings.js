@@ -18,6 +18,7 @@ import {
 import apiSettingsControllerGetStreamParams from '../backendapi/apiSettingsControllerGetStreamParams';
 import apiSettingsControllerSetStreamParams from '../backendapi/apiSettingsControllerSetStreamParams';
 import apiSettingsControllerSetJpegQuality from '../backendapi/apiSettingsControllerSetJpegQuality';
+import apiSettingsControllerGetDetectorGlobalParameters from '../backendapi/apiSettingsControllerGetDetectorGlobalParameters';
 import * as liveStreamSlice from '../state/slices/LiveStreamSlice.js';
 
 /**
@@ -70,7 +71,6 @@ const StreamSettings = ({ onOpen }) => {
       const currentFormat = draftSettings.binary.enabled ? 'binary' : 'jpeg';
       dispatch(liveStreamSlice.setImageFormat(currentFormat));
       
-      setHasUnsavedChanges(false);
       console.log('Stream settings submitted successfully');
     } catch (err) {
       setError(`Failed to submit settings: ${err.message}`);
@@ -97,7 +97,6 @@ const StreamSettings = ({ onOpen }) => {
       }
     };
     setDraftSettings(defaultSettings);
-    setHasUnsavedChanges(true);
   }, []);
   
   // Load settings from backend with auto-retry
@@ -105,6 +104,22 @@ const StreamSettings = ({ onOpen }) => {
     try {
       setLoading(true);
       setError(null);
+      
+      // First, check the current backend stream format from global detector parameters
+      let detectedStreamType = null;
+      try {
+        const globalParams = await apiSettingsControllerGetDetectorGlobalParameters();
+        console.log('Global detector parameters:', globalParams);
+        
+        // Determine stream type from compression algorithm
+        // If algorithm is "jpeg", it's JPEG mode; otherwise (lz4, zstd, etc.) it's binary
+        if (globalParams.stream_compression_algorithm) {
+          detectedStreamType = globalParams.stream_compression_algorithm === 'jpeg' ? 'jpeg' : 'binary';
+          console.log(`Detected stream type from backend: ${detectedStreamType}`);
+        }
+      } catch (err) {
+        console.warn('Could not fetch global detector parameters:', err.message);
+      }
       
       // Try to load binary streaming settings
       const params = await apiSettingsControllerGetStreamParams();
@@ -115,8 +130,19 @@ const StreamSettings = ({ onOpen }) => {
         ...params
       };
       
+      // Override with detected stream type if available
+      if (detectedStreamType) {
+        mergedSettings.binary.enabled = detectedStreamType === 'binary';
+        mergedSettings.jpeg.enabled = detectedStreamType === 'jpeg';
+        mergedSettings.current_compression_algorithm = detectedStreamType;
+      }
+      
       setDraftSettings(mergedSettings);
       dispatch(liveStreamSlice.setStreamSettings(mergedSettings));
+      
+      // Update format in Redux based on detected or configured stream type
+      const currentFormat = mergedSettings.binary.enabled ? 'binary' : 'jpeg';
+      dispatch(liveStreamSlice.setImageFormat(currentFormat));
       
       console.log('Stream settings loaded successfully');
       
@@ -195,8 +221,6 @@ const StreamSettings = ({ onOpen }) => {
     }
     current[keys[keys.length - 1]] = value;
     
-    setDraftSettings(newDraftSettings);
-    setHasUnsavedChanges(true);
   }, [draftSettings]);
 
   if (loading) {
@@ -248,10 +272,13 @@ const StreamSettings = ({ onOpen }) => {
   return (
     <Paper sx={{ 
       p: 2, 
-      minWidth: 300, 
-      maxHeight: 'calc(100vh - 100px)', 
+      minWidth: 300,
+      maxWidth: 400,
+      maxHeight: '80vh',
       overflowY: 'auto',
-      overflowX: 'hidden'
+      overflowX: 'hidden',
+      display: 'flex',
+      flexDirection: 'column'
     }}>
       <Typography variant="h6" gutterBottom>
         Stream Settings

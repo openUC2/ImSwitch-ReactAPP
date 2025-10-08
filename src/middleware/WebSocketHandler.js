@@ -53,7 +53,7 @@ const WebSocketHandler = () => {
     let frameMetadata = null;
     
     // Listen for binary frame events (UC2F packets)
-    socket.on("frame", (buf) => {
+    socket.on("frame", (buf, ack) => {
       /*
       console.log('WebSocketHandler: Received UC2F frame:', buf.byteLength, 'bytes');
       console.log('WebSocketHandler: Buffer type:', buf.constructor.name);
@@ -67,10 +67,19 @@ const WebSocketHandler = () => {
         }
       }));
       // console.log('WebSocketHandler: Dispatched uc2:frame event');
+      
+      // Send acknowledgement to enable flow control
+      // This tells the server we're ready for the next frame
+      if (ack && typeof ack === 'function') {
+        ack();
+      } else {
+        // Fallback: emit explicit acknowledgement event
+        socket.emit('frame_ack');
+      }
     });
 
     // Listen to signals
-    socket.on("signal", (data) => {
+    socket.on("signal", (data, ack) => {
       //console.log('WebSocket signal', data);
       //update redux state
       dispatch(webSocketSlice.incrementSignalCount());
@@ -83,9 +92,15 @@ const WebSocketHandler = () => {
       if (dataJson.name === "frame_meta" && dataJson.metadata) {
         // console.log('Received frame metadata:', dataJson.metadata);
         frameMetadata = dataJson.metadata;
+        console.log("Frame id: ", frameMetadata.image_id);
+        
+        // Update Redux with current frame ID
+        if (frameMetadata.image_id !== undefined) {
+          dispatch(liveStreamSlice.setCurrentFrameId(frameMetadata.image_id));
+        }
       }
       //----------------------------------------------
-      if (dataJson.name === "sigUpdateImage") {
+      else if (dataJson.name === "sigUpdateImage") {
         //console.log("sigUpdateImage", dataJson);
         //update redux state - LEGACY JPEG PATH
         if (dataJson.detectorname) {
@@ -117,6 +132,24 @@ const WebSocketHandler = () => {
           // Update pixel size if available
           if (dataJson.pixelsize) {
             dispatch(liveStreamSlice.setPixelSize(dataJson.pixelsize));
+          }
+          
+          // Track latency if server timestamp is available
+          if (dataJson.server_timestamp) {
+            const latency = (Date.now() / 1000 - dataJson.server_timestamp) * 1000; // Convert to ms
+            dispatch(liveStreamSlice.updateLatency(latency));
+            // Log every 30th frame to avoid spam
+            const currentState = store.getState().liveStreamState;
+            if (currentState.stats.frameCount % 30 === 0) {
+              console.log(`Frame latency: ${latency.toFixed(1)}ms (avg: ${currentState.stats.avg_latency_ms.toFixed(1)}ms)`);
+            }
+          }
+          
+          // Send acknowledgement for JPEG frames to enable flow control
+          if (ack && typeof ack === 'function') {
+            ack();
+          } else {
+            socket.emit('frame_ack');
           }
 
           /*

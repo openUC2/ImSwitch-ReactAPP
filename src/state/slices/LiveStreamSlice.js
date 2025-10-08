@@ -45,7 +45,11 @@ const initialLiveStreamState = {
   stats: {
     fps: 0,
     bps: 0, // bits per second
-    compressionRatio: 0
+    compressionRatio: 0,
+    latency_ms: 0, // Current frame latency
+    avg_latency_ms: 0, // Moving average latency
+    frameCount: 0, // Total frames received
+    currentFrameId: null // Current frame ID from metadata
   }
 };
 
@@ -107,6 +111,23 @@ const liveStreamSlice = createSlice({
     setStats: (state, action) => {
       state.stats = { ...state.stats, ...action.payload };
     },
+    
+    setCurrentFrameId: (state, action) => {
+      state.stats.currentFrameId = action.payload;
+    },
+    
+    updateLatency: (state, action) => {
+      const latency_ms = action.payload;
+      state.stats.latency_ms = latency_ms;
+      state.stats.frameCount += 1;
+      
+      // Calculate moving average (exponential moving average with alpha=0.1)
+      if (state.stats.avg_latency_ms === 0) {
+        state.stats.avg_latency_ms = latency_ms;
+      } else {
+        state.stats.avg_latency_ms = 0.1 * latency_ms + 0.9 * state.stats.avg_latency_ms;
+      }
+    },
 
     setPixelSize: (state, action) => {
       state.pixelSize = action.payload;
@@ -142,6 +163,8 @@ export const {
   setZoom,
   setTranslate,
   setStats,
+  setCurrentFrameId,
+  updateLatency,
   setPixelSize,
   setFovY,
   setHistogramData,

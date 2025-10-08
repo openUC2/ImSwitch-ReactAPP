@@ -3,13 +3,12 @@ import React, { useState, useCallback } from "react";
 import LiveViewComponent from "./LiveViewComponent";
 import LiveViewerGL from "../components/LiveViewerGL";
 import PositionControllerComponent from "./PositionControllerComponent";
-import StreamControlOverlay from "../components/StreamControlOverlay";
 import apiPositionerControllerMovePositioner from "../backendapi/apiPositionerControllerMovePositioner";
 import { useSelector } from "react-redux";
 import * as objectiveSlice from "../state/slices/ObjectiveSlice.js";
 import * as liveStreamSlice from "../state/slices/LiveStreamSlice.js";
 
-const LiveViewControlWrapper = ({ useFastMode = true, hostIP, hostPort }) => {
+const LiveViewControlWrapper = ({ useFastMode = true }) => {
   const objectiveState = useSelector(objectiveSlice.getObjectiveState);
   const liveStreamState = useSelector(liveStreamSlice.getLiveStreamState);
   
@@ -119,19 +118,6 @@ const LiveViewControlWrapper = ({ useFastMode = true, hostIP, hostPort }) => {
           <LiveViewComponent 
             useFastMode={useFastMode} 
             onDoubleClick={handleImageDoubleClick}
-          />
-        )}
-        
-        {/* Stream Control Overlay - only show if hostIP and hostPort are available */}
-        {hostIP && hostPort && (
-          <StreamControlOverlay 
-            hostIP={hostIP} 
-            hostPort={hostPort}
-            stats={hudData.stats}
-            featureSupport={hudData.featureSupport}
-            isWebGL={hudData.isWebGL}
-            imageSize={hudData.imageSize}
-            viewTransform={hudData.viewTransform}
           />
         )}
         </div>

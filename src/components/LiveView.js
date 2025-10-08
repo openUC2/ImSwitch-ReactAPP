@@ -396,7 +396,7 @@ export default function LiveView({ hostIP, hostPort, drawerWidth, setFileManager
           mb: 2,
           position: "relative"
         }}>
-          <LiveViewControlWrapper hostIP={hostIP} hostPort={hostPort} />
+          <LiveViewControlWrapper />
         </Box>
 
         {/* Controls Panel - Scrollable */}
