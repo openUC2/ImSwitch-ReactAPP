@@ -1,5 +1,5 @@
 // src/components/MazeGameController.js
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Paper,
@@ -34,11 +34,14 @@ import { Line } from "react-chartjs-2";
 import { useTheme } from "@mui/material/styles";
 import * as mazeGameSlice from "../state/slices/MazeGameSlice.js";
 import * as positionSlice from "../state/slices/PositionSlice.js";
+import * as liveStreamSlice from "../state/slices/LiveStreamSlice.js";
+import * as objectiveSlice from "../state/slices/ObjectiveSlice.js";
+import LiveViewComponent from "../axon/LiveViewComponent.js";
+import LiveViewerGL from "./LiveViewerGL.js";
 import apiMazeGameControllerStartGame from "../backendapi/apiMazeGameControllerStartGame.js";
 import apiMazeGameControllerStopGame from "../backendapi/apiMazeGameControllerStopGame.js";
 import apiMazeGameControllerResetGame from "../backendapi/apiMazeGameControllerResetGame.js";
 import apiMazeGameControllerGetState from "../backendapi/apiMazeGameControllerGetState.js";
-import apiMazeGameControllerGetLatestProcessedPreview from "../backendapi/apiMazeGameControllerGetLatestProcessedPreview.js";
 import apiMazeGameControllerMoveToStartPosition from "../backendapi/apiMazeGameControllerMoveToStartPosition.js";
 import apiMazeGameControllerSetCropSize from "../backendapi/apiMazeGameControllerSetCropSize.js";
 import apiMazeGameControllerSetJumpThresholds from "../backendapi/apiMazeGameControllerSetJumpThresholds.js";
@@ -106,6 +109,8 @@ const MazeGameController = ({ hostIP, hostPort, title = "Maze Game" }) => {
   const theme = useTheme();
   const mazeGameState = useSelector(mazeGameSlice.getMazeGameState);
   const positionState = useSelector(positionSlice.getPositionState);
+  const liveStreamState = useSelector(liveStreamSlice.getLiveStreamState);
+  const objectiveState = useSelector(objectiveSlice.getObjectiveState);
 
   // Destructure state
   const {
@@ -122,7 +127,6 @@ const MazeGameController = ({ hostIP, hostPort, title = "Maze Game" }) => {
     counter,
     elapsed,
     smoothMean,
-    previewImage,
     xyTrace,
     hallOfFame,
   } = mazeGameState;
@@ -135,7 +139,83 @@ const MazeGameController = ({ hostIP, hostPort, title = "Maze Game" }) => {
   const [countdown, setCountdown] = useState(null);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [nameInputValue, setNameInputValue] = useState("");
-  const previewIntervalRef = useRef(null);
+  const [wallHit, setWallHit] = useState(false);
+  const [hudData, setHudData] = useState({
+    stats: { fps: 0, bps: 0 },
+    featureSupport: { webgl2: false, lz4: false },
+    isWebGL: false,
+    imageSize: { width: 0, height: 0 },
+    viewTransform: { scale: 1, translateX: 0, translateY: 0 }
+  });
+  const previousCounterRef = useRef(counter);
+
+  // Determine if we should use WebGL based on backend capabilities
+  const useWebGL = liveStreamState.backendCapabilities.webglSupported && !liveStreamState.isLegacyBackend;
+
+  // Handle HUD data updates from LiveViewerGL
+  const handleHudDataUpdate = useCallback((data) => {
+    setHudData(prevData => {
+      if (!prevData) return data;
+      
+      const hasChanged = 
+        prevData.stats?.fps !== data.stats?.fps ||
+        prevData.stats?.bps !== data.stats?.bps ||
+        prevData.imageSize?.width !== data.imageSize?.width ||
+        prevData.imageSize?.height !== data.imageSize?.height ||
+        prevData.viewTransform?.scale !== data.viewTransform?.scale ||
+        prevData.viewTransform?.translateX !== data.viewTransform?.translateX ||
+        prevData.viewTransform?.translateY !== data.viewTransform?.translateY ||
+        prevData.isWebGL !== data.isWebGL ||
+        JSON.stringify(prevData.featureSupport) !== JSON.stringify(data.featureSupport);
+      
+      return hasChanged ? data : prevData;
+    });
+  }, []);
+
+  // Handle double-click for stage movement (optional for maze game)
+  const handleImageDoubleClick = async (pixelX, pixelY, imageWidth, imageHeight) => {
+    if (running) return; // Disable double-click during game
+    
+    try {
+      const fovX = objectiveState.fovX || 1000;
+      const fovY = objectiveState.fovY || (fovX * imageHeight / imageWidth);
+      
+      const centerX = imageWidth / 2;
+      const centerY = imageHeight / 2;
+      
+      const relativeX = (pixelX - centerX) / imageWidth;
+      const relativeY = (pixelY - centerY) / imageHeight;
+      
+      const moveX = relativeX * fovX;
+      const moveY = relativeY * fovY;
+      
+      await apiPositionerControllerMovePositioner({
+        axis: "X",
+        dist: moveX,
+        isAbsolute: false,
+        isBlocking: false
+      });
+      
+      await apiPositionerControllerMovePositioner({
+        axis: "Y", 
+        dist: -moveY,
+        isAbsolute: false,
+        isBlocking: false
+      });
+    } catch (error) {
+      console.error("Failed to move stage:", error);
+    }
+  };
+
+  // Detect wall hits (counter increment) and trigger red flash
+  useEffect(() => {
+    if (counter > previousCounterRef.current && running) {
+      setWallHit(true);
+      const timer = setTimeout(() => setWallHit(false), 2000);
+      return () => clearTimeout(timer);
+    }
+    previousCounterRef.current = counter;
+  }, [counter, running]);
 
   // Load hall of fame from localStorage on mount
   useEffect(() => {
@@ -525,7 +605,7 @@ const MazeGameController = ({ hostIP, hostPort, title = "Maze Game" }) => {
                   </Grid>
                 </Grid>
 
-                {/* Live Preview */}
+                {/* Live Preview with crop box overlay */}
                 <Box sx={{ position: "relative", mb: 3 }}>
                   <Typography variant="h6" gutterBottom>
                     Live Preview
@@ -544,23 +624,42 @@ const MazeGameController = ({ hostIP, hostPort, title = "Maze Game" }) => {
                       justifyContent: "center",
                     }}
                   >
-                    {previewImage ? (
-                      <img
-                        src={previewImage}
-                        alt="Maze Preview"
-                        style={{
-                          maxWidth: "100%",
-                          maxHeight: "100%",
-                          objectFit: "contain",
+                    {/* Live stream component */}
+                    {useWebGL ? (
+                      <LiveViewerGL 
+                        onDoubleClick={handleImageDoubleClick}
+                        onImageLoad={(width, height) => {
+                          // Optional: handle image load events
                         }}
+                        onHudDataUpdate={handleHudDataUpdate}
                       />
                     ) : (
-                      <Typography color="white">
-                        {running
-                          ? "Loading preview..."
-                          : "Start game to see preview"}
-                      </Typography>
+                      <LiveViewComponent 
+                        useFastMode={true} 
+                        onDoubleClick={handleImageDoubleClick}
+                      />
                     )}
+                    
+                    {/* Crop size rectangle overlay */}
+                    {hudData.imageSize.width > 0 && hudData.imageSize.height > 0 && (
+                      <Box
+                        sx={{
+                          position: "absolute",
+                          top: "50%",
+                          left: "50%",
+                          transform: "translate(-50%, -50%)",
+                          width: `${cropSize}px`,
+                          height: `${cropSize}px`,
+                          border: wallHit ? `4px solid ${red[500]}` : `2px solid ${green[500]}`,
+                          borderRadius: 1,
+                          pointerEvents: "none",
+                          transition: "border 0.3s ease",
+                          boxShadow: wallHit ? `0 0 20px ${red[500]}` : "none",
+                          zIndex: 1002,
+                        }}
+                      />
+                    )}
+                    
                     <CountdownOverlay countdown={countdown} />
                   </Box>
                 </Box>
