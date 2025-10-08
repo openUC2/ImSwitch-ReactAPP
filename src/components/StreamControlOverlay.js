@@ -124,12 +124,50 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
     setSubmitSuccess(false);
 
     try {
-      // Apply format change
-      const newFormat = draftSettings.binary?.enabled ? 'binary' : 'jpeg';
+      // Determine the format and prepare parameters
+      const isJpegMode = draftSettings.jpeg?.enabled === true;
+      const newFormat = isJpegMode ? 'jpeg' : 'binary';
+      
+      // Prepare parameters for backend
+      let submitParams = {};
+      
+      if (isJpegMode) {
+        // JPEG mode: send compression with algorithm='jpeg' and level=quality
+        submitParams = {
+          binary: {
+            enabled: false,
+            compression: {
+              algorithm: 'jpeg',
+              level: draftSettings.jpeg?.quality || 85
+            },
+            subsampling: { factor: 1 },
+            throttle_ms: 100
+          },
+          jpeg: {
+            enabled: true,
+            quality: draftSettings.jpeg?.quality || 85
+          }
+        };
+      } else {
+        // Binary mode: send normal binary compression params
+        submitParams = draftSettings;
+      }
+      
+      // Update Redux with new format FIRST so LiveViewerGL can switch
       dispatch(setImageFormat(newFormat));
+      dispatch(setStreamSettings(submitParams));
+      
+      // Update backend capabilities based on mode
+      dispatch({ 
+        type: 'liveStreamState/setBackendCapabilities', 
+        payload: { 
+          binaryStreaming: !isJpegMode,
+          webglSupported: !isJpegMode
+        } 
+      });
 
-      // Submit to backend using connection settings from Redux
-      await apiSettingsControllerSetStreamParams(draftSettings);
+      // Submit to backend
+      await apiSettingsControllerSetStreamParams(submitParams);
 
       setSubmitSuccess(true);
       setTimeout(() => setSubmitSuccess(false), 3000);
@@ -305,27 +343,32 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
                   Stream Settings
                 </Typography>
 
-                <Box sx={{ mb: 2 }}>
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={draftSettings?.jpeg?.enabled === true}
-                        onChange={(e) =>
-                          setDraftSettings((prev) => ({
-                            ...prev,
-                            binary: { ...prev?.binary, enabled: !e.target.checked },
-                            jpeg: { ...prev?.jpeg, enabled: e.target.checked }
-                          }))
-                        }
-                      />
-                    }
-                    label="JPEG Mode"
-                  />
-                  <Typography variant="caption" color="textSecondary" sx={{ display: 'block', ml: 4 }}>
-                    Current backend: {draftSettings?.binary?.enabled ? 'Binary' : 'JPEG'}
+                {/* Stream Format Dropdown */}
+                <Box sx={{ mb: 3 }}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Stream Format</InputLabel>
+                    <Select
+                      value={draftSettings?.jpeg?.enabled ? 'jpeg' : 'binary'}
+                      label="Stream Format"
+                      onChange={(e) => {
+                        const isJpeg = e.target.value === 'jpeg';
+                        setDraftSettings((prev) => ({
+                          ...prev,
+                          binary: { ...prev?.binary, enabled: !isJpeg },
+                          jpeg: { ...prev?.jpeg, enabled: isJpeg }
+                        }));
+                      }}
+                    >
+                      <MenuItem value="binary">Binary (16-bit) - High Quality</MenuItem>
+                      <MenuItem value="jpeg">JPEG (8-bit) - Legacy</MenuItem>
+                    </Select>
+                  </FormControl>
+                  <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mt: 1 }}>
+                    Current: {draftSettings?.binary?.enabled ? 'Binary' : 'JPEG'}
                   </Typography>
                 </Box>
 
+                {/* Binary Settings */}
                 {draftSettings?.binary?.enabled && (
                   <Box sx={{ mb: 3 }}>
                     <FormControl fullWidth sx={{ mb: 2 }} size="small">
@@ -415,6 +458,47 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
                         valueLabelDisplay="auto"
                         size="small"
                       />
+                    </Box>
+                  </Box>
+                )}
+
+                {/* JPEG Settings */}
+                {draftSettings?.jpeg?.enabled && (
+                  <Box sx={{ mb: 3 }}>
+                    <Typography variant="body2" sx={{ mb: 2, fontWeight: 'medium' }}>
+                      JPEG Settings
+                    </Typography>
+                    
+                    <Alert severity="info" sx={{ mb: 2 }}>
+                      JPEG mode provides 8-bit images. Quality setting affects compression ratio.
+                    </Alert>
+
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 1 }}>
+                        Quality: {draftSettings.jpeg?.quality || 85}%
+                      </Typography>
+                      <Slider
+                        value={draftSettings.jpeg?.quality || 85}
+                        onChange={(_, value) =>
+                          setDraftSettings((prev) => ({
+                            ...prev,
+                            jpeg: { ...prev.jpeg, quality: value }
+                          }))
+                        }
+                        min={1}
+                        max={100}
+                        step={5}
+                        marks={[
+                          { value: 1, label: 'Low' },
+                          { value: 50, label: 'Medium' },
+                          { value: 100, label: 'High' }
+                        ]}
+                        valueLabelDisplay="auto"
+                        size="small"
+                      />
+                      <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mt: 1 }}>
+                        Lower quality = smaller files, faster streaming
+                      </Typography>
                     </Box>
                   </Box>
                 )}

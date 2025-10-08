@@ -15,7 +15,13 @@ const apiSettingsControllerSetStreamParams = async (params = {}) => {
     if (params.binary !== undefined) {
       // Extract from nested structure
       if (params.binary.compression !== undefined) {
-        requestBody.compression = params.binary.compression;
+        if (params.jpeg["enabled"]) {
+          requestBody.compression = {algorithm: 'jpeg', level: 80};
+        }
+        if (params.binary["enabled"]) {
+          requestBody.compression = params.binary.compression;
+        }
+        
       }
       
       if (params.binary.subsampling !== undefined) {

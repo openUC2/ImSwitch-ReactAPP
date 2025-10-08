@@ -613,7 +613,6 @@ const MazeGameController = ({ hostIP, hostPort, title = "Maze Game" }) => {
                   <Box
                     sx={{
                       width: "100%",
-                      height: 400,
                       border: "2px solid #ccc",
                       borderRadius: 1,
                       overflow: "hidden",

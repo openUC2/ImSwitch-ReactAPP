@@ -21,8 +21,11 @@ const LiveViewControlWrapper = ({ useFastMode = true }) => {
     viewTransform: { scale: 1, translateX: 0, translateY: 0 }
   });
   
-  // Determine if we should use WebGL based on backend capabilities
-  const useWebGL = liveStreamState.backendCapabilities.webglSupported && !liveStreamState.isLegacyBackend;
+  // Determine if we should use WebGL based on backend capabilities AND current format
+  // Use LiveViewComponent (legacy) for JPEG, LiveViewerGL for binary
+  const useWebGL = liveStreamState.backendCapabilities.webglSupported && 
+                   !liveStreamState.isLegacyBackend &&
+                   liveStreamState.imageFormat !== 'jpeg';
 
   // Handle double-click for stage movement
   const handleImageDoubleClick = async (pixelX, pixelY, imageWidth, imageHeight) => {
