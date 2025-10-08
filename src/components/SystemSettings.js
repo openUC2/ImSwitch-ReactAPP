@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
+import { getConnectionSettingsState } from "../state/slices/ConnectionSettingsSlice";
 import {
   Box,
   Typography,
@@ -7,7 +9,11 @@ import {
   FormControlLabel,
 } from "@mui/material";
 
-export default function SystemSettings({ hostIP, hostPort }) {
+export default function SystemSettings() {
+  // Get connection settings from Redux
+  const { ip: hostIP, apiPort: hostPort } = useSelector(
+    getConnectionSettingsState
+  );
   // safety toggles
   const [enableImSwitch, setEnableImSwitch] = useState(false);
   const [enableRaspi, setEnableRaspi] = useState(false);

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { getConnectionSettingsState } from "../state/slices/ConnectionSettingsSlice";
 import {
   Box,
   Checkbox,
@@ -15,15 +16,7 @@ import {
   Select,
   MenuItem,
   Grid,
-  Slider,
-  Paper,
-  Collapse,
-  IconButton,
 } from "@mui/material";
-import {
-  Settings as SettingsIcon,
-  ExpandMore as ExpandMoreIcon,
-} from "@mui/icons-material";
 import XYZControls from "./XYZControls";
 import AutofocusController from "./AutofocusController";
 import DetectorParameters from "./DetectorParameters";
@@ -56,13 +49,14 @@ import LiveViewControlWrapper from "../axon/LiveViewControlWrapper.js";
             onMove={moveStage}
           />*/
 
-export default function LiveView({
-  hostIP,
-  hostPort,
-  setFileManagerInitialPath,
-}) {
+export default function LiveView({ setFileManagerInitialPath }) {
   // Redux dispatcher
   const dispatch = useDispatch();
+
+  // Connection settings aus Redux holen
+  const { ip: hostIP, apiPort: hostPort } = useSelector(
+    getConnectionSettingsState
+  );
 
   // Access global Redux state
   const liveViewState = useSelector(liveViewSlice.getLiveViewState);

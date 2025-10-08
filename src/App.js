@@ -1054,10 +1054,15 @@ function App() {
                             justifyContent: "center",
                           }}
                         >
-                          <SportsEsportsIcon sx={{ color: SIDEBAR_COLORS.apps }} />
+                          <SportsEsportsIcon
+                            sx={{ color: SIDEBAR_COLORS.apps }}
+                          />
                         </ListItemIcon>
                         {sidebarVisible && (
-                          <ListItemText primary="Maze Game" sx={{ opacity: 1 }} />
+                          <ListItemText
+                            primary="Maze Game"
+                            sx={{ opacity: 1 }}
+                          />
                         )}
                       </ListItemButton>
                     </Tooltip>
@@ -1399,8 +1404,6 @@ function App() {
           >
             {selectedPlugin === "LiveView" && (
               <LiveView
-                hostIP={hostIP}
-                hostPort={apiPort}
                 // pass down a setter or context for the image if needed
                 onImageUpdate={(img) => setSharedImage(img)}
                 setSelectedPlugin={setSelectedPlugin}
@@ -1411,27 +1414,13 @@ function App() {
             {selectedPlugin === "WellPlate" && <AxonTabComponent />}
 
             {selectedPlugin === "ImJoy" && (
-              <ImJoyView
-                hostIP={hostIP}
-                hostPort={apiPort}
-                sharedImage={sharedImage}
-              />
+              <ImJoyView sharedImage={sharedImage} />
             )}
-            {selectedPlugin === "HistoScan" && (
-              <HistoScanController hostIP={hostIP} hostPort={apiPort} />
-            )}
-            {selectedPlugin === "STORMLocal" && (
-              <STORMControllerLocal hostIP={hostIP} hostPort={apiPort} />
-            )}
-            {selectedPlugin === "STORMArkitekt" && (
-              <STORMControllerArkitekt hostIP={hostIP} hostPort={apiPort} />
-            )}
-            {selectedPlugin === "Stresstest" && (
-              <StresstestController hostIP={hostIP} hostPort={apiPort} />
-            )}
-            {selectedPlugin === "FocusLock" && (
-              <FocusLockController hostIP={hostIP} hostPort={apiPort} />
-            )}
+            {selectedPlugin === "HistoScan" && <HistoScanController />}
+            {selectedPlugin === "STORMLocal" && <STORMControllerLocal />}
+            {selectedPlugin === "STORMArkitekt" && <STORMControllerArkitekt />}
+            {selectedPlugin === "Stresstest" && <StresstestController />}
+            {selectedPlugin === "FocusLock" && <FocusLockController />}
             {selectedPlugin === "JupyteNotebook" && (
               <JupyterProvider>
                 <JupyterExecutor hostIP={hostIP} hostPort={apiPort} />
@@ -1454,9 +1443,7 @@ function App() {
               <ObjectiveController hostIP={hostIP} hostPort={apiPort} />
             )}
             {selectedPlugin === "About" && <AboutPage />}
-            {selectedPlugin === "SystemSettings" && (
-              <SystemSettings hostIP={hostIP} hostPort={apiPort} />
-            )}
+            {selectedPlugin === "SystemSettings" && <SystemSettings />}
             {selectedPlugin === "FileManager" && (
               <div className="app">
                 <div className="file-manager-container">
@@ -1511,7 +1498,7 @@ function App() {
               <UC2Controller hostIP={hostIP} hostPort={apiPort} />
             )}
             {selectedPlugin === "DetectorTrigger" && (
-              <DetectorTriggerController hostIP={hostIP} hostPort={apiPort} />
+              <DetectorTriggerController />
             )}
             {selectedPlugin === "ExtendedLEDMatrix" && (
               <ExtendedLEDMatrixController
@@ -1521,15 +1508,9 @@ function App() {
                 onLayoutChange={(newLayout) => setLayout(newLayout)}
               />
             )}
-            {selectedPlugin === "Lepmon" && (
-              <LepMonController hostIP={hostIP} hostPort={apiPort} />
-            )}
-            {selectedPlugin === "MazeGame" && (
-              <MazeGameController hostIP={hostIP} hostPort={apiPort} />
-            )}
-            {selectedPlugin === "SocketView" && (
-              <SocketView hostIP={hostIP} hostPort={websocketPort} />
-            )}
+            {selectedPlugin === "Lepmon" && <LepMonController />}
+            {selectedPlugin === "MazeGame" && <MazeGameController />}
+            {selectedPlugin === "SocketView" && <SocketView />}
             {selectedPlugin === "Connections" && <ConnectionSettings />}
           </Box>
         </Box>
