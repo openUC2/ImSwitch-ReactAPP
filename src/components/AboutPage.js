@@ -10,23 +10,37 @@ const AboutPage = () => {
             About the Microscope Control Software
           </Typography>
           <Typography variant="body1" gutterBottom>
-            This application is an open-source software designed to control microscopes using a modular and extensible approach. It seamlessly integrates advanced features to empower researchers and educators in the microscopy domain.
+            This application is an open-source software designed to control
+            microscopes using a modular and extensible approach. It seamlessly
+            integrates advanced features to empower researchers and educators in
+            the microscopy domain.
           </Typography>
         </Grid>
         <Grid item xs={12}>
           <Typography variant="h6">Source Code</Typography>
           <Typography variant="body2">
-            The source code for this React application can be found in our GitHub repository:
+            The source code for this React application can be found in our
+            GitHub repository:
             <br />
-            <Link href="https://github.com/openUC2/imswitch-aiortc-react" target="_blank">
+            <Link
+              href="https://github.com/openUC2/imswitch-aiortc-react"
+              target="_blank"
+            >
               openUC2/imswitch-aiortc-react
             </Link>
           </Typography>
         </Grid>
         <Grid item xs={12}>
+          <Typography variant="h6">App Version</Typography>
+          <Typography variant="body2">
+            Version: {process.env.REACT_APP_VERSION || "Unknown"}
+          </Typography>
+        </Grid>
+        <Grid item xs={12}>
           <Typography variant="h6">Backend</Typography>
           <Typography variant="body2">
-            The backend is based on the openUC2 fork of ImSwitch. You can find it here:
+            The backend is based on the openUC2 fork of ImSwitch. You can find
+            it here:
             <br />
             <Link href="https://github.com/openUC2/imswitch" target="_blank">
               openUC2/imswitch

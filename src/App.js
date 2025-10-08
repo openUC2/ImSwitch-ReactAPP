@@ -1,5 +1,4 @@
 import BlurOnIcon from "@mui/icons-material/BlurOn";
-import LightIcon from "@mui/icons-material/Light";
 import SensorsIcon from "@mui/icons-material/Sensors";
 /* global __webpack_init_sharing__, __webpack_share_scopes__ */
 import React, { Suspense, useEffect, useState, lazy } from "react";
@@ -11,7 +10,6 @@ import TimelapseController from "./components/TimelapseController";
 import ObjectiveController from "./components/ObjectiveController.js";
 import AboutPage from "./components/AboutPage";
 import SystemSettings from "./components/SystemSettings";
-import Tab_Widgets from "./components/Tab_Widgets";
 import LightsheetController from "./components/LightsheetController";
 import DemoController from "./components/DemoController.js";
 import BlocklyController from "./components/BlocklyController";
@@ -66,7 +64,7 @@ import WebSocketHandler from "./middleware/WebSocketHandler";
 //redux
 import { useDispatch, useSelector } from "react-redux";
 import * as connectionSettingsSlice from "./state/slices/ConnectionSettingsSlice.js";
-import { toggleTheme, getThemeState } from "./state/slices/ThemeSlice";
+import { getThemeState } from "./state/slices/ThemeSlice";
 import StatusMessage from "./components/StatusMessage";
 import {
   getNotificationState,
@@ -108,6 +106,7 @@ import FlowStopController from "./components/FlowStopController";
 import LepMonController from "./components/LepmonController.js";
 import MazeGameController from "./components/MazeGameController.js";
 import TopBar from "./components/TopBar";
+import DrawerHeader from "./components/DrawerHeader";
 
 // Define both light and dark themes
 const lightTheme = createTheme({
@@ -547,13 +546,6 @@ function App() {
           onClose={() => dispatch(clearNotification())}
         />
         <Box sx={{ display: "flex" }}>
-          <TopBar
-            isMobile={isMobile}
-            sidebarVisible={sidebarVisible}
-            setSidebarVisible={setSidebarVisible}
-            selectedPlugin={selectedPlugin}
-          />
-
           {/* Sidebar Drawer with responsive behavior */}
           <Drawer
             variant={isMobile ? "temporary" : "permanent"}
@@ -565,20 +557,26 @@ function App() {
             sx={{
               width: drawerWidth,
               flexShrink: 0,
+              zIndex: (theme) => theme.zIndex.drawer + 3,
               "& .MuiDrawer-paper": {
                 width: drawerWidth,
                 boxSizing: "border-box",
-                top: 64, // Always below TopBar
-                height: "calc(100% - 64px)", // Always below TopBar
-                zIndex: isMobile ? 1300 : 1200,
+                zIndex: (theme) => theme.zIndex.drawer + 3,
                 transition: (theme) =>
                   theme.transitions.create("width", {
                     easing: theme.transitions.easing.sharp,
                     duration: theme.transitions.duration.enteringScreen,
                   }),
+                display: "flex",
+                flexDirection: "column",
               },
             }}
           >
+            <DrawerHeader
+              sidebarVisible={sidebarVisible}
+              setSidebarVisible={setSidebarVisible}
+              isMobile={isMobile}
+            />
             {/* Sidebar content */}
             <List>
               {/* LiveView */}
@@ -1014,7 +1012,16 @@ function App() {
                             justifyContent: "center",
                           }}
                         >
-                          <AirIcon sx={{ color: SIDEBAR_COLORS.apps }} />
+                          <Avatar
+                            sx={{
+                              bgcolor: SIDEBAR_COLORS.apps,
+                              width: 24,
+                              height: 24,
+                              fontSize: 14,
+                            }}
+                          >
+                            LM
+                          </Avatar>
                         </ListItemIcon>
                         {sidebarVisible && (
                           <ListItemText primary="Lepmon" sx={{ opacity: 1 }} />
@@ -1253,6 +1260,21 @@ function App() {
               </Collapse>
               <Divider sx={{ my: 1 }} />
 
+              {/* Plugins */}
+              {plugins.map((p) => (
+                <ListItem key={p.name}>
+                  <ListItemButton
+                    selected={selectedPlugin === p.name}
+                    onClick={() => setSelectedPlugin(p.name)}
+                  >
+                    <ListItemIcon>
+                      {React.createElement(BuildIcon)}
+                    </ListItemIcon>
+                    <ListItemText primary={sidebarVisible ? p.name : ""} />
+                  </ListItemButton>
+                </ListItem>
+              ))}
+
               {/* System Settings Group */}
               <ListItem>
                 <ListItemButton onClick={() => toggleGroup("systemSettings")}>
@@ -1342,44 +1364,29 @@ function App() {
                   </ListItem>
                 </List>
               </Collapse>
-              <Divider sx={{ my: 1 }} />
-
-              {/* Plugins */}
-              {plugins.map((p) => (
-                <ListItem key={p.name}>
-                  <ListItemButton
-                    selected={selectedPlugin === p.name}
-                    onClick={() => setSelectedPlugin(p.name)}
-                  >
-                    <ListItemIcon>
-                      {React.createElement(BuildIcon)}
-                    </ListItemIcon>
-                    <ListItemText primary={sidebarVisible ? p.name : ""} />
-                  </ListItemButton>
-                </ListItem>
-              ))}
-
-              {/* Add a minimize/maximize button */}
-              <ListItem>
-                <ListItemButton
-                  onClick={() => setSidebarVisible(!sidebarVisible)}
-                >
-                  <ListItemIcon>
-                    <MenuIcon />
-                  </ListItemIcon>
-                  <ListItemText primary={sidebarVisible ? "Minimize" : ""} />
-                </ListItemButton>
-              </ListItem>
             </List>
           </Drawer>
+
+          <TopBar
+            isMobile={isMobile}
+            sidebarVisible={sidebarVisible}
+            setSidebarVisible={setSidebarVisible}
+            selectedPlugin={selectedPlugin}
+            drawerWidth={drawerWidth}
+          />
 
           {/* Main content area */}
           <Box
             component="main"
             sx={{
+              top: 64,
               flexGrow: 1,
+              display: "flex",
+              position: "absolute",
               p: isMobile ? 1 : 3,
-              marginTop: "64px",
+              left: drawerWidth,
+              width: "calc(100% - " + drawerWidth + "px)",
+              height: "calc(100vh - 64px)",
               marginLeft: !isMobile && sidebarVisible ? 0 : 0,
               transition: (theme) =>
                 theme.transitions.create(["margin", "padding"], {
@@ -1387,32 +1394,29 @@ function App() {
                   duration: theme.transitions.duration.leavingScreen,
                 }),
               minHeight: "calc(100vh - 64px)",
-              overflow: "auto",
+              overflow: "hidden",
             }}
           >
-            {selectedPlugin === "WellPlate" && <AxonTabComponent />}
-            <Box
-              sx={{ display: selectedPlugin === "LiveView" ? "block" : "none" }}
-            >
+            {selectedPlugin === "LiveView" && (
               <LiveView
                 hostIP={hostIP}
                 hostPort={apiPort}
-                drawerWidth={drawerWidth}
                 // pass down a setter or context for the image if needed
                 onImageUpdate={(img) => setSharedImage(img)}
                 setSelectedPlugin={setSelectedPlugin}
                 setFileManagerInitialPath={handleFileManagerInitialPathChange} // pass function
               />
-            </Box>
-            <Box
-              sx={{ display: selectedPlugin === "ImJoy" ? "block" : "none" }}
-            >
+            )}
+
+            {selectedPlugin === "WellPlate" && <AxonTabComponent />}
+
+            {selectedPlugin === "ImJoy" && (
               <ImJoyView
                 hostIP={hostIP}
                 hostPort={apiPort}
                 sharedImage={sharedImage}
               />
-            </Box>
+            )}
             {selectedPlugin === "HistoScan" && (
               <HistoScanController hostIP={hostIP} hostPort={apiPort} />
             )}

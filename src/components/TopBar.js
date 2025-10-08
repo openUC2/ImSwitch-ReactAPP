@@ -1,8 +1,6 @@
-import React from "react";
-import { AppBar, Toolbar, IconButton, Typography, Avatar } from "@mui/material";
-import MenuIcon from "@mui/icons-material/Menu";
+import { Box, Toolbar, IconButton, Typography } from "@mui/material";
+import MenuOpen from "@mui/icons-material/MenuOpen";
 import ThemeSwitcher from "./ThemeSwitcher";
-import uc2Logo from "../assets/ouc2_logo_quadratic.png";
 
 function TopBar({
   isMobile,
@@ -11,19 +9,32 @@ function TopBar({
   selectedPlugin,
 }) {
   return (
-    <AppBar
-      position="fixed"
-      sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
+    <Box
+      sx={(theme) => ({
+        width: "100%",
+        background: theme.palette.background.paper,
+        color: theme.palette.text.primary,
+        borderBottom: "1px solid",
+      })}
     >
-      <Toolbar>
-        <IconButton
-          edge="start"
-          color="inherit"
-          aria-label="menu"
-          onClick={() => setSidebarVisible(!sidebarVisible)}
-        >
-          <MenuIcon />
-        </IconButton>
+      <Toolbar
+        sx={{ width: "100%", display: "flex", alignItems: "center", px: 2 }}
+      >
+        <>
+          {isMobile ? (
+            <IconButton
+              edge="start"
+              color="inherit"
+              onClick={() => setSidebarVisible(!sidebarVisible)}
+              sx={{ mr: 2 }}
+            >
+              <MenuOpen sx={{ transform: "scaleX(-1)" }} />
+            </IconButton>
+          ) : (
+            <></>
+          )}
+        </>
+
         <Typography
           variant="h6"
           sx={{
@@ -35,12 +46,14 @@ function TopBar({
             whiteSpace: "nowrap",
           }}
         >
-          {isMobile ? selectedPlugin : `ImSwitch - ${selectedPlugin}`}
+          {isMobile ? selectedPlugin : `ImSwitch UI - ${selectedPlugin}`}
         </Typography>
-        <ThemeSwitcher isMobile={isMobile} />
-        <Avatar src={uc2Logo} />
+
+        <Box sx={{ ml: "auto" }}>
+          <ThemeSwitcher isMobile={isMobile} />
+        </Box>
       </Toolbar>
-    </AppBar>
+    </Box>
   );
 }
 
