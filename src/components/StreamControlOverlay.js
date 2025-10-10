@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box,
   Paper,
@@ -47,12 +47,7 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
   
   const connectionSettingsState = useSelector(connectionSettingsSlice.getConnectionSettingsState);
 
-  // Draft mode for settings
-  const [draftSettings, setDraftSettings] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState(null);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
-
+  // Destructure liveStreamState FIRST before using its values
   const {
     minVal = 0,
     maxVal = 255,
@@ -60,6 +55,12 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
     currentImageFormat,
     streamSettings
   } = liveStreamState;
+
+  // Draft mode for settings - initialize from Redux streamSettings
+  const [draftSettings, setDraftSettings] = useState(streamSettings || {});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
 
   // Determine if we're in JPEG mode
   const isJpeg = currentImageFormat === 'jpeg';
@@ -70,8 +71,13 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
   // Get current frame ID from stats
   const currentFrameId = liveStreamState?.stats?.currentFrameId;
 
-  // Load settings from backend on mount
+  // Load settings from backend on mount - use a ref to track if already loaded
+  const hasLoadedSettings = useRef(false);
+  
   useEffect(() => {
+    // Only load once on mount
+    if (hasLoadedSettings.current) return;
+    
     const loadBackendSettings = async () => {
       try {
         const globalParams = await apiSettingsControllerGetDetectorGlobalParameters();
@@ -81,7 +87,7 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
         // If algorithm is "jpeg", it's JPEG mode; otherwise (lz4, zstd, etc.) it's binary
         const isBinaryMode = globalParams.stream_compression_algorithm !== 'jpeg';
         
-        setDraftSettings({
+        const loadedSettings = {
           binary: {
             enabled: isBinaryMode,
             compression: {
@@ -95,16 +101,21 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
             enabled: !isBinaryMode,
             quality: !isBinaryMode ? globalParams.compressionlevel : 85
           }
-        });
+        };
+        
+        setDraftSettings(loadedSettings);
+        hasLoadedSettings.current = true;
       } catch (error) {
         console.warn('Failed to load backend settings:', error);
         // Use Redux state as fallback
         setDraftSettings(streamSettings);
+        hasLoadedSettings.current = true;
       }
     };
     
     loadBackendSettings();
-  }, [streamSettings]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only load on mount, not when streamSettings changes
 
   // Auto contrast function
   const handleAutoContrast = () => {
@@ -153,6 +164,8 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
         submitParams = draftSettings;
       }
       
+      console.log('submitParams to be sent:', submitParams);
+      
       // Update Redux with new format FIRST so LiveViewerGL can switch
       dispatch(setImageFormat(newFormat));
       dispatch(setStreamSettings(submitParams));
@@ -168,10 +181,17 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
 
       // Submit to backend
       await apiSettingsControllerSetStreamParams(submitParams);
+      
+
+      // Update draft settings with submitted values so they persist in UI
+      setDraftSettings(submitParams);
+      
 
       setSubmitSuccess(true);
       setTimeout(() => setSubmitSuccess(false), 3000);
+      
     } catch (error) {
+      
       setSubmitError(error.message || 'Failed to submit settings');
     } finally {
       setIsSubmitting(false);
