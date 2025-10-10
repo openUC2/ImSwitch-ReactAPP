@@ -1054,15 +1054,10 @@ function App() {
                             justifyContent: "center",
                           }}
                         >
-                          <SportsEsportsIcon
-                            sx={{ color: SIDEBAR_COLORS.apps }}
-                          />
+                          <SportsEsportsIcon sx={{ color: SIDEBAR_COLORS.apps }} />
                         </ListItemIcon>
                         {sidebarVisible && (
-                          <ListItemText
-                            primary="Maze Game"
-                            sx={{ opacity: 1 }}
-                          />
+                          <ListItemText primary="Maze Game" sx={{ opacity: 1 }} />
                         )}
                       </ListItemButton>
                     </Tooltip>
@@ -1399,7 +1394,7 @@ function App() {
                   duration: theme.transitions.duration.leavingScreen,
                 }),
               minHeight: "calc(100vh - 64px)",
-              overflow: "auto",
+              overflow: "hidden",
             }}
           >
             {selectedPlugin === "LiveView" && (
