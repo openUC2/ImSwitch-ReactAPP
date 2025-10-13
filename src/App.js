@@ -1463,8 +1463,8 @@ function App() {
               <SystemSettings hostIP={hostIP} hostPort={apiPort} />
             )}
             {selectedPlugin === "FileManager" && (
-              <div className="app">
-                <div className="file-manager-container">
+              <div className="app" style={{ width: '100%', maxWidth: '100%' }}>
+                <div className="file-manager-container" style={{ width: '100%', maxWidth: '100%' }}>
                   <FileManager
                     baseUrl={`${hostIP}:${apiPort}`}
                     files={files}
@@ -1479,7 +1479,7 @@ function App() {
                     onFileOpen={handleOpenWithImJoy}
                     onDelete={handleDelete}
                     onRefresh={handleRefresh}
-                    layout="grid"
+                    layout="list"
                     enableFilePreview
                     maxFileSize={10485760}
                     filePreviewPath={`${hostIP}:${apiPort}/`}

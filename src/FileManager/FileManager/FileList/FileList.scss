@@ -154,13 +154,13 @@
     }
 
     .file-name {
-      width: calc(65% - 35px);
+      width: calc(75% - 35px);
       padding-left: 35px;
     }
 
     .file-date {
       text-align: center;
-      width: 20%;
+      width: 15%;
     }
 
     .file-size {
@@ -193,7 +193,7 @@
     padding: 15px;
     padding-left: 33px;
     margin: 0;
-    width: calc(70% - 30px);
+    width: calc(75% - 30px);
 
     &:hover {
       background-color: unset;
@@ -204,7 +204,7 @@
     }
 
     .file-name {
-      max-width: 285px;
+      max-width: 400px;
     }
   }
 
@@ -213,7 +213,7 @@
     align-items: center;
     justify-content: center;
     font-size: 0.8em;
-    width: calc(20%);
+    width: calc(15%);
   }
 
   .size {

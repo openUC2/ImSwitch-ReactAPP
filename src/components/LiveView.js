@@ -73,6 +73,7 @@ export default function LiveView({
   // Use Redux state instead of local state
   const detectors = liveViewState.detectors;
   const activeTab = liveViewState.activeTab;
+  const lastSnapPath = liveViewState.lastSnapPath; // Get from Redux
   const imageUrls = liveViewState.imageUrls;
   const pollImageUrl = liveViewState.pollImageUrl;
   const pixelSize = liveViewState.pixelSize;
@@ -81,7 +82,6 @@ export default function LiveView({
   // Keep some local state for now (these may need their own slices later)
   const [isRecording, setIsRecording] = useState(false);
   const [histogramActive, setHistogramActive] = useState(false);
-  const [lastSnapPath, setLastSnapPath] = useState("");
   // Save format state for recording and snap
   const [saveFormat, setSaveFormat] = useState(4); // Default: MP4
   const saveFormatOptions = [
@@ -252,7 +252,8 @@ export default function LiveView({
     );
     const data = await response.json();
     // data.relativePath might be "recordings/2025_05_20-11-12-44_PM"
-    setLastSnapPath(`/${data.relativePath}`); // prepend slash
+    const snapPath = `/${data.relativePath}`;
+    dispatch(liveViewSlice.setLastSnapPath(snapPath)); // Store in Redux
   }
   function handleGoToImage() {
     if (lastSnapPath) {

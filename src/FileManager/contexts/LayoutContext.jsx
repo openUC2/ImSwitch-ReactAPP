@@ -7,7 +7,7 @@ export const LayoutProvider = ({ children, layout }) => {
 
   function validateLayout(layout) {
     const acceptedValue = ["list", "grid"];
-    return acceptedValue.includes(layout) ? layout : "grid";
+    return acceptedValue.includes(layout) ? layout : "list"; // Default to "list" instead of "grid"
   }
 
   return (
