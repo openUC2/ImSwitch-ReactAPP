@@ -2,48 +2,47 @@ name: Build and Deploy
 
 on:
   push:
-    branches: [ main ]
-  
+    branches: [main]
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v2
+      - name: Checkout Repository
+        uses: actions/checkout@v2
 
-    - name: Install dependencies
-      run: npm install --legacy-peer-deps
+      - name: Install dependencies
+        run: npm install
 
-    - name: Increase Node.js memory limit and build
-      run: |
-        export NODE_OPTIONS=--max_old_space_size=4096
-        CI=false npm run build
-      
-    - name: Push to the youseetoo Repository for displaying at https://youseetoo.github.io/imswitch/index.html
-      uses: cpina/github-action-push-to-another-repository@main
-      env:
-        API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB_YOUSEETOO }}
-      with:
-        source-directory: 'build'
-        destination-github-username: 'youseetoo'
-        destination-repository-name: 'youseetoo.github.io'
-        target-directory: 'imswitch'
-        user-email: 'bene.d@gmx.de'
-        target-branch: 'main'
-        commit-message: 'Deploy React app build'
-        destination-directory: 'imswitch'
-    - name: Push to the imswitch repo for later use via fastapi
-      uses: cpina/github-action-push-to-another-repository@main
-      env:
-        API_TOKEN_GITHUB: ${{ secrets.OPENUC2_IMSWITCH }}
-      with:
-        source-directory: 'build'
-        destination-github-username: 'openUC2'
-        destination-repository-name: 'ImSwitch'
-        target-directory: 'imswitch/_data/static/imswitch'
-        user-email: 'bene.d@gmx.de'
-        target-branch: 'master'
-        commit-message: 'Deploy React app build'
-        destination-directory: 'imswitch'
-                
+      - name: Increase Node.js memory limit and build
+        run: |
+          export NODE_OPTIONS=--max_old_space_size=4096
+          CI=false npm run build
+
+      - name: Push to the youseetoo Repository for displaying at https://youseetoo.github.io/imswitch/index.html
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB_YOUSEETOO }}
+        with:
+          source-directory: "build"
+          destination-github-username: "youseetoo"
+          destination-repository-name: "youseetoo.github.io"
+          target-directory: "imswitch"
+          user-email: "bene.d@gmx.de"
+          target-branch: "main"
+          commit-message: "Deploy React app build"
+          destination-directory: "imswitch"
+      - name: Push to the imswitch repo for later use via fastapi
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.OPENUC2_IMSWITCH }}
+        with:
+          source-directory: "build"
+          destination-github-username: "openUC2"
+          destination-repository-name: "ImSwitch"
+          target-directory: "imswitch/_data/static/imswitch"
+          user-email: "bene.d@gmx.de"
+          target-branch: "master"
+          commit-message: "Deploy React app build"
+          destination-directory: "imswitch"
