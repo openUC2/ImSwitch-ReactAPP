@@ -21,6 +21,10 @@ const initialState = {
   editorJsonText: "",
   useAceEditor: false,
 
+  // Current active configuration
+  currentActiveFilename: null,
+  isLoadingCurrentFilename: false,
+
   // File operations
   newFileName: "",
   setAsCurrentConfig: true,
@@ -88,6 +92,14 @@ const uc2Slice = createSlice({
     },
     setUseAceEditor: (state, action) => {
       state.useAceEditor = action.payload;
+    },
+
+    // Current active configuration
+    setCurrentActiveFilename: (state, action) => {
+      state.currentActiveFilename = action.payload;
+    },
+    setIsLoadingCurrentFilename: (state, action) => {
+      state.isLoadingCurrentFilename = action.payload;
     },
 
     // File operations
@@ -167,6 +179,8 @@ export const {
   setEditorJson,
   setEditorJsonText,
   setUseAceEditor,
+  setCurrentActiveFilename,
+  setIsLoadingCurrentFilename,
   setNewFileName,
   setSetAsCurrentConfig,
   setRestartAfterSave,

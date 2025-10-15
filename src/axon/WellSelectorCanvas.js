@@ -390,9 +390,9 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
     experimentState.pointList.forEach((itPoint, index) => {
       // Define the square's position and size
       const rasterWidthOverlapedPx =
-        getRasterWidthAsPx() * (1 - wellSelectorState.overlapWidth);
+        getRasterWidthAsPx() * (1 - (experimentState.parameterValue.overlapWidth || 0));
       const rasterHeightOverlapedPx =
-        getRasterHeightAsPx() * (1 - wellSelectorState.overlapHeight);
+        getRasterHeightAsPx() * (1 - (experimentState.parameterValue.overlapHeight || 0));
 
       //center square
       const pointCenterXpx = calcPhy2Px(itPoint.x); // - Math.min(squareWidth, getRasterWidthAsPx()) / 2;
@@ -559,9 +559,9 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
       if (mouseDownFlag) {
         // Define the square's position and size
         const rasterWidthOverlaped =
-          getRasterWidthAsPx() * (1 - wellSelectorState.overlapWidth);
+          getRasterWidthAsPx() * (1 - (experimentState.parameterValue.overlapWidth || 0));
         const rasterHeightOverlaped =
-          getRasterHeightAsPx() * (1 - wellSelectorState.overlapHeight);
+          getRasterHeightAsPx() * (1 - (experimentState.parameterValue.overlapHeight || 0));
 
         //draw the tiles
         ctx.strokeStyle = "red"; // Grid line color
@@ -1052,9 +1052,9 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
         if (e.shiftKey) {
           // Define the square's position and size
           const squareWidthPx =
-            getRasterWidthAsPx() * (1 - wellSelectorState.overlapWidth);
+            getRasterWidthAsPx() * (1 - (experimentState.parameterValue.overlapWidth || 0));
           const squareHeightPx =
-            getRasterHeightAsPx() * (1 - wellSelectorState.overlapHeight);
+            getRasterHeightAsPx() * (1 - (experimentState.parameterValue.overlapHeight || 0));
 
           //generate points in rect
           const pointsInRectList = wsUtils.generateCenterPointsInRect(

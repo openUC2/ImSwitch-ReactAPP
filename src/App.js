@@ -101,6 +101,7 @@ import {
   Link as LinkIcon,
   Comment as CommentIcon,
   ZoomOutMap as ZoomOutMapIcon,
+  Tune as TuneIcon,
 } from "@mui/icons-material";
 import FlowStopController from "./components/FlowStopController";
 import LepMonController from "./components/LepmonController.js";
@@ -276,6 +277,7 @@ function App() {
       coding: false,
       system: false,
       systemSettings: false,
+      configuration: false,
     };
   });
 
@@ -1328,19 +1330,73 @@ function App() {
                     />
                   </ListItemButton>
                 </ListItem>
+                
+                {/* System Configuration Group */}
+                <ListItem>
+                  <ListItemButton onClick={() => toggleGroup("configuration")}>
+                    <ListItemIcon>
+                      <TuneIcon />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={sidebarVisible ? "System Configuration" : ""}
+                    />
+                    {sidebarVisible &&
+                      (groupsOpen.configuration ? (
+                        <ExpandLess />
+                      ) : (
+                        <ExpandMore />
+                      ))}
+                  </ListItemButton>
+                </ListItem>
+                <Collapse
+                  in={groupsOpen.configuration}
+                  timeout="auto"
+                  unmountOnExit
+                >
+                  <List component="div" disablePadding>
+                    {/* Select Setup */}
+                    <ListItem>
+                      <ListItemButton
+                        selected={selectedPlugin === "SelectSetup"}
+                        onClick={() => handlePluginChange("SelectSetup")}
+                        sx={{ pl: 4 }}
+                      >
+                        <ListItemIcon>
+                          <SettingsIcon />
+                        </ListItemIcon>
+                        <ListItemText primary={sidebarVisible ? "Select Setup" : ""} />
+                      </ListItemButton>
+                    </ListItem>
+                    {/* Configuration Editor */}
+                    <ListItem>
+                      <ListItemButton
+                        selected={selectedPlugin === "ConfigurationEditor"}
+                        onClick={() => handlePluginChange("ConfigurationEditor")}
+                        sx={{ pl: 4 }}
+                      >
+                        <ListItemIcon>
+                          <CodeIcon />
+                        </ListItemIcon>
+                        <ListItemText primary={sidebarVisible ? "Configuration Editor" : ""} />
+                      </ListItemButton>
+                    </ListItem>
+                  </List>
+                </Collapse>
+                
+                {/* UC2 */}
+                <ListItem>
+                  <ListItemButton
+                    selected={selectedPlugin === "UC2"}
+                    onClick={() => handlePluginChange("UC2")}
+                  >
+                    <ListItemIcon>
+                      <MemoryIcon />
+                    </ListItemIcon>
+                    <ListItemText primary={sidebarVisible ? "UC2" : ""} />
+                  </ListItemButton>
+                </ListItem>
+                
                 <List component="div" disablePadding>
-                  {/* UC2 */}
-                  <ListItem>
-                    <ListItemButton
-                      selected={selectedPlugin === "UC2"}
-                      onClick={() => handlePluginChange("UC2")}
-                    >
-                      <ListItemIcon>
-                        <MemoryIcon />
-                      </ListItemIcon>
-                      <ListItemText primary={sidebarVisible ? "UC2" : ""} />
-                    </ListItemButton>
-                  </ListItem>
                   {/* Settings */}
                   <ListItem>
                     <ListItemButton
@@ -1511,6 +1567,12 @@ function App() {
             )}
             {selectedPlugin === "StageOffsetCalibration" && (
               <StageOffsetCalibration hostIP={hostIP} hostPort={apiPort} />
+            )}
+            {selectedPlugin === "SelectSetup" && (
+              <UC2Controller hostIP={hostIP} hostPort={apiPort} mode="selectSetup" />
+            )}
+            {selectedPlugin === "ConfigurationEditor" && (
+              <UC2Controller hostIP={hostIP} hostPort={apiPort} mode="configurationEditor" />
             )}
             {selectedPlugin === "UC2" && (
               <UC2Controller hostIP={hostIP} hostPort={apiPort} />

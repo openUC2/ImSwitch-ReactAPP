@@ -101,10 +101,11 @@ const ExperimentComponent = () => {
         neighborPointList: [],
       };
       //calc and fill neighbor points
+      // Negative overlap creates gaps, positive overlap creates overlaps
       const rasterWidthOverlaped =
-        objectiveState.fovX * (1 - wellSelectorState.overlapWidth);
+        objectiveState.fovX * (1 - (experimentState.parameterValue.overlapWidth || 0));
       const rasterHeightOverlaped =
-        objectiveState.fovY * (1 - wellSelectorState.overlapHeight);
+        objectiveState.fovY * (1 - (experimentState.parameterValue.overlapHeight || 0));
 
       if (itPoint.shape == Shape.CIRCLE) {
         //circle shape

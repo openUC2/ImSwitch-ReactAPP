@@ -60,7 +60,10 @@ const initialExperimentState = {
     performanceMode: false,
     ome_write_tiff: false,
     ome_write_zarr: true,
-    ome_write_stitched_tiff: false
+    ome_write_stitched_tiff: false,
+    // Tile overlap parameters (moved from WellSelectorSlice)
+    overlapWidth: 0.0,  // 0.0 = no overlap (100% spacing), 0.1 = 10% overlap (90% spacing)
+    overlapHeight: 0.0  // 0.0 = no overlap (100% spacing), 0.1 = 10% overlap (90% spacing)
   },
 };
 
@@ -166,6 +169,15 @@ const experimentSlice = createSlice({
       console.log("setOmeWriteStitchedTiff", action.payload);
       state.parameterValue.ome_write_stitched_tiff = action.payload;
     },
+    //------------------------ overlap parameters
+    setOverlapWidth: (state, action) => {
+      console.log("setOverlapWidth", action.payload);
+      state.parameterValue.overlapWidth = Math.max(-0.5, Math.min(0.5, action.payload)); // Clamp between -0.5 and 0.5 (-50% to 50%)
+    },
+    setOverlapHeight: (state, action) => {
+      console.log("setOverlapHeight", action.payload);
+      state.parameterValue.overlapHeight = Math.max(-0.5, Math.min(0.5, action.payload)); // Clamp between -0.5 and 0.5 (-50% to 50%)
+    },
     //------------------------ points
     createPoint: (state, action) => {
       console.log("createPoint", action);
@@ -240,6 +252,8 @@ export const {
   setOmeWriteTiff,
   setOmeWriteZarr,
   setOmeWriteStitchedTiff,
+  setOverlapWidth,
+  setOverlapHeight,
   createPoint,
   addPoint,
   removePoint,
