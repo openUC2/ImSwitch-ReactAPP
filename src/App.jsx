@@ -2,36 +2,34 @@ import BlurOnIcon from "@mui/icons-material/BlurOn";
 import SensorsIcon from "@mui/icons-material/Sensors";
 /* global __webpack_init_sharing__, __webpack_share_scopes__ */
 import React, { Suspense, useEffect, useState, lazy } from "react";
-import LiveView from "./components/LiveView";
-import SocketView from "./components/SocketView";
-import HistoScanController from "./components/HistoScanController";
-import LargeFovScanController from "./components/OpenLayers";
-import TimelapseController from "./components/TimelapseController";
+import LiveView from "./components/LiveView.js";
+import SocketView from "./components/SocketView.js";
+import HistoScanController from "./components/HistoScanController.js";
+import LargeFovScanController from "./components/OpenLayers.js";
+import TimelapseController from "./components/TimelapseController.js";
 import ObjectiveController from "./components/ObjectiveController.js";
-import AboutPage from "./components/AboutPage";
-import SystemSettings from "./components/SystemSettings";
-import LightsheetController from "./components/LightsheetController";
+import AboutPage from "./components/AboutPage.js";
+import SystemSettings from "./components/SystemSettings.js";
+import LightsheetController from "./components/LightsheetController.js";
 import DemoController from "./components/DemoController.js";
-import BlocklyController from "./components/BlocklyController";
-import ImJoyView from "./components/ImJoyView";
-import JupyterExecutor from "./components/JupyterExecutor";
-import { JupyterProvider } from "./context/JupyterContext";
-import UC2Controller from "./components/UC2Controller";
-import ExtendedLEDMatrixController from "./components/ExtendedLEDMatrixController";
-import StageOffsetCalibration from "./components/StageOffsetCalibrationController";
-import DetectorTriggerController from "./components/DetectorTriggerController";
-import StresstestController from "./components/StresstestController";
+import BlocklyController from "./components/BlocklyController.js";
+import ImJoyView from "./components/ImJoyView.js";
+import JupyterExecutor from "./components/JupyterExecutor.js";
+import { JupyterProvider } from "./context/JupyterContext.js";
+import UC2Controller from "./components/UC2Controller.js";
+import ExtendedLEDMatrixController from "./components/ExtendedLEDMatrixController.js";
+import StageOffsetCalibration from "./components/StageOffsetCalibrationController.js";
+import DetectorTriggerController from "./components/DetectorTriggerController.js";
+import StresstestController from "./components/StresstestController.js";
 import STORMControllerArkitekt from "./components/STORMControllerArkitekt.js";
 import STORMControllerLocal from "./components/STORMControllerLocal.js";
 import FocusLockController from "./components/FocusLockController.js";
 import WiFiController from "./components/WiFiController.js";
-import ConnectionSettings from "./components/ConnectionSettings";
-import { setIp, setApiPort } from "./state/slices/ConnectionSettingsSlice";
-import SIDEBAR_COLORS from "./constants/sidebarColors";
+import ConnectionSettings from "./components/ConnectionSettings.js";
+import { setIp, setApiPort } from "./state/slices/ConnectionSettingsSlice.js";
+import SIDEBAR_COLORS from "./constants/sidebarColors.js";
 import {
-  Menu as MenuIcon,
   Dashboard as DashboardIcon,
-  Devices as DevicesIcon,
   Build as BuildIcon,
   Info as InfoIcon,
   Settings as SettingsIcon,
@@ -53,33 +51,32 @@ import AirIcon from "@mui/icons-material/Air";
 import StraightenIcon from "@mui/icons-material/Straighten";
 import MemoryIcon from "@mui/icons-material/Memory";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
-import axios from "axios";
-import { WebSocketProvider } from "./context/WebSocketContext";
-import { MCTProvider } from "./context/MCTContext";
+import { WebSocketProvider } from "./context/WebSocketContext.js";
+import { MCTProvider } from "./context/MCTContext.js";
 
 //axon
-import AxonTabComponent from "./axon/AxonTabComponent";
-import WebSocketHandler from "./middleware/WebSocketHandler";
+import AxonTabComponent from "./axon/AxonTabComponent.js";
+import WebSocketHandler from "./middleware/WebSocketHandler.js";
 
 //redux
 import { useDispatch, useSelector } from "react-redux";
 import * as connectionSettingsSlice from "./state/slices/ConnectionSettingsSlice.js";
-import { getThemeState } from "./state/slices/ThemeSlice";
-import StatusMessage from "./components/StatusMessage";
+import { getThemeState } from "./state/slices/ThemeSlice.js";
+import StatusMessage from "./components/StatusMessage.js";
 import {
   getNotificationState,
   clearNotification,
-} from "./state/slices/NotificationSlice";
+} from "./state/slices/NotificationSlice.js";
 
 // Filemanager
-import FileManager from "./FileManager/FileManager/FileManager";
-import { createFolderAPI } from "./FileManager/api/createFolderAPI";
-import { renameAPI } from "./FileManager/api/renameAPI";
-import { deleteAPI } from "./FileManager/api/deleteAPI";
-import { copyItemAPI, moveItemAPI } from "./FileManager/api/fileTransferAPI";
-import { getAllFilesAPI } from "./FileManager/api/getAllFilesAPI";
-import { downloadFile } from "./FileManager/api/downloadFileAPI";
-import { api } from "./FileManager/api/api";
+import FileManager from "./FileManager/FileManager/FileManager.jsx";
+import { createFolderAPI } from "./FileManager/api/createFolderAPI.js";
+import { renameAPI } from "./FileManager/api/renameAPI.js";
+import { deleteAPI } from "./FileManager/api/deleteAPI.js";
+import { copyItemAPI, moveItemAPI } from "./FileManager/api/fileTransferAPI.js";
+import { getAllFilesAPI } from "./FileManager/api/getAllFilesAPI.js";
+import { downloadFile } from "./FileManager/api/downloadFileAPI.js";
+import { api } from "./FileManager/api/api.js";
 import "./FileManager/App.scss";
 
 import {
@@ -102,11 +99,11 @@ import {
   Comment as CommentIcon,
   ZoomOutMap as ZoomOutMapIcon,
 } from "@mui/icons-material";
-import FlowStopController from "./components/FlowStopController";
+import FlowStopController from "./components/FlowStopController.js";
 import LepMonController from "./components/LepmonController.js";
 import MazeGameController from "./components/MazeGameController.js";
-import TopBar from "./components/TopBar";
-import DrawerHeader from "./components/DrawerHeader";
+import TopBar from "./components/TopBar.js";
+import DrawerHeader from "./components/drawer/DrawerHeader.jsx";
 
 // Define both light and dark themes
 const lightTheme = createTheme({
@@ -247,7 +244,6 @@ function App() {
     : 90; // Collapsed sidebar width on desktop
 
   const hostIP = connectionSettingsState.ip;
-  const websocketPort = connectionSettingsState.websocketPort;
   const apiPort = connectionSettingsState.apiPort;
 
   const [selectedPlugin, setSelectedPlugin] = useState("LiveView"); // Control which plugin to show
@@ -394,6 +390,7 @@ function App() {
     }
   }, [dispatch]);
 
+  /*
   const checkPortsForApi = async (hostname, ports) => {
     for (const port of ports) {
       try {
@@ -407,7 +404,7 @@ function App() {
       }
     }
     throw new Error("No valid port found for API.");
-  };
+  };*/
 
   // change API url/port and update filelist
   useEffect(() => {
@@ -527,6 +524,7 @@ function App() {
       };
 
       fetchPlugins();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [hostIP, apiPort]); // Re-run if hostIP or apiPort changes
 
     return widgets;
@@ -1439,8 +1437,11 @@ function App() {
             {selectedPlugin === "About" && <AboutPage />}
             {selectedPlugin === "SystemSettings" && <SystemSettings />}
             {selectedPlugin === "FileManager" && (
-              <div className="app" style={{ width: '100%', maxWidth: '100%' }}>
-                <div className="file-manager-container" style={{ width: '100%', maxWidth: '100%' }}>
+              <div className="app" style={{ width: "100%", maxWidth: "100%" }}>
+                <div
+                  className="file-manager-container"
+                  style={{ width: "100%", maxWidth: "100%" }}
+                >
                   <FileManager
                     baseUrl={`${hostIP}:${apiPort}`}
                     files={files}

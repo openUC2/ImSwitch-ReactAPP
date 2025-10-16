@@ -1,5 +1,9 @@
-import React from "react";
-import { ListItemButton, ListItemIcon, ListItemText, Tooltip, Avatar } from "@mui/material";
+import {
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Tooltip,
+} from "@mui/material";
 
 /**
  * DrawerEntry - A reusable sidebar menu entry for the Drawer.
@@ -22,8 +26,19 @@ const DrawerEntry = ({
   collapsed = false,
 }) => {
   const entry = (
-    <ListItemButton selected={selected} onClick={onClick} sx={{ minHeight: 48 }}>
-      <ListItemIcon sx={{ color: color || "inherit", minWidth: 0, mr: collapsed ? "auto" : 3, justifyContent: "center" }}>
+    <ListItemButton
+      selected={selected}
+      onClick={onClick}
+      sx={{ minHeight: 48 }}
+    >
+      <ListItemIcon
+        sx={{
+          color: color || "inherit",
+          minWidth: 0,
+          mr: collapsed ? "auto" : 3,
+          justifyContent: "center",
+        }}
+      >
         {icon}
       </ListItemIcon>
       {!collapsed && <ListItemText primary={label} />}
