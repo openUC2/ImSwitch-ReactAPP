@@ -17,6 +17,8 @@ import ImJoyView from "./components/ImJoyView";
 import JupyterExecutor from "./components/JupyterExecutor";
 import { JupyterProvider } from "./context/JupyterContext";
 import UC2Controller from "./components/UC2Controller";
+import SelectSetupController from "./components/SelectSetupController";
+import ConfigurationEditorController from "./components/ConfigurationEditorController";
 import ExtendedLEDMatrixController from "./components/ExtendedLEDMatrixController";
 import StageOffsetCalibration from "./components/StageOffsetCalibrationController";
 import DetectorTriggerController from "./components/DetectorTriggerController";
@@ -1569,10 +1571,10 @@ function App() {
               <StageOffsetCalibration hostIP={hostIP} hostPort={apiPort} />
             )}
             {selectedPlugin === "SelectSetup" && (
-              <UC2Controller hostIP={hostIP} hostPort={apiPort} mode="selectSetup" />
+              <SelectSetupController hostIP={hostIP} hostPort={apiPort} />
             )}
             {selectedPlugin === "ConfigurationEditor" && (
-              <UC2Controller hostIP={hostIP} hostPort={apiPort} mode="configurationEditor" />
+              <ConfigurationEditorController hostIP={hostIP} hostPort={apiPort} />
             )}
             {selectedPlugin === "UC2" && (
               <UC2Controller hostIP={hostIP} hostPort={apiPort} />
