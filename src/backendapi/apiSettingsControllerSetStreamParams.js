@@ -5,22 +5,50 @@ const apiSettingsControllerSetStreamParams = async (params = {}) => {
   try {
     const axiosInstance = createAxiosInstance(); // Create Axios instance
     
-    // Build query parameters if provided
-    const queryParams = new URLSearchParams();
-    if (params.throttle_ms !== undefined) {
-      queryParams.append('throttle_ms', params.throttle_ms);
-    }
+    // Extract parameters from the nested structure
+    // Params come in as: { binary: { compression, subsampling, throttle_ms, enabled }, jpeg: { quality, enabled } }
+    // Backend expects: { compression, subsampling, throttle_ms }
     
-    // Prepare request body for compression and subsampling
     const requestBody = {};
-    if (params.compression !== undefined) {
-      requestBody.compression = params.compression;
-    }
-    if (params.subsampling !== undefined) {
-      requestBody.subsampling = params.subsampling;
+    
+    // Check if params has binary/jpeg structure (from StreamSettings/StreamControlOverlay)
+    if (params.binary !== undefined) {
+      // Extract from nested structure
+      if (params.binary.compression !== undefined) {
+        if (params.jpeg["enabled"]) {
+          requestBody.compression = {algorithm: 'jpeg', level: 80};
+        }
+        if (params.binary["enabled"]) {
+          requestBody.compression = params.binary.compression;
+        }
+        
+      }
+      
+      if (params.binary.subsampling !== undefined) {
+        requestBody.subsampling = params.binary.subsampling;
+      }
+      
+      if (params.binary.throttle_ms !== undefined) {
+        requestBody.throttlems = params.binary.throttle_ms;
+      }
+    } else {
+      // Fallback: accept direct parameters (for backward compatibility)
+      if (params.compression !== undefined) {
+        requestBody.compression = params.compression;
+      }
+      
+      if (params.subsampling !== undefined) {
+        requestBody.subsampling = params.subsampling;
+      }
+      
+      if (params.throttle_ms !== undefined) {
+        requestBody.throttlems = params.throttle_ms;
+      }
     }
     
-    const url = `/SettingsController/setStreamParams${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    console.log('apiSettingsControllerSetStreamParams - sending:', requestBody);
+    
+    const url = `/SettingsController/setStreamParams`;
     
     // Send POST request with JSON body
     const response = await axiosInstance.post(url, requestBody, {

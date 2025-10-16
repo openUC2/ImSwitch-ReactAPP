@@ -1,4 +1,4 @@
-import Blockly from "blockly";
+import * as Blockly from "blockly";
 //import { javascriptGenerator, Order } from "blockly/javascript";
 import { pythonGenerator, Order } from "blockly/python";
 
@@ -108,13 +108,13 @@ Blockly.defineBlocksWithJsonArray([
       {
         type: "field_variable",
         name: "Y",
-        value: 0,        
-      }, 
+        value: 0,
+      },
       {
         type: "field_variable",
         name: "Z",
         value: 0,
-      }
+      },
     ],
     previousStatement: null,
     nextStatement: null,
@@ -207,20 +207,20 @@ Blockly.defineBlocksWithJsonArray([
       {
         type: "input_value",
         name: "TIMES",
-        check: "Number"
-      }
+        check: "Number",
+      },
     ],
     message1: "do %1",
     args1: [
       {
         type: "input_statement",
-        name: "DO"
-      }
+        name: "DO",
+      },
     ],
     previousStatement: null,
     nextStatement: null,
     colour: 120,
     tooltip: "Repeat a number of times.",
-    helpUrl: ""
+    helpUrl: "",
   },
 ]);

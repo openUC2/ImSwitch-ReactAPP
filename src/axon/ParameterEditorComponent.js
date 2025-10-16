@@ -160,6 +160,8 @@ const ParameterEditorComponent = () => {
                       value={initializedGains[idx]}
                       onChange={(e) => setGains(idx, Number(e.target.value))}
                       style={{ width: 80 }}
+                      min={0}
+                      max={23}
                     />
                   </div>
 

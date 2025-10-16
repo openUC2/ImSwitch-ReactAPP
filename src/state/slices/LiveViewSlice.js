@@ -8,6 +8,7 @@ const initialLiveViewState = {
   pollImageUrl: null,
   pixelSize: null,
   isStreamRunning: false,
+  lastSnapPath: null, // Store the last snapped image path
 };
 
 // Create slice
@@ -33,6 +34,9 @@ const liveViewSlice = createSlice({
     setIsStreamRunning: (state, action) => {
       state.isStreamRunning = action.payload;
     },
+    setLastSnapPath: (state, action) => {
+      state.lastSnapPath = action.payload;
+    },
     resetState: (state) => {
       return initialLiveViewState;
     },
@@ -47,6 +51,7 @@ export const {
   setPollImageUrl,
   setPixelSize,
   setIsStreamRunning,
+  setLastSnapPath,
   resetState,
 } = liveViewSlice.actions;
 

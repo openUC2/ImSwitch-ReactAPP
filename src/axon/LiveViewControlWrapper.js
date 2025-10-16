@@ -3,13 +3,12 @@ import React, { useState, useCallback } from "react";
 import LiveViewComponent from "./LiveViewComponent";
 import LiveViewerGL from "../components/LiveViewerGL";
 import PositionControllerComponent from "./PositionControllerComponent";
-import StreamControlOverlay from "../components/StreamControlOverlay";
 import apiPositionerControllerMovePositioner from "../backendapi/apiPositionerControllerMovePositioner";
 import { useSelector } from "react-redux";
 import * as objectiveSlice from "../state/slices/ObjectiveSlice.js";
 import * as liveStreamSlice from "../state/slices/LiveStreamSlice.js";
 
-const LiveViewControlWrapper = ({ useFastMode = true, hostIP, hostPort }) => {
+const LiveViewControlWrapper = ({ useFastMode = true }) => {
   const objectiveState = useSelector(objectiveSlice.getObjectiveState);
   const liveStreamState = useSelector(liveStreamSlice.getLiveStreamState);
   
@@ -22,8 +21,11 @@ const LiveViewControlWrapper = ({ useFastMode = true, hostIP, hostPort }) => {
     viewTransform: { scale: 1, translateX: 0, translateY: 0 }
   });
   
-  // Determine if we should use WebGL based on backend capabilities
-  const useWebGL = liveStreamState.backendCapabilities.webglSupported && !liveStreamState.isLegacyBackend;
+  // Determine if we should use WebGL based on backend capabilities AND current format
+  // Use LiveViewComponent (legacy) for JPEG, LiveViewerGL for binary
+  const useWebGL = liveStreamState.backendCapabilities.webglSupported && 
+                   !liveStreamState.isLegacyBackend &&
+                   liveStreamState.imageFormat !== 'jpeg';
 
   // Handle double-click for stage movement
   const handleImageDoubleClick = async (pixelX, pixelY, imageWidth, imageHeight) => {
@@ -119,19 +121,6 @@ const LiveViewControlWrapper = ({ useFastMode = true, hostIP, hostPort }) => {
           <LiveViewComponent 
             useFastMode={useFastMode} 
             onDoubleClick={handleImageDoubleClick}
-          />
-        )}
-        
-        {/* Stream Control Overlay - only show if hostIP and hostPort are available */}
-        {hostIP && hostPort && (
-          <StreamControlOverlay 
-            hostIP={hostIP} 
-            hostPort={hostPort}
-            stats={hudData.stats}
-            featureSupport={hudData.featureSupport}
-            isWebGL={hudData.isWebGL}
-            imageSize={hudData.imageSize}
-            viewTransform={hudData.viewTransform}
           />
         )}
         </div>
