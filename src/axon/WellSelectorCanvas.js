@@ -406,7 +406,49 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
 
       //calc neighbors
       let neighborPointList = [];
-      if (itPoint.shape == Shape.CIRCLE) {
+      
+      // Check for new well-based patterns first
+      if (itPoint.wellMode === "center_only") {
+        // Find wells that intersect with this point and return their centers
+        const intersectingWells = wsUtils.findWellsAtPosition(itPoint, experimentState.wellLayout);
+        const centerPositions = wsUtils.generateWellCenterPositions(intersectingWells, experimentState.wellLayout);
+        neighborPointList = centerPositions.map(pos => ({
+          x: calcPhy2Px(pos.x),
+          y: calcPhy2Px(pos.y),
+          iX: pos.iX,
+          iY: pos.iY
+        }));
+        
+      } else if (itPoint.wellMode === "pattern") {
+        // Generate pattern within wells
+        const intersectingWells = wsUtils.findWellsAtPosition(itPoint, experimentState.wellLayout);
+        let patternPositions = [];
+        
+        if (itPoint.patternType === "circle") {
+          patternPositions = wsUtils.generateWellCirclePattern(
+            intersectingWells,
+            itPoint.patternRadius || 50,
+            itPoint.patternOverlap || 0.1,
+            Math.min(objectiveState.fovX, objectiveState.fovY) * (1 - (experimentState.parameterValue.overlapWidth || 0))
+          );
+        } else if (itPoint.patternType === "rectangle") {
+          patternPositions = wsUtils.generateWellRectanglePattern(
+            intersectingWells,
+            itPoint.patternWidth || 100,
+            itPoint.patternHeight || 100,
+            itPoint.patternOverlap || 0.1,
+            Math.min(objectiveState.fovX, objectiveState.fovY) * (1 - (experimentState.parameterValue.overlapWidth || 0))
+          );
+        }
+        
+        neighborPointList = patternPositions.map(pos => ({
+          x: calcPhy2Px(pos.x),
+          y: calcPhy2Px(pos.y),
+          iX: pos.iX,
+          iY: pos.iY
+        }));
+        
+      } else if (itPoint.shape == Shape.CIRCLE) {
         //calc neighbors
         const rasterCenterPx = {
           x: calcPhy2Px(itPoint.x),

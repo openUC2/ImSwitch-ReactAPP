@@ -27,7 +27,6 @@ const PointListShapeEditorComponent = () => {
   const [patternWidth, setPatternWidth] = useState(100); // For rectangle pattern
   const [patternHeight, setPatternHeight] = useState(100); // For rectangle pattern
   const [patternOverlap, setPatternOverlap] = useState(0.1); // Overlap between positions (0.0 - 1.0)
-  const [optimizePositions, setOptimizePositions] = useState(true); // Whether to use snake pattern optimization
 
   //redux dispatcher
   const dispatch = useDispatch();
@@ -61,8 +60,7 @@ const PointListShapeEditorComponent = () => {
         patternRadius: patternRadius,
         patternWidth: patternWidth,
         patternHeight: patternHeight,
-        patternOverlap: patternOverlap,
-        optimizePositions: optimizePositions
+        patternOverlap: patternOverlap
       }));
     } else if (shape == Shape.RECTANGLE) {
       updatedPointList = experimentState.pointList.map((point) => ({
@@ -219,27 +217,6 @@ const PointListShapeEditorComponent = () => {
                 />
                 <Typography variant="caption" color="text.secondary">
                   (0-90%)
-                </Typography>
-              </Box>
-
-              {/* Position Optimization */}
-              <Box display="flex" alignItems="center" gap={2}>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={optimizePositions}
-                      onChange={(e) => setOptimizePositions(e.target.checked)}
-                      size="small"
-                    />
-                  }
-                  label={
-                    <Typography variant="body2">
-                      Snake Pattern Optimization
-                    </Typography>
-                  }
-                />
-                <Typography variant="caption" color="text.secondary">
-                  (Reduces movement distance)
                 </Typography>
               </Box>
             </Box>

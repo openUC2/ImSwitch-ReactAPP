@@ -14,7 +14,6 @@ export function calculateRasterRect(
   rectPlusY,
   rectMinusY
 ) {
-
   if (rasterWidth <= 0 || rasterHeight <= 0) {
     throw new Error("Raster width and height must be greater than 0.");
   }
@@ -650,12 +649,12 @@ export const wellLayout96 = {
 export function generateWellLayout384({
   cols = 24,
   rows = 16,
-  pitch = 4500, // ~9 mm spacing (adjust if needed)
-  radius = 2500,       // 3 mm radius
+  pitch = 4500 * 2.22, // ~9 mm spacing (adjust if needed)
+  radius = 3000,       // 3 mm radius
   startX = 29490.625,
   startY = 30688.125,
-  width = 178000,
-  height = 126000,
+  width = 128000,
+  height = 86000,
 } = {}) {
   const wells = [];
 
@@ -684,3 +683,252 @@ export function generateWellLayout384({
 // Optional: export a ready-to-use layout
 export const wellLayout384 = generateWellLayout384();
 
+//##################################################################################
+// New functions for well pattern generation
+//##################################################################################
+
+/**
+ * Generate center-only positions for selected wells
+ * @param {Array} selectedWells - Array of well objects with x, y, shape properties
+ * @param {Object} wellLayout - Layout object containing well spacing information
+ * @returns {Array} Array of position objects with x, y coordinates
+ */
+export function generateWellCenterPositions(selectedWells, wellLayout) {
+  const positions = [];
+  
+  selectedWells.forEach((well, index) => {
+    positions.push({
+      x: well.x,
+      y: well.y,
+      name: `Well_${index + 1}_Center`,
+      wellId: well.id || index,
+      iX: 0,
+      iY: 0
+    });
+  });
+  
+  return positions;
+}
+
+/**
+ * Generate circular pattern positions within wells
+ * @param {Array} selectedWells - Array of well objects
+ * @param {number} patternRadius - Radius of the circular pattern in micrometers
+ * @param {number} overlap - Overlap factor (0.0 = no overlap, 0.9 = 90% overlap)
+ * @param {number} stepSize - Base step size between positions in micrometers
+ * @returns {Array} Array of position objects
+ */
+export function generateWellCirclePattern(selectedWells, patternRadius, overlap, stepSize = 10) {
+  const positions = [];
+  
+  // Calculate actual step size based on overlap
+  const actualStepSize = stepSize * (1 - overlap);
+  
+  selectedWells.forEach((well, wellIndex) => {
+    const wellCenterX = well.x;
+    const wellCenterY = well.y;
+    
+    // Generate circular pattern using the existing calculateRasterOval function
+    const circlePositions = calculateRasterOval(
+      { x: wellCenterX, y: wellCenterY },
+      actualStepSize,
+      actualStepSize,
+      patternRadius,
+      patternRadius
+    );
+    
+    // Add each position with well-specific naming
+    circlePositions.forEach((pos, posIndex) => {
+      positions.push({
+        x: pos.x,
+        y: pos.y,
+        name: `Well_${wellIndex + 1}_Pos_${posIndex + 1}`,
+        wellId: well.id || wellIndex,
+        iX: pos.iX,
+        iY: pos.iY,
+        localIndex: posIndex
+      });
+    });
+  });
+  
+  return positions;
+}
+
+/**
+ * Generate rectangular pattern positions within wells
+ * @param {Array} selectedWells - Array of well objects
+ * @param {number} patternWidth - Width of the rectangular pattern in micrometers
+ * @param {number} patternHeight - Height of the rectangular pattern in micrometers
+ * @param {number} overlap - Overlap factor (0.0 = no overlap, 0.9 = 90% overlap)
+ * @param {number} stepSize - Base step size between positions in micrometers
+ * @returns {Array} Array of position objects
+ */
+export function generateWellRectanglePattern(selectedWells, patternWidth, patternHeight, overlap, stepSize = 10) {
+  const positions = [];
+  
+  // Calculate actual step size based on overlap
+  const actualStepSize = stepSize * (1 - overlap);
+  
+  selectedWells.forEach((well, wellIndex) => {
+    const wellCenterX = well.x;
+    const wellCenterY = well.y;
+    
+    // Generate rectangular pattern using the existing calculateRasterRect function
+    const rectPositions = calculateRasterRect(
+      { x: wellCenterX, y: wellCenterY },
+      actualStepSize,
+      actualStepSize,
+      patternWidth / 2,  // rectPlusX
+      patternWidth / 2,  // rectMinusX
+      patternHeight / 2, // rectPlusY
+      patternHeight / 2  // rectMinusY
+    );
+    
+    // Add each position with well-specific naming
+    rectPositions.forEach((pos, posIndex) => {
+      positions.push({
+        x: pos.x,
+        y: pos.y,
+        name: `Well_${wellIndex + 1}_Pos_${posIndex + 1}`,
+        wellId: well.id || wellIndex,
+        iX: pos.iX,
+        iY: pos.iY,
+        localIndex: posIndex
+      });
+    });
+  });
+  
+  return positions;
+}
+
+/**
+ * Generate positions based on point list with well patterns
+ * @param {Array} pointList - Point list from Redux state with shape configurations
+ * @param {Object} wellLayout - Current well layout
+ * @returns {Array} Array of final positions for experiment
+ */
+export function generatePositionsFromPointList(pointList, wellLayout) {
+  const allPositions = [];
+  
+  pointList.forEach((point, pointIndex) => {
+    if (!point.shape || point.shape === "off") {
+      // No pattern, just add the original point
+      allPositions.push({
+        x: point.x,
+        y: point.y,
+        name: point.name || `Point_${pointIndex + 1}`,
+        iX: 0,
+        iY: 0
+      });
+      return;
+    }
+    
+    if (point.wellMode === "center_only") {
+      // Find wells that intersect with this point and return their centers
+      const intersectingWells = findWellsAtPosition(point, wellLayout);
+      const centerPositions = generateWellCenterPositions(intersectingWells, wellLayout);
+      allPositions.push(...centerPositions);
+      
+    } else if (point.wellMode === "pattern") {
+      // Generate pattern within wells
+      const intersectingWells = findWellsAtPosition(point, wellLayout);
+      
+      if (point.patternType === "circle") {
+        const patternPositions = generateWellCirclePattern(
+          intersectingWells,
+          point.patternRadius || 50,
+          point.patternOverlap || 0.1
+        );
+        allPositions.push(...patternPositions);
+        
+      } else if (point.patternType === "rectangle") {
+        const patternPositions = generateWellRectanglePattern(
+          intersectingWells,
+          point.patternWidth || 100,
+          point.patternHeight || 100,
+          point.patternOverlap || 0.1
+        );
+        allPositions.push(...patternPositions);
+      }
+      
+    } else {
+      // Traditional rectangle or circle patterns (existing functionality)
+      if (point.shape === "rectangle") {
+        const rectPositions = calculateRasterRect(
+          { x: point.x, y: point.y },
+          10, // rasterWidth - this should come from experiment settings
+          10, // rasterHeight - this should come from experiment settings
+          point.rectPlusX || 0,
+          point.rectMinusX || 0,
+          point.rectPlusY || 0,
+          point.rectMinusY || 0
+        );
+        allPositions.push(...rectPositions.map((pos, i) => ({
+          ...pos,
+          name: `${point.name || `Point_${pointIndex + 1}`}_${i + 1}`
+        })));
+        
+      } else if (point.shape === "circle") {
+        const circlePositions = calculateRasterOval(
+          { x: point.x, y: point.y },
+          10, // rasterWidth - this should come from experiment settings
+          10, // rasterHeight - this should come from experiment settings
+          point.circleRadiusX || 0,
+          point.circleRadiusY || 0
+        );
+        allPositions.push(...circlePositions.map((pos, i) => ({
+          ...pos,
+          name: `${point.name || `Point_${pointIndex + 1}`}_${i + 1}`
+        })));
+      }
+    }
+  });
+  
+  return allPositions;
+}
+
+/**
+ * Find wells that intersect with a given point/position
+ * @param {Object} point - Point with x, y coordinates
+ * @param {Object} wellLayout - Well layout with wells array
+ * @returns {Array} Array of wells that intersect with the point
+ */
+export function findWellsAtPosition(point, wellLayout) {
+  if (!wellLayout || !wellLayout.wells) {
+    return [];
+  }
+  
+  const intersectingWells = [];
+  
+  wellLayout.wells.forEach((well, index) => {
+    let isIntersecting = false;
+    
+    if (well.shape === "circle") {
+      // Check if point is within circle
+      const dx = point.x - well.x;
+      const dy = point.y - well.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      isIntersecting = distance <= (well.radius || 0);
+      
+    } else if (well.shape === "rectangle") {
+      // Check if point is within rectangle
+      const halfWidth = (well.width || 0) / 2;
+      const halfHeight = (well.height || 0) / 2;
+      isIntersecting = isPointInsideRect(
+        point,
+        { x: well.x, y: well.y },
+        well.width || 0,
+        well.height || 0
+      );
+    }
+    
+    if (isIntersecting) {
+      intersectingWells.push({
+        ...well,
+        id: well.id || index
+      });
+    }
+  });
+  
+  return intersectingWells;
+}
