@@ -1,40 +1,44 @@
 /* global __webpack_init_sharing__, __webpack_share_scopes__ */
-import { Suspense, useEffect, useState, lazy } from "react";
-import LiveView from "./components/LiveView.js";
-import SocketView from "./components/SocketView.js";
-import HistoScanController from "./components/HistoScanController.js";
-import LargeFovScanController from "./components/OpenLayers.js";
-import TimelapseController from "./components/TimelapseController.js";
-import ObjectiveController from "./components/ObjectiveController.js";
+import { lazy, Suspense, useEffect, useState } from "react";
+
+// ImSwitch Themes - Following Copilot Instructions for generic UI structure
+import { darkTheme, lightTheme } from "./themes";
+
 import AboutPage from "./components/AboutPage.js";
-import SystemSettings from "./components/SystemSettings.js";
-import LightsheetController from "./components/LightsheetController.js";
-import DemoController from "./components/DemoController.js";
 import BlocklyController from "./components/BlocklyController.js";
+import ConnectionSettings from "./components/ConnectionSettings.js";
+import DemoController from "./components/DemoController.js";
+import DetectorTriggerController from "./components/DetectorTriggerController.js";
+import ExtendedLEDMatrixController from "./components/ExtendedLEDMatrixController.js";
+import FlowStopController from "./components/FlowStopController.js";
+import FocusLockController from "./components/FocusLockController.js";
+import HistoScanController from "./components/HistoScanController.js";
 import ImJoyView from "./components/ImJoyView.js";
 import JupyterExecutor from "./components/JupyterExecutor.js";
-import { JupyterProvider } from "./context/JupyterContext.js";
-import UC2Controller from "./components/UC2Controller.js";
-import ExtendedLEDMatrixController from "./components/ExtendedLEDMatrixController.js";
+import LepMonController from "./components/LepmonController.js";
+import LightsheetController from "./components/LightsheetController.js";
+import LiveView from "./components/LiveView.js";
+import MazeGameController from "./components/MazeGameController.js";
+import ObjectiveController from "./components/ObjectiveController.js";
+import LargeFovScanController from "./components/OpenLayers.js";
+import SocketView from "./components/SocketView.js";
 import StageOffsetCalibration from "./components/StageOffsetCalibrationController.js";
-import DetectorTriggerController from "./components/DetectorTriggerController.js";
-import StresstestController from "./components/StresstestController.js";
 import STORMControllerArkitekt from "./components/STORMControllerArkitekt.js";
 import STORMControllerLocal from "./components/STORMControllerLocal.js";
-import FocusLockController from "./components/FocusLockController.js";
-import WiFiController from "./components/WiFiController.js";
-import ConnectionSettings from "./components/ConnectionSettings.js";
-import FlowStopController from "./components/FlowStopController.js";
-import LepMonController from "./components/LepmonController.js";
-import MazeGameController from "./components/MazeGameController.js";
+import StresstestController from "./components/StresstestController.js";
+import SystemSettings from "./components/SystemSettings.js";
+import TimelapseController from "./components/TimelapseController.js";
 import TopBar from "./components/TopBar.js";
+import UC2Controller from "./components/UC2Controller.js";
+import WiFiController from "./components/WiFiController.js";
+import { JupyterProvider } from "./context/JupyterContext.js";
 
 // ImSwitch Navigation Drawer - Component extraction following Copilot Instructions
 import { NavigationDrawer } from "./components/drawer";
 
-import { setIp, setApiPort } from "./state/slices/ConnectionSettingsSlice.js";
-import { WebSocketProvider } from "./context/WebSocketContext.js";
 import { MCTProvider } from "./context/MCTContext.js";
+import { WebSocketProvider } from "./context/WebSocketContext.js";
+import { setApiPort, setIp } from "./state/slices/ConnectionSettingsSlice.js";
 
 //axon
 import AxonTabComponent from "./axon/AxonTabComponent.js";
@@ -42,113 +46,33 @@ import WebSocketHandler from "./middleware/WebSocketHandler.js";
 
 //redux
 import { useDispatch, useSelector } from "react-redux";
-import * as connectionSettingsSlice from "./state/slices/ConnectionSettingsSlice.js";
-import { getThemeState } from "./state/slices/ThemeSlice.js";
 import StatusMessage from "./components/StatusMessage.js";
+import * as connectionSettingsSlice from "./state/slices/ConnectionSettingsSlice.js";
 import {
-  getNotificationState,
   clearNotification,
+  getNotificationState,
 } from "./state/slices/NotificationSlice.js";
+import { getThemeState } from "./state/slices/ThemeSlice.js";
 
 // Filemanager
-import FileManager from "./FileManager/FileManager/FileManager.jsx";
+import { api } from "./FileManager/api/api.js";
 import { createFolderAPI } from "./FileManager/api/createFolderAPI.js";
-import { renameAPI } from "./FileManager/api/renameAPI.js";
 import { deleteAPI } from "./FileManager/api/deleteAPI.js";
+import { downloadFile } from "./FileManager/api/downloadFileAPI.js";
 import { copyItemAPI, moveItemAPI } from "./FileManager/api/fileTransferAPI.js";
 import { getAllFilesAPI } from "./FileManager/api/getAllFilesAPI.js";
-import { downloadFile } from "./FileManager/api/downloadFileAPI.js";
-import { api } from "./FileManager/api/api.js";
+import { renameAPI } from "./FileManager/api/renameAPI.js";
 import "./FileManager/App.scss";
+import FileManager from "./FileManager/FileManager/FileManager.jsx";
 
 import { Box, CssBaseline } from "@mui/material";
-import { createTheme, ThemeProvider } from "@mui/material/styles";
+import { ThemeProvider } from "@mui/material/styles";
 
-// Define both light and dark themes
-const lightTheme = createTheme({
-  palette: {
-    mode: "light",
-  },
-  typography: {
-    fontFamily: "Roboto",
-    fontWeightBold: 700,
-  },
-  components: {
-    MuiCssBaseline: {
-      styleOverrides: `
-        @font-face {
-          font-family: 'Roboto';
-          font-style: normal;
-          font-display: swap;
-          font-weight: 400;
-          src: local('Roboto'),
-               url('/imswitch/fonts/Roboto-Regular.ttf') format('truetype');
-        }
-        @font-face {
-          font-family: 'Roboto';
-          font-style: normal;
-          font-display: swap;
-          font-weight: 700;
-          src: local('Roboto Bold'),
-               url('/imswitch/fonts/Roboto-Bold.ttf') format('truetype');
-        }
-      `,
-    },
-  },
-});
-
-const darkTheme = createTheme({
-  palette: {
-    mode: "dark",
-  },
-  typography: {
-    fontFamily: "Roboto",
-    fontWeightBold: 700,
-  },
-  components: {
-    MuiButton: {
-      styleOverrides: {
-        /*root: {
-          fontSize: '.8rem', // Beispiel: Schriftgröße der Schaltflächen
-          padding: 'px 0px', // Beispiel: Innenabstand der Schaltflächen
-        },
-        */
-      },
-    },
-    MuiSlider: {
-      styleOverrides: {
-        root: {
-          height: 8, // Beispiel: Höhe des Sliders
-        },
-        thumb: {
-          width: 24, // Beispiel: Breite des Slider-Daumen
-          height: 24, // Beispiel: Höhe des Slider-Daumen
-        },
-      },
-    },
-    MuiCssBaseline: {
-      styleOverrides: `
-      @font-face {
-        font-family: 'Roboto';
-        font-style: normal;
-        font-display: swap;
-        font-weight: 400;
-        src: local('Roboto'),
-             url('/imswitch/fonts/Roboto-Regular.ttf') format('truetype');
-      }
-      @font-face {
-        font-family: 'Roboto';
-        font-style: normal;
-        font-display: swap;
-        font-weight: 700;
-        src: local('Roboto Bold'),
-             url('/imswitch/fonts/Roboto-Bold.ttf') format('truetype');
-      }
-      `,
-    },
-  },
-});
-
+/**
+ * ImSwitch Main Application Component
+ * Orchestrates microscopy interface following Copilot Instructions
+ * Theme management extracted to src/themes/ for better modularity
+ */
 function App() {
   // Notification state
   const notification = useSelector(getNotificationState);
