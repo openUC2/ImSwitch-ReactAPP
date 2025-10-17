@@ -14,6 +14,7 @@ export function calculateRasterRect(
   rectPlusY,
   rectMinusY
 ) {
+
   if (rasterWidth <= 0 || rasterHeight <= 0) {
     throw new Error("Raster width and height must be greater than 0.");
   }
@@ -641,3 +642,45 @@ export const wellLayout96 = {
     { x: 85336, y: 64002, shape: "circle", radius: 4500 },
   ],
 };
+
+
+
+// src/utils/generateWellLayout384.js
+
+export function generateWellLayout384({
+  cols = 24,
+  rows = 16,
+  pitch = 4500, // ~9 mm spacing (adjust if needed)
+  radius = 2500,       // 3 mm radius
+  startX = 29490.625,
+  startY = 30688.125,
+  width = 178000,
+  height = 126000,
+} = {}) {
+  const wells = [];
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const x = startX + c * pitch;
+      const y = startY + r * pitch;
+      wells.push({
+        x: Number(x.toFixed(3)),
+        y: Number(y.toFixed(3)),
+        shape: "circle",
+        radius,
+      });
+    }
+  }
+
+  return {
+    name: "Wellplate 384",
+    unit: "um",
+    width,
+    height,
+    wells,
+  };
+}
+
+// Optional: export a ready-to-use layout
+export const wellLayout384 = generateWellLayout384();
+

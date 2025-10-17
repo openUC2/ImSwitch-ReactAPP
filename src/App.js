@@ -4,7 +4,6 @@ import SensorsIcon from "@mui/icons-material/Sensors";
 import React, { Suspense, useEffect, useState, lazy } from "react";
 import LiveView from "./components/LiveView";
 import SocketView from "./components/SocketView";
-import HistoScanController from "./components/HistoScanController";
 import LargeFovScanController from "./components/OpenLayers";
 import TimelapseController from "./components/TimelapseController";
 import ObjectiveController from "./components/ObjectiveController.js";
@@ -653,51 +652,6 @@ function App() {
                         {sidebarVisible && (
                           <ListItemText
                             primary="WellPlate"
-                            sx={{ opacity: 1 }}
-                          />
-                        )}
-                      </ListItemButton>
-                    </Tooltip>
-                  </ListItem>
-                  {/* HistoScan */}
-                  <ListItem>
-                    <Tooltip
-                      title="HistoScan"
-                      placement="right"
-                      disableHoverListener={sidebarVisible}
-                    >
-                      <ListItemButton
-                        selected={selectedPlugin === "HistoScan"}
-                        onClick={() => handlePluginChange("HistoScan")}
-                        sx={{
-                          justifyContent: sidebarVisible
-                            ? "flex-start"
-                            : "center",
-                          minHeight: 48,
-                          px: 2.5,
-                        }}
-                      >
-                        <ListItemIcon
-                          sx={{
-                            minWidth: 0,
-                            mr: sidebarVisible ? 3 : "auto",
-                            justifyContent: "center",
-                          }}
-                        >
-                          <Avatar
-                            sx={{
-                              bgcolor: SIDEBAR_COLORS.apps,
-                              width: 24,
-                              height: 24,
-                              fontSize: 14,
-                            }}
-                          >
-                            HS
-                          </Avatar>
-                        </ListItemIcon>
-                        {sidebarVisible && (
-                          <ListItemText
-                            primary="HistoScan"
                             sx={{ opacity: 1 }}
                           />
                         )}
@@ -1479,9 +1433,6 @@ function App() {
                 hostPort={apiPort}
                 sharedImage={sharedImage}
               />
-            )}
-            {selectedPlugin === "HistoScan" && (
-              <HistoScanController hostIP={hostIP} hostPort={apiPort} />
             )}
             {selectedPlugin === "STORMLocal" && (
               <STORMControllerLocal hostIP={hostIP} hostPort={apiPort} />
