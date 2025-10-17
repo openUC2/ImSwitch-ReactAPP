@@ -1,34 +1,34 @@
-import { useState } from "react";
-import { Drawer, List, Divider } from "@mui/material";
+import * as Icons from "@mui/icons-material";
 import {
-  Dashboard as DashboardIcon,
+  AccessTime as AccessTimeIcon,
+  Air as AirIcon,
+  Apps as AppsIcon,
+  BlurOn as BlurOnIcon,
   Build as BuildIcon,
+  Code as CodeIcon,
+  Comment as CommentIcon,
+  Computer as ComputerIcon,
+  Dashboard as DashboardIcon,
+  Extension as ExtensionIcon,
+  Folder as FolderIcon,
   Info as InfoIcon,
+  Link as LinkIcon,
+  Memory as MemoryIcon,
+  Science as ScienceIcon,
+  Sensors as SensorsIcon,
   Settings as SettingsIcon,
   SettingsOverscanSharp as SettingsOverscanSharpIcon,
-  AccessTime as AccessTimeIcon,
-  Apps as AppsIcon,
-  Code as CodeIcon,
-  Computer as ComputerIcon,
-  Folder as FolderIcon,
-  Extension as ExtensionIcon,
-  Science as ScienceIcon,
-  WifiSharp as WifiSharpIcon,
-  ThreeDRotation as ThreeDRotationIcon,
-  Air as AirIcon,
-  Straighten as StraightenIcon,
-  Memory as MemoryIcon,
   SportsEsports as SportsEsportsIcon,
-  Link as LinkIcon,
-  Comment as CommentIcon,
+  Straighten as StraightenIcon,
+  ThreeDRotation as ThreeDRotationIcon,
+  WifiSharp as WifiSharpIcon,
   ZoomOutMap as ZoomOutMapIcon,
-  Sensors as SensorsIcon,
-  BlurOn as BlurOnIcon,
 } from "@mui/icons-material";
-import * as Icons from "@mui/icons-material";
+import { Divider, Drawer, List } from "@mui/material";
+import { useState } from "react";
 import SIDEBAR_COLORS from "../../constants/sidebarColors.js";
-import DrawerHeader from "./DrawerHeader.jsx";
 import DrawerEntry from "./DrawerEntry.jsx";
+import DrawerHeader from "./DrawerHeader.jsx";
 
 /**
  * ImSwitch Navigation Drawer Component
