@@ -16,13 +16,13 @@ import HistoScanController from "./components/HistoScanController.js";
 import ImJoyView from "./components/ImJoyView.js";
 import JupyterExecutor from "./components/JupyterExecutor.js";
 import LepMonController from "./components/LepmonController.js";
-import LightsheetController from "./components/LightsheetController.js";
+import LightsheetController from "./components/LightsheetController.jsx";
 import LiveView from "./components/LiveView.js";
 import MazeGameController from "./components/MazeGameController.js";
 import ObjectiveController from "./components/ObjectiveController.js";
 import LargeFovScanController from "./components/OpenLayers.js";
 import SocketView from "./components/SocketView.js";
-import StageOffsetCalibration from "./components/StageOffsetCalibrationController.js";
+import StageOffsetCalibration from "./components/StageOffsetCalibrationController.jsx";
 import STORMControllerArkitekt from "./components/STORMControllerArkitekt.js";
 import STORMControllerLocal from "./components/STORMControllerLocal.js";
 import StresstestController from "./components/StresstestController.js";
@@ -499,12 +499,8 @@ function App() {
                 </div>
               </div>
             )}
-            {selectedPlugin === "LightSheet" && (
-              <LightsheetController hostIP={hostIP} hostPort={apiPort} />
-            )}
-            {selectedPlugin === "Demo" && (
-              <DemoController hostIP={hostIP} hostPort={apiPort} />
-            )}
+            {selectedPlugin === "LightSheet" && <LightsheetController />}
+            {selectedPlugin === "Demo" && <DemoController />}
             {selectedPlugin === "WiFi" && (
               <WiFiController hostIP={hostIP} hostPort={apiPort} />
             )}
@@ -518,7 +514,7 @@ function App() {
             )}
             {selectedPlugin === "FlowStop" && <FlowStopController />}
             {selectedPlugin === "StageOffsetCalibration" && (
-              <StageOffsetCalibration hostIP={hostIP} hostPort={apiPort} />
+              <StageOffsetCalibration />
             )}
             {selectedPlugin === "UC2" && (
               <UC2Controller hostIP={hostIP} hostPort={apiPort} />

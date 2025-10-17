@@ -1,51 +1,53 @@
-import React, { useEffect, useCallback } from "react";
-import { useDispatch, useSelector } from "react-redux";
 import {
-  Paper,
-  Tabs,
-  Tab,
-  Box,
-  Typography,
-  Button,
-  MenuItem,
-  Select,
-  FormControl,
-  InputLabel,
-  Grid,
-  TextField,
-  Checkbox,
-  FormControlLabel,
-  Switch,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  CircularProgress,
-  LinearProgress,
-} from "@mui/material";
-import {
-  Refresh as RefreshIcon,
   Preview as PreviewIcon,
+  Refresh as RefreshIcon,
   Save as SaveIcon,
   AutoFixHigh as WizardIcon,
 } from "@mui/icons-material";
-import { useWebSocket } from "../context/WebSocketContext";
-import { JsonEditor } from "json-edit-react";
-import AceEditor from "react-ace";
+
+import * as connectionSettingsSlice from "../state/slices/ConnectionSettingsSlice.js";
+import {
+  Box,
+  Button,
+  Checkbox,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  FormControlLabel,
+  Grid,
+  InputLabel,
+  LinearProgress,
+  MenuItem,
+  Paper,
+  Select,
+  Switch,
+  Tab,
+  Tabs,
+  TextField,
+  Typography,
+} from "@mui/material";
 import "ace-builds/src-noconflict/mode-json";
 import "ace-builds/src-noconflict/theme-github";
+import { JsonEditor } from "json-edit-react";
+import React, { useCallback, useEffect } from "react";
+import AceEditor from "react-ace";
+import { useDispatch, useSelector } from "react-redux";
+import { useWebSocket } from "../context/WebSocketContext";
+import {
+  clearNotification,
+  setNotification,
+} from "../state/slices/NotificationSlice";
 import * as uc2Slice from "../state/slices/UC2Slice.js";
 import {
-  setNotification,
-  clearNotification,
-} from "../state/slices/NotificationSlice";
-import ConfigurationPreviewDialog from "./ConfigurationPreviewDialog";
-import ConfigurationWizard from "./ConfigurationWizard";
-import {
+  createConfigurationPreview,
   validateConfiguration,
   validateJsonString,
-  createConfigurationPreview,
 } from "../utils/configValidation";
+import ConfigurationPreviewDialog from "./ConfigurationPreviewDialog";
+import ConfigurationWizard from "./ConfigurationWizard";
 
 const TabPanel = ({ children, value, index, ...other }) => (
   <div
@@ -63,7 +65,14 @@ const goToWebsite = () => {
   window.open("https://youseetoo.github.io", "_blank");
 };
 
-const UC2Controller = ({ hostIP, hostPort }) => {
+const UC2Controller = () => {
+  // Access ImSwitch backend connection settings from Redux - following Copilot Instructions
+  const connectionSettingsState = useSelector(
+    connectionSettingsSlice.getConnectionSettingsState
+  );
+  const hostIP = connectionSettingsState.ip;
+  const hostPort = connectionSettingsState.apiPort;
+
   // Redux dispatcher
   const dispatch = useDispatch();
 

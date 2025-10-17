@@ -1,23 +1,24 @@
 // src/components/LightsheetController.js
-import React, { useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import CancelIcon from "@mui/icons-material/Cancel";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import {
-  Paper,
-  Tabs,
-  Tab,
   Box,
-  Typography,
-  TextField,
   Button,
   Grid,
+  Paper,
+  Tab,
+  Tabs,
+  TextField,
+  Typography,
 } from "@mui/material";
 import { green, red } from "@mui/material/colors";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import CancelIcon from "@mui/icons-material/Cancel";
-import VtkViewer from "./VtkViewer.js"; // Assuming you have a VtkViewer component
-import ErrorBoundary from "./ErrorBoundary";
-import LiveViewControlWrapper from "../axon/LiveViewControlWrapper";
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import LiveViewControlWrapper from "../axon/LiveViewControlWrapper.js";
+import * as connectionSettingsSlice from "../state/slices/ConnectionSettingsSlice.js";
 import * as lightsheetSlice from "../state/slices/LightsheetSlice.js";
+import ErrorBoundary from "./ErrorBoundary.js";
+import VtkViewer from "./VtkViewer.js"; // Assuming you have a VtkViewer component
 
 const TabPanel = (props) => {
   const { children, value, index, ...other } = props;
@@ -35,13 +36,25 @@ const TabPanel = (props) => {
   );
 };
 
-const LightsheetController = ({ hostIP, hostPort }) => {
-  // Redux dispatcher
+/**
+ * ImSwitch Lightsheet Controller Component
+ * Manages 3D lightsheet microscopy scanning and visualization
+ * Follows Copilot Instructions for Redux state management and API communication
+ */
+const LightsheetController = () => {
+  // Access ImSwitch backend connection settings from Redux - following Copilot Instructions
+  const connectionSettingsState = useSelector(
+    connectionSettingsSlice.getConnectionSettingsState
+  );
+  const hostIP = connectionSettingsState.ip;
+  const hostPort = connectionSettingsState.apiPort;
+
+  // Redux dispatcher and lightsheet state
   const dispatch = useDispatch();
-  
+
   // Access global Redux state
   const lightsheetState = useSelector(lightsheetSlice.getLightsheetState);
-  
+
   // Use Redux state instead of local useState
   const tabIndex = lightsheetState.tabIndex;
   const minPos = lightsheetState.minPos;
@@ -50,11 +63,13 @@ const LightsheetController = ({ hostIP, hostPort }) => {
   const axis = lightsheetState.axis;
   const illuSource = lightsheetState.illuSource;
   const illuValue = lightsheetState.illuValue;
-  const vtkImagePrimary = lightsheetState.vtkImagePrimary;
+  //const vtkImagePrimary = lightsheetState.vtkImagePrimary;
   const isRunning = lightsheetState.isRunning;
 
   useEffect(() => {
     const fetchLatestImagePath = async () => {
+      if (!hostIP || !hostPort) return;
+
       try {
         const response = await fetch(
           `${hostIP}:${hostPort}/LightsheetController/returnLastLightsheetStackPath`
@@ -74,10 +89,12 @@ const LightsheetController = ({ hostIP, hostPort }) => {
     };
 
     fetchLatestImagePath();
-  }, [hostIP, hostPort, isRunning]);
+  }, [hostIP, hostPort, isRunning, dispatch]);
 
   // Periodically check if the lightsheet is running
   useEffect(() => {
+    if (!hostIP || !hostPort) return;
+
     const checkIsRunning = async () => {
       try {
         const response = await fetch(
@@ -95,7 +112,7 @@ const LightsheetController = ({ hostIP, hostPort }) => {
 
     // Cleanup the interval when the component is unmounted
     return () => clearInterval(interval);
-  }, [hostIP, hostPort]);
+  }, [hostIP, hostPort, dispatch]);
 
   const startScanning = () => {
     const url = `${hostIP}:${hostPort}/LightsheetController/performScanningRecording?minPos=${minPos}&maxPos=${maxPos}&speed=${speed}&axis=${axis}&illusource=${illuSource}&illuvalue=${illuValue}`;
@@ -135,7 +152,9 @@ const LightsheetController = ({ hostIP, hostPort }) => {
             <TextField
               label="Min Position"
               value={minPos}
-              onChange={(e) => dispatch(lightsheetSlice.setMinPos(e.target.value))}
+              onChange={(e) =>
+                dispatch(lightsheetSlice.setMinPos(e.target.value))
+              }
               fullWidth
               type="number"
               variant="outlined"
@@ -145,7 +164,9 @@ const LightsheetController = ({ hostIP, hostPort }) => {
             <TextField
               label="Max Position"
               value={maxPos}
-              onChange={(e) => dispatch(lightsheetSlice.setMaxPos(e.target.value))}
+              onChange={(e) =>
+                dispatch(lightsheetSlice.setMaxPos(e.target.value))
+              }
               fullWidth
               type="number"
               variant="outlined"
@@ -155,7 +176,9 @@ const LightsheetController = ({ hostIP, hostPort }) => {
             <TextField
               label="Speed"
               value={speed}
-              onChange={(e) => dispatch(lightsheetSlice.setSpeed(e.target.value))}
+              onChange={(e) =>
+                dispatch(lightsheetSlice.setSpeed(e.target.value))
+              }
               fullWidth
               type="number"
               variant="outlined"
@@ -165,7 +188,9 @@ const LightsheetController = ({ hostIP, hostPort }) => {
             <TextField
               label="Axis"
               value={axis}
-              onChange={(e) => dispatch(lightsheetSlice.setAxis(e.target.value))}
+              onChange={(e) =>
+                dispatch(lightsheetSlice.setAxis(e.target.value))
+              }
               fullWidth
               variant="outlined"
             />
@@ -174,7 +199,9 @@ const LightsheetController = ({ hostIP, hostPort }) => {
             <TextField
               label="Illumination Source"
               value={illuSource}
-              onChange={(e) => dispatch(lightsheetSlice.setIlluSource(e.target.value))}
+              onChange={(e) =>
+                dispatch(lightsheetSlice.setIlluSource(e.target.value))
+              }
               fullWidth
               type="number"
               variant="outlined"
@@ -184,7 +211,9 @@ const LightsheetController = ({ hostIP, hostPort }) => {
             <TextField
               label="Illumination Value"
               value={illuValue}
-              onChange={(e) => dispatch(lightsheetSlice.setIlluValue(e.target.value))}
+              onChange={(e) =>
+                dispatch(lightsheetSlice.setIlluValue(e.target.value))
+              }
               fullWidth
               type="number"
               variant="outlined"
@@ -228,7 +257,11 @@ const LightsheetController = ({ hostIP, hostPort }) => {
             <TextField
               label="Channel"
               value={lightsheetState.galvoChannel || 2}
-              onChange={(e) => dispatch(lightsheetSlice.setGalvoChannel(parseInt(e.target.value)))}
+              onChange={(e) =>
+                dispatch(
+                  lightsheetSlice.setGalvoChannel(parseInt(e.target.value))
+                )
+              }
               fullWidth
               type="number"
               variant="outlined"
@@ -240,7 +273,11 @@ const LightsheetController = ({ hostIP, hostPort }) => {
             <TextField
               label="Frequency"
               value={lightsheetState.galvoFrequency || 20}
-              onChange={(e) => dispatch(lightsheetSlice.setGalvoFrequency(parseFloat(e.target.value)))}
+              onChange={(e) =>
+                dispatch(
+                  lightsheetSlice.setGalvoFrequency(parseFloat(e.target.value))
+                )
+              }
               fullWidth
               type="number"
               variant="outlined"
@@ -252,7 +289,11 @@ const LightsheetController = ({ hostIP, hostPort }) => {
             <TextField
               label="Offset"
               value={lightsheetState.galvoOffset || 0}
-              onChange={(e) => dispatch(lightsheetSlice.setGalvoOffset(parseFloat(e.target.value)))}
+              onChange={(e) =>
+                dispatch(
+                  lightsheetSlice.setGalvoOffset(parseFloat(e.target.value))
+                )
+              }
               fullWidth
               type="number"
               variant="outlined"
@@ -264,7 +305,11 @@ const LightsheetController = ({ hostIP, hostPort }) => {
             <TextField
               label="Amplitude"
               value={lightsheetState.galvoAmplitude || 2}
-              onChange={(e) => dispatch(lightsheetSlice.setGalvoAmplitude(parseFloat(e.target.value)))}
+              onChange={(e) =>
+                dispatch(
+                  lightsheetSlice.setGalvoAmplitude(parseFloat(e.target.value))
+                )
+              }
               fullWidth
               type="number"
               variant="outlined"
@@ -276,7 +321,11 @@ const LightsheetController = ({ hostIP, hostPort }) => {
             <TextField
               label="Clock Divider"
               value={lightsheetState.galvoClkDiv || 0}
-              onChange={(e) => dispatch(lightsheetSlice.setGalvoClkDiv(parseInt(e.target.value)))}
+              onChange={(e) =>
+                dispatch(
+                  lightsheetSlice.setGalvoClkDiv(parseInt(e.target.value))
+                )
+              }
               fullWidth
               type="number"
               variant="outlined"
@@ -288,7 +337,11 @@ const LightsheetController = ({ hostIP, hostPort }) => {
             <TextField
               label="Phase"
               value={lightsheetState.galvoPhase || 0}
-              onChange={(e) => dispatch(lightsheetSlice.setGalvoPhase(parseInt(e.target.value)))}
+              onChange={(e) =>
+                dispatch(
+                  lightsheetSlice.setGalvoPhase(parseInt(e.target.value))
+                )
+              }
               fullWidth
               type="number"
               variant="outlined"
@@ -299,7 +352,11 @@ const LightsheetController = ({ hostIP, hostPort }) => {
             <TextField
               label="Invert"
               value={lightsheetState.galvoInvert || 1}
-              onChange={(e) => dispatch(lightsheetSlice.setGalvoInvert(parseInt(e.target.value)))}
+              onChange={(e) =>
+                dispatch(
+                  lightsheetSlice.setGalvoInvert(parseInt(e.target.value))
+                )
+              }
               fullWidth
               type="number"
               variant="outlined"
@@ -319,15 +376,17 @@ const LightsheetController = ({ hostIP, hostPort }) => {
                 const clk_div = lightsheetState.galvoClkDiv || 0;
                 const phase = lightsheetState.galvoPhase || 0;
                 const invert = lightsheetState.galvoInvert || 1;
-                
+
                 const url = `${hostIP}:${hostPort}/LightsheetController/setGalvo?channel=${channel}&frequency=${frequency}&offset=${offset}&amplitude=${amplitude}&clk_div=${clk_div}&phase=${phase}&invert=${invert}`;
-                
+
                 fetch(url, { method: "GET" })
                   .then((response) => response.json())
                   .then((data) => {
                     console.log("Galvo parameters set:", data);
                   })
-                  .catch((error) => console.error("Error setting galvo parameters:", error));
+                  .catch((error) =>
+                    console.error("Error setting galvo parameters:", error)
+                  );
               }}
               size="large"
             >

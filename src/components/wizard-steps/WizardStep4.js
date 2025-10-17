@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useState, useEffect } from "react";
+import { useDispatch } from "react-redux";
 import {
   Typography,
   Box,
@@ -25,9 +25,16 @@ import apiObjectiveControllerMoveToObjective from "../../backendapi/apiObjective
 import apiPositionerControllerGetPositions from "../../backendapi/apiPositionerControllerGetPositions.js";
 import apiObjectiveControllerSetPositions from "../../backendapi/apiObjectiveControllerSetPositions.js";
 
-const WizardStep4 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps }) => {
+const WizardStep4 = ({
+  hostIP,
+  hostPort,
+  onNext,
+  onBack,
+  activeStep,
+  totalSteps,
+}) => {
   const dispatch = useDispatch();
-  
+
   const [setupComplete, setSetupComplete] = useState(false);
   const [movedToObjective1, setMovedToObjective1] = useState(false);
   const [currentPositions, setCurrentPositions] = useState({
@@ -132,10 +139,10 @@ const WizardStep4 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
       <Typography variant="h5" gutterBottom>
         Step 4: Calibrate Focus Position Z1
       </Typography>
-      
+
       <Alert severity="info" sx={{ mb: 3 }}>
-        Insert objectives into slots 1 and 2, add a sample, switch to objective 1, 
-        find a feature to focus on, and save the Z1 focus position.
+        Insert objectives into slots 1 and 2, add a sample, switch to objective
+        1, find a feature to focus on, and save the Z1 focus position.
       </Alert>
 
       <Grid container spacing={3}>
@@ -145,11 +152,11 @@ const WizardStep4 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
             <Typography variant="h6" gutterBottom>
               Live View with XYZ Controls
             </Typography>
-            <Box sx={{ height: '400px', border: '1px solid #ccc' }}>
+            <Box sx={{ height: "400px", border: "1px solid #ccc" }}>
               <LiveViewControlWrapper />
             </Box>
             {/* XYZ Joystick Controls */}
-            <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
+            <Box sx={{ mt: 2, display: "flex", justifyContent: "center" }}>
               <PositionControllerComponent />
             </Box>
           </Paper>
@@ -166,7 +173,7 @@ const WizardStep4 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
                 <ListItemIcon>
                   <CheckIcon color={setupComplete ? "success" : "disabled"} />
                 </ListItemIcon>
-                <ListItemText 
+                <ListItemText
                   primary="Insert objective lenses into slots 1 and 2"
                   secondary="Screw in both objectives securely"
                 />
@@ -175,7 +182,7 @@ const WizardStep4 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
                 <ListItemIcon>
                   <CheckIcon color={setupComplete ? "success" : "disabled"} />
                 </ListItemIcon>
-                <ListItemText 
+                <ListItemText
                   primary="Insert a sample"
                   secondary="Place a sample with visible features under the objectives"
                 />
@@ -207,7 +214,7 @@ const WizardStep4 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
 
           <Paper elevation={2} sx={{ p: 2, mb: 2 }}>
             <Typography variant="h6" gutterBottom>
-              <FocusIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+              <FocusIcon sx={{ mr: 1, verticalAlign: "middle" }} />
               3. Find Focus
             </Typography>
             <Typography variant="body2" sx={{ mb: 2 }}>
@@ -215,13 +222,13 @@ const WizardStep4 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
             </Typography>
             <List dense>
               <ListItem>
-                <ListItemText 
+                <ListItemText
                   primary="• Move X/Y to find a feature on your sample"
                   secondary="Use the arrow buttons for X/Y movement"
                 />
               </ListItem>
               <ListItem>
-                <ListItemText 
+                <ListItemText
                   primary="• Adjust Z to achieve sharp focus"
                   secondary="Use the +/- buttons for Z movement (focus)"
                 />
@@ -231,19 +238,19 @@ const WizardStep4 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
 
           <Paper elevation={2} sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
-              <SaveIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+              <SaveIcon sx={{ mr: 1, verticalAlign: "middle" }} />
               4. Save Z1 Focus Position
             </Typography>
             <Typography variant="body2" sx={{ mb: 2 }}>
               Current Positions:
             </Typography>
             <Typography variant="body2" sx={{ mb: 1 }}>
-              X: <strong>{currentPositions.X || "Unknown"}</strong>, 
-              Y: <strong>{currentPositions.Y || "Unknown"}</strong>
+              X: <strong>{currentPositions.X || "Unknown"}</strong>, Y:{" "}
+              <strong>{currentPositions.Y || "Unknown"}</strong>
             </Typography>
             <Typography variant="body2" sx={{ mb: 2 }}>
-              Z: <strong>{currentPositions.Z || "Unknown"}</strong>, 
-              A: <strong>{currentPositions.A || "Unknown"}</strong>
+              Z: <strong>{currentPositions.Z || "Unknown"}</strong>, A:{" "}
+              <strong>{currentPositions.A || "Unknown"}</strong>
             </Typography>
             <Button
               variant="contained"
@@ -259,8 +266,8 @@ const WizardStep4 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
       </Grid>
 
       <Alert severity="success" sx={{ mt: 3 }}>
-        <strong>Tip:</strong> Once you have a sharp focus on a feature, 
-        click "Save Current Z as Z1" to store this focus position for objective 1.
+        <strong>Tip:</strong> Once you have a sharp focus on a feature, click
+        "Save Current Z as Z1" to store this focus position for objective 1.
       </Alert>
     </Box>
   );
