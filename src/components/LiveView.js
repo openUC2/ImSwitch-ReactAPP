@@ -53,7 +53,7 @@ export default function LiveView({ setFileManagerInitialPath }) {
   // Redux dispatcher
   const dispatch = useDispatch();
 
-  // Connection settings aus Redux holen
+  // Get connection settings from Redux
   const { ip: hostIP, apiPort: hostPort } = useSelector(
     getConnectionSettingsState
   );
