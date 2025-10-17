@@ -4,7 +4,7 @@ import { useSelector } from "react-redux";
 import { getConnectionSettingsState } from "../state/slices/ConnectionSettingsSlice";
 
 const ImJoyView = ({ sharedImage }) => {
-  // Connection settings aus Redux holen
+  // Get connection settings from Redux
   const { ip: hostIP, apiPort: hostPort } = useSelector(
     getConnectionSettingsState
   );
