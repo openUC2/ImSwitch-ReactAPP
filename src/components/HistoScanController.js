@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { getConnectionSettingsState } from "../state/slices/ConnectionSettingsSlice";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import { Rnd } from "react-rnd";
 import { useWebSocket } from "../context/WebSocketContext";
@@ -25,13 +26,17 @@ import {
   ListItem,
 } from "@mui/material";
 
-const HistoScanController = ({ hostIP, hostPort }) => {
+const HistoScanController = () => {
+  // Get connection settings from Redux
+  const { ip: hostIP, apiPort: hostPort } = useSelector(
+    getConnectionSettingsState
+  );
   // Redux dispatcher
   const dispatch = useDispatch();
-  
+
   // Access global Redux state
   const histoScanState = useSelector(histoScanSlice.getHistoScanState);
-  
+
   // Use Redux state instead of local state for the main scan parameters
   const illuminationSource = histoScanState.illuminationSource;
   const illuminationValue = histoScanState.illuminationValue;
@@ -54,7 +59,7 @@ const HistoScanController = ({ hostIP, hostPort }) => {
   const initPosX = histoScanState.initPosX;
   const initPosY = histoScanState.initPosY;
   const imageUrl = histoScanState.imageUrl;
-  
+
   // Keep some local state for UI-specific interactions that don't need persistence
   const [mapUrl, setMapUrl] = useState("");
   const [anchorEl, setAnchorEl] = useState(null); // For right-click menu
@@ -96,8 +101,7 @@ const HistoScanController = ({ hostIP, hostPort }) => {
         if (jdata.name === "sigUpdateScanCoordinatesLayout") {
           console.log("Signal received in HistoScanController", jdata);
           calculateScaledScanPoints(jdata);
-        }
-        else if (jdata.name === "sigUpdateLoadingBar") {
+        } else if (jdata.name === "sigUpdateLoadingBar") {
           console.log("Signal received in HistoScanController", jdata);
           dispatch(histoScanSlice.setScanIndex(jdata.args.p0));
         } else if (jdata.name === "sigUpdateMotorPosition") {
@@ -265,7 +269,9 @@ const HistoScanController = ({ hostIP, hostPort }) => {
 
         // Update the state variables based on the extended response
         dispatch(histoScanSlice.setScanStatus(data.ishistoscanRunning));
-        dispatch(histoScanSlice.setScanResultAvailable(data.stitchResultAvailable));
+        dispatch(
+          histoScanSlice.setScanResultAvailable(data.stitchResultAvailable)
+        );
         dispatch(histoScanSlice.setScanIndex(data.mScanIndex));
         dispatch(histoScanSlice.setScanCount(data.mScanCount));
         dispatch(histoScanSlice.setStepSizeX(parseInt(data.currentStepSizeX)));
@@ -273,13 +279,31 @@ const HistoScanController = ({ hostIP, hostPort }) => {
         dispatch(histoScanSlice.setStepsX(data.currentNX.toString()));
         dispatch(histoScanSlice.setStepsY(data.currentNY.toString()));
         dispatch(histoScanSlice.setIsStitchAshlar(data.currentAshlarStitching));
-        dispatch(histoScanSlice.setIsStitchAshlarFlipX(data.currentAshlarFlipX));
-        dispatch(histoScanSlice.setIsStitchAshlarFlipY(data.currentAshlarFlipY));
-        dispatch(histoScanSlice.setResizeFactor(data.currentResizeFactor.toString()));
-        dispatch(histoScanSlice.setInitPosX(parseInt(data.currentIinitialPosX).toString()));
-        dispatch(histoScanSlice.setInitPosY(parseInt(data.currentIinitialPosY).toString()));
-        dispatch(histoScanSlice.setTimeInterval(data.currentTimeInterval.toString()));
-        dispatch(histoScanSlice.setNumberOfScans(data.currentNtimes.toString()));
+        dispatch(
+          histoScanSlice.setIsStitchAshlarFlipX(data.currentAshlarFlipX)
+        );
+        dispatch(
+          histoScanSlice.setIsStitchAshlarFlipY(data.currentAshlarFlipY)
+        );
+        dispatch(
+          histoScanSlice.setResizeFactor(data.currentResizeFactor.toString())
+        );
+        dispatch(
+          histoScanSlice.setInitPosX(
+            parseInt(data.currentIinitialPosX).toString()
+          )
+        );
+        dispatch(
+          histoScanSlice.setInitPosY(
+            parseInt(data.currentIinitialPosY).toString()
+          )
+        );
+        dispatch(
+          histoScanSlice.setTimeInterval(data.currentTimeInterval.toString())
+        );
+        dispatch(
+          histoScanSlice.setNumberOfScans(data.currentNtimes.toString())
+        );
         // If pixel size needs to be displayed or used
         console.log(`Pixel Size: ${data.pixelSize}`);
       } catch (error) {
@@ -404,7 +428,12 @@ const HistoScanController = ({ hostIP, hostPort }) => {
     setClickedPosition({ x, y });
 
     // Store the mouse coordinates to position the menu
-    dispatch(histoScanSlice.setMenuPosition({ mouseX: event.clientX, mouseY: event.clientY }));
+    dispatch(
+      histoScanSlice.setMenuPosition({
+        mouseX: event.clientX,
+        mouseY: event.clientY,
+      })
+    );
     setAnchorEl(event.currentTarget);
     setIsPanningEnabled(false); // Disable panning when right-clicking
   };
@@ -487,7 +516,7 @@ const HistoScanController = ({ hostIP, hostPort }) => {
         <Tab label="Result" />
         <Tab label="Map" />
       </Tabs>
-    
+
       {selectedTab === 0 && (
         <Grid container spacing={2}>
           <Grid item xs={12}>
@@ -499,7 +528,9 @@ const HistoScanController = ({ hostIP, hostPort }) => {
             <Typography>Illumination Source:</Typography>
             <Select
               value={illuminationSource}
-              onChange={(e) => dispatch(histoScanSlice.setIlluminationSource(e.target.value))}
+              onChange={(e) =>
+                dispatch(histoScanSlice.setIlluminationSource(e.target.value))
+              }
               fullWidth
             >
               <MenuItem value="Laser 1">Laser 1</MenuItem>
@@ -513,7 +544,9 @@ const HistoScanController = ({ hostIP, hostPort }) => {
             <Typography>Illumination Value: {illuminationValue}</Typography>
             <Slider
               value={illuminationValue}
-              onChange={(e, value) => dispatch(histoScanSlice.setIlluminationValue(value))}
+              onChange={(e, value) =>
+                dispatch(histoScanSlice.setIlluminationValue(value))
+              }
               max={255}
               step={1}
             />
@@ -524,7 +557,9 @@ const HistoScanController = ({ hostIP, hostPort }) => {
             <TextField
               label="Step Size X"
               value={stepSizeX}
-              onChange={(e) => dispatch(histoScanSlice.setStepSizeX(e.target.value))}
+              onChange={(e) =>
+                dispatch(histoScanSlice.setStepSizeX(e.target.value))
+              }
               fullWidth
             />
           </Grid>
@@ -532,7 +567,9 @@ const HistoScanController = ({ hostIP, hostPort }) => {
             <TextField
               label="Step Size Y"
               value={stepSizeY}
-              onChange={(e) => dispatch(histoScanSlice.setStepSizeY(e.target.value))}
+              onChange={(e) =>
+                dispatch(histoScanSlice.setStepSizeY(e.target.value))
+              }
               fullWidth
             />
           </Grid>
@@ -540,7 +577,9 @@ const HistoScanController = ({ hostIP, hostPort }) => {
             <TextField
               label="N-Steps X"
               value={stepsX}
-              onChange={(e) => dispatch(histoScanSlice.setStepsX(e.target.value))}
+              onChange={(e) =>
+                dispatch(histoScanSlice.setStepsX(e.target.value))
+              }
               fullWidth
             />
           </Grid>
@@ -548,7 +587,9 @@ const HistoScanController = ({ hostIP, hostPort }) => {
             <TextField
               label="N-Steps Y"
               value={stepsY}
-              onChange={(e) => dispatch(histoScanSlice.setStepsY(e.target.value))}
+              onChange={(e) =>
+                dispatch(histoScanSlice.setStepsY(e.target.value))
+              }
               fullWidth
             />
           </Grid>
@@ -564,7 +605,9 @@ const HistoScanController = ({ hostIP, hostPort }) => {
             <TextField
               label="Time Interval (s)"
               value={timeInterval}
-              onChange={(e) => dispatch(histoScanSlice.setTimeInterval(e.target.value))}
+              onChange={(e) =>
+                dispatch(histoScanSlice.setTimeInterval(e.target.value))
+              }
               fullWidth
             />
           </Grid>
@@ -572,28 +615,40 @@ const HistoScanController = ({ hostIP, hostPort }) => {
             <TextField
               label="Number of Scans"
               value={numberOfScans}
-              onChange={(e) => dispatch(histoScanSlice.setNumberOfScans(e.target.value))}
+              onChange={(e) =>
+                dispatch(histoScanSlice.setNumberOfScans(e.target.value))
+              }
               fullWidth
             />
           </Grid>
           <Grid item xs={6}>
             <Checkbox
               checked={isStitchAshlar}
-              onChange={(e) => dispatch(histoScanSlice.setIsStitchAshlar(e.target.checked))}
+              onChange={(e) =>
+                dispatch(histoScanSlice.setIsStitchAshlar(e.target.checked))
+              }
             />
             <Typography>Stitch Ashlar</Typography>
           </Grid>
           <Grid item xs={6}>
             <Checkbox
               checked={isStitchAshlarFlipX}
-              onChange={(e) => dispatch(histoScanSlice.setIsStitchAshlarFlipX(e.target.checked))}
+              onChange={(e) =>
+                dispatch(
+                  histoScanSlice.setIsStitchAshlarFlipX(e.target.checked)
+                )
+              }
             />
             <Typography>Stitch Ashlar Flip X</Typography>
           </Grid>
           <Grid item xs={6}>
             <Checkbox
               checked={isStitchAshlarFlipY}
-              onChange={(e) => dispatch(histoScanSlice.setIsStitchAshlarFlipY(e.target.checked))}
+              onChange={(e) =>
+                dispatch(
+                  histoScanSlice.setIsStitchAshlarFlipY(e.target.checked)
+                )
+              }
             />
             <Typography>Stitch Ashlar Flip Y</Typography>
           </Grid>
@@ -601,7 +656,9 @@ const HistoScanController = ({ hostIP, hostPort }) => {
             <TextField
               label="Resize Factor"
               value={resizeFactor}
-              onChange={(e) => dispatch(histoScanSlice.setResizeFactor(e.target.value))}
+              onChange={(e) =>
+                dispatch(histoScanSlice.setResizeFactor(e.target.value))
+              }
               fullWidth
             />
           </Grid>
@@ -609,7 +666,9 @@ const HistoScanController = ({ hostIP, hostPort }) => {
             <TextField
               label="Initial Position X"
               value={initPosX}
-              onChange={(e) => dispatch(histoScanSlice.setInitPosX(e.target.value))}
+              onChange={(e) =>
+                dispatch(histoScanSlice.setInitPosX(e.target.value))
+              }
               fullWidth
             />
           </Grid>
@@ -617,7 +676,9 @@ const HistoScanController = ({ hostIP, hostPort }) => {
             <TextField
               label="Initial Position Y"
               value={initPosY}
-              onChange={(e) => dispatch(histoScanSlice.setInitPosY(e.target.value))}
+              onChange={(e) =>
+                dispatch(histoScanSlice.setInitPosY(e.target.value))
+              }
               fullWidth
             />
           </Grid>
@@ -703,11 +764,7 @@ const HistoScanController = ({ hostIP, hostPort }) => {
                   panning={{ disabled: !isPanningEnabled }} // Control panning state
                 >
                   <TransformComponent>
-                    <img
-                      src={imageUrl}
-                      alt="Map"
-                      style={{ width: "1000px"}} 
-                      />
+                    <img src={imageUrl} alt="Map" style={{ width: "1000px" }} />
                   </TransformComponent>
                 </TransformWrapper>
               </div>

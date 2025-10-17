@@ -1,19 +1,25 @@
 import React, { useEffect, useRef, useState } from "react";
+import { useSelector } from "react-redux";
+import { getConnectionSettingsState } from "../state/slices/ConnectionSettingsSlice";
 import Map from "ol/Map";
 import View from "ol/View";
 import TileLayer from "ol/layer/Tile";
 import XYZ from "ol/source/XYZ";
 import { createXYZ } from "ol/tilegrid";
 
-const OpenLayersComponent = ({ hostIP, hostPort }) => {
+const OpenLayersComponent = () => {
+  // Get connection settings from Redux
+  const connectionSettings = useSelector(getConnectionSettingsState);
+  const hostIP = connectionSettings.ip;
+  const hostPort = connectionSettings.apiPort;
   const mapRef = useRef();
   const [mapObj, setMapObj] = useState(null);
 
   useEffect(() => {
     if (!mapRef.current) return;
 
-    const tileSize = [400,300]; // this is measured in pixels
-    const stageExtent = [0, 0, 512*25, 512*19]; // [minX, minY, maxX, maxY]
+    const tileSize = [400, 300]; // this is measured in pixels
+    const stageExtent = [0, 0, 512 * 25, 512 * 19]; // [minX, minY, maxX, maxY]
 
     const tileGrid = createXYZ({
       extent: stageExtent,
