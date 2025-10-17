@@ -1403,8 +1403,6 @@ function App() {
             {selectedPlugin === "LiveView" && (
               <LiveView
                 // pass down a setter or context for the image if needed
-                onImageUpdate={(img) => setSharedImage(img)}
-                setSelectedPlugin={setSelectedPlugin}
                 setFileManagerInitialPath={handleFileManagerInitialPathChange} // pass function
               />
             )}
