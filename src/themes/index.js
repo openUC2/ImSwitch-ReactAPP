@@ -7,6 +7,8 @@
 export { lightTheme } from "./lightTheme";
 export { darkTheme } from "./darkTheme";
 
-// Future theme exports can be added here
-// export { microscopeDarkTheme } from './microscopeDarkTheme';
-// export { highContrastTheme } from './highContrastTheme';
+/**
+ * To add future theme exports, import and export them here:
+ *   export { newTheme } from './newTheme';
+ * This keeps all theme exports centralized for easy extensibility.
+ */
