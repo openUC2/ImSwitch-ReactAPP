@@ -1,20 +1,20 @@
+import React from "react";
 import {
+  ListItem,
   ListItemButton,
   ListItemIcon,
   ListItemText,
   Tooltip,
+  Avatar,
+  Collapse,
+  List,
 } from "@mui/material";
+import { ExpandLess, ExpandMore } from "@mui/icons-material";
 
 /**
- * DrawerEntry - A reusable sidebar menu entry for the Drawer.
- * Props:
- * - icon: React element (icon or avatar)
- * - label: string (menu label)
- * - selected: boolean (highlight if selected)
- * - onClick: function (handler for click)
- * - tooltip: string (optional, for collapsed sidebar)
- * - color: string (optional, background or icon color)
- * - collapsed: boolean (if sidebar is collapsed)
+ * ImSwitch DrawerEntry Component
+ * Reusable sidebar menu entry following Copilot Instructions
+ * Focused component for navigation entries with consistent styling
  */
 const DrawerEntry = ({
   icon,
@@ -23,33 +23,98 @@ const DrawerEntry = ({
   onClick,
   tooltip = "",
   color,
+
+  // Layout props following ImSwitch patterns
   collapsed = false,
+  nested = false,
+
+  // Avatar props for microscopy plugins
+  avatar = null,
+  avatarText = "",
+
+  // Collapsible group props
+  collapsible = false,
+  expanded = false,
+  children = null,
 }) => {
-  const entry = (
-    <ListItemButton
-      selected={selected}
-      onClick={onClick}
-      sx={{ minHeight: 48 }}
+  // Determine icon to display
+  const displayIcon = avatar ? (
+    <Avatar
+      sx={{
+        bgcolor: color,
+        width: 24,
+        height: 24,
+        fontSize: 14,
+      }}
     >
-      <ListItemIcon
+      {avatarText}
+    </Avatar>
+  ) : (
+    icon
+  );
+
+  // Build the entry component with consistent ImSwitch styling
+  const entry = (
+    <ListItem disablePadding={nested}>
+      <ListItemButton
+        selected={selected}
+        onClick={onClick}
         sx={{
-          color: color || "inherit",
-          minWidth: 0,
-          mr: collapsed ? "auto" : 3,
-          justifyContent: "center",
+          justifyContent: collapsed ? "center" : "flex-start",
+          minHeight: 48,
+          pl: nested ? 4 : 2, // Left padding: nested=32px, normal=16px
+          pr: 2, // Consistent right padding
         }}
       >
-        {icon}
-      </ListItemIcon>
-      {!collapsed && <ListItemText primary={label} />}
-    </ListItemButton>
+        <ListItemIcon
+          sx={{
+            color: color || "inherit",
+            minWidth: collapsed ? 0 : 40, // Consistent icon space
+            mr: collapsed ? "auto" : 2, // Consistent margin
+            justifyContent: "center",
+          }}
+        >
+          {displayIcon}
+        </ListItemIcon>
+
+        {!collapsed && <ListItemText primary={label} sx={{ opacity: 1 }} />}
+
+        {/* Collapsible indicator for ImSwitch groups */}
+        {collapsible && !collapsed && (
+          <ListItemIcon sx={{ minWidth: "auto", ml: 1 }}>
+            {expanded ? <ExpandLess /> : <ExpandMore />}
+          </ListItemIcon>
+        )}
+      </ListItemButton>
+    </ListItem>
   );
-  return tooltip && collapsed ? (
-    <Tooltip title={tooltip || label} placement="right">
-      {entry}
-    </Tooltip>
-  ) : (
-    entry
+
+  // Wrap with tooltip if collapsed
+  const wrappedEntry =
+    tooltip && collapsed ? (
+      <Tooltip
+        title={tooltip || label}
+        placement="right"
+        disableHoverListener={!collapsed}
+      >
+        {entry}
+      </Tooltip>
+    ) : (
+      entry
+    );
+
+  // Return with optional collapsible children
+  return (
+    <>
+      {wrappedEntry}
+      {collapsible && children && (
+        <Collapse in={expanded} timeout="auto" unmountOnExit>
+          <List component="div" disablePadding>
+            {children}
+          </List>
+        </Collapse>
+      )}
+    </>
   );
 };
 
