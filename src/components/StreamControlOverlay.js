@@ -94,12 +94,14 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
               algorithm: isBinaryMode ? globalParams.stream_compression_algorithm : 'lz4',
               level: globalParams.compressionlevel || 0
             },
-            subsampling: { factor: 4 },
-            throttle_ms: 100
+            subsampling: { factor: globalParams.subsampling?.factor || 4 },
+            throttle_ms: globalParams.throttlems || 100
           },
           jpeg: {
             enabled: !isBinaryMode,
-            quality: !isBinaryMode ? globalParams.compressionlevel : 85
+            quality: !isBinaryMode ? globalParams.compressionlevel : 85,
+            subsampling: { factor: globalParams.subsampling?.factor || 1 },
+            throttle_ms: globalParams.throttlems || 100
           }
         };
         
@@ -151,12 +153,14 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
               algorithm: 'jpeg',
               level: draftSettings.jpeg?.quality || 85
             },
-            subsampling: { factor: 1 },
-            throttle_ms: 100
+            subsampling: draftSettings.jpeg?.subsampling || { factor: 1 },
+            throttle_ms: draftSettings.jpeg?.throttle_ms || 100
           },
           jpeg: {
             enabled: true,
-            quality: draftSettings.jpeg?.quality || 85
+            quality: draftSettings.jpeg?.quality || 85,
+            subsampling: draftSettings.jpeg?.subsampling || { factor: 1 },
+            throttle_ms: draftSettings.jpeg?.throttle_ms || 100
           }
         };
       } else {
@@ -519,6 +523,50 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
                       <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mt: 1 }}>
                         Lower quality = smaller files, faster streaming
                       </Typography>
+                    </Box>
+
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 1 }}>
+                        Subsampling: {draftSettings.jpeg?.subsampling?.factor || 1}x
+                      </Typography>
+                      <Slider
+                        value={draftSettings.jpeg?.subsampling?.factor || 1}
+                        onChange={(_, value) =>
+                          setDraftSettings((prev) => ({
+                            ...prev,
+                            jpeg: {
+                              ...prev.jpeg,
+                              subsampling: { ...prev.jpeg?.subsampling, factor: value }
+                            }
+                          }))
+                        }
+                        min={1}
+                        max={8}
+                        step={1}
+                        marks
+                        valueLabelDisplay="auto"
+                        size="small"
+                      />
+                    </Box>
+
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 1 }}>
+                        Throttle: {draftSettings.jpeg?.throttle_ms || 100}ms
+                      </Typography>
+                      <Slider
+                        value={draftSettings.jpeg?.throttle_ms || 100}
+                        onChange={(_, value) =>
+                          setDraftSettings((prev) => ({
+                            ...prev,
+                            jpeg: { ...prev.jpeg, throttle_ms: value }
+                          }))
+                        }
+                        min={16}
+                        max={1000}
+                        step={16}
+                        valueLabelDisplay="auto"
+                        size="small"
+                      />
                     </Box>
                   </Box>
                 )}
