@@ -5,7 +5,6 @@ import {
   AutoFixHigh as WizardIcon,
 } from "@mui/icons-material";
 
-import * as connectionSettingsSlice from "../state/slices/ConnectionSettingsSlice.js";
 import {
   Box,
   Button,
@@ -35,19 +34,20 @@ import { JsonEditor } from "json-edit-react";
 import React, { useCallback, useEffect } from "react";
 import AceEditor from "react-ace";
 import { useDispatch, useSelector } from "react-redux";
-import { useWebSocket } from "../context/WebSocketContext";
+import { useWebSocket } from "../context/WebSocketContext.js";
+import * as connectionSettingsSlice from "../state/slices/ConnectionSettingsSlice.js";
 import {
   clearNotification,
   setNotification,
-} from "../state/slices/NotificationSlice";
+} from "../state/slices/NotificationSlice.js";
 import * as uc2Slice from "../state/slices/UC2Slice.js";
 import {
   createConfigurationPreview,
   validateConfiguration,
   validateJsonString,
-} from "../utils/configValidation";
-import ConfigurationPreviewDialog from "./ConfigurationPreviewDialog";
-import ConfigurationWizard from "./ConfigurationWizard";
+} from "../utils/configValidation.js";
+import ConfigurationPreviewDialog from "./ConfigurationPreviewDialog.js";
+import ConfigurationWizard from "./ConfigurationWizard.js";
 
 const TabPanel = ({ children, value, index, ...other }) => (
   <div

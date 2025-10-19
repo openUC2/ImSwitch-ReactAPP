@@ -1,27 +1,38 @@
 // ./components/ExtendedLEDMatrixController.js
-import React, { useState } from "react";
+import {
+  Button,
+  FormControl,
+  Grid,
+  InputLabel,
+  MenuItem,
+  Paper,
+  Select,
+  Tab,
+  Tabs,
+  TextField,
+  Typography,
+} from "@mui/material";
+import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Paper, Grid, Typography, TextField, Button, Tabs, Tab, MenuItem, Select, FormControl, InputLabel } from "@mui/material";
 
 import illumination_circle from "../assets/illumination_circle.png";
-import illumination_ring from "../assets/illumination_ring.png";
 import illumination_halves from "../assets/illumination_halves.png";
+import illumination_ring from "../assets/illumination_ring.png";
 
-
-import { 
-  setMode, 
-  setIntensity, 
-  setDirection, 
-  setCircleRadius, 
-  setRingRadius, 
-  setIsOn, 
-  getLEDMatrixState 
+import {
+  getLEDMatrixState,
+  setCircleRadius,
+  setDirection,
+  setIntensity,
+  setIsOn,
+  setMode,
+  setRingRadius,
 } from "../state/slices/LEDMatrixSlice";
 
+import apiLEDMatrixControllerSetAllLED from "../backendapi/apiLEDMatrixControllerSetAllLED";
 import apiLEDMatrixControllerSetCircle from "../backendapi/apiLEDMatrixControllerSetCircle";
 import apiLEDMatrixControllerSetHalves from "../backendapi/apiLEDMatrixControllerSetHalves";
 import apiLEDMatrixControllerSetRing from "../backendapi/apiLEDMatrixControllerSetRing";
-import apiLEDMatrixControllerSetAllLED from "../backendapi/apiLEDMatrixControllerSetAllLED";
 
 const ExtendedLEDMatrixController = () => {
   const dispatch = useDispatch();
@@ -33,14 +44,22 @@ const ExtendedLEDMatrixController = () => {
   };
 
   // Local states for user inputs
-  const [halvesIntensity, setHalvesIntensity] = useState(LEDMatrixState.intensity);
-  const [halvesDirection, setHalvesDirection] = useState(LEDMatrixState.direction);
+  const [halvesIntensity, setHalvesIntensity] = useState(
+    LEDMatrixState.intensity
+  );
+  const [halvesDirection, setHalvesDirection] = useState(
+    LEDMatrixState.direction
+  );
 
   const [ringRadius, setLocalRingRadius] = useState(LEDMatrixState.ringRadius);
   const [ringIntensity, setRingIntensity] = useState(LEDMatrixState.intensity);
 
-  const [circleRadius, setLocalCircleRadius] = useState(LEDMatrixState.circleRadius);
-  const [circleIntensity, setCircleIntensity] = useState(LEDMatrixState.intensity);
+  const [circleRadius, setLocalCircleRadius] = useState(
+    LEDMatrixState.circleRadius
+  );
+  const [circleIntensity, setCircleIntensity] = useState(
+    LEDMatrixState.intensity
+  );
 
   const [allState, setAllState] = useState(LEDMatrixState.isOn ? 1 : 0);
   const [allIntensity, setAllIntensity] = useState(LEDMatrixState.intensity);
@@ -53,7 +72,7 @@ const ExtendedLEDMatrixController = () => {
 
     apiLEDMatrixControllerSetHalves({
       intensity: halvesIntensity,
-      direction: halvesDirection
+      direction: halvesDirection,
     })
       .then((data) => {
         console.log("Halves set", data);
@@ -70,7 +89,7 @@ const ExtendedLEDMatrixController = () => {
 
     apiLEDMatrixControllerSetRing({
       ringRadius: ringRadius,
-      intensity: ringIntensity
+      intensity: ringIntensity,
     })
       .then((data) => {
         console.log("Ring set", data);
@@ -87,7 +106,7 @@ const ExtendedLEDMatrixController = () => {
 
     apiLEDMatrixControllerSetCircle({
       circleRadius: circleRadius,
-      intensity: circleIntensity
+      intensity: circleIntensity,
     })
       .then((data) => {
         console.log("Circle set", data);
@@ -105,7 +124,7 @@ const ExtendedLEDMatrixController = () => {
     apiLEDMatrixControllerSetAllLED({
       state: allState,
       intensity: allIntensity,
-      getReturn: true
+      getReturn: true,
     })
       .then((data) => {
         console.log("All LED set", data);
@@ -118,7 +137,11 @@ const ExtendedLEDMatrixController = () => {
   return (
     <Paper style={{ padding: "20px", marginTop: "20px" }}>
       <Typography variant="h6">LED Matrix Controller</Typography>
-      <Tabs value={activeTab} onChange={handleTabChange} style={{ marginBottom: "20px" }}>
+      <Tabs
+        value={activeTab}
+        onChange={handleTabChange}
+        style={{ marginBottom: "20px" }}
+      >
         <Tab label="Halves" />
         <Tab label="Ring" />
         <Tab label="Circle" />
@@ -128,8 +151,11 @@ const ExtendedLEDMatrixController = () => {
       {activeTab === 0 && (
         <Grid container spacing={2}>
           <Grid item xs={12}>
-                          
-            <img src={illumination_halves} alt="Halves" style={{ maxHeight: "200px" }} />
+            <img
+              src={illumination_halves}
+              alt="Halves"
+              style={{ maxHeight: "200px" }}
+            />
           </Grid>
           <Grid item xs={4}>
             <TextField
@@ -166,7 +192,11 @@ const ExtendedLEDMatrixController = () => {
       {activeTab === 1 && (
         <Grid container spacing={2}>
           <Grid item xs={12}>
-            <img src={illumination_ring} alt="Ring" style={{ maxHeight: "200px" }} />
+            <img
+              src={illumination_ring}
+              alt="Ring"
+              style={{ maxHeight: "200px" }}
+            />
           </Grid>
           <Grid item xs={4}>
             <TextField
@@ -197,7 +227,11 @@ const ExtendedLEDMatrixController = () => {
       {activeTab === 2 && (
         <Grid container spacing={2}>
           <Grid item xs={12}>
-            <img src={illumination_circle} alt="Circle" style={{ maxHeight: "200px" }} />
+            <img
+              src={illumination_circle}
+              alt="Circle"
+              style={{ maxHeight: "200px" }}
+            />
           </Grid>
           <Grid item xs={4}>
             <TextField
@@ -228,7 +262,11 @@ const ExtendedLEDMatrixController = () => {
       {activeTab === 3 && (
         <Grid container spacing={2}>
           <Grid item xs={12}>
-            <img src="/assets/illumination_all.png" alt="All" style={{ maxHeight: "200px" }} />
+            <img
+              src="/assets/illumination_all.png"
+              alt="All"
+              style={{ maxHeight: "200px" }}
+            />
           </Grid>
           <Grid item xs={4}>
             <FormControl fullWidth>
