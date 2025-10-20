@@ -10,6 +10,7 @@ import {
 } from "@mui/icons-material";
 import StreamControlOverlay from "../components/StreamControlOverlay";
 import apiViewControllerGetLiveViewActive from "../backendapi/apiViewControllerGetLiveViewActive";
+import apiPositionerControllerMovePositioner from "../backendapi/apiPositionerControllerMovePositioner";
 
 export default function StreamControls({
   isStreamRunning,
@@ -67,6 +68,62 @@ export default function StreamControls({
     // Wait a bit for backend to update, then check status
     setTimeout(checkLiveViewStatus, 500);
   }, [onToggleStream, checkLiveViewStatus]);
+
+  // Move Z-axis handler
+  const moveZAxis = useCallback((distance) => {
+    apiPositionerControllerMovePositioner({
+      axis: "Z",
+      dist: distance,
+      isAbsolute: false,
+    })
+      .then((response) => {
+        console.log(`Moved Z-axis by ${distance}:`, response);
+      })
+      .catch((error) => {
+        console.error(`Error moving Z-axis by ${distance}:`, error);
+      });
+  }, []);
+
+  // Keyboard event handler for Z-axis control
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      // Only handle if not typing in an input field
+      if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+        return;
+      }
+
+      switch (event.key) {
+        case '+':
+        case '=': // Also handle = key (same physical key as + without shift)
+          event.preventDefault();
+          moveZAxis(10); // Move up 10 steps
+          break;
+        case '-':
+        case '_': // Also handle _ key (same physical key as - with shift)
+          event.preventDefault();
+          moveZAxis(-10); // Move down 10 steps
+          break;
+        case '.':
+        case '>': // Also handle > key (same physical key as . with shift)
+          event.preventDefault();
+          moveZAxis(100); // Move up 100 steps
+          break;
+        case ',':
+        case '<': // Also handle < key (same physical key as , with shift)
+          event.preventDefault();
+          moveZAxis(-100); // Move down 100 steps
+          break;
+        default:
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [moveZAxis]);
 
 
   // Render stream controls with editable image name and icon buttons
