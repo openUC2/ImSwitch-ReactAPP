@@ -28,11 +28,11 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import AceEditor from "react-ace";
 import "ace-builds/src-noconflict/mode-json";
 import "ace-builds/src-noconflict/theme-github";
 import { JsonEditor } from "json-edit-react";
 import React, { useCallback, useEffect } from "react";
-import AceEditor from "react-ace";
 import { useDispatch, useSelector } from "react-redux";
 import { useWebSocket } from "../context/WebSocketContext.js";
 import * as connectionSettingsSlice from "../state/slices/ConnectionSettingsSlice.js";
