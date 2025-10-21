@@ -245,8 +245,11 @@ export default function LiveView({
     try {
       if (shouldStart) {
         // Determine protocol from current stream settings
-        const currentFormat = liveStreamState.currentImageFormat || 'binary';
+        // Use imageFormat from Redux state (not currentImageFormat which is the old field name)
+        const currentFormat = liveStreamState.imageFormat || 'binary';
         const protocol = currentFormat === 'jpeg' ? 'jpeg' : 'binary';
+        
+        console.log(`Starting ${protocol} stream (imageFormat: ${liveStreamState.imageFormat})`);
         
         // Start stream with current protocol
         await apiLiveViewControllerStartLiveView(null, protocol);

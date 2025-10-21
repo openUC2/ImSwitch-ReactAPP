@@ -11,16 +11,24 @@ import createAxiosInstance from "./createAxiosInstance";
  * Returns: Dictionary with streaming parameters
  * Example response (all protocols):
  * {
- *   "binary": {
- *     "compression_algorithm": "lz4",
- *     "compression_level": 0,
- *     "subsampling_factor": 4,
- *     "throttle_ms": 50
- *   },
- *   "jpeg": {
- *     "jpeg_quality": 80,
- *     "subsampling_factor": 4,
- *     "throttle_ms": 50
+ *   "status": "success",
+ *   "current_active_protocols": { "WidefieldCamera": "binary" },
+ *   "current_protocol": "binary",
+ *   "total_active_streams": 1,
+ *   "protocols": {
+ *     "binary": {
+ *       "compression_algorithm": "lz4",
+ *       "compression_level": 0,
+ *       "subsampling_factor": 4,
+ *       "throttle_ms": 50,
+ *       "is_active": true
+ *     },
+ *     "jpeg": {
+ *       "jpeg_quality": 80,
+ *       "subsampling_factor": 4,
+ *       "throttle_ms": 50,
+ *       "is_active": false
+ *     }
  *   }
  * }
  */

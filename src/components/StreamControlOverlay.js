@@ -52,7 +52,7 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
     minVal = 0,
     maxVal = 255,
     gamma = 1.0,
-    currentImageFormat = 'binary',
+    imageFormat = 'binary', // This is the correct field name in Redux
     streamSettings = {}
   } = liveStreamState;
 
@@ -63,7 +63,7 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
   // Determine if we're in JPEG mode
-  const isJpeg = currentImageFormat === 'jpeg';
+  const isJpeg = imageFormat === 'jpeg';
   const maxRange = isJpeg ? 255 : 65535;
   const formatLabel = isJpeg ? 'JPEG' : 'Binary';
   const rangeLabel = `0–${maxRange}`;
@@ -81,18 +81,19 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
     const loadBackendSettings = async () => {
       try {
         // Get stream parameters from new LiveViewController endpoint
-        const allParams = await apiLiveViewControllerGetStreamParameters();
-        console.log('Stream parameters from LiveViewController:', allParams);
+        const response = await apiLiveViewControllerGetStreamParameters();
+        console.log('Stream parameters from LiveViewController:', response);
         
-        // Determine which format is currently active
-        // If both exist, check which one has valid parameters or default to binary
-        const isBinaryActive = allParams.binary && (!allParams.jpeg || allParams.binary.compression_algorithm);
-        const isJpegActive = allParams.jpeg && (!allParams.binary || allParams.jpeg.jpeg_quality);
+        // Extract protocol data from new API response format
+        const allParams = response.protocols || response;
+        const currentProtocol = response.current_protocol || 'binary';
+        
+        console.log('Current active protocol from backend:', currentProtocol);
         
         // Transform backend response to frontend format
         const loadedSettings = {
           binary: {
-            enabled: isBinaryActive,
+            enabled: allParams.binary?.is_active || currentProtocol === 'binary',
             compression: {
               algorithm: allParams.binary?.compression_algorithm || 'lz4',
               level: allParams.binary?.compression_level || 0
@@ -101,7 +102,7 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
             throttle_ms: allParams.binary?.throttle_ms || 100
           },
           jpeg: {
-            enabled: isJpegActive,
+            enabled: allParams.jpeg?.is_active || currentProtocol === 'jpeg',
             quality: allParams.jpeg?.jpeg_quality || 85,
             subsampling: { factor: allParams.jpeg?.subsampling_factor || 1 },
             throttle_ms: allParams.jpeg?.throttle_ms || 100
@@ -110,11 +111,20 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
         
         setDraftSettings(loadedSettings);
         
-        // Determine and set the current format in Redux
-        const currentFormat = isJpegActive ? 'jpeg' : 'binary';
-        console.log('Setting initial format to:', currentFormat);
-        dispatch(setImageFormat(currentFormat));
+        // Use current_protocol from backend to set format
+        console.log('Setting initial format to:', currentProtocol);
+        dispatch(setImageFormat(currentProtocol));
         dispatch(setStreamSettings(loadedSettings));
+        
+        // Set appropriate min/max values based on format
+        if (currentProtocol === 'jpeg') {
+          dispatch(setMinVal(0));
+          dispatch(setMaxVal(255));
+        } else {
+          // Binary mode: auto-stretch to max range
+          dispatch(setMinVal(0));
+          dispatch(setMaxVal(65535));
+        }
         
         hasLoadedSettings.current = true;
       } catch (error) {
@@ -137,10 +147,10 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
         setDraftSettings(fallbackSettings);
         
         // Set default format to binary if not set
-        if (!liveStreamState.currentImageFormat) {
-          console.log('Setting default format to binary');
-          dispatch(setImageFormat('binary'));
-        }
+        console.log('Setting default format to binary (fallback)');
+        dispatch(setImageFormat('binary'));
+        dispatch(setMinVal(0));
+        dispatch(setMaxVal(65535));
         dispatch(setStreamSettings(fallbackSettings));
         
         hasLoadedSettings.current = true;
@@ -173,20 +183,9 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
       const isJpegMode = draftSettings.jpeg?.enabled === true;
       const newFormat = isJpegMode ? 'jpeg' : 'binary';
       
-      // Update Redux with new format FIRST so LiveViewerGL can switch
-      dispatch(setImageFormat(newFormat));
-      dispatch(setStreamSettings(draftSettings));
+      console.log('Submitting settings for format:', newFormat, 'Draft settings:', draftSettings);
       
-      // Update backend capabilities based on mode
-      dispatch({ 
-        type: 'liveStreamState/setBackendCapabilities', 
-        payload: { 
-          binaryStreaming: !isJpegMode,
-          webglSupported: !isJpegMode
-        } 
-      });
-
-      // Submit to backend using new LiveViewController API
+      // Submit to backend FIRST using new LiveViewController API
       if (isJpegMode) {
         // Set JPEG stream parameters
         await apiLiveViewControllerSetStreamParameters('jpeg', {
@@ -205,6 +204,31 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
       }
       
       console.log('Stream parameters updated successfully for protocol:', newFormat);
+      
+      // THEN update Redux with new format so LiveViewerGL can switch
+      dispatch(setImageFormat(newFormat));
+      dispatch(setStreamSettings(draftSettings));
+      
+      // Update min/max values based on format
+      if (isJpegMode) {
+        dispatch(setMinVal(0));
+        dispatch(setMaxVal(255));
+      } else {
+        // Binary mode: keep current values or reset to max range
+        if (liveStreamState.maxVal > 65535 || liveStreamState.maxVal === 255) {
+          dispatch(setMinVal(0));
+          dispatch(setMaxVal(65535));
+        }
+      }
+      
+      // Update backend capabilities based on mode
+      dispatch({ 
+        type: 'liveStreamState/setBackendCapabilities', 
+        payload: { 
+          binaryStreaming: !isJpegMode,
+          webglSupported: !isJpegMode
+        } 
+      });
 
       setSubmitSuccess(true);
       setTimeout(() => setSubmitSuccess(false), 3000);
@@ -403,6 +427,16 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
                         // Immediately update Redux state so currentImageFormat is set
                         console.log('Format changed to:', newFormat);
                         dispatch(setImageFormat(newFormat));
+                        
+                        // Update min/max values immediately based on format
+                        if (isJpeg) {
+                          dispatch(setMinVal(0));
+                          dispatch(setMaxVal(255));
+                        } else {
+                          // Binary mode: reset to max range
+                          dispatch(setMinVal(0));
+                          dispatch(setMaxVal(65535));
+                        }
                       }}
                     >
                       <MenuItem value="binary">Binary (16-bit) - High Quality</MenuItem>
