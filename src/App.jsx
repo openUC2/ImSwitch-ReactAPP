@@ -9,7 +9,7 @@ import BlocklyController from "./components/BlocklyController.js";
 import ConnectionSettings from "./components/ConnectionSettings.js";
 import DemoController from "./components/DemoController.js";
 import DetectorTriggerController from "./components/DetectorTriggerController.js";
-import ExtendedLEDMatrixController from "./components/ExtendedLEDMatrixController.js";
+import ExtendedLEDMatrixController from "./components/ExtendedLEDMatrixController.jsx";
 import FlowStopController from "./components/FlowStopController.js";
 import FocusLockController from "./components/FocusLockController.js";
 import HistoScanController from "./components/HistoScanController.js";
@@ -29,8 +29,8 @@ import StresstestController from "./components/StresstestController.js";
 import SystemSettings from "./components/SystemSettings.js";
 import TimelapseController from "./components/TimelapseController.js";
 import TopBar from "./components/TopBar.js";
-import UC2Controller from "./components/UC2Controller.js";
-import WiFiController from "./components/WiFiController.js";
+import UC2Controller from "./components/UC2Controller.jsx";
+import WiFiController from "./components/WiFiController.jsx";
 import { JupyterProvider } from "./context/JupyterContext.js";
 
 // ImSwitch Navigation Drawer - Component extraction following Copilot Instructions
@@ -441,9 +441,7 @@ function App() {
                 setFileManagerInitialPath={handleFileManagerInitialPathChange} // pass function
               />
             )}
-
             {selectedPlugin === "WellPlate" && <AxonTabComponent />}
-
             {selectedPlugin === "ImJoy" && (
               <ImJoyView sharedImage={sharedImage} />
             )}
@@ -501,9 +499,7 @@ function App() {
             )}
             {selectedPlugin === "LightSheet" && <LightsheetController />}
             {selectedPlugin === "Demo" && <DemoController />}
-            {selectedPlugin === "WiFi" && (
-              <WiFiController hostIP={hostIP} hostPort={apiPort} />
-            )}
+            {selectedPlugin === "WiFi" && <WiFiController />}
             {plugins.map(
               (p) =>
                 selectedPlugin === p.name && (
@@ -516,19 +512,12 @@ function App() {
             {selectedPlugin === "StageOffsetCalibration" && (
               <StageOffsetCalibration />
             )}
-            {selectedPlugin === "UC2" && (
-              <UC2Controller hostIP={hostIP} hostPort={apiPort} />
-            )}
+            {selectedPlugin === "UC2" && <UC2Controller />}
             {selectedPlugin === "DetectorTrigger" && (
               <DetectorTriggerController />
             )}
             {selectedPlugin === "ExtendedLEDMatrix" && (
-              <ExtendedLEDMatrixController
-                hostIP={hostIP}
-                hostPort={apiPort}
-                layout={layout}
-                onLayoutChange={(newLayout) => setLayout(newLayout)}
-              />
+              <ExtendedLEDMatrixController />
             )}
             {selectedPlugin === "Lepmon" && <LepMonController />}
             {selectedPlugin === "MazeGame" && <MazeGameController />}
