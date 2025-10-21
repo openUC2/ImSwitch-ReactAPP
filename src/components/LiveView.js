@@ -29,6 +29,8 @@ import AutofocusController from "./AutofocusController";
 import DetectorParameters from "./DetectorParameters";
 import StreamControls from "./StreamControls";
 import IlluminationController from "./IlluminationController";
+import apiLiveViewControllerStartLiveView from "../backendapi/apiLiveViewControllerStartLiveView";
+import apiLiveViewControllerStopLiveView from "../backendapi/apiLiveViewControllerStopLiveView";
 import { useWebSocket } from "../context/WebSocketContext";
 import ObjectiveSwitcher from "./ObjectiveSwitcher";
 import DetectorTriggerController from "./DetectorTriggerController";
@@ -223,7 +225,8 @@ export default function LiveView({
     (async () => {
       try {
         const r = await fetch(
-          `${hostIP}:${hostPort}/ViewController/getLiveViewActive`
+          // TODO: use apiViewControllerGetLiveViewActive here
+          `${hostIP}:${hostPort}/LiveViewController/getLiveViewActive`
         );
         if (r.status === 200) {
           const data = await r.json();
@@ -237,13 +240,30 @@ export default function LiveView({
   // Note: Range handling now done directly in Redux dispatch - old handlers removed
 
   const toggleStream = async () => {
-    const n = !isStreamRunning;
+    const shouldStart = !isStreamRunning;
+    
     try {
-      await fetch(
-        `${hostIP}:${hostPort}/ViewController/setLiveViewActive?active=${n}`
-      );
-    } catch {}
-    dispatch(liveViewSlice.setIsStreamRunning(n));
+      if (shouldStart) {
+        // Determine protocol from current stream settings
+        const currentFormat = liveStreamState.currentImageFormat || 'binary';
+        const protocol = currentFormat === 'jpeg' ? 'jpeg' : 'binary';
+        
+        // Start stream with current protocol
+        await apiLiveViewControllerStartLiveView(null, protocol);
+        console.log(`Started ${protocol} stream`);
+      } else {
+        // Stop stream
+        await apiLiveViewControllerStopLiveView();
+        console.log('Stopped stream');
+      }
+      
+      // Update Redux state
+      dispatch(liveViewSlice.setIsStreamRunning(shouldStart));
+    } catch (error) {
+      console.error('Error toggling stream:', error);
+      // Fallback: try to update state anyway for UI consistency
+      dispatch(liveViewSlice.setIsStreamRunning(shouldStart));
+    }
   };
   async function snap() {
     // English comment: Example fetch for snapping an image

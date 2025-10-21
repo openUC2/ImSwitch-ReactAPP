@@ -32,8 +32,8 @@ import {
 } from '@mui/icons-material';
 import { useSelector, useDispatch } from 'react-redux';
 import { setMinVal, setMaxVal, setGamma, getLiveStreamState, setStreamSettings, setImageFormat } from '../state/slices/LiveStreamSlice.js';
-import apiSettingsControllerSetStreamParams from '../backendapi/apiSettingsControllerSetStreamParams';
-import apiSettingsControllerGetDetectorGlobalParameters from '../backendapi/apiSettingsControllerGetDetectorGlobalParameters';
+import apiLiveViewControllerSetStreamParameters from '../backendapi/apiLiveViewControllerSetStreamParameters';
+import apiLiveViewControllerGetStreamParameters from '../backendapi/apiLiveViewControllerGetStreamParameters';
 import * as connectionSettingsSlice from "../state/slices/ConnectionSettingsSlice.js";
 
 
@@ -52,8 +52,8 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
     minVal = 0,
     maxVal = 255,
     gamma = 1.0,
-    currentImageFormat,
-    streamSettings
+    currentImageFormat = 'binary',
+    streamSettings = {}
   } = liveStreamState;
 
   // Draft mode for settings - initialize from Redux streamSettings
@@ -80,37 +80,69 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
     
     const loadBackendSettings = async () => {
       try {
-        const globalParams = await apiSettingsControllerGetDetectorGlobalParameters();
-        console.log('Global detector parameters:', globalParams);
+        // Get stream parameters from new LiveViewController endpoint
+        const allParams = await apiLiveViewControllerGetStreamParameters();
+        console.log('Stream parameters from LiveViewController:', allParams);
         
-        // Determine stream type from compression algorithm
-        // If algorithm is "jpeg", it's JPEG mode; otherwise (lz4, zstd, etc.) it's binary
-        const isBinaryMode = globalParams.stream_compression_algorithm !== 'jpeg';
+        // Determine which format is currently active
+        // If both exist, check which one has valid parameters or default to binary
+        const isBinaryActive = allParams.binary && (!allParams.jpeg || allParams.binary.compression_algorithm);
+        const isJpegActive = allParams.jpeg && (!allParams.binary || allParams.jpeg.jpeg_quality);
         
+        // Transform backend response to frontend format
         const loadedSettings = {
           binary: {
-            enabled: isBinaryMode,
+            enabled: isBinaryActive,
             compression: {
-              algorithm: isBinaryMode ? globalParams.stream_compression_algorithm : 'lz4',
-              level: globalParams.compressionlevel || 0
+              algorithm: allParams.binary?.compression_algorithm || 'lz4',
+              level: allParams.binary?.compression_level || 0
             },
-            subsampling: { factor: globalParams.subsampling?.factor || 4 },
-            throttle_ms: globalParams.throttlems || 100
+            subsampling: { factor: allParams.binary?.subsampling_factor || 4 },
+            throttle_ms: allParams.binary?.throttle_ms || 100
           },
           jpeg: {
-            enabled: !isBinaryMode,
-            quality: !isBinaryMode ? globalParams.compressionlevel : 85,
-            subsampling: { factor: globalParams.subsampling?.factor || 1 },
-            throttle_ms: globalParams.throttlems || 100
+            enabled: isJpegActive,
+            quality: allParams.jpeg?.jpeg_quality || 85,
+            subsampling: { factor: allParams.jpeg?.subsampling_factor || 1 },
+            throttle_ms: allParams.jpeg?.throttle_ms || 100
           }
         };
         
         setDraftSettings(loadedSettings);
+        
+        // Determine and set the current format in Redux
+        const currentFormat = isJpegActive ? 'jpeg' : 'binary';
+        console.log('Setting initial format to:', currentFormat);
+        dispatch(setImageFormat(currentFormat));
+        dispatch(setStreamSettings(loadedSettings));
+        
         hasLoadedSettings.current = true;
       } catch (error) {
         console.warn('Failed to load backend settings:', error);
-        // Use Redux state as fallback
-        setDraftSettings(streamSettings);
+        // Use Redux state as fallback or set defaults
+        const fallbackSettings = streamSettings || {
+          binary: {
+            enabled: true,
+            compression: { algorithm: 'lz4', level: 0 },
+            subsampling: { factor: 4 },
+            throttle_ms: 100
+          },
+          jpeg: {
+            enabled: false,
+            quality: 85,
+            subsampling: { factor: 1 },
+            throttle_ms: 100
+          }
+        };
+        setDraftSettings(fallbackSettings);
+        
+        // Set default format to binary if not set
+        if (!liveStreamState.currentImageFormat) {
+          console.log('Setting default format to binary');
+          dispatch(setImageFormat('binary'));
+        }
+        dispatch(setStreamSettings(fallbackSettings));
+        
         hasLoadedSettings.current = true;
       }
     };
@@ -141,38 +173,9 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
       const isJpegMode = draftSettings.jpeg?.enabled === true;
       const newFormat = isJpegMode ? 'jpeg' : 'binary';
       
-      // Prepare parameters for backend
-      let submitParams = {};
-      
-      if (isJpegMode) {
-        // JPEG mode: send compression with algorithm='jpeg' and level=quality
-        submitParams = {
-          binary: {
-            enabled: false,
-            compression: {
-              algorithm: 'jpeg',
-              level: draftSettings.jpeg?.quality || 85
-            },
-            subsampling: draftSettings.jpeg?.subsampling || { factor: 1 },
-            throttle_ms: draftSettings.jpeg?.throttle_ms || 100
-          },
-          jpeg: {
-            enabled: true,
-            quality: draftSettings.jpeg?.quality || 85,
-            subsampling: draftSettings.jpeg?.subsampling || { factor: 1 },
-            throttle_ms: draftSettings.jpeg?.throttle_ms || 100
-          }
-        };
-      } else {
-        // Binary mode: send normal binary compression params
-        submitParams = draftSettings;
-      }
-      
-      console.log('submitParams to be sent:', submitParams);
-      
       // Update Redux with new format FIRST so LiveViewerGL can switch
       dispatch(setImageFormat(newFormat));
-      dispatch(setStreamSettings(submitParams));
+      dispatch(setStreamSettings(draftSettings));
       
       // Update backend capabilities based on mode
       dispatch({ 
@@ -183,19 +186,31 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
         } 
       });
 
-      // Submit to backend
-      await apiSettingsControllerSetStreamParams(submitParams);
+      // Submit to backend using new LiveViewController API
+      if (isJpegMode) {
+        // Set JPEG stream parameters
+        await apiLiveViewControllerSetStreamParameters('jpeg', {
+          jpeg_quality: draftSettings.jpeg?.quality || 85,
+          subsampling_factor: draftSettings.jpeg?.subsampling?.factor || 1,
+          throttle_ms: draftSettings.jpeg?.throttle_ms || 100
+        });
+      } else {
+        // Set binary stream parameters
+        await apiLiveViewControllerSetStreamParameters('binary', {
+          compression_algorithm: draftSettings.binary?.compression?.algorithm || 'lz4',
+          compression_level: draftSettings.binary?.compression?.level || 0,
+          subsampling_factor: draftSettings.binary?.subsampling?.factor || 4,
+          throttle_ms: draftSettings.binary?.throttle_ms || 100
+        });
+      }
       
-
-      // Update draft settings with submitted values so they persist in UI
-      setDraftSettings(submitParams);
-      
+      console.log('Stream parameters updated successfully for protocol:', newFormat);
 
       setSubmitSuccess(true);
       setTimeout(() => setSubmitSuccess(false), 3000);
       
     } catch (error) {
-      
+      console.error('Error submitting stream settings:', error);
       setSubmitError(error.message || 'Failed to submit settings');
     } finally {
       setIsSubmitting(false);
@@ -376,11 +391,18 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
                       label="Stream Format"
                       onChange={(e) => {
                         const isJpeg = e.target.value === 'jpeg';
+                        const newFormat = isJpeg ? 'jpeg' : 'binary';
+                        
+                        // Update draft settings
                         setDraftSettings((prev) => ({
                           ...prev,
                           binary: { ...prev?.binary, enabled: !isJpeg },
                           jpeg: { ...prev?.jpeg, enabled: isJpeg }
                         }));
+                        
+                        // Immediately update Redux state so currentImageFormat is set
+                        console.log('Format changed to:', newFormat);
+                        dispatch(setImageFormat(newFormat));
                       }}
                     >
                       <MenuItem value="binary">Binary (16-bit) - High Quality</MenuItem>
