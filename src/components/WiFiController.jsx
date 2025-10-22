@@ -1,41 +1,40 @@
 // src/components/WiFiController.js
-import React, { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
 import {
-  Paper,
-  Tabs,
-  Tab,
-  Box,
-  Typography,
-  TextField,
-  Button,
-  Grid,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemButton,
-  CircularProgress,
-  Alert,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Chip,
-  Card,
-  CardContent,
-  IconButton,
-  Divider,
-} from "@mui/material";
-import {
-  Wifi as WifiIcon,
-  WifiOff as WifiOffIcon,
-  Refresh as RefreshIcon,
+  Info as InfoIcon,
   Lock as LockIcon,
   LockOpen as LockOpenIcon,
+  Refresh as RefreshIcon,
   Router as RouterIcon,
-  Info as InfoIcon,
+  Wifi as WifiIcon,
+  WifiOff as WifiOffIcon,
 } from "@mui/icons-material";
-import { green, red, orange, blue } from "@mui/material/colors";
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  CircularProgress,
+  FormControl,
+  Grid,
+  IconButton,
+  InputLabel,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
+  MenuItem,
+  Paper,
+  Select,
+  Tab,
+  Tabs,
+  TextField,
+  Typography,
+} from "@mui/material";
+import { green, orange, red } from "@mui/material/colors";
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import * as connectionSettingsSlice from "../state/slices/ConnectionSettingsSlice.js";
 import * as wifiSlice from "../state/slices/WiFiSlice.js";
 
 const TabPanel = (props) => {
@@ -54,9 +53,16 @@ const TabPanel = (props) => {
   );
 };
 
-const WiFiController = ({ hostIP, hostPort }) => {
+const WiFiController = () => {
+  // Access ImSwitch backend connection settings from Redux - following Copilot Instructions
+  const connectionSettingsState = useSelector(
+    connectionSettingsSlice.getConnectionSettingsState
+  );
+  const hostIP = connectionSettingsState.ip;
+  const hostPort = connectionSettingsState.apiPort;
+
   const dispatch = useDispatch();
-  
+
   // Access global Redux state
   const wifiState = useSelector(wifiSlice.getWiFiState);
 
@@ -64,7 +70,7 @@ const WiFiController = ({ hostIP, hostPort }) => {
   useEffect(() => {
     fetchCurrentSSID();
     scanNetworks();
-    
+
     // Set up periodic status check
     const interval = setInterval(() => {
       fetchCurrentSSID();
@@ -77,11 +83,13 @@ const WiFiController = ({ hostIP, hostPort }) => {
   const scanNetworks = async () => {
     dispatch(wifiSlice.setIsScanning(true));
     dispatch(wifiSlice.clearError());
-    
+
     try {
-      const response = await fetch(`${hostIP}:${hostPort}/WiFiController/scanNetworks`);
+      const response = await fetch(
+        `${hostIP}:${hostPort}/WiFiController/scanNetworks`
+      );
       const data = await response.json();
-      
+
       if (data.error) {
         dispatch(wifiSlice.setLastError(data.error));
       } else {
@@ -91,7 +99,9 @@ const WiFiController = ({ hostIP, hostPort }) => {
         }
       }
     } catch (error) {
-      dispatch(wifiSlice.setLastError(`Failed to scan networks: ${error.message}`));
+      dispatch(
+        wifiSlice.setLastError(`Failed to scan networks: ${error.message}`)
+      );
     } finally {
       dispatch(wifiSlice.setIsScanning(false));
     }
@@ -99,9 +109,11 @@ const WiFiController = ({ hostIP, hostPort }) => {
 
   const fetchCurrentSSID = async () => {
     try {
-      const response = await fetch(`${hostIP}:${hostPort}/WiFiController/getCurrentSSID`);
+      const response = await fetch(
+        `${hostIP}:${hostPort}/WiFiController/getCurrentSSID`
+      );
       const data = await response.json();
-      
+
       dispatch(wifiSlice.setCurrentSSID(data.ssid));
       dispatch(wifiSlice.setCurrentIfname(data.ifname));
       dispatch(wifiSlice.setIsConnected(!!data.ssid));
@@ -127,7 +139,9 @@ const WiFiController = ({ hostIP, hostPort }) => {
         ...(wifiState.ifname && { ifname: wifiState.ifname }),
       });
 
-      const response = await fetch(`${hostIP}:${hostPort}/WiFiController/connectNetwork?${params}`);
+      const response = await fetch(
+        `${hostIP}:${hostPort}/WiFiController/connectNetwork?${params}`
+      );
       const data = await response.json();
 
       if (data.error) {
@@ -149,12 +163,18 @@ const WiFiController = ({ hostIP, hostPort }) => {
 
   const startAccessPoint = async () => {
     if (!wifiState.apSSID || !wifiState.apPassword) {
-      dispatch(wifiSlice.setLastError("Please enter SSID and password for access point"));
+      dispatch(
+        wifiSlice.setLastError(
+          "Please enter SSID and password for access point"
+        )
+      );
       return;
     }
 
     if (wifiState.apPassword.length < 8) {
-      dispatch(wifiSlice.setLastError("Password must be at least 8 characters"));
+      dispatch(
+        wifiSlice.setLastError("Password must be at least 8 characters")
+      );
       return;
     }
 
@@ -171,7 +191,9 @@ const WiFiController = ({ hostIP, hostPort }) => {
         ...(wifiState.apChannel && { channel: wifiState.apChannel.toString() }),
       });
 
-      const response = await fetch(`${hostIP}:${hostPort}/WiFiController/startAccessPoint?${params}`);
+      const response = await fetch(
+        `${hostIP}:${hostPort}/WiFiController/startAccessPoint?${params}`
+      );
       const data = await response.json();
 
       if (data.error) {
@@ -181,7 +203,9 @@ const WiFiController = ({ hostIP, hostPort }) => {
         dispatch(wifiSlice.setApInfo(data));
       }
     } catch (error) {
-      dispatch(wifiSlice.setLastError(`Failed to start access point: ${error.message}`));
+      dispatch(
+        wifiSlice.setLastError(`Failed to start access point: ${error.message}`)
+      );
     } finally {
       dispatch(wifiSlice.setIsCreatingAP(false));
     }
@@ -193,7 +217,9 @@ const WiFiController = ({ hostIP, hostPort }) => {
         con_name: wifiState.apConName,
       });
 
-      const response = await fetch(`${hostIP}:${hostPort}/WiFiController/stopAccessPoint?${params}`);
+      const response = await fetch(
+        `${hostIP}:${hostPort}/WiFiController/stopAccessPoint?${params}`
+      );
       const data = await response.json();
 
       if (data.error) {
@@ -203,7 +229,9 @@ const WiFiController = ({ hostIP, hostPort }) => {
         dispatch(wifiSlice.setApInfo({}));
       }
     } catch (error) {
-      dispatch(wifiSlice.setLastError(`Failed to stop access point: ${error.message}`));
+      dispatch(
+        wifiSlice.setLastError(`Failed to stop access point: ${error.message}`)
+      );
     }
   };
 
@@ -220,7 +248,11 @@ const WiFiController = ({ hostIP, hostPort }) => {
   };
 
   const getSecurityIcon = (security) => {
-    return security && security !== "--" ? <LockIcon fontSize="small" /> : <LockOpenIcon fontSize="small" />;
+    return security && security !== "--" ? (
+      <LockIcon fontSize="small" />
+    ) : (
+      <LockOpenIcon fontSize="small" />
+    );
   };
 
   return (
@@ -237,8 +269,8 @@ const WiFiController = ({ hostIP, hostPort }) => {
 
       {/* Error Alert */}
       {wifiState.lastError && (
-        <Alert 
-          severity="error" 
+        <Alert
+          severity="error"
           onClose={() => dispatch(wifiSlice.clearError())}
           sx={{ m: 2 }}
         >
@@ -252,7 +284,10 @@ const WiFiController = ({ hostIP, hostPort }) => {
           <Grid item xs={12}>
             <Box display="flex" alignItems="center" gap={2} mb={2}>
               <Typography variant="h6">Available Networks</Typography>
-              <IconButton onClick={scanNetworks} disabled={wifiState.isScanning}>
+              <IconButton
+                onClick={scanNetworks}
+                disabled={wifiState.isScanning}
+              >
                 <RefreshIcon />
               </IconButton>
               {wifiState.isScanning && <CircularProgress size={20} />}
@@ -260,7 +295,7 @@ const WiFiController = ({ hostIP, hostPort }) => {
           </Grid>
 
           <Grid item xs={12} md={6}>
-            <Paper elevation={2} sx={{ maxHeight: 400, overflow: 'auto' }}>
+            <Paper elevation={2} sx={{ maxHeight: 400, overflow: "auto" }}>
               <List>
                 {wifiState.availableNetworks.map((network, index) => (
                   <ListItem key={index} disablePadding>
@@ -280,7 +315,10 @@ const WiFiController = ({ hostIP, hostPort }) => {
                         secondary={
                           <Box>
                             <Typography variant="caption" display="block">
-                              Signal: {network.signal ? `${network.signal} dBm` : "Unknown"}
+                              Signal:{" "}
+                              {network.signal
+                                ? `${network.signal} dBm`
+                                : "Unknown"}
                             </Typography>
                             <Typography variant="caption" display="block">
                               Security: {network.security || "Open"}
@@ -296,11 +334,12 @@ const WiFiController = ({ hostIP, hostPort }) => {
                     </ListItemButton>
                   </ListItem>
                 ))}
-                {wifiState.availableNetworks.length === 0 && !wifiState.isScanning && (
-                  <ListItem>
-                    <ListItemText primary="No networks found. Click refresh to scan." />
-                  </ListItem>
-                )}
+                {wifiState.availableNetworks.length === 0 &&
+                  !wifiState.isScanning && (
+                    <ListItem>
+                      <ListItemText primary="No networks found. Click refresh to scan." />
+                    </ListItem>
+                  )}
               </List>
             </Paper>
           </Grid>
@@ -311,7 +350,9 @@ const WiFiController = ({ hostIP, hostPort }) => {
                 <TextField
                   label="Selected Network"
                   value={wifiState.selectedSSID}
-                  onChange={(e) => dispatch(wifiSlice.setSelectedSSID(e.target.value))}
+                  onChange={(e) =>
+                    dispatch(wifiSlice.setSelectedSSID(e.target.value))
+                  }
                   fullWidth
                   variant="outlined"
                 />
@@ -321,7 +362,9 @@ const WiFiController = ({ hostIP, hostPort }) => {
                   label="Password"
                   type="password"
                   value={wifiState.password}
-                  onChange={(e) => dispatch(wifiSlice.setPassword(e.target.value))}
+                  onChange={(e) =>
+                    dispatch(wifiSlice.setPassword(e.target.value))
+                  }
                   fullWidth
                   variant="outlined"
                   helperText="Leave empty for open networks"
@@ -331,7 +374,9 @@ const WiFiController = ({ hostIP, hostPort }) => {
                 <TextField
                   label="Interface (optional)"
                   value={wifiState.ifname}
-                  onChange={(e) => dispatch(wifiSlice.setIfname(e.target.value))}
+                  onChange={(e) =>
+                    dispatch(wifiSlice.setIfname(e.target.value))
+                  }
                   fullWidth
                   variant="outlined"
                   helperText="Leave empty to use default interface"
@@ -369,7 +414,7 @@ const WiFiController = ({ hostIP, hostPort }) => {
               Create WiFi Hotspot
             </Typography>
           </Grid>
-          
+
           <Grid item xs={12} md={6}>
             <TextField
               label="Hotspot Name (SSID)"
@@ -380,20 +425,22 @@ const WiFiController = ({ hostIP, hostPort }) => {
               required
             />
           </Grid>
-          
+
           <Grid item xs={12} md={6}>
             <TextField
               label="Password"
               type="password"
               value={wifiState.apPassword}
-              onChange={(e) => dispatch(wifiSlice.setApPassword(e.target.value))}
+              onChange={(e) =>
+                dispatch(wifiSlice.setApPassword(e.target.value))
+              }
               fullWidth
               variant="outlined"
               required
               helperText="Minimum 8 characters"
             />
           </Grid>
-          
+
           <Grid item xs={12} md={6}>
             <TextField
               label="Interface (optional)"
@@ -403,7 +450,7 @@ const WiFiController = ({ hostIP, hostPort }) => {
               variant="outlined"
             />
           </Grid>
-          
+
           <Grid item xs={12} md={6}>
             <TextField
               label="Connection Name"
@@ -413,7 +460,7 @@ const WiFiController = ({ hostIP, hostPort }) => {
               variant="outlined"
             />
           </Grid>
-          
+
           <Grid item xs={12} md={6}>
             <FormControl fullWidth variant="outlined">
               <InputLabel>Band</InputLabel>
@@ -427,19 +474,25 @@ const WiFiController = ({ hostIP, hostPort }) => {
               </Select>
             </FormControl>
           </Grid>
-          
+
           <Grid item xs={12} md={6}>
             <TextField
               label="Channel (optional)"
               type="number"
               value={wifiState.apChannel || ""}
-              onChange={(e) => dispatch(wifiSlice.setApChannel(e.target.value ? parseInt(e.target.value) : null))}
+              onChange={(e) =>
+                dispatch(
+                  wifiSlice.setApChannel(
+                    e.target.value ? parseInt(e.target.value) : null
+                  )
+                )
+              }
               fullWidth
               variant="outlined"
               helperText="Leave empty for automatic"
             />
           </Grid>
-          
+
           <Grid item xs={12}>
             <Box display="flex" gap={2}>
               <Button
@@ -458,7 +511,7 @@ const WiFiController = ({ hostIP, hostPort }) => {
                   "Start Access Point"
                 )}
               </Button>
-              
+
               {wifiState.isAPActive && (
                 <Button
                   variant="outlined"
@@ -479,10 +532,19 @@ const WiFiController = ({ hostIP, hostPort }) => {
                   <Typography variant="h6" gutterBottom color="primary">
                     Access Point Active
                   </Typography>
-                  <Typography><strong>SSID:</strong> {wifiState.apInfo.ssid}</Typography>
-                  <Typography><strong>Interface:</strong> {wifiState.apInfo.ifname}</Typography>
-                  <Typography><strong>IP Address:</strong> {wifiState.apInfo.ipv4}</Typography>
-                  <Typography><strong>Connection Name:</strong> {wifiState.apInfo.con_name}</Typography>
+                  <Typography>
+                    <strong>SSID:</strong> {wifiState.apInfo.ssid}
+                  </Typography>
+                  <Typography>
+                    <strong>Interface:</strong> {wifiState.apInfo.ifname}
+                  </Typography>
+                  <Typography>
+                    <strong>IP Address:</strong> {wifiState.apInfo.ipv4}
+                  </Typography>
+                  <Typography>
+                    <strong>Connection Name:</strong>{" "}
+                    {wifiState.apInfo.con_name}
+                  </Typography>
                 </CardContent>
               </Card>
             </Grid>
@@ -498,7 +560,7 @@ const WiFiController = ({ hostIP, hostPort }) => {
               Connection Status
             </Typography>
           </Grid>
-          
+
           <Grid item xs={12} md={6}>
             <Card>
               <CardContent>
@@ -512,14 +574,18 @@ const WiFiController = ({ hostIP, hostPort }) => {
                     {wifiState.isConnected ? "Connected" : "Disconnected"}
                   </Typography>
                 </Box>
-                
+
                 {wifiState.isConnected && (
                   <>
-                    <Typography><strong>Network:</strong> {wifiState.currentSSID}</Typography>
-                    <Typography><strong>Interface:</strong> {wifiState.currentIfname}</Typography>
+                    <Typography>
+                      <strong>Network:</strong> {wifiState.currentSSID}
+                    </Typography>
+                    <Typography>
+                      <strong>Interface:</strong> {wifiState.currentIfname}
+                    </Typography>
                   </>
                 )}
-                
+
                 {!wifiState.isConnected && (
                   <Typography color="textSecondary">
                     No active WiFi connection
@@ -533,20 +599,30 @@ const WiFiController = ({ hostIP, hostPort }) => {
             <Card>
               <CardContent>
                 <Box display="flex" alignItems="center" gap={2} mb={2}>
-                  <RouterIcon style={{ color: wifiState.isAPActive ? green[500] : red[500] }} />
+                  <RouterIcon
+                    style={{
+                      color: wifiState.isAPActive ? green[500] : red[500],
+                    }}
+                  />
                   <Typography variant="h6">
                     Access Point {wifiState.isAPActive ? "Active" : "Inactive"}
                   </Typography>
                 </Box>
-                
+
                 {wifiState.isAPActive && wifiState.apInfo && (
                   <>
-                    <Typography><strong>SSID:</strong> {wifiState.apInfo.ssid}</Typography>
-                    <Typography><strong>Interface:</strong> {wifiState.apInfo.ifname}</Typography>
-                    <Typography><strong>IP Address:</strong> {wifiState.apInfo.ipv4}</Typography>
+                    <Typography>
+                      <strong>SSID:</strong> {wifiState.apInfo.ssid}
+                    </Typography>
+                    <Typography>
+                      <strong>Interface:</strong> {wifiState.apInfo.ifname}
+                    </Typography>
+                    <Typography>
+                      <strong>IP Address:</strong> {wifiState.apInfo.ipv4}
+                    </Typography>
                   </>
                 )}
-                
+
                 {!wifiState.isAPActive && (
                   <Typography color="textSecondary">
                     No active access point
