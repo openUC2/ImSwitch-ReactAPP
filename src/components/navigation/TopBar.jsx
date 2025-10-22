@@ -1,6 +1,6 @@
 import { Toolbar, Typography, IconButton, Box } from "@mui/material";
 import MenuOpen from "@mui/icons-material/MenuOpen";
-import SettingsMenu from "./navigation/SettingsMenu.jsx";
+import SettingsMenu from "./SettingsMenu.jsx";
 
 /**
  * ImSwitch TopBar Component

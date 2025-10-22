@@ -1,7 +1,7 @@
 /* global __webpack_init_sharing__, __webpack_share_scopes__ */
 import { lazy, Suspense, useEffect, useState } from "react";
 
-// ImSwitch Themes - Following Copilot Instructions for generic UI structure
+// ImSwitch Themes
 import { darkTheme, lightTheme } from "./themes";
 
 import AboutPage from "./components/AboutPage.js";
@@ -28,13 +28,12 @@ import STORMControllerLocal from "./components/STORMControllerLocal.js";
 import StresstestController from "./components/StresstestController.js";
 import SystemSettings from "./components/SystemSettings.js";
 import TimelapseController from "./components/TimelapseController.js";
-import TopBar from "./components/TopBar.js";
 import UC2Controller from "./components/UC2Controller.jsx";
 import WiFiController from "./components/WiFiController.jsx";
 import { JupyterProvider } from "./context/JupyterContext.js";
 
-// ImSwitch Navigation Drawer - Component extraction following Copilot Instructions
-import { NavigationDrawer } from "./components/drawer";
+// ImSwitch Navigation Drawer
+import { NavigationDrawer, TopBar } from "./components/navigation";
 
 import { MCTProvider } from "./context/MCTContext.js";
 import { WebSocketProvider } from "./context/WebSocketContext.js";
@@ -68,19 +67,9 @@ import FileManager from "./FileManager/FileManager/FileManager.jsx";
 import { Box, CssBaseline } from "@mui/material";
 import { ThemeProvider } from "@mui/material/styles";
 
-/**
- * ImSwitch Main Application Component
- * Orchestrates microscopy interface following Copilot Instructions
- * Theme management extracted to src/themes/ for better modularity
- */
 function App() {
   // Notification state
   const notification = useSelector(getNotificationState);
-
-  /*
-    Redux
-    */
-  // redux dispatcher
   const dispatch = useDispatch();
 
   // Access global Redux state
@@ -89,14 +78,9 @@ function App() {
   );
   const { isDarkMode } = useSelector(getThemeState);
 
-  /*
-  States
-  */
   // Hook to detect mobile screens
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [sidebarVisible, setSidebarVisible] = useState(window.innerWidth > 768); // Sidebar visibility state - hidden by default on mobile
-
-  // Track previous isMobile to detect transitions
   const [prevIsMobile, setPrevIsMobile] = useState(window.innerWidth <= 768);
 
   useEffect(() => {
@@ -132,12 +116,6 @@ function App() {
   const [selectedPlugin, setSelectedPlugin] = useState("LiveView"); // Control which plugin to show
   const [sharedImage, setSharedImage] = useState(null);
   const [fileManagerInitialPath, setFileManagerInitialPath] = useState("/");
-  const [layout, setLayout] = useState([
-    { i: "widget1", x: 0, y: 0, w: 2, h: 2 },
-    { i: "widget2", x: 2, y: 0, w: 2, h: 2 },
-    { i: "widget3", x: 4, y: 0, w: 2, h: 2 },
-    { i: "Lightsheet", x: 0, y: 2, w: 5, h: 5 },
-  ]);
   const [isLoading, setIsLoading] = useState(false);
   const [files, setFiles] = useState([]);
 
@@ -217,7 +195,6 @@ function App() {
     setSelectedPlugin("ImJoy");
   };
 
-  // On Value Changes
   useEffect(() => {
     const currentHostname = window.location.hostname;
     const portsToCheck = [8001, 8002, 443];
