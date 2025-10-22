@@ -27,6 +27,7 @@ import STORMControllerArkitekt from "./components/STORMControllerArkitekt.js";
 import STORMControllerLocal from "./components/STORMControllerLocal.js";
 import StresstestController from "./components/StresstestController.js";
 import SystemSettings from "./components/SystemSettings.js";
+import SystemUpdateController from "./components/SystemUpdateController.jsx";
 import TimelapseController from "./components/TimelapseController.js";
 import UC2Controller from "./components/UC2Controller.jsx";
 import WiFiController from "./components/WiFiController.jsx";
@@ -497,6 +498,7 @@ function App() {
             {selectedPlugin === "Lepmon" && <LepMonController />}
             {selectedPlugin === "MazeGame" && <MazeGameController />}
             {selectedPlugin === "SocketView" && <SocketView />}
+            {selectedPlugin === "SystemUpdate" && <SystemUpdateController />}
             {selectedPlugin === "Connections" && <ConnectionSettings />}
           </Box>
         </Box>

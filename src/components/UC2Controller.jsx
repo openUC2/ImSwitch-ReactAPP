@@ -61,10 +61,6 @@ const TabPanel = ({ children, value, index, ...other }) => (
   </div>
 );
 
-const goToWebsite = () => {
-  window.open("https://youseetoo.github.io", "_blank");
-};
-
 const UC2Controller = () => {
   // Access ImSwitch backend connection settings from Redux - following Copilot Instructions
   const connectionSettingsState = useSelector(
@@ -615,25 +611,6 @@ const UC2Controller = () => {
               >
                 BT Pairing
               </Button>
-              <Typography variant="h6">Flash New Firmware</Typography>
-              <Button
-                style={{ marginBottom: "20px" }}
-                variant="contained"
-                onClick={goToWebsite}
-              >
-                UC2-ESP32
-              </Button>
-              <Box sx={{ display: "flex", alignItems: "center", p: 1, gap: 1 }}>
-                <Typography variant="body1">UC2 Connected:</Typography>
-                <Box
-                  sx={{
-                    width: 16,
-                    height: 16,
-                    borderRadius: "50%",
-                    backgroundColor: uc2Connected ? "green" : "red",
-                  }}
-                />
-              </Box>
             </Grid>
           </Grid>
         </TabPanel>

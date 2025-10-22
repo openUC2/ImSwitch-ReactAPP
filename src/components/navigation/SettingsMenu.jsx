@@ -23,16 +23,18 @@ import {
   Cable,
   Tune,
   Computer,
+  SystemUpdate,
 } from "@mui/icons-material";
 
-// Redux state management
+// Redux state management following Copilot Instructions
 import { toggleTheme, getThemeState } from "../../state/slices/ThemeSlice.js";
 import * as connectionSettingsSlice from "../../state/slices/ConnectionSettingsSlice.js";
 import * as uc2Slice from "../../state/slices/UC2Slice.js";
 
 /**
  * ImSwitch Settings Menu Component
- * Uses UC2 connection state for accurate backend status
+ * Following Copilot Instructions for API communication patterns
+ * All backend-dependent features disabled when connection unavailable
  */
 const SettingsMenu = ({ onNavigate }) => {
   const dispatch = useDispatch();
@@ -44,7 +46,7 @@ const SettingsMenu = ({ onNavigate }) => {
     connectionSettingsSlice.getConnectionSettingsState
   );
 
-  // Get actual backend connection status from UC2 slice
+  // Get actual backend connection status from UC2 slice - following Copilot Instructions
   const uc2State = useSelector(uc2Slice.getUc2State);
   const isBackendConnected = uc2State.uc2Connected;
 
@@ -84,7 +86,13 @@ const SettingsMenu = ({ onNavigate }) => {
           aria-label="settings menu"
         >
           <Badge
-            color={isBackendConnected ? "success" : "error"}
+            color={
+              isBackendConnected
+                ? "success"
+                : hasConnectionSettings
+                ? "error"
+                : "warning"
+            }
             variant="dot"
             sx={{
               "& .MuiBadge-badge": {
@@ -118,6 +126,7 @@ const SettingsMenu = ({ onNavigate }) => {
         transformOrigin={{ horizontal: "right", vertical: "top" }}
         anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
       >
+        {/* Connection Status Header */}
         <Box sx={{ px: 2, py: 1, borderBottom: 1, borderColor: "divider" }}>
           <Typography variant="body2" color="text.secondary">
             ImSwitch Backend
@@ -149,7 +158,7 @@ const SettingsMenu = ({ onNavigate }) => {
           )}
         </Box>
 
-        {/* Theme Toggle - Keeps menu open */}
+        {/* Theme Toggle - Always available (local frontend state) */}
         <MenuItem onClick={handleThemeToggle}>
           <ListItemIcon>
             {isDarkMode ? (
@@ -163,13 +172,13 @@ const SettingsMenu = ({ onNavigate }) => {
             checked={isDarkMode}
             onChange={handleThemeToggle}
             size="small"
-            onClick={(e) => e.stopPropagation()} // Prevent double toggle
+            onClick={(e) => e.stopPropagation()}
           />
         </MenuItem>
 
         <Divider />
 
-        {/* Navigation items - Close menu after click */}
+        {/* Backend Connection - Always available (needed to establish connection) */}
         <MenuItem onClick={() => handleNavigationClick("Connections")}>
           <ListItemIcon>
             <Cable
@@ -195,47 +204,148 @@ const SettingsMenu = ({ onNavigate }) => {
           />
         </MenuItem>
 
-        <MenuItem onClick={() => handleNavigationClick("SystemSettings")}>
+        {/* Backend-Dependent Items - Following Copilot Instructions for API communication */}
+
+        {/* System Settings - Requires backend API calls */}
+        <MenuItem
+          onClick={() => handleNavigationClick("SystemSettings")}
+          disabled={!isBackendConnected}
+          sx={{
+            opacity: isBackendConnected ? 1 : 0.5,
+            "&.Mui-disabled": {
+              opacity: 0.5,
+            },
+          }}
+        >
           <ListItemIcon>
-            <Tune fontSize="small" />
+            <Tune
+              fontSize="small"
+              color={isBackendConnected ? "inherit" : "disabled"}
+            />
           </ListItemIcon>
           <ListItemText
             primary="System Settings"
-            secondary="Hardware configuration"
+            secondary={
+              isBackendConnected
+                ? "Hardware configuration"
+                : "Requires backend connection"
+            }
           />
         </MenuItem>
 
-        <MenuItem onClick={() => handleNavigationClick("UC2")}>
+        {/* ImSwitch Backend Settings */}
+        <MenuItem
+          onClick={() => handleNavigationClick("UC2")}
+          disabled={!isBackendConnected}
+          sx={{
+            opacity: isBackendConnected ? 1 : 0.5,
+            "&.Mui-disabled": {
+              opacity: 0.5,
+            },
+          }}
+        >
           <ListItemIcon>
-            <Memory fontSize="small" />
+            <Memory
+              fontSize="small"
+              color={isBackendConnected ? "inherit" : "disabled"}
+            />
           </ListItemIcon>
           <ListItemText
-            primary="UC2 Settings"
-            secondary="Hardware configuration"
+            primary="ImSwitch Backend Settings"
+            secondary={
+              isBackendConnected
+                ? "Microscope configuration"
+                : "Requires backend connection"
+            }
           />
         </MenuItem>
 
-        <MenuItem onClick={() => handleNavigationClick("WiFi")}>
+        {/* WiFi Configuration - Requires backend API calls for network management */}
+        <MenuItem
+          onClick={() => handleNavigationClick("WiFi")}
+          disabled={!isBackendConnected}
+          sx={{
+            opacity: isBackendConnected ? 1 : 0.5,
+            "&.Mui-disabled": {
+              opacity: 0.5,
+            },
+          }}
+        >
           <ListItemIcon>
-            <Wifi fontSize="small" />
+            <Wifi
+              fontSize="small"
+              color={isBackendConnected ? "inherit" : "disabled"}
+            />
           </ListItemIcon>
           <ListItemText
             primary="WiFi Configuration"
-            secondary="Network setup"
+            secondary={
+              isBackendConnected
+                ? "Network setup"
+                : "Requires backend connection"
+            }
           />
         </MenuItem>
 
         <Divider />
 
-        <MenuItem onClick={() => handleNavigationClick("SocketView")}>
+        {/* Socket View - Requires backend connection for debugging */}
+        <MenuItem
+          onClick={() => handleNavigationClick("SocketView")}
+          disabled={!isBackendConnected}
+          sx={{
+            opacity: isBackendConnected ? 1 : 0.5,
+            "&.Mui-disabled": {
+              opacity: 0.5,
+            },
+          }}
+        >
           <ListItemIcon>
-            <Computer fontSize="small" />
+            <Computer
+              fontSize="small"
+              color={isBackendConnected ? "inherit" : "disabled"}
+            />
           </ListItemIcon>
-          <ListItemText primary="Socket View" secondary="Debug connections" />
+          <ListItemText
+            primary="Socket View"
+            secondary={
+              isBackendConnected
+                ? "Debug connections"
+                : "Requires backend connection"
+            }
+          />
+        </MenuItem>
+
+        {/* System Updates */}
+        <MenuItem
+          onClick={() => handleNavigationClick("SystemUpdate")}
+          disabled={!isBackendConnected}
+          sx={{
+            opacity: isBackendConnected ? 1 : 0.5,
+            "&.Mui-disabled": {
+              opacity: 0.5,
+            },
+          }}
+        >
+          <ListItemIcon>
+            <SystemUpdate
+              fontSize="small"
+              color={isBackendConnected ? "inherit" : "disabled"}
+            />
+          </ListItemIcon>
+          <ListItemText
+            primary="System Updates"
+            secondary={
+              isBackendConnected
+                ? "Update system & firmware"
+                : "Requires backend connection"
+            }
+          />
         </MenuItem>
 
         <Divider />
 
+        {/* About - Always available (static information) */}
         <MenuItem onClick={() => handleNavigationClick("About")}>
           <ListItemIcon>
             <Info fontSize="small" />
