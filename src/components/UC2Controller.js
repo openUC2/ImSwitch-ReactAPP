@@ -1,5 +1,7 @@
+
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import * as connectionSettingsSlice from "../state/slices/ConnectionSettingsSlice.js";
 import {
   Paper,
   Tabs,
@@ -12,7 +14,59 @@ import {
 } from "@mui/material";
 import { useWebSocket } from "../context/WebSocketContext";
 import * as uc2Slice from "../state/slices/UC2Slice.js";
+/*
+import {
+  Preview as PreviewIcon,
+  Refresh as RefreshIcon,
+  Save as SaveIcon,
+  AutoFixHigh as WizardIcon,
+} from "@mui/icons-material";
 
+import * as connectionSettingsSlice from "../state/slices/ConnectionSettingsSlice.js";
+import {
+  Box,
+  Button,
+  Checkbox,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  FormControlLabel,
+  Grid,
+  InputLabel,
+  LinearProgress,
+  MenuItem,
+  Paper,
+  Select,
+  Switch,
+  Tab,
+  Tabs,
+  TextField,
+  Typography,
+} from "@mui/material";
+import AceEditor from "react-ace";
+import "ace-builds/src-noconflict/mode-json";
+import "ace-builds/src-noconflict/theme-github";
+import { JsonEditor } from "json-edit-react";
+import React, { useCallback, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useWebSocket } from "../context/WebSocketContext";
+import {
+  clearNotification,
+  setNotification,
+} from "../state/slices/NotificationSlice";
+import * as uc2Slice from "../state/slices/UC2Slice.js";
+import {
+  createConfigurationPreview,
+  validateConfiguration,
+  validateJsonString,
+} from "../utils/configValidation";
+import ConfigurationPreviewDialog from "./ConfigurationPreviewDialog";
+import ConfigurationWizard from "./ConfigurationWizard";
+
+*/
 const TabPanel = ({ children, value, index, ...other }) => (
   <div
     role="tabpanel"
@@ -29,10 +83,18 @@ const goToWebsite = () => {
   window.open("https://youseetoo.github.io", "_blank");
 };
 
-const UC2Controller = ({ hostIP, hostPort }) => {
+const UC2Controller = () => {
+  // Access ImSwitch backend connection settings from Redux - following Copilot Instructions
+  const connectionSettingsState = useSelector(
+    connectionSettingsSlice.getConnectionSettingsState
+  );
+  const hostIP = connectionSettingsState.ip;
+  const hostPort = connectionSettingsState.apiPort;
+
+  // Redux dispatcher
   const dispatch = useDispatch();
   const uc2State = useSelector(uc2Slice.getUc2State);
-  
+
   const tabIndex = uc2State.tabIndex;
   const serialPayload = uc2State.serialPayload;
   const serialLog = uc2State.serialLog;

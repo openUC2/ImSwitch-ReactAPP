@@ -104,7 +104,7 @@ const CountdownOverlay = ({ countdown }) => {
   );
 };
 
-const MazeGameController = ({ hostIP, hostPort, title = "Maze Game" }) => {
+const MazeGameController = ({ title = "Maze Game" }) => {
   const dispatch = useDispatch();
   const theme = useTheme();
   const mazeGameState = useSelector(mazeGameSlice.getMazeGameState);
@@ -249,16 +249,17 @@ const MazeGameController = ({ hostIP, hostPort, title = "Maze Game" }) => {
     fetchInitialState();
   }, [dispatch]);
 
-
   // Track position changes and add to trace when game is running
   useEffect(() => {
     if (running && (currentPosition.x !== 0 || currentPosition.y !== 0)) {
       // Add current position to trace
-      dispatch(mazeGameSlice.addTracePoint({
-        x: currentPosition.x,
-        y: currentPosition.y,
-        timestamp: Date.now(),
-      }));
+      dispatch(
+        mazeGameSlice.addTracePoint({
+          x: currentPosition.x,
+          y: currentPosition.y,
+          timestamp: Date.now(),
+        })
+      );
     }
   }, [running, currentPosition.x, currentPosition.y, dispatch]);
 
@@ -405,7 +406,7 @@ const MazeGameController = ({ hostIP, hostPort, title = "Maze Game" }) => {
     try {
       await apiPositionerControllerMovePositioner({
         axis,
-        dist: distance * stepSize / 100, // Use stepSize from slice, scaled by 100
+        dist: (distance * stepSize) / 100, // Use stepSize from slice, scaled by 100
         isAbsolute: false,
         isBlocking: false,
       });
@@ -504,13 +505,17 @@ const MazeGameController = ({ hostIP, hostPort, title = "Maze Game" }) => {
                       value={nameInputValue}
                       onChange={(e) => setNameInputValue(e.target.value)}
                       onKeyPress={(e) => {
-                        if (e.key === 'Enter' && nameInputValue.trim()) {
-                          dispatch(mazeGameSlice.setPlayerName(nameInputValue.trim()));
+                        if (e.key === "Enter" && nameInputValue.trim()) {
+                          dispatch(
+                            mazeGameSlice.setPlayerName(nameInputValue.trim())
+                          );
                         }
                       }}
                       onBlur={() => {
                         if (nameInputValue.trim()) {
-                          dispatch(mazeGameSlice.setPlayerName(nameInputValue.trim()));
+                          dispatch(
+                            mazeGameSlice.setPlayerName(nameInputValue.trim())
+                          );
                         }
                       }}
                       disabled={running}
@@ -572,7 +577,12 @@ const MazeGameController = ({ hostIP, hostPort, title = "Maze Game" }) => {
                 {/* Timer and Counter */}
                 <Grid container spacing={2} sx={{ mb: 3 }}>
                   <Grid item xs={4}>
-                    <Card sx={{ bgcolor: theme.palette.mode === 'dark' ? grey[800] : green[50] }}>
+                    <Card
+                      sx={{
+                        bgcolor:
+                          theme.palette.mode === "dark" ? grey[800] : green[50],
+                      }}
+                    >
                       <CardContent>
                         <Typography variant="h6" color="textSecondary">
                           Timer
@@ -584,7 +594,12 @@ const MazeGameController = ({ hostIP, hostPort, title = "Maze Game" }) => {
                     </Card>
                   </Grid>
                   <Grid item xs={4}>
-                    <Card sx={{ bgcolor: theme.palette.mode === 'dark' ? grey[800] : red[50] }}>
+                    <Card
+                      sx={{
+                        bgcolor:
+                          theme.palette.mode === "dark" ? grey[800] : red[50],
+                      }}
+                    >
                       <CardContent>
                         <Typography variant="h6" color="textSecondary">
                           Wall Hits
@@ -594,12 +609,19 @@ const MazeGameController = ({ hostIP, hostPort, title = "Maze Game" }) => {
                     </Card>
                   </Grid>
                   <Grid item xs={4}>
-                    <Card sx={{ bgcolor: theme.palette.mode === 'dark' ? grey[800] : blue[50] }}>
+                    <Card
+                      sx={{
+                        bgcolor:
+                          theme.palette.mode === "dark" ? grey[800] : blue[50],
+                      }}
+                    >
                       <CardContent>
                         <Typography variant="h6" color="textSecondary">
                           Smooth Mean
                         </Typography>
-                        <Typography variant="h3">{(smoothMean ?? 0).toFixed(2)}</Typography>
+                        <Typography variant="h3">
+                          {(smoothMean ?? 0).toFixed(2)}
+                        </Typography>
                       </CardContent>
                     </Card>
                   </Grid>
@@ -710,28 +732,28 @@ const MazeGameController = ({ hostIP, hostPort, title = "Maze Game" }) => {
                       <Button
                         variant="contained"
                         onClick={() => handleJoystickMove("Y", 100)}
-                        >
+                      >
                         ↑
                       </Button>
                       <Box />
                       <Button
                         variant="contained"
                         onClick={() => handleJoystickMove("X", 100)}
-                        >
+                      >
                         ←
                       </Button>
                       <Box />
                       <Button
                         variant="contained"
                         onClick={() => handleJoystickMove("X", -100)}
-                        >
+                      >
                         →
                       </Button>
                       <Box />
                       <Button
                         variant="contained"
                         onClick={() => handleJoystickMove("Y", -100)}
-                        >
+                      >
                         ↓
                       </Button>
                       <Box />
@@ -749,8 +771,12 @@ const MazeGameController = ({ hostIP, hostPort, title = "Maze Game" }) => {
                 <Typography variant="h6" gutterBottom>
                   Current Position
                 </Typography>
-                <Typography>X: {(currentPosition.x ?? 0).toFixed(2)}</Typography>
-                <Typography>Y: {(currentPosition.y ?? 0).toFixed(2)}</Typography>
+                <Typography>
+                  X: {(currentPosition.x ?? 0).toFixed(2)}
+                </Typography>
+                <Typography>
+                  Y: {(currentPosition.y ?? 0).toFixed(2)}
+                </Typography>
               </CardContent>
             </Card>
 
@@ -765,10 +791,12 @@ const MazeGameController = ({ hostIP, hostPort, title = "Maze Game" }) => {
                   type="number"
                   value={startPosition.x}
                   onChange={(e) =>
-                    dispatch(mazeGameSlice.setStartPosition({
-                      ...startPosition,
-                      x: parseFloat(e.target.value) || 0,
-                    }))
+                    dispatch(
+                      mazeGameSlice.setStartPosition({
+                        ...startPosition,
+                        x: parseFloat(e.target.value) || 0,
+                      })
+                    )
                   }
                   disabled={running}
                   sx={{ mb: 2 }}
@@ -779,10 +807,12 @@ const MazeGameController = ({ hostIP, hostPort, title = "Maze Game" }) => {
                   type="number"
                   value={startPosition.y}
                   onChange={(e) =>
-                    dispatch(mazeGameSlice.setStartPosition({
-                      ...startPosition,
-                      y: parseFloat(e.target.value) || 0,
-                    }))
+                    dispatch(
+                      mazeGameSlice.setStartPosition({
+                        ...startPosition,
+                        y: parseFloat(e.target.value) || 0,
+                      })
+                    )
                   }
                   disabled={running}
                   sx={{ mb: 2 }}
@@ -853,7 +883,9 @@ const MazeGameController = ({ hostIP, hostPort, title = "Maze Game" }) => {
                   <Typography gutterBottom>Step Size: {stepSize}</Typography>
                   <Slider
                     value={stepSize}
-                    onChange={(e, val) => dispatch(mazeGameSlice.setStepSize(val))}
+                    onChange={(e, val) =>
+                      dispatch(mazeGameSlice.setStepSize(val))
+                    }
                     min={10}
                     max={500}
                     step={10}

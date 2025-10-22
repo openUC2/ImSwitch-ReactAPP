@@ -1,24 +1,33 @@
-import React, { useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
 import {
-  Paper,
-  TextField,
   Button,
-  Grid,
-  Typography,
   Card,
   CardContent,
+  Grid,
+  Paper,
+  TextField,
+  Typography,
 } from "@mui/material";
-import { useWebSocket } from "../context/WebSocketContext";
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useWebSocket } from "../context/WebSocketContext.js";
+import * as connectionSettingsSlice from "../state/slices/ConnectionSettingsSlice.js";
 import * as stageOffsetCalibrationSlice from "../state/slices/StageOffsetCalibrationSlice.js";
 
-const StageOffsetCalibration = ({ hostIP, hostPort }) => {
-  const socket = useWebSocket(); 
+const StageOffsetCalibration = () => {
+  // Access ImSwitch backend connection settings from Redux - following Copilot Instructions
+  const connectionSettingsState = useSelector(
+    connectionSettingsSlice.getConnectionSettingsState
+  );
+  const hostIP = connectionSettingsState.ip;
+  const hostPort = connectionSettingsState.apiPort;
+  const socket = useWebSocket();
   const dispatch = useDispatch();
-  
+
   // Access global Redux state
-  const stageOffsetState = useSelector(stageOffsetCalibrationSlice.getStageOffsetCalibrationState);
-  
+  const stageOffsetState = useSelector(
+    stageOffsetCalibrationSlice.getStageOffsetCalibrationState
+  );
+
   // Use Redux state instead of local useState
   const currentX = stageOffsetState.currentX;
   const currentY = stageOffsetState.currentY;
@@ -59,31 +68,42 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
         const offsetXData = await fetch(
           `${hostIP}:${hostPort}/PositionerController/getStageOffsetAxis?axis=X`
         ).then((res) => res.json());
-        dispatch(stageOffsetCalibrationSlice.setLoadedOffsetX(offsetXData ?? ""));
+        dispatch(
+          stageOffsetCalibrationSlice.setLoadedOffsetX(offsetXData ?? "")
+        );
 
         const offsetYData = await fetch(
           `${hostIP}:${hostPort}/PositionerController/getStageOffsetAxis?axis=Y`
         ).then((res) => res.json());
-        dispatch(stageOffsetCalibrationSlice.setLoadedOffsetY(offsetYData ?? ""));
+        dispatch(
+          stageOffsetCalibrationSlice.setLoadedOffsetY(offsetYData ?? "")
+        );
 
         // Current Positions
         const posData = await fetch(
           `${hostIP}:${hostPort}/PositionerController/getPositionerPositions`
         ).then((res) => res.json());
         if (posData.ESP32Stage) {
-          dispatch(stageOffsetCalibrationSlice.setCurrentX(posData.ESP32Stage.X));
-          dispatch(stageOffsetCalibrationSlice.setCurrentY(posData.ESP32Stage.Y));
-        }
-        else if (posData.VirtualStage) {
-          dispatch(stageOffsetCalibrationSlice.setCurrentX(posData.VirtualStage.X));
-          dispatch(stageOffsetCalibrationSlice.setCurrentY(posData.VirtualStage.Y));
+          dispatch(
+            stageOffsetCalibrationSlice.setCurrentX(posData.ESP32Stage.X)
+          );
+          dispatch(
+            stageOffsetCalibrationSlice.setCurrentY(posData.ESP32Stage.Y)
+          );
+        } else if (posData.VirtualStage) {
+          dispatch(
+            stageOffsetCalibrationSlice.setCurrentX(posData.VirtualStage.X)
+          );
+          dispatch(
+            stageOffsetCalibrationSlice.setCurrentY(posData.VirtualStage.Y)
+          );
         }
       } catch (error) {
         console.error(error);
       }
     };
     fetchAll();
-  }, [hostIP, hostPort, reloadTrigger]);
+  }, [hostIP, hostPort, reloadTrigger, dispatch]);
 
   // Auto-calc offset from current vs target
   useEffect(() => {
@@ -94,7 +114,7 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
     } else {
       dispatch(stageOffsetCalibrationSlice.setCalculatedOffsetX(""));
     }
-  }, [currentX, targetX]);
+  }, [currentX, targetX, dispatch]);
 
   useEffect(() => {
     const cY = parseFloat(currentY);
@@ -104,7 +124,7 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
     } else {
       dispatch(stageOffsetCalibrationSlice.setCalculatedOffsetY(""));
     }
-  }, [currentY, targetY]);
+  }, [currentY, targetY, dispatch]);
 
   // Handle socket signals
   useEffect(() => {
@@ -115,10 +135,12 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
         if (jdata.name === "sigUpdateImage") {
           const detectorName = jdata.detectorname;
           const imgSrc = `data:image/jpeg;base64,${jdata.image}`;
-          dispatch(stageOffsetCalibrationSlice.updateImageUrl({
-            detector: detectorName,
-            url: imgSrc
-          }));
+          dispatch(
+            stageOffsetCalibrationSlice.updateImageUrl({
+              detector: detectorName,
+              url: imgSrc,
+            })
+          );
           if (jdata.pixelsize) {
             // If needed: dispatch(objectiveSlice.setPixelSize(jdata.pixelsize));
           }
@@ -150,10 +172,13 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
         if (data.ESP32Stage) {
           dispatch(stageOffsetCalibrationSlice.setCurrentX(data.ESP32Stage.X));
           dispatch(stageOffsetCalibrationSlice.setCurrentY(data.ESP32Stage.Y));
-        }
-        else if (data.VirtualStage) {
-          dispatch(stageOffsetCalibrationSlice.setCurrentX(data.VirtualStage.X));
-          dispatch(stageOffsetCalibrationSlice.setCurrentY(data.VirtualStage.Y));
+        } else if (data.VirtualStage) {
+          dispatch(
+            stageOffsetCalibrationSlice.setCurrentX(data.VirtualStage.X)
+          );
+          dispatch(
+            stageOffsetCalibrationSlice.setCurrentY(data.VirtualStage.Y)
+          );
         }
       })
       .catch(console.error);
@@ -166,7 +191,9 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
       `${hostIP}:${hostPort}/PositionerController/setStageOffsetAxis?knownOffset=${offset}&axis=${axis}`
     )
       .then((res) => res.json())
-      .then(() => dispatch(stageOffsetCalibrationSlice.incrementReloadTrigger())) // Trigger reload
+      .then(() =>
+        dispatch(stageOffsetCalibrationSlice.incrementReloadTrigger())
+      ) // Trigger reload
       .catch(console.error);
   };
 
@@ -176,7 +203,9 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
       `${hostIP}:${hostPort}/PositionerController/setStageOffsetAxis?knownPosition=${knownPos}&currentPosition=${currPos}&axis=${axis}`
     )
       .then((res) => res.json())
-      .then(() => dispatch(stageOffsetCalibrationSlice.incrementReloadTrigger())) // Trigger reload
+      .then(() =>
+        dispatch(stageOffsetCalibrationSlice.incrementReloadTrigger())
+      ) // Trigger reload
       .catch(console.error);
   };
 
@@ -186,7 +215,9 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
       `${hostIP}:${hostPort}/PositionerController/setStageOffsetAxis?knownPosition=${knownPos}&axis=${axis}`
     )
       .then((res) => res.json())
-      .then(() => dispatch(stageOffsetCalibrationSlice.incrementReloadTrigger())) // Trigger reload
+      .then(() =>
+        dispatch(stageOffsetCalibrationSlice.incrementReloadTrigger())
+      ) // Trigger reload
       .catch(console.error);
   };
 
@@ -203,7 +234,7 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
         dispatch(stageOffsetCalibrationSlice.incrementReloadTrigger()); // Trigger reload
       })
       .catch(console.error);
-  }
+  };
   return (
     <Paper style={{ padding: "20px", margin: "20px" }}>
       <Grid container spacing={3}>
@@ -320,7 +351,11 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
                   <TextField
                     label="Current X"
                     value={currentX}
-                    onChange={(e) => dispatch(stageOffsetCalibrationSlice.setCurrentX(e.target.value))}
+                    onChange={(e) =>
+                      dispatch(
+                        stageOffsetCalibrationSlice.setCurrentX(e.target.value)
+                      )
+                    }
                     fullWidth
                   />
                 </Grid>
@@ -328,7 +363,11 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
                   <TextField
                     label="Current Y"
                     value={currentY}
-                    onChange={(e) => dispatch(stageOffsetCalibrationSlice.setCurrentY(e.target.value))}
+                    onChange={(e) =>
+                      dispatch(
+                        stageOffsetCalibrationSlice.setCurrentY(e.target.value)
+                      )
+                    }
                     fullWidth
                   />
                 </Grid>
@@ -336,7 +375,11 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
                   <TextField
                     label="Target X"
                     value={targetX}
-                    onChange={(e) => dispatch(stageOffsetCalibrationSlice.setTargetX(e.target.value))}
+                    onChange={(e) =>
+                      dispatch(
+                        stageOffsetCalibrationSlice.setTargetX(e.target.value)
+                      )
+                    }
                     fullWidth
                   />
                 </Grid>
@@ -344,7 +387,11 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
                   <TextField
                     label="Target Y"
                     value={targetY}
-                    onChange={(e) => dispatch(stageOffsetCalibrationSlice.setTargetY(e.target.value))}
+                    onChange={(e) =>
+                      dispatch(
+                        stageOffsetCalibrationSlice.setTargetY(e.target.value)
+                      )
+                    }
                     fullWidth
                   />
                 </Grid>
@@ -392,7 +439,13 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
                   <TextField
                     label="Manual Offset X"
                     value={manualOffsetX}
-                    onChange={(e) => dispatch(stageOffsetCalibrationSlice.setManualOffsetX(e.target.value))}
+                    onChange={(e) =>
+                      dispatch(
+                        stageOffsetCalibrationSlice.setManualOffsetX(
+                          e.target.value
+                        )
+                      )
+                    }
                     fullWidth
                   />
                 </Grid>
@@ -400,31 +453,35 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
                   <TextField
                     label="Manual Offset Y"
                     value={manualOffsetY}
-                    onChange={(e) => dispatch(stageOffsetCalibrationSlice.setManualOffsetY(e.target.value))}
+                    onChange={(e) =>
+                      dispatch(
+                        stageOffsetCalibrationSlice.setManualOffsetY(
+                          e.target.value
+                        )
+                      )
+                    }
                     fullWidth
                   />
                 </Grid>
 
                 {/* X axis submission */}
                 <Grid item xs={12}>
-                  <Typography variant="subtitle2">X-Axis Submissions</Typography>
+                  <Typography variant="subtitle2">
+                    X-Axis Submissions
+                  </Typography>
                   <Button
                     variant="contained"
                     style={{ marginRight: 8 }}
-                    onClick={() => submitKnownOffset("X", manualOffsetX || calculatedOffsetX)}
+                    onClick={() =>
+                      submitKnownOffset("X", manualOffsetX || calculatedOffsetX)
+                    }
                   >
                     Submit Known Offset
                   </Button>
                   <Button
                     variant="contained"
                     style={{ marginRight: 8 }}
-                    onClick={() =>
-                      submitPositions(
-                        "X",
-                        targetX,
-                        currentX
-                      )
-                    }
+                    onClick={() => submitPositions("X", targetX, currentX)}
                   >
                     Submit Both Positions
                   </Button>
@@ -435,7 +492,7 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
                     Submit Known Position
                   </Button>
 
-                                    <Button
+                  <Button
                     variant="outlined"
                     color="error"
                     onClick={() => resetStageOffsets("X")}
@@ -447,24 +504,22 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
 
                 {/* Y axis submission */}
                 <Grid item xs={12}>
-                  <Typography variant="subtitle2">Y-Axis Submissions</Typography>
+                  <Typography variant="subtitle2">
+                    Y-Axis Submissions
+                  </Typography>
                   <Button
                     variant="contained"
                     style={{ marginRight: 8 }}
-                    onClick={() => submitKnownOffset("Y", manualOffsetY || calculatedOffsetY)}
+                    onClick={() =>
+                      submitKnownOffset("Y", manualOffsetY || calculatedOffsetY)
+                    }
                   >
                     Submit Known Offset
                   </Button>
                   <Button
                     variant="contained"
                     style={{ marginRight: 8 }}
-                    onClick={() =>
-                      submitPositions(
-                        "Y",
-                        targetY,
-                        currentY
-                      )
-                    }
+                    onClick={() => submitPositions("Y", targetY, currentY)}
                   >
                     Submit Both Positions
                   </Button>
@@ -483,7 +538,6 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
                   >
                     Reset Y Offsets
                   </Button>
-                  
                 </Grid>
               </Grid>
             </CardContent>

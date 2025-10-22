@@ -1,35 +1,34 @@
 // src/components/DemoController.js
-import React, { useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import {
-  Paper,
-  Tabs,
-  Tab,
-  Box,
-  Typography,
-  TextField,
-  Button,
-  Grid,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Card,
-  CardContent,
-  Divider,
-} from "@mui/material";
-import { green, red } from "@mui/material/colors";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import StopIcon from "@mui/icons-material/Stop";
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  FormControl,
+  Grid,
+  InputLabel,
+  MenuItem,
+  Paper,
+  Select,
+  Tab,
+  Tabs,
+  TextField,
+  Typography,
+} from "@mui/material";
+import { green, red } from "@mui/material/colors";
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import LiveViewControlWrapper from "../axon/LiveViewControlWrapper";
-import * as demoSlice from "../state/slices/DemoSlice.js";
 import apiDemoControllerGetDemoParams from "../backendapi/apiDemoControllerGetDemoParams.js";
 import apiDemoControllerGetDemoResults from "../backendapi/apiDemoControllerGetDemoResults.js";
 import apiDemoControllerSetDemoParams from "../backendapi/apiDemoControllerSetDemoParams.js";
 import apiDemoControllerStartDemo from "../backendapi/apiDemoControllerStartDemo.js";
 import apiDemoControllerStopDemo from "../backendapi/apiDemoControllerStopDemo.js";
+import * as demoSlice from "../state/slices/DemoSlice.js";
 
 const TabPanel = (props) => {
   const { children, value, index, ...other } = props;
@@ -47,7 +46,7 @@ const TabPanel = (props) => {
   );
 };
 
-const DemoController = ({ hostIP, hostPort, title = "Demo Controller" }) => {
+const DemoController = ({ title = "Demo Controller" }) => {
   const dispatch = useDispatch();
   const demoState = useSelector(demoSlice.getDemoState);
 
@@ -78,7 +77,7 @@ const DemoController = ({ hostIP, hostPort, title = "Demo Controller" }) => {
       try {
         const params = await apiDemoControllerGetDemoParams();
         dispatch(demoSlice.setDemoParams(params));
-        
+
         const results = await apiDemoControllerGetDemoResults();
         dispatch(demoSlice.setDemoResults(results));
       } catch (error) {
@@ -125,7 +124,7 @@ const DemoController = ({ hostIP, hostPort, title = "Demo Controller" }) => {
         totalRunTime,
       };
       await apiDemoControllerSetDemoParams(params);
-      
+
       // Then start demo
       await apiDemoControllerStartDemo();
       dispatch(demoSlice.setIsRunning(true));
@@ -166,10 +165,13 @@ const DemoController = ({ hostIP, hostPort, title = "Demo Controller" }) => {
 
   return (
     <Paper>
-      <Typography variant="h6" sx={{ p: 2, borderBottom: 1, borderColor: "divider" }}>
+      <Typography
+        variant="h6"
+        sx={{ p: 2, borderBottom: 1, borderColor: "divider" }}
+      >
         {title}
       </Typography>
-      
+
       <Tabs
         value={tabIndex}
         onChange={handleTabChange}
@@ -211,19 +213,25 @@ const DemoController = ({ hostIP, hostPort, title = "Demo Controller" }) => {
                 Update Parameters
               </Button>
             </Box>
-            
+
             {/* Status Indicator */}
             <Box display="flex" alignItems="center" mb={2}>
               <Typography variant="h6">Status: </Typography>
               {isRunning ? (
                 <>
-                  <CheckCircleIcon style={{ color: green[500], marginLeft: "10px" }} />
-                  <Typography sx={{ ml: 1 }} color="success.main">Running</Typography>
+                  <CheckCircleIcon
+                    style={{ color: green[500], marginLeft: "10px" }}
+                  />
+                  <Typography sx={{ ml: 1 }} color="success.main">
+                    Running
+                  </Typography>
                 </>
               ) : (
                 <>
                   <CancelIcon style={{ color: red[500], marginLeft: "10px" }} />
-                  <Typography sx={{ ml: 1 }} color="error.main">Stopped</Typography>
+                  <Typography sx={{ ml: 1 }} color="error.main">
+                    Stopped
+                  </Typography>
                 </>
               )}
             </Box>
@@ -242,7 +250,11 @@ const DemoController = ({ hostIP, hostPort, title = "Demo Controller" }) => {
                       label="Max Range X"
                       type="number"
                       value={maxRangeX}
-                      onChange={(e) => dispatch(demoSlice.setMaxRangeX(parseFloat(e.target.value)))}
+                      onChange={(e) =>
+                        dispatch(
+                          demoSlice.setMaxRangeX(parseFloat(e.target.value))
+                        )
+                      }
                       fullWidth
                       disabled={isRunning}
                       inputProps={{ step: 10, min: 0 }}
@@ -253,7 +265,11 @@ const DemoController = ({ hostIP, hostPort, title = "Demo Controller" }) => {
                       label="Max Range Y"
                       type="number"
                       value={maxRangeY}
-                      onChange={(e) => dispatch(demoSlice.setMaxRangeY(parseFloat(e.target.value)))}
+                      onChange={(e) =>
+                        dispatch(
+                          demoSlice.setMaxRangeY(parseFloat(e.target.value))
+                        )
+                      }
                       fullWidth
                       disabled={isRunning}
                       inputProps={{ step: 10, min: 0 }}
@@ -277,7 +293,9 @@ const DemoController = ({ hostIP, hostPort, title = "Demo Controller" }) => {
                       <InputLabel>Scanning Scheme</InputLabel>
                       <Select
                         value={scanningScheme}
-                        onChange={(e) => dispatch(demoSlice.setScanningScheme(e.target.value))}
+                        onChange={(e) =>
+                          dispatch(demoSlice.setScanningScheme(e.target.value))
+                        }
                         label="Scanning Scheme"
                       >
                         <MenuItem value="random">Random</MenuItem>
@@ -291,7 +309,11 @@ const DemoController = ({ hostIP, hostPort, title = "Demo Controller" }) => {
                       <InputLabel>Illumination Mode</InputLabel>
                       <Select
                         value={illuminationMode}
-                        onChange={(e) => dispatch(demoSlice.setIlluminationMode(e.target.value))}
+                        onChange={(e) =>
+                          dispatch(
+                            demoSlice.setIlluminationMode(e.target.value)
+                          )
+                        }
                         label="Illumination Mode"
                       >
                         <MenuItem value="random">Random</MenuItem>
@@ -318,7 +340,13 @@ const DemoController = ({ hostIP, hostPort, title = "Demo Controller" }) => {
                         label="Number of Random Positions"
                         type="number"
                         value={numRandomPositions}
-                        onChange={(e) => dispatch(demoSlice.setNumRandomPositions(parseInt(e.target.value)))}
+                        onChange={(e) =>
+                          dispatch(
+                            demoSlice.setNumRandomPositions(
+                              parseInt(e.target.value)
+                            )
+                          )
+                        }
                         fullWidth
                         disabled={isRunning}
                         inputProps={{ min: 1, max: 100 }}
@@ -332,7 +360,11 @@ const DemoController = ({ hostIP, hostPort, title = "Demo Controller" }) => {
                           label="Grid Rows"
                           type="number"
                           value={gridRows}
-                          onChange={(e) => dispatch(demoSlice.setGridRows(parseInt(e.target.value)))}
+                          onChange={(e) =>
+                            dispatch(
+                              demoSlice.setGridRows(parseInt(e.target.value))
+                            )
+                          }
                           fullWidth
                           disabled={isRunning}
                           inputProps={{ min: 1, max: 20 }}
@@ -343,7 +375,11 @@ const DemoController = ({ hostIP, hostPort, title = "Demo Controller" }) => {
                           label="Grid Columns"
                           type="number"
                           value={gridColumns}
-                          onChange={(e) => dispatch(demoSlice.setGridColumns(parseInt(e.target.value)))}
+                          onChange={(e) =>
+                            dispatch(
+                              demoSlice.setGridColumns(parseInt(e.target.value))
+                            )
+                          }
                           fullWidth
                           disabled={isRunning}
                           inputProps={{ min: 1, max: 20 }}
@@ -357,7 +393,11 @@ const DemoController = ({ hostIP, hostPort, title = "Demo Controller" }) => {
                         label="Spiral Shells"
                         type="number"
                         value={spiralShells}
-                        onChange={(e) => dispatch(demoSlice.setSpiralShells(parseInt(e.target.value)))}
+                        onChange={(e) =>
+                          dispatch(
+                            demoSlice.setSpiralShells(parseInt(e.target.value))
+                          )
+                        }
                         fullWidth
                         disabled={isRunning}
                         inputProps={{ min: 1, max: 10 }}
@@ -382,7 +422,11 @@ const DemoController = ({ hostIP, hostPort, title = "Demo Controller" }) => {
                       label="Dwell Time (seconds)"
                       type="number"
                       value={dwellTime}
-                      onChange={(e) => dispatch(demoSlice.setDwellTime(parseFloat(e.target.value)))}
+                      onChange={(e) =>
+                        dispatch(
+                          demoSlice.setDwellTime(parseFloat(e.target.value))
+                        )
+                      }
                       fullWidth
                       disabled={isRunning}
                       inputProps={{ step: 0.1, min: 0.1, max: 60 }}
@@ -393,7 +437,11 @@ const DemoController = ({ hostIP, hostPort, title = "Demo Controller" }) => {
                       label="Total Run Time (seconds)"
                       type="number"
                       value={totalRunTime}
-                      onChange={(e) => dispatch(demoSlice.setTotalRunTime(parseFloat(e.target.value)))}
+                      onChange={(e) =>
+                        dispatch(
+                          demoSlice.setTotalRunTime(parseFloat(e.target.value))
+                        )
+                      }
                       fullWidth
                       disabled={isRunning}
                       inputProps={{ step: 1, min: 1, max: 3600 }}
@@ -412,7 +460,7 @@ const DemoController = ({ hostIP, hostPort, title = "Demo Controller" }) => {
             <Typography variant="h6" gutterBottom>
               Live View
             </Typography>
-            <Box sx={{ border: '1px solid #ccc', minHeight: 400 }}>
+            <Box sx={{ border: "1px solid #ccc", minHeight: 400 }}>
               <LiveViewControlWrapper />
             </Box>
           </Grid>
@@ -431,13 +479,21 @@ const DemoController = ({ hostIP, hostPort, title = "Demo Controller" }) => {
                   <Typography variant="body1">Status: </Typography>
                   {isRunning ? (
                     <>
-                      <CheckCircleIcon style={{ color: green[500], marginLeft: "10px" }} />
-                      <Typography sx={{ ml: 1 }} color="success.main">Running</Typography>
+                      <CheckCircleIcon
+                        style={{ color: green[500], marginLeft: "10px" }}
+                      />
+                      <Typography sx={{ ml: 1 }} color="success.main">
+                        Running
+                      </Typography>
                     </>
                   ) : (
                     <>
-                      <CancelIcon style={{ color: red[500], marginLeft: "10px" }} />
-                      <Typography sx={{ ml: 1 }} color="error.main">Stopped</Typography>
+                      <CancelIcon
+                        style={{ color: red[500], marginLeft: "10px" }}
+                      />
+                      <Typography sx={{ ml: 1 }} color="error.main">
+                        Stopped
+                      </Typography>
                     </>
                   )}
                 </Box>
@@ -453,7 +509,7 @@ const DemoController = ({ hostIP, hostPort, title = "Demo Controller" }) => {
               </CardContent>
             </Card>
           </Grid>
-          
+
           <Grid item xs={12} md={6}>
             <Card>
               <CardContent>

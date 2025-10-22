@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { useSelector } from "react-redux";
+import { getConnectionSettingsState } from "../state/slices/ConnectionSettingsSlice";
 import {
   Dialog,
   DialogTitle,
@@ -28,7 +30,11 @@ const steps = [
   "Complete"
 ];
 
-const ObjectiveCalibrationWizard = ({ open, onClose, hostIP, hostPort }) => {
+const ObjectiveCalibrationWizard = ({ open, onClose }) => {
+  // Get connection settings from Redux
+  const connectionSettings = useSelector(getConnectionSettingsState);
+  const hostIP = connectionSettings.ip;
+  const hostPort = connectionSettings.apiPort;
   const [activeStep, setActiveStep] = useState(0);
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('md'));

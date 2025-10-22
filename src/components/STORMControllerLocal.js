@@ -47,24 +47,34 @@ const StormPlot = ({ data }) => {
   return <STORMPlot data={data} title="Live Localizations" />;
 };
 
-// Statistics component - placeholder for now  
+// Statistics component - placeholder for now
 const StormStatistics = ({ stats }) => {
   return (
     <Box sx={{ p: 2 }}>
-      <Typography variant="h6" gutterBottom>Statistics</Typography>
+      <Typography variant="h6" gutterBottom>
+        Statistics
+      </Typography>
       {stats ? (
         <Grid container spacing={2}>
           <Grid item xs={6}>
-            <Typography variant="body2">Total Localizations: {stats.totalLocalizations || 0}</Typography>
+            <Typography variant="body2">
+              Total Localizations: {stats.totalLocalizations || 0}
+            </Typography>
           </Grid>
           <Grid item xs={6}>
-            <Typography variant="body2">Processing Rate: {stats.processingRate || 0} fps</Typography>
+            <Typography variant="body2">
+              Processing Rate: {stats.processingRate || 0} fps
+            </Typography>
           </Grid>
           <Grid item xs={6}>
-            <Typography variant="body2">Duration: {stats.duration || 0} s</Typography>
+            <Typography variant="body2">
+              Duration: {stats.duration || 0} s
+            </Typography>
           </Grid>
           <Grid item xs={6}>
-            <Typography variant="body2">Quality Score: {stats.qualityScore || 0}</Typography>
+            <Typography variant="body2">
+              Quality Score: {stats.qualityScore || 0}
+            </Typography>
           </Grid>
         </Grid>
       ) : (
@@ -89,13 +99,17 @@ const TabPanel = (props) => {
   );
 };
 
-const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
+const STORMControllerLocal = () => {
   const dispatch = useDispatch();
-  
+
   // Redux state
   const stormState = useSelector(stormSlice.getSTORMState);
-  const connectionSettingsState = useSelector(connectionSettingsSlice.getConnectionSettingsState);
-  const parameterRangeState = useSelector(parameterRangeSlice.getParameterRangeState);
+  const connectionSettingsState = useSelector(
+    connectionSettingsSlice.getConnectionSettingsState
+  );
+  const parameterRangeState = useSelector(
+    parameterRangeSlice.getParameterRangeState
+  );
   const liveStreamState = useSelector((state) => state.liveStreamState);
 
   // Local state
@@ -106,7 +120,7 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
     2: false,
     3: false,
     4: false,
-    5: false
+    5: false,
   });
   const [reconstructionTabIndex, setReconstructionTabIndex] = useState(0);
   const [visualizationTabIndex, setVisualizationTabIndex] = useState(0);
@@ -135,12 +149,12 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
   const localizations = stormState.localizations;
 
   const steps = [
-    'Crop Settings',
-    'Autofocus Settings', 
-    'Prefilter Settings',
-    'Localization Settings',
-    'N-Frames/Display Settings',
-    'Start/Stop Acquisition'
+    "Crop Settings",
+    "Autofocus Settings",
+    "Prefilter Settings",
+    "Localization Settings",
+    "N-Frames/Display Settings",
+    "Start/Stop Acquisition",
   ];
 
   // WebSocket signal handling
@@ -149,21 +163,28 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
 
     const handleSignal = (data) => {
       try {
-        const jdata = typeof data === 'string' ? JSON.parse(data) : data;
-        
+        const jdata = typeof data === "string" ? JSON.parse(data) : data;
+
         // Handle reconstruction image updates
-        if (jdata.name === 'sigExperimentImageUpdate' && jdata.detectorname === 'STORM' && jdata.image) {
+        if (
+          jdata.name === "sigExperimentImageUpdate" &&
+          jdata.detectorname === "STORM" &&
+          jdata.image
+        ) {
           const imgSrc = `data:image/jpeg;base64,${jdata.image}`;
           setReconImage(imgSrc);
         }
-        
+
         // Handle localization data for plotting
-        if (jdata.name === 'sigSTORMLocalizationUpdate' && jdata.localizations) {
+        if (
+          jdata.name === "sigSTORMLocalizationUpdate" &&
+          jdata.localizations
+        ) {
           setPlotData(jdata.localizations);
         }
-        
+
         // Handle statistics updates
-        if (jdata.name === 'sigSTORMStatisticsUpdate' && jdata.statistics) {
+        if (jdata.name === "sigSTORMStatisticsUpdate" && jdata.statistics) {
           setStatistics(jdata.statistics);
         }
       } catch (error) {
@@ -198,7 +219,8 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
         ctx.drawImage(img, 0, 0);
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const data = imageData.data;
-        let min = 255, max = 0;
+        let min = 255,
+          max = 0;
         for (let i = 0; i < data.length; i += 4) {
           const v = data[i];
           if (v < min) min = v;
@@ -230,12 +252,14 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
         setImageDims({ width: img.naturalWidth, height: img.naturalHeight });
         const stretchedUrl = await minMaxStretch(url);
         setLoadedImage(stretchedUrl);
-        dispatch(stormSlice.setCropRegion({
-          x: 0,
-          y: 0,
-          width: img.naturalWidth,
-          height: img.naturalHeight,
-        }));
+        dispatch(
+          stormSlice.setCropRegion({
+            x: 0,
+            y: 0,
+            width: img.naturalWidth,
+            height: img.naturalHeight,
+          })
+        );
       };
       img.src = url;
     } catch (e) {
@@ -314,12 +338,14 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
 
   const resetCropRegion = () => {
     if (loadedImage && imageDims.width && imageDims.height) {
-      dispatch(stormSlice.setCropRegion({
-        x: 0,
-        y: 0,
-        width: imageDims.width,
-        height: imageDims.height,
-      }));
+      dispatch(
+        stormSlice.setCropRegion({
+          x: 0,
+          y: 0,
+          width: imageDims.width,
+          height: imageDims.height,
+        })
+      );
     }
   };
 
@@ -327,7 +353,10 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
   const setStormParameter = async (paramName, value) => {
     const params = { [paramName]: value };
     try {
-      await apiSTORMControllerSetProcessingParameters({ ...stormParameters, ...params });
+      await apiSTORMControllerSetProcessingParameters({
+        ...stormParameters,
+        ...params,
+      });
       dispatch(stormSlice.setStormParameters(params));
     } catch (error) {
       console.error("Error setting STORM parameter:", error);
@@ -353,9 +382,9 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
           exposure_time: exposureTime,
         },
         processing_parameters: stormParameters,
-        save_enabled: acquisitionParameters.save_enabled
+        save_enabled: acquisitionParameters.save_enabled,
       };
-      
+
       await apiSTORMControllerStartReconstructionLocal(reconstructionRequest);
       dispatch(stormSlice.setIsReconstructing(true));
     } catch (error) {
@@ -375,7 +404,9 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
   const getReconstructionStatus = async () => {
     try {
       const status = await apiSTORMControllerGetReconstructionStatus();
-      dispatch(stormSlice.setIsReconstructing(status.isReconstructing || false));
+      dispatch(
+        stormSlice.setIsReconstructing(status.isReconstructing || false)
+      );
       setAcquisitionActive(!!status.acquisition_active);
       return status;
     } catch (error) {
@@ -389,7 +420,7 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
   const loadBrightfieldImage = async () => {
     try {
       // This endpoint doesn't exist yet, so placeholder
-      setBrightfieldImage('/api/placeholder/brightfield.jpg');
+      setBrightfieldImage("/api/placeholder/brightfield.jpg");
     } catch (error) {
       console.error("Error loading brightfield image:", error);
     }
@@ -407,9 +438,9 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
 
   // Handle accordion expand/collapse
   const handleAccordionChange = (stepIndex) => (event, isExpanded) => {
-    setExpandedAccordions(prev => ({
+    setExpandedAccordions((prev) => ({
       ...prev,
-      [stepIndex]: isExpanded
+      [stepIndex]: isExpanded,
     }));
     if (isExpanded) {
       setActiveStep(stepIndex);
@@ -440,20 +471,23 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
         onChange={handleAccordionChange(index)}
         sx={{
           mb: 1,
-          '&:before': { display: 'none' }, // Remove default accordion divider
-          boxShadow: 'none', // Remove shadow
-          border: '1px solid #e0e0e0', // Add subtle border
-          borderRadius: '4px !important'
+          "&:before": { display: "none" }, // Remove default accordion divider
+          boxShadow: "none", // Remove shadow
+          border: "1px solid #e0e0e0", // Add subtle border
+          borderRadius: "4px !important",
         }}
       >
         <AccordionSummary
           expandIcon={<ExpandMoreIcon />}
           sx={{
-            backgroundColor: activeStep === index ? '#f5f5f5' : 'transparent',
-            '&:hover': { backgroundColor: '#f9f9f9' }
+            backgroundColor: activeStep === index ? "#f5f5f5" : "transparent",
+            "&:hover": { backgroundColor: "#f9f9f9" },
           }}
         >
-          <Typography variant="subtitle1" sx={{ fontWeight: activeStep === index ? 600 : 400 }}>
+          <Typography
+            variant="subtitle1"
+            sx={{ fontWeight: activeStep === index ? 600 : 400 }}
+          >
             {index + 1}. {stepTitle}
           </Typography>
         </AccordionSummary>
@@ -469,14 +503,25 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
       case 0: // Crop Settings
         return (
           <Box>
-            <Typography variant="h6" gutterBottom>Crop Settings</Typography>
+            <Typography variant="h6" gutterBottom>
+              Crop Settings
+            </Typography>
             <Grid container spacing={2}>
               <Grid item xs={12}>
-                <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                  <Button variant="outlined" onClick={handleLoadImage} size="small">
+                <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
+                  <Button
+                    variant="outlined"
+                    onClick={handleLoadImage}
+                    size="small"
+                  >
                     Load Image
                   </Button>
-                  <Button variant="outlined" startIcon={<RefreshIcon />} onClick={resetCropRegion} size="small">
+                  <Button
+                    variant="outlined"
+                    startIcon={<RefreshIcon />}
+                    onClick={resetCropRegion}
+                    size="small"
+                  >
                     Reset Crop
                   </Button>
                 </Box>
@@ -485,10 +530,10 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
                   width={imageDims.width || 400}
                   height={imageDims.height || 300}
                   style={{
-                    border: '1px solid #ccc',
-                    cursor: isCropping ? 'crosshair' : 'pointer',
-                    maxWidth: '100%',
-                    maxHeight: '300px'
+                    border: "1px solid #ccc",
+                    cursor: isCropping ? "crosshair" : "pointer",
+                    maxWidth: "100%",
+                    maxHeight: "300px",
                   }}
                   onMouseDown={handleCropMouseDown}
                   onMouseMove={handleCropMouseMove}
@@ -501,7 +546,9 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
                   label="X Position"
                   type="number"
                   value={cropRegion.x}
-                  onChange={(e) => dispatch(stormSlice.setCropX(parseInt(e.target.value) || 0))}
+                  onChange={(e) =>
+                    dispatch(stormSlice.setCropX(parseInt(e.target.value) || 0))
+                  }
                   fullWidth
                   size="small"
                 />
@@ -511,7 +558,9 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
                   label="Y Position"
                   type="number"
                   value={cropRegion.y}
-                  onChange={(e) => dispatch(stormSlice.setCropY(parseInt(e.target.value) || 0))}
+                  onChange={(e) =>
+                    dispatch(stormSlice.setCropY(parseInt(e.target.value) || 0))
+                  }
                   fullWidth
                   size="small"
                 />
@@ -521,7 +570,11 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
                   label="Width"
                   type="number"
                   value={cropRegion.width}
-                  onChange={(e) => dispatch(stormSlice.setCropWidth(parseInt(e.target.value) || 1))}
+                  onChange={(e) =>
+                    dispatch(
+                      stormSlice.setCropWidth(parseInt(e.target.value) || 1)
+                    )
+                  }
                   fullWidth
                   size="small"
                 />
@@ -531,7 +584,11 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
                   label="Height"
                   type="number"
                   value={cropRegion.height}
-                  onChange={(e) => dispatch(stormSlice.setCropHeight(parseInt(e.target.value) || 1))}
+                  onChange={(e) =>
+                    dispatch(
+                      stormSlice.setCropHeight(parseInt(e.target.value) || 1)
+                    )
+                  }
                   fullWidth
                   size="small"
                 />
@@ -543,14 +600,21 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
       case 1: // Autofocus Settings
         return (
           <Box>
-            <Typography variant="h6" gutterBottom>Autofocus Settings</Typography>
+            <Typography variant="h6" gutterBottom>
+              Autofocus Settings
+            </Typography>
             <Grid container spacing={2}>
               <Grid item xs={12}>
                 <FormControlLabel
                   control={
                     <Checkbox
                       checked={acquisitionParameters.autofocus_enabled || false}
-                      onChange={e => setAcquisitionParameter('autofocus_enabled', e.target.checked)}
+                      onChange={(e) =>
+                        setAcquisitionParameter(
+                          "autofocus_enabled",
+                          e.target.checked
+                        )
+                      }
                     />
                   }
                   label="Enable Autofocus"
@@ -562,7 +626,12 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
                   label="Autofocus Interval (frames)"
                   type="number"
                   value={acquisitionParameters.autofocus_interval || 100}
-                  onChange={e => setAcquisitionParameter('autofocus_interval', parseInt(e.target.value) || 100)}
+                  onChange={(e) =>
+                    setAcquisitionParameter(
+                      "autofocus_interval",
+                      parseInt(e.target.value) || 100
+                    )
+                  }
                   size="small"
                 />
               </Grid>
@@ -572,7 +641,12 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
                   label="Focus Range (µm)"
                   type="number"
                   value={acquisitionParameters.focus_range || 5}
-                  onChange={e => setAcquisitionParameter('focus_range', parseFloat(e.target.value) || 5)}
+                  onChange={(e) =>
+                    setAcquisitionParameter(
+                      "focus_range",
+                      parseFloat(e.target.value) || 5
+                    )
+                  }
                   size="small"
                 />
               </Grid>
@@ -583,18 +657,24 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
       case 2: // Prefilter Settings
         return (
           <Box>
-            <Typography variant="h6" gutterBottom>Prefilter Settings</Typography>
+            <Typography variant="h6" gutterBottom>
+              Prefilter Settings
+            </Typography>
             <Grid container spacing={2}>
               <Grid item xs={6}>
                 <FormControl fullWidth size="small">
                   <InputLabel>Filter Type</InputLabel>
                   <Select
                     value={stormParameters.filter_type}
-                    onChange={e => setStormParameter('filter_type', e.target.value)}
+                    onChange={(e) =>
+                      setStormParameter("filter_type", e.target.value)
+                    }
                     label="Filter Type"
                   >
                     <MenuItem value="bandpass">Bandpass</MenuItem>
-                    <MenuItem value="difference_of_gaussians">Difference of Gaussians</MenuItem>
+                    <MenuItem value="difference_of_gaussians">
+                      Difference of Gaussians
+                    </MenuItem>
                     <MenuItem value="temporal_median">Temporal Median</MenuItem>
                   </Select>
                 </FormControl>
@@ -604,7 +684,12 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
                   control={
                     <Checkbox
                       checked={stormParameters.temporal_median_enabled}
-                      onChange={e => setStormParameter('temporal_median_enabled', e.target.checked)}
+                      onChange={(e) =>
+                        setStormParameter(
+                          "temporal_median_enabled",
+                          e.target.checked
+                        )
+                      }
                     />
                   }
                   label="Enable Temporal Median"
@@ -616,10 +701,12 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
                   label="Bandpass Center"
                   type="number"
                   value={stormParameters.bandpass_filter?.center || 40}
-                  onChange={e => setStormParameter('bandpass_filter', { 
-                    ...stormParameters.bandpass_filter, 
-                    center: parseFloat(e.target.value) || 40 
-                  })}
+                  onChange={(e) =>
+                    setStormParameter("bandpass_filter", {
+                      ...stormParameters.bandpass_filter,
+                      center: parseFloat(e.target.value) || 40,
+                    })
+                  }
                   size="small"
                 />
               </Grid>
@@ -629,10 +716,12 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
                   label="Bandpass Width"
                   type="number"
                   value={stormParameters.bandpass_filter?.width || 90}
-                  onChange={e => setStormParameter('bandpass_filter', { 
-                    ...stormParameters.bandpass_filter, 
-                    width: parseFloat(e.target.value) || 90 
-                  })}
+                  onChange={(e) =>
+                    setStormParameter("bandpass_filter", {
+                      ...stormParameters.bandpass_filter,
+                      width: parseFloat(e.target.value) || 90,
+                    })
+                  }
                   size="small"
                 />
               </Grid>
@@ -643,7 +732,9 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
       case 3: // Localization Settings
         return (
           <Box>
-            <Typography variant="h6" gutterBottom>Localization Settings</Typography>
+            <Typography variant="h6" gutterBottom>
+              Localization Settings
+            </Typography>
             <Grid container spacing={2}>
               <Grid item xs={6}>
                 <Typography gutterBottom>
@@ -654,7 +745,7 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
                   min={0.0}
                   max={1.0}
                   step={0.01}
-                  onChange={(e, value) => setStormParameter('threshold', value)}
+                  onChange={(e, value) => setStormParameter("threshold", value)}
                   valueLabelDisplay="auto"
                 />
               </Grid>
@@ -667,7 +758,9 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
                   min={7}
                   max={99}
                   step={2}
-                  onChange={(e, value) => setStormParameter('fit_roi_size', value)}
+                  onChange={(e, value) =>
+                    setStormParameter("fit_roi_size", value)
+                  }
                   valueLabelDisplay="auto"
                 />
               </Grid>
@@ -676,14 +769,24 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
                   <InputLabel>Fitting Method</InputLabel>
                   <Select
                     value={stormParameters.fitting_method}
-                    onChange={e => setStormParameter('fitting_method', e.target.value)}
+                    onChange={(e) =>
+                      setStormParameter("fitting_method", e.target.value)
+                    }
                     label="Fitting Method"
                   >
                     <MenuItem value="2D_Phasor_CPU">2D Phasor CPU</MenuItem>
-                    <MenuItem value="2D_Gauss_MLE_fixed_sigma">2D Gauss MLE Fixed Sigma</MenuItem>
-                    <MenuItem value="2D_Gauss_MLE_free_sigma">2D Gauss MLE Free Sigma</MenuItem>
-                    <MenuItem value="2D_Gauss_MLE_elliptical_sigma">2D Gauss MLE Elliptical Sigma</MenuItem>
-                    <MenuItem value="3D_Gauss_MLE_cspline_sigma">3D Gauss MLE CSpline Sigma</MenuItem>
+                    <MenuItem value="2D_Gauss_MLE_fixed_sigma">
+                      2D Gauss MLE Fixed Sigma
+                    </MenuItem>
+                    <MenuItem value="2D_Gauss_MLE_free_sigma">
+                      2D Gauss MLE Free Sigma
+                    </MenuItem>
+                    <MenuItem value="2D_Gauss_MLE_elliptical_sigma">
+                      2D Gauss MLE Elliptical Sigma
+                    </MenuItem>
+                    <MenuItem value="3D_Gauss_MLE_cspline_sigma">
+                      3D Gauss MLE CSpline Sigma
+                    </MenuItem>
                   </Select>
                 </FormControl>
               </Grid>
@@ -694,7 +797,9 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
       case 4: // N-Frames/Display Settings
         return (
           <Box>
-            <Typography variant="h6" gutterBottom>N-Frames/Display Settings</Typography>
+            <Typography variant="h6" gutterBottom>
+              N-Frames/Display Settings
+            </Typography>
             <Grid container spacing={2}>
               <Grid item xs={6}>
                 <TextField
@@ -702,7 +807,12 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
                   label="Max Frames (-1 for unlimited)"
                   type="number"
                   value={acquisitionParameters.max_frames}
-                  onChange={e => setAcquisitionParameter('max_frames', parseInt(e.target.value) || -1)}
+                  onChange={(e) =>
+                    setAcquisitionParameter(
+                      "max_frames",
+                      parseInt(e.target.value) || -1
+                    )
+                  }
                   size="small"
                 />
               </Grid>
@@ -714,7 +824,9 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
                   value={stormParameters.update_rate}
                   min={1}
                   max={100}
-                  onChange={(e, value) => setStormParameter('update_rate', value)}
+                  onChange={(e, value) =>
+                    setStormParameter("update_rate", value)
+                  }
                   valueLabelDisplay="auto"
                 />
               </Grid>
@@ -723,7 +835,9 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
                   <InputLabel>Save Format</InputLabel>
                   <Select
                     value={acquisitionParameters.save_format}
-                    onChange={e => setAcquisitionParameter('save_format', e.target.value)}
+                    onChange={(e) =>
+                      setAcquisitionParameter("save_format", e.target.value)
+                    }
                     label="Save Format"
                   >
                     <MenuItem value="tiff">TIFF</MenuItem>
@@ -736,7 +850,12 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
                   control={
                     <Checkbox
                       checked={acquisitionParameters.save_enabled}
-                      onChange={e => setAcquisitionParameter('save_enabled', e.target.checked)}
+                      onChange={(e) =>
+                        setAcquisitionParameter(
+                          "save_enabled",
+                          e.target.checked
+                        )
+                      }
                     />
                   }
                   label="Enable Saving"
@@ -749,20 +868,26 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
       case 5: // Start/Stop Acquisition
         return (
           <Box>
-            <Typography variant="h6" gutterBottom>Start/Stop Acquisition</Typography>
+            <Typography variant="h6" gutterBottom>
+              Start/Stop Acquisition
+            </Typography>
             <Grid container spacing={2}>
               <Grid item xs={12}>
                 <TextField
                   fullWidth
                   label="Session ID"
-                  value={acquisitionParameters.session_id || ''}
-                  onChange={e => setAcquisitionParameter('session_id', e.target.value)}
+                  value={acquisitionParameters.session_id || ""}
+                  onChange={(e) =>
+                    setAcquisitionParameter("session_id", e.target.value)
+                  }
                   size="small"
                   sx={{ mb: 2 }}
                 />
               </Grid>
               <Grid item xs={12}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                <Box
+                  sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}
+                >
                   <Typography variant="h6">Status:</Typography>
                   {acquisitionActive ? (
                     <>
@@ -785,7 +910,7 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
                   color="primary"
                   fullWidth
                 >
-                  {isReconstructing ? 'Starting...' : 'Start Acquisition'}
+                  {isReconstructing ? "Starting..." : "Start Acquisition"}
                 </Button>
               </Grid>
               <Grid item xs={6}>
@@ -813,44 +938,79 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
         );
 
       default:
-        return 'Unknown step';
+        return "Unknown step";
     }
   };
 
   return (
-    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'transparent' }}>
-      <Typography variant="h5" sx={{ p: 2, borderBottom: '1px solid #ddd' }}>
+    <Box
+      sx={{
+        height: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        backgroundColor: "transparent",
+      }}
+    >
+      <Typography variant="h5" sx={{ p: 2, borderBottom: "1px solid #ddd" }}>
         STORM Local Controller
       </Typography>
-      
-      <Grid container sx={{ flex: 1, height: 'calc(100vh - 80px)' }}>
+
+      <Grid container sx={{ flex: 1, height: "calc(100vh - 80px)" }}>
         {/* Left Column - Live View */}
-        <Grid item xs={4} sx={{ borderRight: '1px solid #ddd', height: '100%' }}>
-          <Box sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <Typography variant="h6" gutterBottom>Live View Stream</Typography>
-            <Box sx={{ flex: 1, minHeight: 400, border: '1px solid #ccc', mb: 2 }}>
+        <Grid
+          item
+          xs={4}
+          sx={{ borderRight: "1px solid #ddd", height: "100%" }}
+        >
+          <Box
+            sx={{
+              p: 2,
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            <Typography variant="h6" gutterBottom>
+              Live View Stream
+            </Typography>
+            <Box
+              sx={{ flex: 1, minHeight: 400, border: "1px solid #ccc", mb: 2 }}
+            >
               <LiveViewControlWrapper />
             </Box>
-            <Typography variant="h6" gutterBottom>Live View Settings</Typography>
+            <Typography variant="h6" gutterBottom>
+              Live View Settings
+            </Typography>
             <LiveViewSettings />
           </Box>
         </Grid>
 
         {/* Middle Column - Acquisition Settings Flow */}
-        <Grid item xs={4} sx={{ borderRight: '1px solid #ddd', height: '100%' }}>
-          <Box sx={{ p: 2, height: '100%', overflow: 'auto' }}>
-            <Typography variant="h6" gutterBottom>Acquisition Settings</Typography>
-            
+        <Grid
+          item
+          xs={4}
+          sx={{ borderRight: "1px solid #ddd", height: "100%" }}
+        >
+          <Box sx={{ p: 2, height: "100%", overflow: "auto" }}>
+            <Typography variant="h6" gutterBottom>
+              Acquisition Settings
+            </Typography>
+
             {/* Vertical Accordion Steps */}
-            <Box sx={{ mt: 2 }}>
-              {renderAccordionSteps()}
-            </Box>
+            <Box sx={{ mt: 2 }}>{renderAccordionSteps()}</Box>
           </Box>
         </Grid>
 
         {/* Right Column - Live Reconstruction */}
-        <Grid item xs={4} sx={{ height: '100%' }}>
-          <Box sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <Grid item xs={4} sx={{ height: "100%" }}>
+          <Box
+            sx={{
+              p: 2,
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
             <Tabs
               value={reconstructionTabIndex}
               onChange={handleReconstructionTabChange}
@@ -874,24 +1034,28 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
               </Tabs>
 
               <TabPanel value={visualizationTabIndex} index={0}>
-                <Box sx={{ textAlign: 'center' }}>
-                  <Typography variant="h6" gutterBottom>Reconstruction</Typography>
+                <Box sx={{ textAlign: "center" }}>
+                  <Typography variant="h6" gutterBottom>
+                    Reconstruction
+                  </Typography>
                   {reconImage ? (
                     <img
                       src={reconImage}
                       alt="Live STORM Reconstruction"
-                      style={{ maxWidth: '100%', maxHeight: 400 }}
+                      style={{ maxWidth: "100%", maxHeight: 400 }}
                     />
                   ) : (
-                    <Box sx={{ 
-                      width: '100%', 
-                      height: 300, 
-                      backgroundColor: '#f5f5f5', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center',
-                      border: '1px dashed #ccc'
-                    }}>
+                    <Box
+                      sx={{
+                        width: "100%",
+                        height: 300,
+                        backgroundColor: "#f5f5f5",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        border: "1px dashed #ccc",
+                      }}
+                    >
                       <Typography color="textSecondary">
                         No reconstruction available
                       </Typography>
@@ -901,10 +1065,12 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
               </TabPanel>
 
               <TabPanel value={visualizationTabIndex} index={1}>
-                <Typography variant="h6" gutterBottom>XY Plot</Typography>
+                <Typography variant="h6" gutterBottom>
+                  XY Plot
+                </Typography>
                 <Box sx={{ mb: 2 }}>
-                  <Button 
-                    variant="outlined" 
+                  <Button
+                    variant="outlined"
                     onClick={resetLocalizations}
                     size="small"
                   >
@@ -918,27 +1084,35 @@ const STORMControllerLocal = ({ hostIP, hostPort, WindowTitle }) => {
               </TabPanel>
 
               <TabPanel value={visualizationTabIndex} index={2}>
-                <Box sx={{ textAlign: 'center' }}>
-                  <Typography variant="h6" gutterBottom>Brightfield</Typography>
-                  <Button variant="outlined" onClick={loadBrightfieldImage} sx={{ mb: 2 }}>
+                <Box sx={{ textAlign: "center" }}>
+                  <Typography variant="h6" gutterBottom>
+                    Brightfield
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    onClick={loadBrightfieldImage}
+                    sx={{ mb: 2 }}
+                  >
                     Load Brightfield
                   </Button>
                   {brightfieldImage ? (
                     <img
                       src={brightfieldImage}
                       alt="Brightfield"
-                      style={{ maxWidth: '100%', maxHeight: 400 }}
+                      style={{ maxWidth: "100%", maxHeight: 400 }}
                     />
                   ) : (
-                    <Box sx={{ 
-                      width: '100%', 
-                      height: 300, 
-                      backgroundColor: '#f5f5f5', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center',
-                      border: '1px dashed #ccc'
-                    }}>
+                    <Box
+                      sx={{
+                        width: "100%",
+                        height: 300,
+                        backgroundColor: "#f5f5f5",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        border: "1px dashed #ccc",
+                      }}
+                    >
                       <Typography color="textSecondary">
                         No brightfield image loaded
                       </Typography>
