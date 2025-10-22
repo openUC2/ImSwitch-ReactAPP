@@ -12,6 +12,7 @@ import * as objectiveSlice from "../state/slices/ObjectiveSlice.js";
 import * as omeZarrSlice from "../state/slices/OmeZarrTileStreamSlice.js";
 import * as focusLockSlice from "../state/slices/FocusLockSlice.js";
 import * as mazeGameSlice from "../state/slices/MazeGameSlice.js";
+import * as uc2Slice from "../state/slices/UC2Slice.js";
 
 import { io } from "socket.io-client";
 
@@ -25,6 +26,10 @@ const WebSocketHandler = () => {
   const connectionSettingsState = useSelector(
     connectionSettingsSlice.getConnectionSettingsState
   );
+
+  // Extract connection settings for UC2 monitoring
+  const hostIP = connectionSettingsState.ip;
+  const hostPort = connectionSettingsState.apiPort;
 
   //##################################################################################
   useEffect(() => {
@@ -51,7 +56,7 @@ const WebSocketHandler = () => {
 
     // Store frame metadata for UC2F parsing
     let frameMetadata = null;
-    
+
     // Listen for binary frame events (UC2F packets)
     socket.on("frame", (buf, ack) => {
       /*
@@ -60,21 +65,23 @@ const WebSocketHandler = () => {
       console.log('WebSocketHandler: First 20 bytes:', new Uint8Array(buf.slice(0, 20)));
       */
       // Dispatch custom event with metadata for proper parsing
-      window.dispatchEvent(new CustomEvent("uc2:frame", { 
-        detail: { 
-          buffer: buf, 
-          metadata: frameMetadata 
-        }
-      }));
+      window.dispatchEvent(
+        new CustomEvent("uc2:frame", {
+          detail: {
+            buffer: buf,
+            metadata: frameMetadata,
+          },
+        })
+      );
       // console.log('WebSocketHandler: Dispatched uc2:frame event');
-      
+
       // Send acknowledgement to enable flow control
       // This tells the server we're ready for the next frame
-      if (ack && typeof ack === 'function') {
+      if (ack && typeof ack === "function") {
         ack();
       } else {
         // Fallback: emit explicit acknowledgement event
-        socket.emit('frame_ack');
+        socket.emit("frame_ack");
       }
     });
 
@@ -87,13 +94,13 @@ const WebSocketHandler = () => {
       //handle signal
       const dataJson = JSON.parse(data);
       //console.log(dataJson);
-      
+
       // Store frame metadata for UC2F parsing
       if (dataJson.name === "frame_meta" && dataJson.metadata) {
         // console.log('Received frame metadata:', dataJson.metadata);
         frameMetadata = dataJson.metadata;
         console.log("Frame id: ", frameMetadata.image_id);
-        
+
         // Update Redux with current frame ID
         if (frameMetadata.image_id !== undefined) {
           dispatch(liveStreamSlice.setCurrentFrameId(frameMetadata.image_id));
@@ -107,13 +114,16 @@ const WebSocketHandler = () => {
           // Note: Legacy JPEG image handling - kept for backward compatibility
           // The new LiveViewerGL component uses binary "frame" events instead
           dispatch(liveStreamSlice.setLiveViewImage(dataJson.image)); // REMOVED
-          
+
           // Track image format and set appropriate defaults based on streaming capability
           if (dataJson.format === "jpeg") {
             dispatch(liveStreamSlice.setImageFormat("jpeg"));
             // Only set defaults on first load or if values are at default
             const currentState = store.getState().liveStreamState;
-            if (currentState.minVal === 0 && (currentState.maxVal === 65535 || currentState.maxVal === 32768)) {
+            if (
+              currentState.minVal === 0 &&
+              (currentState.maxVal === 65535 || currentState.maxVal === 32768)
+            ) {
               // Set initial defaults for JPEG
               dispatch(liveStreamSlice.setMinVal(0));
               dispatch(liveStreamSlice.setMaxVal(255));
@@ -122,34 +132,43 @@ const WebSocketHandler = () => {
             // Binary streaming - use 16-bit range
             dispatch(liveStreamSlice.setImageFormat(dataJson.format || "raw"));
             const currentState = store.getState().liveStreamState;
-            if (currentState.minVal === 0 && currentState.maxVal === 65535 && currentState.backendCapabilities.binaryStreaming) {
+            if (
+              currentState.minVal === 0 &&
+              currentState.maxVal === 65535 &&
+              currentState.backendCapabilities.binaryStreaming
+            ) {
               // Set default range for binary streaming (common 16-bit range)
               dispatch(liveStreamSlice.setMinVal(0));
               dispatch(liveStreamSlice.setMaxVal(32768));
             }
           }
-          
+
           // Update pixel size if available
           if (dataJson.pixelsize) {
             dispatch(liveStreamSlice.setPixelSize(dataJson.pixelsize));
           }
-          
+
           // Track latency if server timestamp is available
           if (dataJson.server_timestamp) {
-            const latency = (Date.now() / 1000 - dataJson.server_timestamp) * 1000; // Convert to ms
+            const latency =
+              (Date.now() / 1000 - dataJson.server_timestamp) * 1000; // Convert to ms
             dispatch(liveStreamSlice.updateLatency(latency));
             // Log every 30th frame to avoid spam
             const currentState = store.getState().liveStreamState;
             if (currentState.stats.frameCount % 30 === 0) {
-              console.log(`Frame latency: ${latency.toFixed(1)}ms (avg: ${currentState.stats.avg_latency_ms.toFixed(1)}ms)`);
+              console.log(
+                `Frame latency: ${latency.toFixed(
+                  1
+                )}ms (avg: ${currentState.stats.avg_latency_ms.toFixed(1)}ms)`
+              );
             }
           }
-          
+
           // Send acknowledgement for JPEG frames to enable flow control
-          if (ack && typeof ack === 'function') {
+          if (ack && typeof ack === "function") {
             ack();
           } else {
-            socket.emit('frame_ack');
+            socket.emit("frame_ack");
           }
 
           /*
@@ -168,33 +187,27 @@ const WebSocketHandler = () => {
         //console.log("sigHistogramComputed", dataJson);
         // Handle histogram data similar to image updates
         if (dataJson.args && dataJson.args.p0 && dataJson.args.p1) {
-          dispatch(liveStreamSlice.setHistogramData({
-            x: dataJson.args.p0, // units
-            y: dataJson.args.p1  // hist
-          }));
+          dispatch(
+            liveStreamSlice.setHistogramData({
+              x: dataJson.args.p0, // units
+              y: dataJson.args.p1, // hist
+            })
+          );
         }
         //----------------------------------------------
-      } else if (
-        dataJson.name == "sigExperimentWorkflowUpdate") {
-          //Args: {"arg0":{"status":"completed","step_id":0,"name":"Move to point 0","total_step_number":2424}}
-          console.log("sigExperimentWorkflowUpdate", dataJson);
-          
-          dispatch(
-            experimentStateSlice.setStatus(dataJson.args.arg0.status)
-          );
-          dispatch(
-            experimentStateSlice.setStepID(dataJson.args.arg0.step_id)
-          );
-          dispatch(
-            experimentStateSlice.setStepName(dataJson.args.arg0.name)
-          );
-          dispatch(
-            experimentStateSlice.setTotalSteps(
-              dataJson.args.arg0.total_step_number
-            )
-          );
-        }
-      else if (dataJson.name == "sigExperimentImageUpdate") {
+      } else if (dataJson.name == "sigExperimentWorkflowUpdate") {
+        //Args: {"arg0":{"status":"completed","step_id":0,"name":"Move to point 0","total_step_number":2424}}
+        console.log("sigExperimentWorkflowUpdate", dataJson);
+
+        dispatch(experimentStateSlice.setStatus(dataJson.args.arg0.status));
+        dispatch(experimentStateSlice.setStepID(dataJson.args.arg0.step_id));
+        dispatch(experimentStateSlice.setStepName(dataJson.args.arg0.name));
+        dispatch(
+          experimentStateSlice.setTotalSteps(
+            dataJson.args.arg0.total_step_number
+          )
+        );
+      } else if (dataJson.name == "sigExperimentImageUpdate") {
         console.log("sigExperimentImageUpdate", dataJson);
 
         // update from tiled view
@@ -259,54 +272,76 @@ const WebSocketHandler = () => {
         //console.log("sigNSTORMImageAcquired", dataJson);
         // Update STORM frame count - expected p0 to be frame number
         if (dataJson.args && dataJson.args.p0 !== undefined) {
-          dispatch({ type: 'storm/setCurrentFrameNumber', payload: dataJson.args.p0 });
+          dispatch({
+            type: "storm/setCurrentFrameNumber",
+            payload: dataJson.args.p0,
+          });
         }
       } else if (dataJson.name == "sigSTORMReconstructionUpdated") {
         //console.log("sigSTORMReconstructionUpdated", dataJson);
         // Update STORM reconstructed image
         if (dataJson.args && dataJson.args.p0) {
-          dispatch({ type: 'storm/setReconstructedImage', payload: dataJson.args.p0 });
+          dispatch({
+            type: "storm/setReconstructedImage",
+            payload: dataJson.args.p0,
+          });
         }
       } else if (dataJson.name == "sigSTORMReconstructionStarted") {
         //console.log("sigSTORMReconstructionStarted", dataJson);
-        dispatch({ type: 'storm/setIsReconstructing', payload: true });
+        dispatch({ type: "storm/setIsReconstructing", payload: true });
       } else if (dataJson.name == "sigSTORMReconstructionStopped") {
         //console.log("sigSTORMReconstructionStopped", dataJson);
-        dispatch({ type: 'storm/setIsReconstructing', payload: false });
+        dispatch({ type: "storm/setIsReconstructing", payload: false });
       } else if (dataJson.name == "sigUpdatedSTORMReconstruction") {
         //console.log("sigUpdatedSTORMReconstruction", dataJson);
         // Handle localization data - expected p0 to be an object with x, y, and intensity arrays
         if (dataJson.args && dataJson.args.p0) {
           try {
             let localizationsData = dataJson.args.p0;
-            
+
             // If p0 is a string, parse it first
-            if (typeof localizationsData === 'string') {
+            if (typeof localizationsData === "string") {
               localizationsData = JSON.parse(localizationsData);
             }
-            
+
             // Check if it has the new format with separate x, y, intensity arrays
-            if (localizationsData.x && localizationsData.y && Array.isArray(localizationsData.x) && Array.isArray(localizationsData.y)) {
+            if (
+              localizationsData.x &&
+              localizationsData.y &&
+              Array.isArray(localizationsData.x) &&
+              Array.isArray(localizationsData.y)
+            ) {
               const localizations = [];
-              const minLength = Math.min(localizationsData.x.length, localizationsData.y.length);
-              
+              const minLength = Math.min(
+                localizationsData.x.length,
+                localizationsData.y.length
+              );
+
               for (let i = 0; i < minLength; i++) {
                 localizations.push({
                   x: localizationsData.x[i],
                   y: localizationsData.y[i],
-                  intensity: localizationsData.intensity ? localizationsData.intensity[i] : 0
+                  intensity: localizationsData.intensity
+                    ? localizationsData.intensity[i]
+                    : 0,
                 });
               }
-              
-              dispatch({ type: 'storm/addLocalizations', payload: localizations });
+
+              dispatch({
+                type: "storm/addLocalizations",
+                payload: localizations,
+              });
             } else if (Array.isArray(localizationsData)) {
               // Fallback for old format - array of objects
-              const localizations = localizationsData.map(loc => ({
+              const localizations = localizationsData.map((loc) => ({
                 x: loc.x || loc[0],
                 y: loc.y || loc[1],
-                intensity: loc.intensity || 0
+                intensity: loc.intensity || 0,
               }));
-              dispatch({ type: 'storm/addLocalizations', payload: localizations });
+              dispatch({
+                type: "storm/addLocalizations",
+                payload: localizations,
+              });
             }
           } catch (e) {
             console.warn("Failed to parse STORM localization data:", e);
@@ -318,28 +353,36 @@ const WebSocketHandler = () => {
         try {
           // Try the new format first (direct object)
           let focusData = dataJson.args || {};
-          
+
           // If args is available but not an object, try args.p0
           if (dataJson.args.p0) {
             focusData = dataJson.args.p0 || {};
           }
-          
+
           console.log("Parsed focus data:", focusData); // Debug log
-          
+
           // Support both old and new formats
           const focusValue = focusData.focus_value || focusData.focusValue || 0;
           const currentFocusMotorPosition = focusData.current_position || 0;
-          const setPointSignal = focusData.focus_setpoint || focusData.setPointSignal || 0;
+          const setPointSignal =
+            focusData.focus_setpoint || focusData.setPointSignal || 0;
           const timestamp = focusData.timestamp || Date.now();
-          
-          console.log("Dispatching focus values:", { focusValue, setPointSignal, currentFocusMotorPosition, timestamp }); // Debug log
-          
-          dispatch(focusLockSlice.addFocusValue({
+
+          console.log("Dispatching focus values:", {
             focusValue,
             setPointSignal,
             currentFocusMotorPosition,
-            timestamp
-          }));
+            timestamp,
+          }); // Debug log
+
+          dispatch(
+            focusLockSlice.addFocusValue({
+              focusValue,
+              setPointSignal,
+              currentFocusMotorPosition,
+              timestamp,
+            })
+          );
         } catch (error) {
           console.error("Error parsing focus value signal:", error);
         }
@@ -352,13 +395,15 @@ const WebSocketHandler = () => {
           if (dataJson.args && dataJson.args.p0) {
             stateData = dataJson.args.p0;
           }
-          
-          if (typeof stateData === 'object') {
+
+          if (typeof stateData === "object") {
             if (stateData.is_locked !== undefined) {
               dispatch(focusLockSlice.setFocusLocked(stateData.is_locked));
             }
             if (stateData.is_calibrating !== undefined) {
-              dispatch(focusLockSlice.setIsCalibrating(stateData.is_calibrating));
+              dispatch(
+                focusLockSlice.setIsCalibrating(stateData.is_calibrating)
+              );
             }
             if (stateData.is_measuring !== undefined) {
               dispatch(focusLockSlice.setIsMeasuring(stateData.is_measuring));
@@ -376,8 +421,8 @@ const WebSocketHandler = () => {
           if (dataJson.args && dataJson.args.p0) {
             progressData = dataJson.args.p0;
           }
-          
-          if (typeof progressData === 'object') {
+
+          if (typeof progressData === "object") {
             // Add calibration progress state to Redux if needed
             console.log("Calibration progress:", progressData);
             // TODO: Add calibration progress to Redux state if needed
@@ -396,7 +441,8 @@ const WebSocketHandler = () => {
       } else if (dataJson.name === "sigCounterUpdated") {
         // Handle maze game counter updates
         try {
-          const counter = dataJson.args?.p0 ?? dataJson.counter ?? dataJson.value ?? 0;
+          const counter =
+            dataJson.args?.p0 ?? dataJson.counter ?? dataJson.value ?? 0;
           dispatch(mazeGameSlice.setCounter(counter));
         } catch (error) {
           console.error("Error parsing counter signal:", error);
@@ -406,24 +452,28 @@ const WebSocketHandler = () => {
         try {
           if (dataJson.args.p0) {
             let rawImage = dataJson.args.p0.jpeg_b64;
-            
+
             // Remove the b'...' wrapper if present
-            if (typeof rawImage === 'string' && rawImage.startsWith("b'") && rawImage.endsWith("'")) {
+            if (
+              typeof rawImage === "string" &&
+              rawImage.startsWith("b'") &&
+              rawImage.endsWith("'")
+            ) {
               rawImage = rawImage.slice(2, -1);
-              
+
               // Convert escaped hex sequences (\xHH) to actual bytes
               const bytes = [];
               let i = 0;
               while (i < rawImage.length) {
-                if (rawImage[i] === '\\' && rawImage[i + 1] === 'x') {
+                if (rawImage[i] === "\\" && rawImage[i + 1] === "x") {
                   // Parse hex escape sequence
                   const hex = rawImage.slice(i + 2, i + 4);
                   bytes.push(parseInt(hex, 16));
                   i += 4;
-                } else if (rawImage[i] === '\\' && rawImage[i + 1] === 'r') {
+                } else if (rawImage[i] === "\\" && rawImage[i + 1] === "r") {
                   bytes.push(13); // \r
                   i += 2;
-                } else if (rawImage[i] === '\\' && rawImage[i + 1] === 'n') {
+                } else if (rawImage[i] === "\\" && rawImage[i + 1] === "n") {
                   bytes.push(10); // \n
                   i += 2;
                 } else {
@@ -431,19 +481,25 @@ const WebSocketHandler = () => {
                   i += 1;
                 }
               }
-              
+
               // Convert bytes to Base64
               const uint8Array = new Uint8Array(bytes);
-              let binaryString = '';
+              let binaryString = "";
               for (let i = 0; i < uint8Array.length; i++) {
                 binaryString += String.fromCharCode(uint8Array[i]);
               }
               const base64 = btoa(binaryString);
-              
-              dispatch(mazeGameSlice.setPreviewImage(`data:image/png;base64,${base64}`));
+
+              dispatch(
+                mazeGameSlice.setPreviewImage(`data:image/png;base64,${base64}`)
+              );
             } else {
               // If it's already a base64 string, use it directly
-              dispatch(mazeGameSlice.setPreviewImage(`data:image/png;base64,${rawImage}`));
+              dispatch(
+                mazeGameSlice.setPreviewImage(
+                  `data:image/png;base64,${rawImage}`
+                )
+              );
             }
           }
         } catch (error) {
@@ -451,8 +507,6 @@ const WebSocketHandler = () => {
         }
       }
       // Name: sigUpdatedSTORMReconstruction => Args: {"p0":[[252.2014923095703,298.37579345703125,2814.840087890625,206508.3125,1.037859320640564]}
-
-
       else {
         //console.warn("WebSocket: Unhandled signal from socket:", dataJson.name);
         //console.warn(dataJson);
@@ -480,6 +534,48 @@ const WebSocketHandler = () => {
       socket.close();
     };
   }, [dispatch, connectionSettingsState]);
+
+  // Global UC2 connection monitoring
+  useEffect(() => {
+    // Skip monitoring if backend connection is not configured
+    if (!hostIP || !hostPort) {
+      dispatch(uc2Slice.setUc2Connected(false));
+      return;
+    }
+
+    const checkUc2Connection = async () => {
+      try {
+        // Use UC2-specific endpoint following ImSwitch API patterns
+        const response = await fetch(
+          `${hostIP}:${hostPort}/UC2ConfigController/is_connected`,
+          {
+            method: "GET",
+            // Add timeout to prevent hanging requests
+            signal: AbortSignal.timeout(8000),
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          dispatch(uc2Slice.setUc2Connected(data === true));
+        } else {
+          dispatch(uc2Slice.setUc2Connected(false));
+        }
+      } catch (error) {
+        // Connection failed - expected when backend unavailable
+        dispatch(uc2Slice.setUc2Connected(false));
+      }
+    };
+
+    // Initial connection check
+    checkUc2Connection();
+
+    // Monitor every 10 seconds for global usage (less frequent than component-specific)
+    const intervalId = setInterval(checkUc2Connection, 10000);
+
+    // Cleanup interval on unmount
+    return () => clearInterval(intervalId);
+  }, [hostIP, hostPort, dispatch]);
 
   return null; // This component does not render anything, just manages the WebSocket
 };

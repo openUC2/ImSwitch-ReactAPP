@@ -228,20 +228,6 @@ const UC2Controller = () => {
     fetchAvailableSetups();
   }, [dispatch, fetchAvailableSetups]);
 
-  useEffect(() => {
-    const checkConnection = () => {
-      fetch(`${hostIP}:${hostPort}/UC2ConfigController/is_connected`)
-        .then((res) => res.json())
-        .then((data) => {
-          dispatch(uc2Slice.setUc2Connected(data === true));
-        })
-        .catch(() => dispatch(uc2Slice.setUc2Connected(false)));
-    };
-    checkConnection();
-    const intervalId = setInterval(checkConnection, 5000);
-    return () => clearInterval(intervalId);
-  }, [hostIP, hostPort, dispatch]);
-
   const handleTabChange = (event, newValue) => {
     dispatch(uc2Slice.setTabIndex(newValue));
   };

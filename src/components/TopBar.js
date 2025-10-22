@@ -1,13 +1,18 @@
-import { Box, Toolbar, IconButton, Typography } from "@mui/material";
+import { Toolbar, Typography, IconButton, Box } from "@mui/material";
 import MenuOpen from "@mui/icons-material/MenuOpen";
-import ThemeSwitcher from "./ThemeSwitcher";
+import SettingsMenu from "./navigation/SettingsMenu.jsx";
 
-function TopBar({
+/**
+ * ImSwitch TopBar Component
+ */
+const TopBar = ({
   isMobile,
   sidebarVisible,
   setSidebarVisible,
   selectedPlugin,
-}) {
+  drawerWidth,
+  onSettingsNavigate,
+}) => {
   return (
     <Box
       sx={(theme) => ({
@@ -49,12 +54,10 @@ function TopBar({
           {isMobile ? selectedPlugin : `ImSwitch UI - ${selectedPlugin}`}
         </Typography>
 
-        <Box sx={{ ml: "auto" }}>
-          <ThemeSwitcher isMobile={isMobile} />
-        </Box>
+        <SettingsMenu onNavigate={onSettingsNavigate} />
       </Toolbar>
     </Box>
   );
-}
+};
 
 export default TopBar;

@@ -384,7 +384,6 @@ function App() {
   return (
     <ThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
       <WebSocketHandler />
-      {/* headless */}
       <WebSocketProvider hostIP={hostIP}>
         <CssBaseline />
         {/* Global Status/Notification Message */}
@@ -394,7 +393,6 @@ function App() {
           onClose={() => dispatch(clearNotification())}
         />
         <Box sx={{ display: "flex" }}>
-          {/* ImSwitch Navigation Drawer - Modular component following Copilot Instructions */}
           <NavigationDrawer
             sidebarVisible={sidebarVisible}
             setSidebarVisible={setSidebarVisible}
@@ -411,9 +409,9 @@ function App() {
             setSidebarVisible={setSidebarVisible}
             selectedPlugin={selectedPlugin}
             drawerWidth={drawerWidth}
+            onSettingsNavigate={handlePluginChange} // Pass existing navigation handler
           />
 
-          {/* Main content area */}
           <Box
             component="main"
             sx={{
