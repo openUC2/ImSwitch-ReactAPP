@@ -7,6 +7,7 @@ import {
   setApiPort,
 } from "../state/slices/ConnectionSettingsSlice.js";
 import * as uc2Slice from "../state/slices/UC2Slice.js";
+import * as webSocketSlice from "../state/slices/WebSocketSlice.js";
 import {
   Box,
   TextField,
@@ -34,6 +35,7 @@ import {
   Warning,
   Info,
   Save,
+  Settings,
 } from "@mui/icons-material";
 
 /**
@@ -48,6 +50,11 @@ function ConnectionSettings() {
   // Get connection status from Redux state
   const uc2State = useSelector(uc2Slice.getUc2State);
   const isBackendConnected = uc2State.uc2Connected;
+
+  // Get WebSocket connection status from Redux state
+  const webSocketState = useSelector(webSocketSlice.getWebSocketState);
+  const websocketTestStatus = webSocketState.testStatus;
+  const isWebSocketConnected = webSocketState.connected;
 
   // Local state, initialized from Redux
   const [hostProtocol, setHostProtocol] = useState(
@@ -80,7 +87,7 @@ function ConnectionSettings() {
         setNotification({ message: "Settings saved!", type: "success" })
       );
 
-      // Trigger immediate connection check
+      // Trigger immediate connection check including WebSocket test
       setIsTestingConnection(true);
 
       // Dispatch custom event to trigger connection check in WebSocketHandler
@@ -89,20 +96,21 @@ function ConnectionSettings() {
           detail: {
             ip: fullIP,
             port: apiPort,
+            websocketPort: websocketPort, // Add WebSocket port to test
           },
         })
       );
 
-      // Give it a moment to complete the check
+      // Give it a moment to complete both tests
       setTimeout(() => {
         setIsTestingConnection(false);
         dispatch(
           setNotification({
-            message: "Connection test completed - check status indicator",
+            message: "Connection tests completed - check status indicators",
             type: "info",
           })
         );
-      }, 3000);
+      }, 6000); // Longer timeout for both HTTP and WebSocket tests
     } catch (e) {
       dispatch(
         setNotification({ message: "Error saving settings!", type: "error" })
@@ -115,6 +123,37 @@ function ConnectionSettings() {
     `${hostProtocol}${hostIP}` !== (connectionSettings.ip || "") ||
     websocketPort !== (connectionSettings.websocketPort || "") ||
     apiPort !== (connectionSettings.apiPort || "");
+
+  const getWebSocketStatusColor = (status) => {
+    switch (status) {
+      case "success":
+        return "success";
+      case "testing":
+        return "info";
+      case "failed":
+      case "timeout":
+        return "error";
+      default:
+        return "default";
+    }
+  };
+
+  const getWebSocketStatusLabel = (status) => {
+    switch (status) {
+      case "success":
+        return "Connected";
+      case "testing":
+        return "Testing...";
+      case "failed":
+        return "Failed";
+      case "timeout":
+        return "Timeout";
+      case "idle":
+        return "Not Tested";
+      default:
+        return "Unknown";
+    }
+  };
 
   return (
     <Box sx={{ p: 3, maxWidth: 800, mx: "auto" }}>
@@ -131,7 +170,8 @@ function ConnectionSettings() {
       {/* Connection Status Alert */}
       <Alert
         severity={
-          isBackendConnected
+          isBackendConnected &&
+          (websocketTestStatus === "success" || isWebSocketConnected)
             ? "success"
             : hasConnectionSettings
             ? "error"
@@ -148,8 +188,13 @@ function ConnectionSettings() {
           <Typography variant="body2">
             {isBackendConnected ? (
               <>
-                <strong>Backend Connected:</strong> Ready for microscope control
-                and live streaming.
+                <strong>Backend Connected:</strong> Ready for microscope
+                control.
+                {websocketTestStatus === "success" || isWebSocketConnected ? (
+                  <span> WebSocket also ready for live streaming.</span>
+                ) : (
+                  <span> Configure WebSocket port for live streaming.</span>
+                )}
               </>
             ) : hasConnectionSettings ? (
               <>
@@ -173,11 +218,24 @@ function ConnectionSettings() {
             <Cable color="primary" />
             <Typography variant="h6">Backend Configuration</Typography>
             <Chip
-              label={isBackendConnected ? "Connected" : "Disconnected"}
+              label={isBackendConnected ? "API Connected" : "API Disconnected"}
               color={isBackendConnected ? "success" : "error"}
               size="small"
               variant="outlined"
             />
+            {websocketPort && (
+              <Chip
+                label={`WebSocket ${getWebSocketStatusLabel(
+                  websocketTestStatus
+                )}`}
+                color={getWebSocketStatusColor(websocketTestStatus)}
+                size="small"
+                variant="outlined"
+                icon={
+                  websocketTestStatus === "testing" ? <Settings /> : undefined
+                }
+              />
+            )}
           </Box>
 
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
@@ -263,19 +321,33 @@ function ConnectionSettings() {
                       <Computer fontSize="small" />
                     </ListItemIcon>
                     <ListItemText
-                      primary="Backend URL"
+                      primary="Backend API"
                       secondary={`${hostProtocol}${hostIP}:${apiPort}`}
                     />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemIcon>
-                      <Wifi fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary="WebSocket URL"
-                      secondary={`${hostProtocol}${hostIP}:${websocketPort}`}
+                    <Chip
+                      label={isBackendConnected ? "Connected" : "Disconnected"}
+                      color={isBackendConnected ? "success" : "error"}
+                      size="small"
+                      variant="outlined"
                     />
                   </ListItem>
+                  {websocketPort && (
+                    <ListItem>
+                      <ListItemIcon>
+                        <Wifi fontSize="small" />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary="WebSocket Connection"
+                        secondary={`ws://${hostIP}:${websocketPort}`}
+                      />
+                      <Chip
+                        label={getWebSocketStatusLabel(websocketTestStatus)}
+                        color={getWebSocketStatusColor(websocketTestStatus)}
+                        size="small"
+                        variant="outlined"
+                      />
+                    </ListItem>
+                  )}
                 </List>
               </Paper>
             </>

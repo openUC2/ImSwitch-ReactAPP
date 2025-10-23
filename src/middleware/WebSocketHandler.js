@@ -75,12 +75,105 @@ const WebSocketHandler = () => {
     [hostIP, hostPort, dispatch] // Dependencies for useCallback
   );
 
+  // WebSocket connection test
+  const testWebSocketConnection = useCallback(
+    async (ip, port) => {
+      const testIP = ip || hostIP;
+      const testPort = port || connectionSettingsState.websocketPort;
+
+      if (!testIP || !testPort) {
+        dispatch(webSocketSlice.setTestStatus("failed"));
+        return false;
+      }
+
+      // Extract protocol from IP settings (following Copilot Instructions)
+      let protocol = "http"; // Default fallback
+      let cleanIP = testIP;
+
+      if (testIP.startsWith("https://")) {
+        protocol = "https";
+        cleanIP = testIP.replace(/^https?:\/\//, "");
+      } else if (testIP.startsWith("http://")) {
+        protocol = "http";
+        cleanIP = testIP.replace(/^https?:\/\//, "");
+      } else {
+        // No protocol specified, use HTTP as default
+        cleanIP = testIP;
+      }
+
+      const socketIOUrl = `${protocol}://${cleanIP}:${testPort}`;
+
+      console.log(
+        `Testing Socket.IO connection to: ${socketIOUrl} (protocol: ${protocol})`
+      );
+      dispatch(webSocketSlice.setTestStatus("testing"));
+
+      return new Promise((resolve) => {
+        try {
+          const testSocket = io(socketIOUrl, {
+            transports: ["websocket"], // Force WebSocket transport
+            timeout: 5000,
+            forceNew: true, // Create new connection for test
+            autoConnect: false, // Manual connection control
+            secure: protocol === "https", // Enable secure connection for HTTPS
+          });
+
+          const timeout = setTimeout(() => {
+            testSocket.disconnect();
+            dispatch(webSocketSlice.setTestStatus("timeout"));
+            console.log("Socket.IO test: Timeout after 5 seconds");
+            resolve(false);
+          }, 5000);
+
+          testSocket.on("connect", () => {
+            clearTimeout(timeout);
+            dispatch(webSocketSlice.setTestStatus("success"));
+            console.log(
+              `Socket.IO test: Connection successful via ${protocol}`
+            );
+            testSocket.disconnect(); // Disconnect test connection immediately
+            resolve(true);
+          });
+
+          testSocket.on("connect_error", (error) => {
+            clearTimeout(timeout);
+            dispatch(webSocketSlice.setTestStatus("failed"));
+            console.log(
+              `Socket.IO test: Connection failed via ${protocol}`,
+              error.message
+            );
+            testSocket.disconnect();
+            resolve(false);
+          });
+
+          // Start the connection test
+          testSocket.connect();
+        } catch (error) {
+          dispatch(webSocketSlice.setTestStatus("failed"));
+          console.error("Socket.IO test: Exception during connection", error);
+          resolve(false);
+        }
+      });
+    },
+    [hostIP, connectionSettingsState.websocketPort, dispatch]
+  );
+
   // Listen for manual connection check requests
   useEffect(() => {
-    const handleManualConnectionCheck = (event) => {
-      console.log("Manual UC2 connection check triggered");
-      const { ip, port } = event.detail || {};
-      checkUc2Connection(ip, port);
+    const handleManualConnectionCheck = async (event) => {
+      console.log("Manual connection check triggered (HTTP + WebSocket)");
+      const { ip, port, websocketPort } = event.detail || {};
+
+      // Test HTTP connection first
+      const httpResult = await checkUc2Connection(ip, port);
+
+      // Test WebSocket connection if websocketPort is provided
+      if (websocketPort) {
+        const wsResult = await testWebSocketConnection(ip, websocketPort);
+        console.log(
+          `Connection test results - HTTP: ${httpResult}, WebSocket: ${wsResult}`
+        );
+      }
     };
 
     // Add event listener for manual connection checks
@@ -95,16 +188,46 @@ const WebSocketHandler = () => {
         handleManualConnectionCheck
       );
     };
-  }, [checkUc2Connection]);
+  }, [checkUc2Connection, testWebSocketConnection]);
+
+  // Listen for WebSocket test requests
+  useEffect(() => {
+    const handleWebSocketTest = async (event) => {
+      console.log("WebSocket connection test triggered");
+      const { ip, websocketPort } = event.detail || {};
+
+      const result = await testWebSocketConnection(ip, websocketPort);
+      console.log(`WebSocket test result: ${result}`);
+    };
+
+    window.addEventListener("imswitch:testWebSocket", handleWebSocketTest);
+
+    return () => {
+      window.removeEventListener("imswitch:testWebSocket", handleWebSocketTest);
+    };
+  }, [testWebSocketConnection]);
 
   //##################################################################################
   useEffect(() => {
-    //create the socket
-    const adress =
-      connectionSettingsState.ip + ":" + connectionSettingsState.websocketPort;
-    console.log("WebSocket", adress);
-    const socket = io(adress, {
+    // Extract protocol from connection settings
+    let protocol = "http"; // Default fallback
+    let cleanIP = connectionSettingsState.ip;
+
+    if (connectionSettingsState.ip.startsWith("https://")) {
+      protocol = "https";
+      cleanIP = connectionSettingsState.ip.replace(/^https?:\/\//, "");
+    } else if (connectionSettingsState.ip.startsWith("http://")) {
+      protocol = "http";
+      cleanIP = connectionSettingsState.ip.replace(/^https?:\/\//, "");
+    }
+
+    // Create the socket with proper protocol
+    const address = `${protocol}://${cleanIP}:${connectionSettingsState.websocketPort}`;
+    console.log(`WebSocket connecting to: ${address} (protocol: ${protocol})`);
+
+    const socket = io(address, {
       transports: ["websocket"],
+      secure: protocol === "https", // Enable secure connection for HTTPS
     });
 
     //listen to all
