@@ -20,7 +20,7 @@ export default function SystemSettings() {
   const [isImSwitchRunning, setIsImSwitchRunning] = useState(false);
   const [diskUsage, setDiskUsage] = useState(null);
 
-  const base = `${hostIP}:${hostPort}`;
+  const base = `${hostIP}:${hostPort}/UC2ConfigController`;
 
   const callEndpoint = async (url) => {
     try {
@@ -50,7 +50,7 @@ export default function SystemSettings() {
   useEffect(() => {
     const intervalId = setInterval(() => {
       fetchDiskUsage();
-    }, 10000);
+    }, 1000);
 
     return () => clearInterval(intervalId);
   }, []);
@@ -62,6 +62,8 @@ export default function SystemSettings() {
       if (response.ok) {
         const data = await response.json();
         setDiskUsage(data.usage); // e.g. "75%"
+        console.log("URL:", `${base}/getDiskUsage`);
+        console.log("Disk usage fetched:", data.usage);
       } else {
         console.error("Failed to fetch disk usage");
       }

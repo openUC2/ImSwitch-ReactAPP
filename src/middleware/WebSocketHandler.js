@@ -1,5 +1,4 @@
-import React, { useEffect } from "react";
-
+import { useEffect, useRef, useCallback } from "react"; // Add useCallback import
 import { useDispatch, useSelector } from "react-redux";
 import store from "../state/store.js";
 import * as connectionSettingsSlice from "../state/slices/ConnectionSettingsSlice.js";
@@ -18,18 +17,85 @@ import { io } from "socket.io-client";
 
 //##################################################################################
 const WebSocketHandler = () => {
-  console.log("WebSocket WebSocketHandler");
-  // redux dispatcher
   const dispatch = useDispatch();
+  const connectionCheckRef = useRef(null);
 
   // Access global Redux state
   const connectionSettingsState = useSelector(
     connectionSettingsSlice.getConnectionSettingsState
   );
-
-  // Extract connection settings for UC2 monitoring
   const hostIP = connectionSettingsState.ip;
   const hostPort = connectionSettingsState.apiPort;
+
+  // Memoized connection check function - following React best practices
+  const checkUc2Connection = useCallback(
+    async (ip = hostIP, port = hostPort) => {
+      // Skip monitoring if backend connection is not configured
+      if (!ip || !port) {
+        dispatch(uc2Slice.setUc2Connected(false));
+        return;
+      }
+
+      try {
+        console.log(`Checking UC2 connection to ${ip}:${port}`);
+
+        const response = await fetch(
+          `${ip}:${port}/UC2ConfigController/is_connected`,
+          {
+            method: "GET",
+            signal: AbortSignal.timeout(8000),
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          const isConnected = data === true;
+          console.log(
+            `UC2 connection check result: ${
+              isConnected ? "Connected" : "Not connected"
+            }`
+          );
+          dispatch(uc2Slice.setUc2Connected(isConnected));
+          return isConnected;
+        } else {
+          console.log(`UC2 connection check: HTTP ${response.status}`);
+          dispatch(uc2Slice.setUc2Connected(false));
+          return false;
+        }
+      } catch (error) {
+        if (error.name === "AbortError") {
+          console.log("UC2 connection check: Request timeout");
+        } else {
+          console.log("UC2 connection check: Network error", error.message);
+        }
+        dispatch(uc2Slice.setUc2Connected(false));
+        return false;
+      }
+    },
+    [hostIP, hostPort, dispatch] // Dependencies for useCallback
+  );
+
+  // Listen for manual connection check requests
+  useEffect(() => {
+    const handleManualConnectionCheck = (event) => {
+      console.log("Manual UC2 connection check triggered");
+      const { ip, port } = event.detail || {};
+      checkUc2Connection(ip, port);
+    };
+
+    // Add event listener for manual connection checks
+    window.addEventListener(
+      "imswitch:checkConnection",
+      handleManualConnectionCheck
+    );
+
+    return () => {
+      window.removeEventListener(
+        "imswitch:checkConnection",
+        handleManualConnectionCheck
+      );
+    };
+  }, [checkUc2Connection]);
 
   //##################################################################################
   useEffect(() => {
@@ -195,7 +261,7 @@ const WebSocketHandler = () => {
           );
         }
         //----------------------------------------------
-      } else if (dataJson.name == "sigExperimentWorkflowUpdate") {
+      } else if (dataJson.name === "sigExperimentWorkflowUpdate") {
         //Args: {"arg0":{"status":"completed","step_id":0,"name":"Move to point 0","total_step_number":2424}}
         console.log("sigExperimentWorkflowUpdate", dataJson);
 
@@ -207,12 +273,12 @@ const WebSocketHandler = () => {
             dataJson.args.arg0.total_step_number
           )
         );
-      } else if (dataJson.name == "sigExperimentImageUpdate") {
+      } else if (dataJson.name === "sigExperimentImageUpdate") {
         console.log("sigExperimentImageUpdate", dataJson);
 
         // update from tiled view
         dispatch(tileStreamSlice.setTileViewImage(dataJson.image));
-      } else if (dataJson.name == "sigObjectiveChanged") {
+      } else if (dataJson.name === "sigObjectiveChanged") {
         console.log("sigObjectiveChanged", dataJson);
         //update redux state
         // TODO add check if parameter exists
@@ -234,7 +300,7 @@ const WebSocketHandler = () => {
               # pixelsize, NA, magnification, objectiveName, FOVx, FOVy
         */
         //----------------------------------------------
-      } else if (dataJson.name == "sigUpdateMotorPosition") {
+      } else if (dataJson.name === "sigUpdateMotorPosition") {
         //console.log("sigUpdateMotorPosition", dataJson);
         //parse
         try {
@@ -263,12 +329,12 @@ const WebSocketHandler = () => {
           console.error("sigUpdateMotorPosition", error);
         }
         //----------------------------------------------
-      } else if (dataJson.name == "sigUpdateOMEZarrStore") {
+      } else if (dataJson.name === "sigUpdateOMEZarrStore") {
         console.log("sigUpdateOMEZarrStore", dataJson);
         //update redux state
         dispatch(omeZarrSlice.setZarrUrl(dataJson.args.p0));
         dispatch(omeZarrSlice.tileArrived());
-      } else if (dataJson.name == "sigNSTORMImageAcquired") {
+      } else if (dataJson.name === "sigNSTORMImageAcquired") {
         //console.log("sigNSTORMImageAcquired", dataJson);
         // Update STORM frame count - expected p0 to be frame number
         if (dataJson.args && dataJson.args.p0 !== undefined) {
@@ -277,7 +343,7 @@ const WebSocketHandler = () => {
             payload: dataJson.args.p0,
           });
         }
-      } else if (dataJson.name == "sigSTORMReconstructionUpdated") {
+      } else if (dataJson.name === "sigSTORMReconstructionUpdated") {
         //console.log("sigSTORMReconstructionUpdated", dataJson);
         // Update STORM reconstructed image
         if (dataJson.args && dataJson.args.p0) {
@@ -286,13 +352,13 @@ const WebSocketHandler = () => {
             payload: dataJson.args.p0,
           });
         }
-      } else if (dataJson.name == "sigSTORMReconstructionStarted") {
+      } else if (dataJson.name === "sigSTORMReconstructionStarted") {
         //console.log("sigSTORMReconstructionStarted", dataJson);
         dispatch({ type: "storm/setIsReconstructing", payload: true });
-      } else if (dataJson.name == "sigSTORMReconstructionStopped") {
+      } else if (dataJson.name === "sigSTORMReconstructionStopped") {
         //console.log("sigSTORMReconstructionStopped", dataJson);
         dispatch({ type: "storm/setIsReconstructing", payload: false });
-      } else if (dataJson.name == "sigUpdatedSTORMReconstruction") {
+      } else if (dataJson.name === "sigUpdatedSTORMReconstruction") {
         //console.log("sigUpdatedSTORMReconstruction", dataJson);
         // Handle localization data - expected p0 to be an object with x, y, and intensity arrays
         if (dataJson.args && dataJson.args.p0) {
@@ -535,47 +601,27 @@ const WebSocketHandler = () => {
     };
   }, [dispatch, connectionSettingsState]);
 
-  // Global UC2 connection monitoring
+  // Global UC2 connection monitoring (periodic checks)
   useEffect(() => {
-    // Skip monitoring if backend connection is not configured
-    if (!hostIP || !hostPort) {
-      dispatch(uc2Slice.setUc2Connected(false));
-      return;
+    // Clear any existing interval
+    if (connectionCheckRef.current) {
+      clearInterval(connectionCheckRef.current);
     }
-
-    const checkUc2Connection = async () => {
-      try {
-        // Use UC2-specific endpoint following ImSwitch API patterns
-        const response = await fetch(
-          `${hostIP}:${hostPort}/UC2ConfigController/is_connected`,
-          {
-            method: "GET",
-            // Add timeout to prevent hanging requests
-            signal: AbortSignal.timeout(8000),
-          }
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          dispatch(uc2Slice.setUc2Connected(data === true));
-        } else {
-          dispatch(uc2Slice.setUc2Connected(false));
-        }
-      } catch (error) {
-        // Connection failed - expected when backend unavailable
-        dispatch(uc2Slice.setUc2Connected(false));
-      }
-    };
 
     // Initial connection check
     checkUc2Connection();
 
-    // Monitor every 10 seconds for global usage (less frequent than component-specific)
-    const intervalId = setInterval(checkUc2Connection, 10000);
+    // Set up periodic monitoring
+    connectionCheckRef.current = setInterval(() => {
+      checkUc2Connection();
+    }, 10000); // Every 10 seconds
 
-    // Cleanup interval on unmount
-    return () => clearInterval(intervalId);
-  }, [hostIP, hostPort, dispatch]);
+    return () => {
+      if (connectionCheckRef.current) {
+        clearInterval(connectionCheckRef.current);
+      }
+    };
+  }, [checkUc2Connection]); // Now using the memoized function
 
   return null; // This component does not render anything, just manages the WebSocket
 };

@@ -83,7 +83,6 @@ const UC2Controller = () => {
   const restartSoftware = uc2State.restartSoftware;
   const serialPayload = uc2State.serialPayload;
   const serialLog = uc2State.serialLog;
-  const uc2Connected = uc2State.uc2Connected;
   const selectedFileForEdit = uc2State.selectedFileForEdit;
   const editorJson = uc2State.editorJson;
   const editorJsonText = uc2State.editorJsonText;

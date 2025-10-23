@@ -6,7 +6,7 @@ import { darkTheme, lightTheme } from "./themes";
 
 import AboutPage from "./components/AboutPage.js";
 import BlocklyController from "./components/BlocklyController.js";
-import ConnectionSettings from "./components/ConnectionSettings.js";
+import ConnectionSettings from "./components/ConnectionSettings.jsx";
 import DemoController from "./components/DemoController.js";
 import DetectorTriggerController from "./components/DetectorTriggerController.js";
 import ExtendedLEDMatrixController from "./components/ExtendedLEDMatrixController.jsx";
