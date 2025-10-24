@@ -5,11 +5,9 @@ import {
   AutoFixHigh as WizardIcon,
   CheckCircle,
   ErrorOutline,
-  Computer,
   Memory,
   SettingsApplications,
   Build,
-  Bluetooth,
 } from "@mui/icons-material";
 import {
   Alert,
@@ -71,7 +69,7 @@ const TabPanel = ({ children, value, index, ...other }) => (
   </div>
 );
 
-const UC2Controller = () => {
+const UC2ConfigurationController = () => {
   // Redux dispatcher
   const dispatch = useDispatch();
 
@@ -197,15 +195,6 @@ const UC2Controller = () => {
     setTimeout(checkStatus, 5000);
   }, [hostIP, hostPort, dispatch]);
 
-  const restartImSwitch = () => {
-    //https://100.71.92.70:8001/UC2ConfigController/restartImSwitch
-    const url = `${hostIP}:${hostPort}/UC2ConfigController/restartImSwitch`;
-    fetch(url)
-      .then((response) => response.json())
-      .then((data) => console.log(data))
-      .catch((error) => console.error("Error:", error));
-  };
-
   useEffect(() => {
     if (!socket) return;
     const handleSignal = (data) => {
@@ -241,32 +230,6 @@ const UC2Controller = () => {
 
   const handleSetupChange = (event) => {
     dispatch(uc2Slice.setSelectedSetup(event.target.value));
-  };
-
-  const reconnect = () => {
-    fetch(`${hostIP}:${hostPort}/UC2ConfigController/reconnect`, {
-      method: "GET",
-    })
-      .then((response) => response.json())
-      .then((data) => console.log(data))
-      .catch((error) => console.error("Error:", error));
-  };
-
-  const restartESPBoard = () => {
-    fetch(`${hostIP}:${hostPort}/UC2ConfigController/espRestart`, {
-      method: "GET",
-    })
-      .then((response) => response.json())
-      .then((data) => console.log(data))
-      .catch((error) => console.error("Error:", error));
-  };
-  const btConnect = () => {
-    fetch(`${hostIP}:${hostPort}/UC2ConfigController/btpairing`, {
-      method: "GET",
-    })
-      .then((response) => response.json())
-      .then((data) => console.log(data))
-      .catch((error) => console.error("Error:", error));
   };
 
   const handleSetSetup = () => {
@@ -578,10 +541,10 @@ const UC2Controller = () => {
       {/* Header */}
       <Box sx={{ mb: 3 }}>
         <Typography variant="h4" gutterBottom>
-          UC2 Controller
+          UC2 Configuration Manager
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          Control and configure your UC2 microscope system
+          Configure and manage your UC2 microscope system configurations
         </Typography>
       </Box>
 
@@ -611,156 +574,12 @@ const UC2Controller = () => {
           onChange={handleTabChange}
           aria-label="settings tabs"
         >
-          <Tab label="Connection Control" />
           <Tab label="Configuration Setup" />
           <Tab label="Serial Interface" />
           <Tab label="Advanced Editor" />
         </Tabs>
 
         <TabPanel value={tabIndex} index={0}>
-          {/* System Control Cards */}
-          <Grid container spacing={3}>
-            {/* ImSwitch Control Card */}
-            <Grid item xs={12} md={6}>
-              <Card>
-                <CardContent>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 2,
-                      mb: 3,
-                    }}
-                  >
-                    <Computer color="primary" />
-                    <Typography variant="h6">ImSwitch Control</Typography>
-                  </Box>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mb: 3 }}
-                  >
-                    Restart the ImSwitch backend software
-                  </Typography>
-                  <Button
-                    variant="contained"
-                    onClick={restartImSwitch}
-                    fullWidth
-                    size="large"
-                  >
-                    Restart ImSwitch
-                  </Button>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            {/* UC2 Board Connection Card */}
-            <Grid item xs={12} md={6}>
-              <Card>
-                <CardContent>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 2,
-                      mb: 3,
-                    }}
-                  >
-                    <Memory color="secondary" />
-                    <Typography variant="h6">UC2 Board Connection</Typography>
-                  </Box>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mb: 3 }}
-                  >
-                    Reconnect to the UC2 hardware board
-                  </Typography>
-                  <Button
-                    variant="contained"
-                    onClick={reconnect}
-                    fullWidth
-                    size="large"
-                  >
-                    Reconnect to UC2
-                  </Button>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            {/* Force Restart Card */}
-            <Grid item xs={12} md={6}>
-              <Card>
-                <CardContent>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 2,
-                      mb: 3,
-                    }}
-                  >
-                    <Build color="warning" />
-                    <Typography variant="h6">Force Restart</Typography>
-                  </Box>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mb: 3 }}
-                  >
-                    Force restart the UC2 ESP board (emergency function)
-                  </Typography>
-                  <Button
-                    variant="contained"
-                    color="warning"
-                    onClick={restartESPBoard}
-                    fullWidth
-                    size="large"
-                  >
-                    Force Restart ESP
-                  </Button>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            {/* Bluetooth Pairing Card */}
-            <Grid item xs={12} md={6}>
-              <Card>
-                <CardContent>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 2,
-                      mb: 3,
-                    }}
-                  >
-                    <Bluetooth color="info" />
-                    <Typography variant="h6">Bluetooth Pairing</Typography>
-                  </Box>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mb: 3 }}
-                  >
-                    Initialize Bluetooth pairing for wireless connection
-                  </Typography>
-                  <Button
-                    variant="contained"
-                    color="info"
-                    onClick={btConnect}
-                    fullWidth
-                    size="large"
-                  >
-                    Start BT Pairing
-                  </Button>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
-        </TabPanel>
-
-        <TabPanel value={tabIndex} index={1}>
           {/* Configuration Setup Card */}
           <Card>
             <CardContent>
@@ -905,7 +724,7 @@ const UC2Controller = () => {
           </Card>
         </TabPanel>
 
-        <TabPanel value={tabIndex} index={2}>
+        <TabPanel value={tabIndex} index={1}>
           {/* Serial Interface Card */}
           <Card>
             <CardContent>
@@ -1012,7 +831,7 @@ const UC2Controller = () => {
           </Card>
         </TabPanel>
 
-        <TabPanel value={tabIndex} index={3}>
+        <TabPanel value={tabIndex} index={2}>
           {/* Configuration Wizard Recommendation */}
           <Card
             sx={{
@@ -1317,4 +1136,4 @@ const UC2Controller = () => {
   );
 };
 
-export default UC2Controller;
+export default UC2ConfigurationController;

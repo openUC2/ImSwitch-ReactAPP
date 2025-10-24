@@ -1,5 +1,5 @@
 /**
- * Test for UC2Controller configuration improvements
+ * Test for UC2ConfigurationController configuration improvements
  */
 import { validateConfiguration, validateJsonString, createConfigurationPreview } from '../utils/configValidation';
 

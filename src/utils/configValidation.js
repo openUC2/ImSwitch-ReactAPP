@@ -1,5 +1,5 @@
 /**
- * Configuration validation utilities for UC2Controller
+ * Configuration validation utilities for UC2ConfigurationController
  */
 
 /**

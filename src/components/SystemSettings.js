@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { getConnectionSettingsState } from "../state/slices/ConnectionSettingsSlice";
 import * as uc2Slice from "../state/slices/UC2Slice.js";
@@ -20,10 +20,11 @@ import {
   Warning,
   CheckCircle,
   ErrorOutline,
+  Memory,
 } from "@mui/icons-material";
 
 export default function SystemSettings() {
-  // Get connection settings from Redux - following Copilot Instructions
+  // Get connection settings from Redux
   const { ip: hostIP, apiPort: hostPort } = useSelector(
     getConnectionSettingsState
   );
@@ -40,7 +41,7 @@ export default function SystemSettings() {
 
   const base = `${hostIP}:${hostPort}/UC2ConfigController`;
 
-  // API communication following Copilot Instructions
+  // API communication
   const callEndpoint = async (url) => {
     try {
       const response = await fetch(url, { method: "GET" });
@@ -299,6 +300,61 @@ export default function SystemSettings() {
               onClick={() => callEndpoint(`${base}/stopImSwitch`)}
             >
               Stop ImSwitch
+            </Button>
+          </Box>
+        </CardContent>
+      </Card>
+
+      {/* UC2 Hardware Control Card */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
+            <Memory color="primary" />
+            <Typography variant="h6">UC2 Hardware Control</Typography>
+            <Chip
+              label={isBackendConnected ? "Connected" : "Disconnected"}
+              color={isBackendConnected ? "success" : "error"}
+              size="small"
+              variant="outlined"
+            />
+          </Box>
+
+          <FormControlLabel
+            control={
+              <Switch
+                checked={enableImSwitch}
+                onChange={(e) => setEnableImSwitch(e.target.checked)}
+              />
+            }
+            label="Enable UC2 hardware control"
+            sx={{ mb: 2 }}
+          />
+
+          <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+            <Button
+              variant="contained"
+              disabled={!enableImSwitch || !isBackendConnected}
+              onClick={() => callEndpoint(`${base}/reconnect`)}
+            >
+              Reconnect UC2 Board
+            </Button>
+
+            <Button
+              variant="contained"
+              color="warning"
+              disabled={!enableImSwitch || !isBackendConnected}
+              onClick={() => callEndpoint(`${base}/espRestart`)}
+            >
+              Force Restart ESP
+            </Button>
+
+            <Button
+              variant="contained"
+              color="info"
+              disabled={!enableImSwitch || !isBackendConnected}
+              onClick={() => callEndpoint(`${base}/btpairing`)}
+            >
+              Bluetooth Pairing
             </Button>
           </Box>
         </CardContent>

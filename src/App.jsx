@@ -28,7 +28,7 @@ import StresstestController from "./components/StresstestController.js";
 import SystemSettings from "./components/SystemSettings.js";
 import SystemUpdateController from "./components/SystemUpdateController.jsx";
 import TimelapseController from "./components/TimelapseController.js";
-import UC2Controller from "./components/UC2Controller.jsx";
+import UC2ConfigurationController from "./components/UC2ConfigurationController.jsx";
 import WiFiController from "./components/WiFiController.jsx";
 import { JupyterProvider } from "./context/JupyterContext.js";
 
@@ -486,7 +486,7 @@ function App() {
             {selectedPlugin === "StageOffsetCalibration" && (
               <StageOffsetCalibration />
             )}
-            {selectedPlugin === "UC2" && <UC2Controller />}
+            {selectedPlugin === "UC2" && <UC2ConfigurationController />}
             {selectedPlugin === "DetectorTrigger" && (
               <DetectorTriggerController />
             )}
