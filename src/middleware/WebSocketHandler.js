@@ -724,25 +724,60 @@ const WebSocketHandler = () => {
     };
   }, [dispatch, connectionSettingsState]);
 
-  // Global UC2 connection monitoring (periodic checks)
+  // Global UC2 connection monitoring (periodic checks with pause functionality)
   useEffect(() => {
+    let isPaused = false;
+
     // Clear any existing interval
     if (connectionCheckRef.current) {
       clearInterval(connectionCheckRef.current);
+      connectionCheckRef.current = null;
     }
 
-    // Initial connection check
-    checkUc2Connection();
+    // Function to start/stop periodic checks
+    const startPeriodicChecks = () => {
+      if (!isPaused && !connectionCheckRef.current) {
+        // Initial connection check
+        checkUc2Connection();
+        
+        // Set up periodic monitoring
+        connectionCheckRef.current = setInterval(() => {
+          if (!isPaused) {
+            checkUc2Connection();
+          }
+        }, 10000); // Every 10 seconds
+      }
+    };
 
-    // Set up periodic monitoring
-    connectionCheckRef.current = setInterval(() => {
-      checkUc2Connection();
-    }, 10000); // Every 10 seconds
-
-    return () => {
+    const stopPeriodicChecks = () => {
       if (connectionCheckRef.current) {
         clearInterval(connectionCheckRef.current);
+        connectionCheckRef.current = null;
       }
+    };
+
+    // Listen for pause/resume events from ConnectionSettings
+    const handlePausePeriodicTests = (event) => {
+      isPaused = event.detail.pause;
+      console.log(`Periodic connection tests ${isPaused ? 'paused' : 'resumed'}`);
+      
+      if (isPaused) {
+        stopPeriodicChecks();
+      } else {
+        startPeriodicChecks();
+      }
+    };
+
+    // Add event listener
+    window.addEventListener('imswitch:pausePeriodicTests', handlePausePeriodicTests);
+
+    // Start periodic checks initially
+    startPeriodicChecks();
+
+    return () => {
+      // Cleanup
+      window.removeEventListener('imswitch:pausePeriodicTests', handlePausePeriodicTests);
+      stopPeriodicChecks();
     };
   }, [checkUc2Connection]); // Now using the memoized function
 

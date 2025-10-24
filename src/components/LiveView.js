@@ -235,29 +235,31 @@ export default function LiveView({ setFileManagerInitialPath }) {
 
   const toggleStream = async () => {
     const shouldStart = !isStreamRunning;
-    
+
     try {
       if (shouldStart) {
         // Determine protocol from current stream settings
         // Use imageFormat from Redux state (not currentImageFormat which is the old field name)
-        const currentFormat = liveStreamState.imageFormat || 'binary';
-        const protocol = currentFormat === 'jpeg' ? 'jpeg' : 'binary';
-        
-        console.log(`Starting ${protocol} stream (imageFormat: ${liveStreamState.imageFormat})`);
-        
+        const currentFormat = liveStreamState.imageFormat || "binary";
+        const protocol = currentFormat === "jpeg" ? "jpeg" : "binary";
+
+        console.log(
+          `Starting ${protocol} stream (imageFormat: ${liveStreamState.imageFormat})`
+        );
+
         // Start stream with current protocol
         await apiLiveViewControllerStartLiveView(null, protocol);
         console.log(`Started ${protocol} stream`);
       } else {
         // Stop stream
         await apiLiveViewControllerStopLiveView();
-        console.log('Stopped stream');
+        console.log("Stopped stream");
       }
-      
+
       // Update Redux state
       dispatch(liveViewSlice.setIsStreamRunning(shouldStart));
     } catch (error) {
-      console.error('Error toggling stream:', error);
+      console.error("Error toggling stream:", error);
       // Fallback: try to update state anyway for UI consistency
       dispatch(liveViewSlice.setIsStreamRunning(shouldStart));
     }
@@ -422,11 +424,13 @@ export default function LiveView({ setFileManagerInitialPath }) {
         </Tabs>
 
         {/* Live View Container - Fixed Height // TODO: This does not look really nice..  */}
-        <Box sx={{
-          height: "60%",
-          mb: 2,
-          position: "relative"
-        }}>
+        <Box
+          sx={{
+            height: "60%",
+            mb: 2,
+            position: "relative",
+          }}
+        >
           <LiveViewControlWrapper />
         </Box>
 

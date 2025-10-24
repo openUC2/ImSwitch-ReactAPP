@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { setNotification } from "../state/slices/NotificationSlice.js";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -70,25 +70,75 @@ function ConnectionSettings() {
 
   // Connection test state
   const [isTestingConnection, setIsTestingConnection] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Check if connection settings are configured
   const hasConnectionSettings = hostIP && apiPort;
 
-  // Handler for saving settings with immediate connection test
-  const handleSave = async () => {
-    try {
-      const fullIP = `${hostProtocol}${hostIP}`;
+  // Auto-test connection on component mount if settings are already configured
+  const [hasAutoTested, setHasAutoTested] = useState(false);
 
-      // Save to Redux first
-      dispatch(setIp(fullIP));
-      dispatch(setWebsocketPort(websocketPort));
-      dispatch(setApiPort(apiPort));
-      dispatch(
-        setNotification({ message: "Settings saved!", type: "success" })
+  // Pause periodic connection tests while user is in connection settings
+  useEffect(() => {
+    // Signal that user is actively configuring connection settings
+    // This will pause periodic background tests to avoid confusion
+    window.dispatchEvent(
+      new CustomEvent("imswitch:pausePeriodicTests", {
+        detail: { pause: true }
+      })
+    );
+
+    // Only auto-test once on mount if we have saved connection settings from Redux
+    if (connectionSettings.ip && connectionSettings.apiPort && !hasAutoTested) {
+      setHasAutoTested(true);
+
+      const timer = setTimeout(() => {
+        // Trigger connection test with saved settings
+        window.dispatchEvent(
+          new CustomEvent("imswitch:checkConnection", {
+            detail: {
+              ip: connectionSettings.ip,
+              port: connectionSettings.apiPort,
+              websocketPort: connectionSettings.websocketPort,
+            },
+          })
+        );
+      }, 1500); // Delay to allow component to settle
+
+      return () => clearTimeout(timer);
+    }
+
+    // Cleanup: Resume periodic tests when component unmounts
+    return () => {
+      window.dispatchEvent(
+        new CustomEvent("imswitch:pausePeriodicTests", {
+          detail: { pause: false }
+        })
       );
+    };
+  }, [
+    connectionSettings.ip,
+    connectionSettings.apiPort,
+    connectionSettings.websocketPort,
+    hasAutoTested,
+  ]);
 
-      // Trigger immediate connection check including WebSocket test
+  // Handler for testing connection (separate from saving)
+  const handleTestConnection = async () => {
+    if (!hasConnectionSettings) {
+      dispatch(
+        setNotification({
+          message: "Please configure IP and API port first",
+          type: "warning",
+        })
+      );
+      return;
+    }
+
+    try {
       setIsTestingConnection(true);
+
+      const fullIP = `${hostProtocol}${hostIP}`;
 
       // Dispatch custom event to trigger connection check in WebSocketHandler
       window.dispatchEvent(
@@ -96,7 +146,7 @@ function ConnectionSettings() {
           detail: {
             ip: fullIP,
             port: apiPort,
-            websocketPort: websocketPort, // Add WebSocket port to test
+            websocketPort: websocketPort,
           },
         })
       );
@@ -110,12 +160,44 @@ function ConnectionSettings() {
             type: "info",
           })
         );
-      }, 6000); // Longer timeout for both HTTP and WebSocket tests
+      }, 5000);
     } catch (e) {
       dispatch(
-        setNotification({ message: "Error saving settings!", type: "error" })
+        setNotification({
+          message: "Error testing connection!",
+          type: "error",
+        })
       );
       setIsTestingConnection(false);
+    }
+  };
+
+  // Handler for saving settings only (no automatic test)
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      const fullIP = `${hostProtocol}${hostIP}`;
+
+      // Save to Redux
+      dispatch(setIp(fullIP));
+      dispatch(setWebsocketPort(websocketPort));
+      dispatch(setApiPort(apiPort));
+
+      dispatch(
+        setNotification({
+          message: "Settings saved successfully!",
+          type: "success",
+        })
+      );
+    } catch (e) {
+      dispatch(
+        setNotification({
+          message: "Error saving settings!",
+          type: "error",
+        })
+      );
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -166,6 +248,14 @@ function ConnectionSettings() {
           Configure connection settings for ImSwitch backend communication
         </Typography>
       </Box>
+
+      {/* Periodic Tests Paused Info */}
+      <Alert severity="info" sx={{ mb: 2 }}>
+        <Typography variant="body2">
+          <strong>Info:</strong> Periodic connection tests are paused while you configure settings 
+          to avoid confusion between test results and your current changes.
+        </Typography>
+      </Alert>
 
       {/* Connection Status Alert */}
       <Alert
@@ -355,25 +445,58 @@ function ConnectionSettings() {
         </CardContent>
 
         <CardActions sx={{ p: 2, pt: 0 }}>
+          {/* Save Settings Button */}
           <Button
             variant="contained"
             color="primary"
             onClick={handleSave}
-            disabled={!isDirty || isTestingConnection}
-            startIcon={
-              isTestingConnection ? <CircularProgress size={16} /> : <Save />
-            }
+            disabled={!isDirty || isSaving || isTestingConnection}
+            startIcon={isSaving ? <CircularProgress size={16} /> : <Save />}
           >
-            {isTestingConnection
-              ? "Testing Connection..."
-              : "Save & Test Connection"}
+            {isSaving ? "Saving..." : "Save Settings"}
           </Button>
 
-          {isTestingConnection && (
+          {/* Test Connection Button */}
+          <Button
+            variant="outlined"
+            color="secondary"
+            onClick={handleTestConnection}
+            disabled={!hasConnectionSettings || isTestingConnection || isSaving}
+            startIcon={
+              isTestingConnection ? (
+                <CircularProgress size={16} />
+              ) : (
+                <Settings />
+              )
+            }
+          >
+            {isTestingConnection ? "Testing..." : "Test Connection"}
+          </Button>
+
+          {/* Status Text */}
+          {(isTestingConnection || isSaving) && (
             <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
-              Checking backend connection...
+              {isTestingConnection
+                ? "Testing backend and WebSocket connection..."
+                : "Saving settings..."}
             </Typography>
           )}
+
+          {/* Auto-test notification */}
+          {!hasAutoTested && hasConnectionSettings && (
+            <Typography variant="caption" color="info.main" sx={{ ml: 2 }}>
+              Auto-testing connection...
+            </Typography>
+          )}
+
+          {/* Periodic tests paused indicator */}
+          <Chip 
+            label="Periodic Tests Paused" 
+            size="small" 
+            variant="outlined" 
+            color="info"
+            sx={{ ml: 'auto' }}
+          />
         </CardActions>
       </Card>
 
@@ -386,7 +509,9 @@ function ConnectionSettings() {
           </Box>
 
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Common configuration examples and troubleshooting tips.
+            Common configuration examples and troubleshooting tips. Use "Test
+            Connection" to verify your settings work without saving, or "Save
+            Settings" to store your configuration.
           </Typography>
 
           <List dense>

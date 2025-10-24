@@ -624,11 +624,22 @@ const UC2Controller = () => {
             <Grid item xs={12} md={6}>
               <Card>
                 <CardContent>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 2,
+                      mb: 3,
+                    }}
+                  >
                     <Computer color="primary" />
                     <Typography variant="h6">ImSwitch Control</Typography>
                   </Box>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mb: 3 }}
+                  >
                     Restart the ImSwitch backend software
                   </Typography>
                   <Button
@@ -647,11 +658,22 @@ const UC2Controller = () => {
             <Grid item xs={12} md={6}>
               <Card>
                 <CardContent>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 2,
+                      mb: 3,
+                    }}
+                  >
                     <Memory color="secondary" />
                     <Typography variant="h6">UC2 Board Connection</Typography>
                   </Box>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mb: 3 }}
+                  >
                     Reconnect to the UC2 hardware board
                   </Typography>
                   <Button
@@ -670,11 +692,22 @@ const UC2Controller = () => {
             <Grid item xs={12} md={6}>
               <Card>
                 <CardContent>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 2,
+                      mb: 3,
+                    }}
+                  >
                     <Build color="warning" />
                     <Typography variant="h6">Force Restart</Typography>
                   </Box>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mb: 3 }}
+                  >
                     Force restart the UC2 ESP board (emergency function)
                   </Typography>
                   <Button
@@ -694,11 +727,22 @@ const UC2Controller = () => {
             <Grid item xs={12} md={6}>
               <Card>
                 <CardContent>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 2,
+                      mb: 3,
+                    }}
+                  >
                     <Bluetooth color="info" />
                     <Typography variant="h6">Bluetooth Pairing</Typography>
                   </Box>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mb: 3 }}
+                  >
                     Initialize Bluetooth pairing for wireless connection
                   </Typography>
                   <Button
@@ -720,7 +764,9 @@ const UC2Controller = () => {
           {/* Configuration Setup Card */}
           <Card>
             <CardContent>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
+              <Box
+                sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}
+              >
                 <SettingsApplications color="primary" />
                 <Typography variant="h6">Configuration Setup</Typography>
                 <Button
@@ -783,8 +829,13 @@ const UC2Controller = () => {
                   }
                   label="Restart Software After Setup"
                 />
-                <Typography variant="caption" color="text.secondary" display="block">
-                  Recommended: Automatically restart ImSwitch to apply the new configuration
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  display="block"
+                >
+                  Recommended: Automatically restart ImSwitch to apply the new
+                  configuration
                 </Typography>
               </Box>
 
@@ -793,7 +844,11 @@ const UC2Controller = () => {
                 onClick={handleSetSetup}
                 disabled={!selectedSetup || isRestarting}
                 startIcon={
-                  isRestarting ? <CircularProgress size={20} /> : <SettingsApplications />
+                  isRestarting ? (
+                    <CircularProgress size={20} />
+                  ) : (
+                    <SettingsApplications />
+                  )
                 }
                 size="large"
                 fullWidth
@@ -803,15 +858,22 @@ const UC2Controller = () => {
 
               {/* Status Information */}
               {selectedSetup && (
-                <Box sx={{ mt: 3, p: 2, bgcolor: "background.default", borderRadius: 1 }}>
+                <Box
+                  sx={{
+                    mt: 3,
+                    p: 2,
+                    bgcolor: "background.default",
+                    borderRadius: 1,
+                  }}
+                >
                   <Typography variant="subtitle2" gutterBottom>
                     Selected Configuration:
                   </Typography>
-                  <Chip 
-                    label={selectedSetup} 
-                    color="primary" 
-                    size="small" 
-                    variant="outlined" 
+                  <Chip
+                    label={selectedSetup}
+                    color="primary"
+                    size="small"
+                    variant="outlined"
                   />
                 </Box>
               )}
@@ -830,7 +892,11 @@ const UC2Controller = () => {
                   </Typography>
                 </DialogContent>
                 <DialogActions>
-                  <Button onClick={handleDialogClose} color="primary" variant="contained">
+                  <Button
+                    onClick={handleDialogClose}
+                    color="primary"
+                    variant="contained"
+                  >
                     OK
                   </Button>
                 </DialogActions>
@@ -843,19 +909,24 @@ const UC2Controller = () => {
           {/* Serial Interface Card */}
           <Card>
             <CardContent>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
+              <Box
+                sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}
+              >
                 <Memory color="info" />
-                <Typography variant="h6">Serial Command Line Interface</Typography>
-                <Chip 
-                  label={uc2Connected ? "Connected" : "Disconnected"} 
-                  color={uc2Connected ? "success" : "error"} 
-                  size="small" 
-                  variant="outlined" 
+                <Typography variant="h6">
+                  Serial Command Line Interface
+                </Typography>
+                <Chip
+                  label={uc2Connected ? "Connected" : "Disconnected"}
+                  color={uc2Connected ? "success" : "error"}
+                  size="small"
+                  variant="outlined"
                 />
               </Box>
 
               <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Send raw serial commands directly to the UC2 board for debugging and advanced control
+                Send raw serial commands directly to the UC2 board for debugging
+                and advanced control
               </Typography>
 
               <Box sx={{ mb: 3 }}>
@@ -871,12 +942,16 @@ const UC2Controller = () => {
                   }
                   disabled={!uc2Connected}
                   placeholder="Enter serial commands here..."
-                  helperText={uc2Connected ? "Enter commands and press Send" : "Connect to UC2 board first"}
+                  helperText={
+                    uc2Connected
+                      ? "Enter commands and press Send"
+                      : "Connect to UC2 board first"
+                  }
                 />
               </Box>
 
-              <Button 
-                variant="contained" 
+              <Button
+                variant="contained"
                 onClick={handleSendSerial}
                 disabled={!uc2Connected || !serialPayload.trim()}
                 startIcon={<Memory />}
@@ -922,8 +997,13 @@ const UC2Controller = () => {
                       </Typography>
                     ))
                   ) : (
-                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center", py: 2 }}>
-                      No serial communication yet. Send a command to see the log.
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ textAlign: "center", py: 2 }}
+                    >
+                      No serial communication yet. Send a command to see the
+                      log.
                     </Typography>
                   )}
                 </Paper>
@@ -934,9 +1014,17 @@ const UC2Controller = () => {
 
         <TabPanel value={tabIndex} index={3}>
           {/* Configuration Wizard Recommendation */}
-          <Card sx={{ mb: 3, bgcolor: "primary.light", color: "primary.contrastText" }}>
+          <Card
+            sx={{
+              mb: 3,
+              bgcolor: "primary.light",
+              color: "primary.contrastText",
+            }}
+          >
             <CardContent>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
+              <Box
+                sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}
+              >
                 <WizardIcon />
                 <Typography variant="h6">
                   Recommended: Configuration Wizard
@@ -966,13 +1054,18 @@ const UC2Controller = () => {
           {/* Advanced Editor Card */}
           <Card>
             <CardContent>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
+              <Box
+                sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}
+              >
                 <Build color="secondary" />
-                <Typography variant="h6">Advanced Configuration Editor</Typography>
+                <Typography variant="h6">
+                  Advanced Configuration Editor
+                </Typography>
               </Box>
 
               <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                For advanced users: directly edit JSON configuration files with syntax validation and preview
+                For advanced users: directly edit JSON configuration files with
+                syntax validation and preview
               </Typography>
 
               {(isLoadingFile || isSavingFile) && (
@@ -1014,7 +1107,9 @@ const UC2Controller = () => {
                   <Button
                     variant="contained"
                     onClick={handleLoadSetupFile}
-                    disabled={!selectedFileForEdit || isLoadingFile || isSavingFile}
+                    disabled={
+                      !selectedFileForEdit || isLoadingFile || isSavingFile
+                    }
                     startIcon={
                       isLoadingFile ? <CircularProgress size={20} /> : null
                     }
@@ -1078,7 +1173,9 @@ const UC2Controller = () => {
                     >
                       <JsonEditor
                         data={editorJson}
-                        setData={(data) => dispatch(uc2Slice.setEditorJson(data))}
+                        setData={(data) =>
+                          dispatch(uc2Slice.setEditorJson(data))
+                        }
                         readOnly={isLoadingFile || isSavingFile}
                       />
                     </Box>
@@ -1086,7 +1183,8 @@ const UC2Controller = () => {
                 ) : (
                   <Alert severity="info">
                     <Typography variant="body2">
-                      No configuration file loaded. Select a file to load or create a new one.
+                      No configuration file loaded. Select a file to load or
+                      create a new one.
                     </Typography>
                   </Alert>
                 )}
@@ -1129,7 +1227,9 @@ const UC2Controller = () => {
                         <Checkbox
                           checked={restartAfterSave}
                           onChange={(e) =>
-                            dispatch(uc2Slice.setRestartAfterSave(e.target.checked))
+                            dispatch(
+                              uc2Slice.setRestartAfterSave(e.target.checked)
+                            )
                           }
                           disabled={isLoadingFile || isSavingFile}
                         />
@@ -1143,7 +1243,9 @@ const UC2Controller = () => {
                         <Checkbox
                           checked={overwriteFile}
                           onChange={(e) =>
-                            dispatch(uc2Slice.setOverwriteFile(e.target.checked))
+                            dispatch(
+                              uc2Slice.setOverwriteFile(e.target.checked)
+                            )
                           }
                           disabled={isLoadingFile || isSavingFile}
                         />
@@ -1177,7 +1279,11 @@ const UC2Controller = () => {
                       (!editorJson && !editorJsonText.trim())
                     }
                     startIcon={
-                      isSavingFile ? <CircularProgress size={20} /> : <SaveIcon />
+                      isSavingFile ? (
+                        <CircularProgress size={20} />
+                      ) : (
+                        <SaveIcon />
+                      )
                     }
                   >
                     {isSavingFile ? "Saving..." : "Save Configuration"}

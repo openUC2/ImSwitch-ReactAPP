@@ -6,22 +6,16 @@ import {
   BlurOn as BlurOnIcon,
   Build as BuildIcon,
   Code as CodeIcon,
-  Comment as CommentIcon,
   Computer as ComputerIcon,
   Dashboard as DashboardIcon,
   Extension as ExtensionIcon,
   Folder as FolderIcon,
-  Info as InfoIcon,
-  Link as LinkIcon,
-  Memory as MemoryIcon,
   Science as ScienceIcon,
   Sensors as SensorsIcon,
-  Settings as SettingsIcon,
   SettingsOverscanSharp as SettingsOverscanSharpIcon,
   SportsEsports as SportsEsportsIcon,
   Straighten as StraightenIcon,
   ThreeDRotation as ThreeDRotationIcon,
-  WifiSharp as WifiSharpIcon,
   ZoomOutMap as ZoomOutMapIcon,
 } from "@mui/icons-material";
 import { Divider, Drawer, List } from "@mui/material";
@@ -148,19 +142,6 @@ const NavigationDrawer = ({
             selected={selectedPlugin === "WellPlate"}
             onClick={() => handlePluginChange("WellPlate")}
             tooltip="WellPlate"
-            color={SIDEBAR_COLORS.apps}
-            collapsed={!sidebarVisible}
-            nested={true}
-          />
-
-          {/* HistoScan - Automated scanning */}
-          <DrawerEntry
-            avatar={true}
-            avatarText="HS"
-            label="HistoScan"
-            selected={selectedPlugin === "HistoScan"}
-            onClick={() => handlePluginChange("HistoScan")}
-            tooltip="HistoScan"
             color={SIDEBAR_COLORS.apps}
             collapsed={!sidebarVisible}
             nested={true}
