@@ -70,6 +70,10 @@ const WebSocketHandler = () => {
       
       // Send acknowledgement to enable flow control
       // This tells the server we're ready for the next frame
+      // NOTE: Currently sends ACK immediately after dispatch
+      // TODO: Consider delaying ACK until after GPU rendering completes
+      // This would require listening to a custom event from LiveViewerGL
+      // For now, immediate ACK is acceptable as it provides backpressure at network level
       if (ack && typeof ack === 'function') {
         ack();
       } else {
@@ -97,6 +101,13 @@ const WebSocketHandler = () => {
         // Update Redux with current frame ID
         if (frameMetadata.image_id !== undefined) {
           dispatch(liveStreamSlice.setCurrentFrameId(frameMetadata.image_id));
+        }
+        
+        // Send acknowledgement for metadata
+        if (ack && typeof ack === 'function') {
+          ack();
+        } else {
+          socket.emit('frame_ack');
         }
       }
       //----------------------------------------------
