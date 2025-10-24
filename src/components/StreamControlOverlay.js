@@ -32,8 +32,8 @@ import {
 } from '@mui/icons-material';
 import { useSelector, useDispatch } from 'react-redux';
 import { setMinVal, setMaxVal, setGamma, getLiveStreamState, setStreamSettings, setImageFormat } from '../state/slices/LiveStreamSlice.js';
-import apiSettingsControllerSetStreamParams from '../backendapi/apiSettingsControllerSetStreamParams';
-import apiSettingsControllerGetDetectorGlobalParameters from '../backendapi/apiSettingsControllerGetDetectorGlobalParameters';
+import apiLiveViewControllerSetStreamParameters from '../backendapi/apiLiveViewControllerSetStreamParameters';
+import apiLiveViewControllerGetStreamParameters from '../backendapi/apiLiveViewControllerGetStreamParameters';
 import * as connectionSettingsSlice from "../state/slices/ConnectionSettingsSlice.js";
 
 
@@ -52,8 +52,8 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
     minVal = 0,
     maxVal = 255,
     gamma = 1.0,
-    currentImageFormat,
-    streamSettings
+    imageFormat = 'binary', // This is the correct field name in Redux
+    streamSettings = {}
   } = liveStreamState;
 
   // Draft mode for settings - initialize from Redux streamSettings
@@ -63,7 +63,7 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
   // Determine if we're in JPEG mode
-  const isJpeg = currentImageFormat === 'jpeg';
+  const isJpeg = imageFormat === 'jpeg';
   const maxRange = isJpeg ? 255 : 65535;
   const formatLabel = isJpeg ? 'JPEG' : 'Binary';
   const rangeLabel = `0–${maxRange}`;
@@ -80,35 +80,79 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
     
     const loadBackendSettings = async () => {
       try {
-        const globalParams = await apiSettingsControllerGetDetectorGlobalParameters();
-        console.log('Global detector parameters:', globalParams);
+        // Get stream parameters from new LiveViewController endpoint
+        const response = await apiLiveViewControllerGetStreamParameters();
+        console.log('Stream parameters from LiveViewController:', response);
         
-        // Determine stream type from compression algorithm
-        // If algorithm is "jpeg", it's JPEG mode; otherwise (lz4, zstd, etc.) it's binary
-        const isBinaryMode = globalParams.stream_compression_algorithm !== 'jpeg';
+        // Extract protocol data from new API response format
+        const allParams = response.protocols || response;
+        const currentProtocol = response.current_protocol || 'binary';
         
+        console.log('Current active protocol from backend:', currentProtocol);
+        
+        // Transform backend response to frontend format
         const loadedSettings = {
           binary: {
-            enabled: isBinaryMode,
+            enabled: allParams.binary?.is_active || currentProtocol === 'binary',
             compression: {
-              algorithm: isBinaryMode ? globalParams.stream_compression_algorithm : 'lz4',
-              level: globalParams.compressionlevel || 0
+              algorithm: allParams.binary?.compression_algorithm || 'lz4',
+              level: allParams.binary?.compression_level || 0
             },
-            subsampling: { factor: 4 },
-            throttle_ms: 100
+            subsampling: { factor: allParams.binary?.subsampling_factor || 4 },
+            throttle_ms: allParams.binary?.throttle_ms || 100
           },
           jpeg: {
-            enabled: !isBinaryMode,
-            quality: !isBinaryMode ? globalParams.compressionlevel : 85
+            enabled: allParams.jpeg?.is_active || currentProtocol === 'jpeg',
+            quality: allParams.jpeg?.jpeg_quality || 85,
+            subsampling: { factor: allParams.jpeg?.subsampling_factor || 1 },
+            throttle_ms: allParams.jpeg?.throttle_ms || 100
           }
         };
         
         setDraftSettings(loadedSettings);
+        
+        // Use current_protocol from backend to set format
+        console.log('Setting initial format to:', currentProtocol);
+        dispatch(setImageFormat(currentProtocol));
+        dispatch(setStreamSettings(loadedSettings));
+        
+        // Set appropriate min/max values based on format
+        if (currentProtocol === 'jpeg') {
+          dispatch(setMinVal(0));
+          dispatch(setMaxVal(255));
+        } else {
+          // Binary mode: auto-stretch to max range
+          dispatch(setMinVal(0));
+          dispatch(setMaxVal(65535));
+        }
+        
         hasLoadedSettings.current = true;
       } catch (error) {
         console.warn('Failed to load backend settings:', error);
-        // Use Redux state as fallback
-        setDraftSettings(streamSettings);
+        // Use Redux state as fallback or set defaults
+        const fallbackSettings = streamSettings || {
+          binary: {
+            enabled: true,
+            compression: { algorithm: 'lz4', level: 0 },
+            subsampling: { factor: 4 },
+            throttle_ms: 100
+          },
+          jpeg: {
+            enabled: false,
+            quality: 85,
+            subsampling: { factor: 1 },
+            throttle_ms: 100
+          }
+        };
+        setDraftSettings(fallbackSettings);
+        
+        // Set default format to binary if not set
+        console.log('Setting default format to binary (fallback)');
+        dispatch(setImageFormat('binary'));
+        dispatch(setMinVal(0));
+        dispatch(setMaxVal(65535));
+        dispatch(setStreamSettings(fallbackSettings));
+        
         hasLoadedSettings.current = true;
       }
     };
@@ -139,36 +183,43 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
       const isJpegMode = draftSettings.jpeg?.enabled === true;
       const newFormat = isJpegMode ? 'jpeg' : 'binary';
       
-      // Prepare parameters for backend
-      let submitParams = {};
+      console.log('Submitting settings for format:', newFormat, 'Draft settings:', draftSettings);
       
+      // Submit to backend FIRST using new LiveViewController API
       if (isJpegMode) {
-        // JPEG mode: send compression with algorithm='jpeg' and level=quality
-        submitParams = {
-          binary: {
-            enabled: false,
-            compression: {
-              algorithm: 'jpeg',
-              level: draftSettings.jpeg?.quality || 85
-            },
-            subsampling: { factor: 1 },
-            throttle_ms: 100
-          },
-          jpeg: {
-            enabled: true,
-            quality: draftSettings.jpeg?.quality || 85
-          }
-        };
+        // Set JPEG stream parameters
+        await apiLiveViewControllerSetStreamParameters('jpeg', {
+          jpeg_quality: draftSettings.jpeg?.quality || 85,
+          subsampling_factor: draftSettings.jpeg?.subsampling?.factor || 1,
+          throttle_ms: draftSettings.jpeg?.throttle_ms || 100
+        });
       } else {
-        // Binary mode: send normal binary compression params
-        submitParams = draftSettings;
+        // Set binary stream parameters
+        await apiLiveViewControllerSetStreamParameters('binary', {
+          compression_algorithm: draftSettings.binary?.compression?.algorithm || 'lz4',
+          compression_level: draftSettings.binary?.compression?.level || 0,
+          subsampling_factor: draftSettings.binary?.subsampling?.factor || 4,
+          throttle_ms: draftSettings.binary?.throttle_ms || 100
+        });
       }
       
-      console.log('submitParams to be sent:', submitParams);
+      console.log('Stream parameters updated successfully for protocol:', newFormat);
       
-      // Update Redux with new format FIRST so LiveViewerGL can switch
+      // THEN update Redux with new format so LiveViewerGL can switch
       dispatch(setImageFormat(newFormat));
-      dispatch(setStreamSettings(submitParams));
+      dispatch(setStreamSettings(draftSettings));
+      
+      // Update min/max values based on format
+      if (isJpegMode) {
+        dispatch(setMinVal(0));
+        dispatch(setMaxVal(255));
+      } else {
+        // Binary mode: keep current values or reset to max range
+        if (liveStreamState.maxVal > 65535 || liveStreamState.maxVal === 255) {
+          dispatch(setMinVal(0));
+          dispatch(setMaxVal(65535));
+        }
+      }
       
       // Update backend capabilities based on mode
       dispatch({ 
@@ -179,19 +230,11 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
         } 
       });
 
-      // Submit to backend
-      await apiSettingsControllerSetStreamParams(submitParams);
-      
-
-      // Update draft settings with submitted values so they persist in UI
-      setDraftSettings(submitParams);
-      
-
       setSubmitSuccess(true);
       setTimeout(() => setSubmitSuccess(false), 3000);
       
     } catch (error) {
-      
+      console.error('Error submitting stream settings:', error);
       setSubmitError(error.message || 'Failed to submit settings');
     } finally {
       setIsSubmitting(false);
@@ -372,11 +415,28 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
                       label="Stream Format"
                       onChange={(e) => {
                         const isJpeg = e.target.value === 'jpeg';
+                        const newFormat = isJpeg ? 'jpeg' : 'binary';
+                        
+                        // Update draft settings
                         setDraftSettings((prev) => ({
                           ...prev,
                           binary: { ...prev?.binary, enabled: !isJpeg },
                           jpeg: { ...prev?.jpeg, enabled: isJpeg }
                         }));
+                        
+                        // Immediately update Redux state so currentImageFormat is set
+                        console.log('Format changed to:', newFormat);
+                        dispatch(setImageFormat(newFormat));
+                        
+                        // Update min/max values immediately based on format
+                        if (isJpeg) {
+                          dispatch(setMinVal(0));
+                          dispatch(setMaxVal(255));
+                        } else {
+                          // Binary mode: reset to max range
+                          dispatch(setMinVal(0));
+                          dispatch(setMaxVal(65535));
+                        }
                       }}
                     >
                       <MenuItem value="binary">Binary (16-bit) - High Quality</MenuItem>
@@ -519,6 +579,50 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
                       <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mt: 1 }}>
                         Lower quality = smaller files, faster streaming
                       </Typography>
+                    </Box>
+
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 1 }}>
+                        Subsampling: {draftSettings.jpeg?.subsampling?.factor || 1}x
+                      </Typography>
+                      <Slider
+                        value={draftSettings.jpeg?.subsampling?.factor || 1}
+                        onChange={(_, value) =>
+                          setDraftSettings((prev) => ({
+                            ...prev,
+                            jpeg: {
+                              ...prev.jpeg,
+                              subsampling: { ...prev.jpeg?.subsampling, factor: value }
+                            }
+                          }))
+                        }
+                        min={1}
+                        max={8}
+                        step={1}
+                        marks
+                        valueLabelDisplay="auto"
+                        size="small"
+                      />
+                    </Box>
+
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 1 }}>
+                        Throttle: {draftSettings.jpeg?.throttle_ms || 100}ms
+                      </Typography>
+                      <Slider
+                        value={draftSettings.jpeg?.throttle_ms || 100}
+                        onChange={(_, value) =>
+                          setDraftSettings((prev) => ({
+                            ...prev,
+                            jpeg: { ...prev.jpeg, throttle_ms: value }
+                          }))
+                        }
+                        min={16}
+                        max={1000}
+                        step={16}
+                        valueLabelDisplay="auto"
+                        size="small"
+                      />
                     </Box>
                   </Box>
                 )}

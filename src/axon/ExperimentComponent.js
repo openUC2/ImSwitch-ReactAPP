@@ -100,43 +100,89 @@ const ExperimentComponent = () => {
         y: itPoint.y,
         neighborPointList: [],
       };
-      //calc and fill neighbor points
-      const rasterWidthOverlaped =
-        objectiveState.fovX * (1 - wellSelectorState.overlapWidth);
-      const rasterHeightOverlaped =
-        objectiveState.fovY * (1 - wellSelectorState.overlapHeight);
 
-      if (itPoint.shape == Shape.CIRCLE) {
-        //circle shape
-        point.neighborPointList = wsUtils.calculateRasterOval(
-          itPoint,
-          rasterWidthOverlaped,
-          rasterHeightOverlaped,
-          itPoint.circleRadiusX,
-          itPoint.circleRadiusY
-        );
-        //handle invalid area
-        if (point.neighborPointList.length == 0) {
+      // Check for new well-based patterns first
+      if (itPoint.wellMode === "center_only") {
+        // Find wells that intersect with this point and return their centers
+        const intersectingWells = wsUtils.findWellsAtPosition(itPoint, experimentState.wellLayout);
+        const centerPositions = wsUtils.generateWellCenterPositions(intersectingWells, experimentState.wellLayout);
+        point.neighborPointList = centerPositions.map(pos => ({
+          x: pos.x,
+          y: pos.y,
+          iX: pos.iX,
+          iY: pos.iY
+        }));
+        
+      } else if (itPoint.wellMode === "pattern") {
+        // Generate pattern within wells
+        const intersectingWells = wsUtils.findWellsAtPosition(itPoint, experimentState.wellLayout);
+        let patternPositions = [];
+        
+        if (itPoint.patternType === "circle") {
+          patternPositions = wsUtils.generateWellCirclePattern(
+            intersectingWells,
+            itPoint.patternRadius || 50,
+            itPoint.patternOverlap || 0.1,
+            Math.min(objectiveState.fovX, objectiveState.fovY) * (1 - (experimentState.parameterValue.overlapWidth || 0))
+          );
+        } else if (itPoint.patternType === "rectangle") {
+          patternPositions = wsUtils.generateWellRectanglePattern(
+            intersectingWells,
+            itPoint.patternWidth || 100,
+            itPoint.patternHeight || 100,
+            itPoint.patternOverlap || 0.1,
+            Math.min(objectiveState.fovX, objectiveState.fovY) * (1 - (experimentState.parameterValue.overlapWidth || 0))
+          );
+        }
+        
+        point.neighborPointList = patternPositions.map(pos => ({
+          x: pos.x,
+          y: pos.y,
+          iX: pos.iX,
+          iY: pos.iY
+        }));
+        
+      } else {
+        // Traditional pattern generation (existing functionality)
+        //calc and fill neighbor points
+        // Negative overlap creates gaps, positive overlap creates overlaps
+        const rasterWidthOverlaped =
+          objectiveState.fovX * (1 - (experimentState.parameterValue.overlapWidth || 0));
+        const rasterHeightOverlaped =
+          objectiveState.fovY * (1 - (experimentState.parameterValue.overlapHeight || 0));
+
+        if (itPoint.shape == Shape.CIRCLE) {
+          //circle shape
+          point.neighborPointList = wsUtils.calculateRasterOval(
+            itPoint,
+            rasterWidthOverlaped,
+            rasterHeightOverlaped,
+            itPoint.circleRadiusX,
+            itPoint.circleRadiusY
+          );
+          //handle invalid area
+          if (point.neighborPointList.length == 0) {
+            point.neighborPointList = [
+              { x: itPoint.x, y: itPoint.y, iX: 0, iY: 0 },
+            ];
+          }
+        } else if (itPoint.shape == Shape.RECTANGLE) {
+          //rect shape
+          point.neighborPointList = wsUtils.calculateRasterRect(
+            itPoint,
+            rasterWidthOverlaped,
+            rasterHeightOverlaped,
+            itPoint.rectPlusX,
+            itPoint.rectMinusX,
+            itPoint.rectPlusY,
+            itPoint.rectMinusY
+          );
+        } else {
+          //no shape
           point.neighborPointList = [
             { x: itPoint.x, y: itPoint.y, iX: 0, iY: 0 },
           ];
         }
-      } else if (itPoint.shape == Shape.RECTANGLE) {
-        //rect shape
-        point.neighborPointList = wsUtils.calculateRasterRect(
-          itPoint,
-          rasterWidthOverlaped,
-          rasterHeightOverlaped,
-          itPoint.rectPlusX,
-          itPoint.rectMinusX,
-          itPoint.rectPlusY,
-          itPoint.rectMinusY
-        );
-      } else {
-        //no shape
-        point.neighborPointList = [
-          { x: itPoint.x, y: itPoint.y, iX: 0, iY: 0 },
-        ];
       }
 
       //append point
@@ -160,13 +206,20 @@ const ExperimentComponent = () => {
         // enable VTK Viewer
         setEnableViewer(true);
         //set popup
-        infoPopupRef.current.showMessage("Experiment started...");
+        if (infoPopupRef.current) {
+          infoPopupRef.current.showMessage(
+            "Experimental status has been updated to " +
+              experimentWorkflowState.status
+          );
+        }
       })
       .catch((err) => {
         // Handle error
         //console.error("handleStart", err)
         //set popup
-        infoPopupRef.current.showMessage("Start Experiment failed");
+        if (infoPopupRef.current) {
+          infoPopupRef.current.showMessage("Start Experiment failed");
+        }
       });
   };
 
@@ -204,12 +257,16 @@ const ExperimentComponent = () => {
         //set state
         dispatch(experimentStatusSlice.setStatus(Status.PAUSED));
         //set popup
-        infoPopupRef.current.showMessage("Experiment paused");
+        if (infoPopupRef.current) {
+          infoPopupRef.current.showMessage("Experiment paused");
+        }
       })
       .catch((err) => {
         // Handle error
         //set popup
-        infoPopupRef.current.showMessage("Pause Experiment failed");
+        if (infoPopupRef.current) {
+          infoPopupRef.current.showMessage("Pause Experiment failed");
+        }
       });
   };
 
@@ -223,12 +280,16 @@ const ExperimentComponent = () => {
         //set state
         dispatch(experimentStatusSlice.setStatus(Status.RUNNING));
         //set popup
-        infoPopupRef.current.showMessage("Experiment resumed...");
+        if (infoPopupRef.current) {
+          infoPopupRef.current.showMessage("Experiment resumed...");
+        }
       })
       .catch((err) => {
         // Handle error
         //set popup
-        infoPopupRef.current.showMessage("Resume Experiment failed");
+        if (infoPopupRef.current) {
+          infoPopupRef.current.showMessage("Resume Experiment failed");
+        }
       });
   };
 
@@ -242,13 +303,17 @@ const ExperimentComponent = () => {
         // Handle success response
         //set state
         //set popup
-        infoPopupRef.current.showMessage("Experiment stopped");
+        if (infoPopupRef.current) {
+          infoPopupRef.current.showMessage("Experiment stopped");
+        }
       })
       .catch((err) => {
         // Handle error
         //set popup
         console.log("handleStop", err);
-        infoPopupRef.current.showMessage("Stop Experiment failed");
+        if (infoPopupRef.current) {
+          infoPopupRef.current.showMessage("Stop Experiment failed");
+        }
       });
   };
 

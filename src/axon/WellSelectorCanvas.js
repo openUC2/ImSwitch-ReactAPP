@@ -390,9 +390,9 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
     experimentState.pointList.forEach((itPoint, index) => {
       // Define the square's position and size
       const rasterWidthOverlapedPx =
-        getRasterWidthAsPx() * (1 - wellSelectorState.overlapWidth);
+        getRasterWidthAsPx() * (1 - (experimentState.parameterValue.overlapWidth || 0));
       const rasterHeightOverlapedPx =
-        getRasterHeightAsPx() * (1 - wellSelectorState.overlapHeight);
+        getRasterHeightAsPx() * (1 - (experimentState.parameterValue.overlapHeight || 0));
 
       //center square
       const pointCenterXpx = calcPhy2Px(itPoint.x); // - Math.min(squareWidth, getRasterWidthAsPx()) / 2;
@@ -406,7 +406,49 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
 
       //calc neighbors
       let neighborPointList = [];
-      if (itPoint.shape == Shape.CIRCLE) {
+      
+      // Check for new well-based patterns first
+      if (itPoint.wellMode === "center_only") {
+        // Find wells that intersect with this point and return their centers
+        const intersectingWells = wsUtils.findWellsAtPosition(itPoint, experimentState.wellLayout);
+        const centerPositions = wsUtils.generateWellCenterPositions(intersectingWells, experimentState.wellLayout);
+        neighborPointList = centerPositions.map(pos => ({
+          x: calcPhy2Px(pos.x),
+          y: calcPhy2Px(pos.y),
+          iX: pos.iX,
+          iY: pos.iY
+        }));
+        
+      } else if (itPoint.wellMode === "pattern") {
+        // Generate pattern within wells
+        const intersectingWells = wsUtils.findWellsAtPosition(itPoint, experimentState.wellLayout);
+        let patternPositions = [];
+        
+        if (itPoint.patternType === "circle") {
+          patternPositions = wsUtils.generateWellCirclePattern(
+            intersectingWells,
+            itPoint.patternRadius || 50,
+            itPoint.patternOverlap || 0.1,
+            Math.min(objectiveState.fovX, objectiveState.fovY) * (1 - (experimentState.parameterValue.overlapWidth || 0))
+          );
+        } else if (itPoint.patternType === "rectangle") {
+          patternPositions = wsUtils.generateWellRectanglePattern(
+            intersectingWells,
+            itPoint.patternWidth || 100,
+            itPoint.patternHeight || 100,
+            itPoint.patternOverlap || 0.1,
+            Math.min(objectiveState.fovX, objectiveState.fovY) * (1 - (experimentState.parameterValue.overlapWidth || 0))
+          );
+        }
+        
+        neighborPointList = patternPositions.map(pos => ({
+          x: calcPhy2Px(pos.x),
+          y: calcPhy2Px(pos.y),
+          iX: pos.iX,
+          iY: pos.iY
+        }));
+        
+      } else if (itPoint.shape == Shape.CIRCLE) {
         //calc neighbors
         const rasterCenterPx = {
           x: calcPhy2Px(itPoint.x),
@@ -559,9 +601,9 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
       if (mouseDownFlag) {
         // Define the square's position and size
         const rasterWidthOverlaped =
-          getRasterWidthAsPx() * (1 - wellSelectorState.overlapWidth);
+          getRasterWidthAsPx() * (1 - (experimentState.parameterValue.overlapWidth || 0));
         const rasterHeightOverlaped =
-          getRasterHeightAsPx() * (1 - wellSelectorState.overlapHeight);
+          getRasterHeightAsPx() * (1 - (experimentState.parameterValue.overlapHeight || 0));
 
         //draw the tiles
         ctx.strokeStyle = "red"; // Grid line color
@@ -1052,9 +1094,9 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
         if (e.shiftKey) {
           // Define the square's position and size
           const squareWidthPx =
-            getRasterWidthAsPx() * (1 - wellSelectorState.overlapWidth);
+            getRasterWidthAsPx() * (1 - (experimentState.parameterValue.overlapWidth || 0));
           const squareHeightPx =
-            getRasterHeightAsPx() * (1 - wellSelectorState.overlapHeight);
+            getRasterHeightAsPx() * (1 - (experimentState.parameterValue.overlapHeight || 0));
 
           //generate points in rect
           const pointsInRectList = wsUtils.generateCenterPointsInRect(

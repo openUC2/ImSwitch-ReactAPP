@@ -367,6 +367,59 @@ const ParameterEditorComponent = () => {
             </td>
           </tr>
 
+          {/* Tile Overlap */}
+          <tr>
+            <td rowSpan="2" style={tdStyle}>
+              Tile Overlap
+            </td>
+            <td style={tdStyle}>Width Overlap (%)</td>
+            <td style={tdStyle}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <input
+                  type="range"
+                  min="-50"
+                  max="50"
+                  step="5"
+                  value={(parameterValue.overlapWidth * 100).toFixed(0)}
+                  onChange={(e) =>
+                    dispatch(experimentSlice.setOverlapWidth(Number(e.target.value) / 100))
+                  }
+                  style={{ flex: 1 }}
+                />
+                <span style={{ minWidth: "50px", textAlign: "right" }}>
+                  {(parameterValue.overlapWidth * 100).toFixed(0)}%
+                </span>
+              </div>
+              <small style={{ display: "block", color: "#666", fontSize: "0.8em", marginTop: "2px" }}>
+                Negative = gap between tiles, Positive = overlap
+              </small>
+            </td>
+          </tr>
+          <tr>
+            <td style={tdStyle}>Height Overlap (%)</td>
+            <td style={tdStyle}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <input
+                  type="range"
+                  min="-50"
+                  max="50"
+                  step="5"
+                  value={(parameterValue.overlapHeight * 100).toFixed(0)}
+                  onChange={(e) =>
+                    dispatch(experimentSlice.setOverlapHeight(Number(e.target.value) / 100))
+                  }
+                  style={{ flex: 1 }}
+                />
+                <span style={{ minWidth: "50px", textAlign: "right" }}>
+                  {(parameterValue.overlapHeight * 100).toFixed(0)}%
+                </span>
+              </div>
+              <small style={{ display: "block", color: "#666", fontSize: "0.8em", marginTop: "2px" }}>
+                Negative = gap between tiles, Positive = overlap
+              </small>
+            </td>
+          </tr>
+
           {/* File Format Options */}
           <tr>
             <td rowSpan="3" style={tdStyle}>

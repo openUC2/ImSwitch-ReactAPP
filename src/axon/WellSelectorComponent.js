@@ -9,9 +9,9 @@ import InfoPopup from "./InfoPopup.js";
 
 
 import * as wellSelectorSlice from "../state/slices/WellSelectorSlice.js";
-import * as experimentSlice from "../state/slices/ExperimentSlice.js"; 
+import * as experimentSlice from "../state/slices/ExperimentSlice.js";
+import * as positionSlice from "../state/slices/PositionSlice.js"; 
 
-import apiHistoScanControllerGetSampleLayoutFilePaths from "../backendapi/apiHistoScanControllerGetSampleLayoutFilePaths.js";
 import apiDownloadJson from "../backendapi/apiDownloadJson.js";
 
 import {
@@ -45,23 +45,9 @@ const WellSelectorComponent = () => {
 
   // Access global Redux state
   const wellSelectorState = useSelector(wellSelectorSlice.getWellSelectorState);
-  const experimentState = useSelector(experimentSlice.getExperimentState); 
+  const experimentState = useSelector(experimentSlice.getExperimentState);
+  const positionState = useSelector(positionSlice.getPositionState); 
 
-
-  //##################################################################################
-  useEffect(() => {
-    //request welllayout file list
-    apiHistoScanControllerGetSampleLayoutFilePaths()
-      .then((data) => {
-        //console.log("apiHistoScanControllerGetSampleLayoutFilePaths",data)
-        //set file list
-        setWellLayoutFileList(data);
-      })
-      .catch((err) => {
-        //handle error if needed
-        console.error(err);
-      });
-  }, []); // Empty dependency array ensures this runs once on mount
 
   //##################################################################################
   const handleModeChange = (mode) => {
@@ -124,6 +110,8 @@ const WellSelectorComponent = () => {
       wellLayout = wsUtils.wellLayout32;
     } else if (event.target.value === "Wellplate 96") {
       wellLayout = wsUtils.wellLayout96;
+    } else if (event.target.value === "Wellplate 384") {
+      wellLayout = wsUtils.wellLayout384;
     } else if (event.target.value === "Ropod") {
       wellLayout = wsUtils.ropodLayout;      
     } else {
@@ -134,7 +122,9 @@ const WellSelectorComponent = () => {
           //handle layout
           //TODO
         //set popup
-           infoPopupRef.current.showMessage("TODO impl me"); 
+        if (infoPopupRef.current) {
+          infoPopupRef.current.showMessage("TODO impl me");
+        } 
           console.error("-----------------------------------------------TODO impl me------------------------------------------------------------");
         })
         .catch((err) => {
@@ -154,6 +144,26 @@ const WellSelectorComponent = () => {
 
     //set new layout
     dispatch(experimentSlice.setWellLayout(wellLayout));
+  };
+
+  //##################################################################################
+  const handleAddCurrentPosition = () => {
+    // Get current position from Redux state
+    const currentX = positionState.x;
+    const currentY = positionState.y;
+    
+    // Create a new point with current position
+    dispatch(experimentSlice.createPoint({
+      x: currentX,
+      y: currentY,
+      name: `Position ${experimentState.pointList.length + 1}`,
+      shape: ""
+    }));
+    
+    // Show confirmation message
+    if (infoPopupRef.current) {
+      infoPopupRef.current.showMessage(`Added position: X=${currentX}, Y=${currentY}`);
+    }
   };
 
   //##################################################################################
@@ -188,10 +198,11 @@ const WellSelectorComponent = () => {
             </MenuItem>
             {/* hard coded layouts */}
             <MenuItem value="Default">Default</MenuItem>
-            <MenuItem value="Heidstar 4x Histosample">Development</MenuItem>
+            <MenuItem value="Heidstar 4x Histosample">4 Slide Heidstar</MenuItem>
             <MenuItem value="Ropod">Ropod</MenuItem>  
             <MenuItem value="Wellplate 32">Wellplate 32</MenuItem>
             <MenuItem value="Wellplate 96">Wellplate 96</MenuItem>
+            <MenuItem value="Wellplate 384">Wellplate 384</MenuItem>
             <MenuItem value="histolayout">histolayout</MenuItem>
             {/* online layouts */}
             {wellLayoutFileList.map((file, index) => (
@@ -309,6 +320,14 @@ const WellSelectorComponent = () => {
             disabled={wellSelectorState.mode == Mode.MOVE_CAMERA}
           >
             MOVE CAMERA
+          </Button>
+
+          <Button
+            variant="contained"
+            style={{}}
+            onClick={() => handleAddCurrentPosition()}
+          >
+            ADD CURRENT POSITION
           </Button>
         </ButtonGroup>
       </div>

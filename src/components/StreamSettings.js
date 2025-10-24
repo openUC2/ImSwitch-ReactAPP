@@ -15,10 +15,9 @@ import {
   Divider,
   Button
 } from '@mui/material';
-import apiSettingsControllerGetStreamParams from '../backendapi/apiSettingsControllerGetStreamParams';
-import apiSettingsControllerSetStreamParams from '../backendapi/apiSettingsControllerSetStreamParams';
+import apiLiveViewControllerGetStreamParameters from '../backendapi/apiLiveViewControllerGetStreamParameters';
+import apiLiveViewControllerSetStreamParameters from '../backendapi/apiLiveViewControllerSetStreamParameters';
 import apiSettingsControllerSetJpegQuality from '../backendapi/apiSettingsControllerSetJpegQuality';
-import apiSettingsControllerGetDetectorGlobalParameters from '../backendapi/apiSettingsControllerGetDetectorGlobalParameters';
 import * as liveStreamSlice from '../state/slices/LiveStreamSlice.js';
 
 /**
@@ -46,21 +45,30 @@ const StreamSettings = ({ onOpen }) => {
       setUpdatePending(true);
       setError(null);
       
+      // Determine which protocol is enabled
+      const isJpegMode = draftSettings.jpeg.enabled;
+      const protocol = isJpegMode ? 'jpeg' : 'binary';
+      
       // Only try to update binary settings if not in legacy mode and binary is enabled
       if (!isLegacyBackend && draftSettings.binary.enabled) {
-        await apiSettingsControllerSetStreamParams({
-          throttle_ms: draftSettings.binary.throttle_ms,
-          compression: draftSettings.binary.compression,
-          subsampling: draftSettings.binary.subsampling
+        await apiLiveViewControllerSetStreamParameters('binary', {
+          compression_algorithm: draftSettings.binary.compression.algorithm,
+          compression_level: draftSettings.binary.compression.level,
+          subsampling_factor: draftSettings.binary.subsampling.factor,
+          throttle_ms: draftSettings.binary.throttle_ms
         });
       }
       
       // Update JPEG quality if JPEG is enabled
       if (draftSettings.jpeg.enabled && draftSettings.jpeg.quality !== undefined) {
         try {
-          await apiSettingsControllerSetJpegQuality(draftSettings.jpeg.quality);
+          await apiLiveViewControllerSetStreamParameters('jpeg', {
+            jpeg_quality: draftSettings.jpeg.quality,
+            subsampling_factor: 1,
+            throttle_ms: 100
+          });
         } catch (err) {
-          console.warn('Failed to set JPEG quality:', err.message);
+          console.warn('Failed to set JPEG parameters:', err.message);
         }
       }
       
@@ -105,37 +113,29 @@ const StreamSettings = ({ onOpen }) => {
       setLoading(true);
       setError(null);
       
-      // First, check the current backend stream format from global detector parameters
-      let detectedStreamType = null;
-      try {
-        const globalParams = await apiSettingsControllerGetDetectorGlobalParameters();
-        console.log('Global detector parameters:', globalParams);
-        
-        // Determine stream type from compression algorithm
-        // If algorithm is "jpeg", it's JPEG mode; otherwise (lz4, zstd, etc.) it's binary
-        if (globalParams.stream_compression_algorithm) {
-          detectedStreamType = globalParams.stream_compression_algorithm === 'jpeg' ? 'jpeg' : 'binary';
-          console.log(`Detected stream type from backend: ${detectedStreamType}`);
-        }
-      } catch (err) {
-        console.warn('Could not fetch global detector parameters:', err.message);
-      }
+      // Get stream parameters from new LiveViewController endpoint
+      const allParams = await apiLiveViewControllerGetStreamParameters();
+      console.log('Stream parameters from LiveViewController:', allParams);
       
-      // Try to load binary streaming settings
-      const params = await apiSettingsControllerGetStreamParams();
-      
-      // Merge with Redux settings for persistence
+      // Transform backend response to frontend format
       const mergedSettings = {
-        ...liveStreamState.streamSettings,
-        ...params
+        current_compression_algorithm: allParams.binary ? 'binary' : 'jpeg',
+        binary: {
+          enabled: allParams.binary ? true : false,
+          compression: {
+            algorithm: allParams.binary?.compression_algorithm || 'lz4',
+            level: allParams.binary?.compression_level || 0
+          },
+          subsampling: { factor: allParams.binary?.subsampling_factor || 4 },
+          throttle_ms: allParams.binary?.throttle_ms || 100,
+          bitdepth_in: 12,
+          pixfmt: "GRAY16"
+        },
+        jpeg: {
+          enabled: allParams.jpeg ? true : false,
+          quality: allParams.jpeg?.jpeg_quality || 85
+        }
       };
-      
-      // Override with detected stream type if available
-      if (detectedStreamType) {
-        mergedSettings.binary.enabled = detectedStreamType === 'binary';
-        mergedSettings.jpeg.enabled = detectedStreamType === 'jpeg';
-        mergedSettings.current_compression_algorithm = detectedStreamType;
-      }
       
       setDraftSettings(mergedSettings);
       dispatch(liveStreamSlice.setStreamSettings(mergedSettings));
@@ -236,9 +236,30 @@ const StreamSettings = ({ onOpen }) => {
     setLoading(true);
     setError(null);
     try {
-      const params = await apiSettingsControllerGetStreamParams();
-      setDraftSettings(params);
-      const initialFormat = params.binary?.enabled ? 'binary' : 'jpeg';
+      const params = await apiLiveViewControllerGetStreamParameters();
+      
+      // Transform to frontend format
+      const transformedSettings = {
+        current_compression_algorithm: params.binary ? 'binary' : 'jpeg',
+        binary: {
+          enabled: params.binary ? true : false,
+          compression: {
+            algorithm: params.binary?.compression_algorithm || 'lz4',
+            level: params.binary?.compression_level || 0
+          },
+          subsampling: { factor: params.binary?.subsampling_factor || 4 },
+          throttle_ms: params.binary?.throttle_ms || 100,
+          bitdepth_in: 12,
+          pixfmt: "GRAY16"
+        },
+        jpeg: {
+          enabled: params.jpeg ? true : false,
+          quality: params.jpeg?.jpeg_quality || 85
+        }
+      };
+      
+      setDraftSettings(transformedSettings);
+      const initialFormat = transformedSettings.binary?.enabled ? 'binary' : 'jpeg';
       dispatch(liveStreamSlice.setImageFormat(initialFormat));
     } catch (err) {
       setError(`Failed to load settings: ${err.message}`);

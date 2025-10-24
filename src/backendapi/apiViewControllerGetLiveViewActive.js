@@ -2,24 +2,27 @@
 import createAxiosInstance from "./createAxiosInstance";
 
 /**
- * Check if live view is currently active
- * GET /ViewController/getLiveViewActive
+ * Check if any live view stream is currently active
+ * GET /LiveViewController/getLiveViewActive
  * 
- * Returns: boolean (true if stream is active, false otherwise)
+ * Returns: boolean (true if any stream is active, false otherwise)
  */
 const apiViewControllerGetLiveViewActive = async () => {
   try {
     const axiosInstance = createAxiosInstance();
-    const url = `/ViewController/getLiveViewActive`;
+    const url = `/LiveViewController/getLiveViewActive`;
     const response = await axiosInstance.get(url);
     
-    // Backend might return different formats, handle them
+    // Backend returns boolean directly
     if (typeof response.data === 'boolean') {
       return response.data;
     }
+    
+    // Fallback for legacy format
     if (typeof response.data === 'object' && response.data !== null) {
       return response.data.active || response.data.isActive || false;
     }
+    
     return false;
   } catch (error) {
     console.warn('Failed to get live view active status:', error.message);

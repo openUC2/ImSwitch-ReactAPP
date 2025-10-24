@@ -12,7 +12,6 @@ import DetectorTriggerController from "./components/DetectorTriggerController.js
 import ExtendedLEDMatrixController from "./components/ExtendedLEDMatrixController.jsx";
 import FlowStopController from "./components/FlowStopController.js";
 import FocusLockController from "./components/FocusLockController.js";
-import HistoScanController from "./components/HistoScanController.js";
 import ImJoyView from "./components/ImJoyView.js";
 import JupyterExecutor from "./components/JupyterExecutor.js";
 import LepMonController from "./components/LepmonController.js";
@@ -421,7 +420,6 @@ function App() {
             {selectedPlugin === "ImJoy" && (
               <ImJoyView sharedImage={sharedImage} />
             )}
-            {selectedPlugin === "HistoScan" && <HistoScanController />}
             {selectedPlugin === "STORMLocal" && <STORMControllerLocal />}
             {selectedPlugin === "STORMArkitekt" && <STORMControllerArkitekt />}
             {selectedPlugin === "Stresstest" && <StresstestController />}
