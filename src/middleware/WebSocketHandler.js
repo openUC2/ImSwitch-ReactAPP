@@ -739,7 +739,7 @@ const WebSocketHandler = () => {
       if (!isPaused && !connectionCheckRef.current) {
         // Initial connection check
         checkUc2Connection();
-        
+
         // Set up periodic monitoring
         connectionCheckRef.current = setInterval(() => {
           if (!isPaused) {
@@ -759,8 +759,10 @@ const WebSocketHandler = () => {
     // Listen for pause/resume events from ConnectionSettings
     const handlePausePeriodicTests = (event) => {
       isPaused = event.detail.pause;
-      console.log(`Periodic connection tests ${isPaused ? 'paused' : 'resumed'}`);
-      
+      console.log(
+        `Periodic connection tests ${isPaused ? "paused" : "resumed"}`
+      );
+
       if (isPaused) {
         stopPeriodicChecks();
       } else {
@@ -769,14 +771,20 @@ const WebSocketHandler = () => {
     };
 
     // Add event listener
-    window.addEventListener('imswitch:pausePeriodicTests', handlePausePeriodicTests);
+    window.addEventListener(
+      "imswitch:pausePeriodicTests",
+      handlePausePeriodicTests
+    );
 
     // Start periodic checks initially
     startPeriodicChecks();
 
     return () => {
       // Cleanup
-      window.removeEventListener('imswitch:pausePeriodicTests', handlePausePeriodicTests);
+      window.removeEventListener(
+        "imswitch:pausePeriodicTests",
+        handlePausePeriodicTests
+      );
       stopPeriodicChecks();
     };
   }, [checkUc2Connection]); // Now using the memoized function

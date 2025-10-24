@@ -84,7 +84,7 @@ function ConnectionSettings() {
     // This will pause periodic background tests to avoid confusion
     window.dispatchEvent(
       new CustomEvent("imswitch:pausePeriodicTests", {
-        detail: { pause: true }
+        detail: { pause: true },
       })
     );
 
@@ -112,7 +112,7 @@ function ConnectionSettings() {
     return () => {
       window.dispatchEvent(
         new CustomEvent("imswitch:pausePeriodicTests", {
-          detail: { pause: false }
+          detail: { pause: false },
         })
       );
     };
@@ -252,8 +252,9 @@ function ConnectionSettings() {
       {/* Periodic Tests Paused Info */}
       <Alert severity="info" sx={{ mb: 2 }}>
         <Typography variant="body2">
-          <strong>Info:</strong> Periodic connection tests are paused while you configure settings 
-          to avoid confusion between test results and your current changes.
+          <strong>Info:</strong> Periodic connection tests are paused while you
+          configure settings to avoid confusion between test results and your
+          current changes.
         </Typography>
       </Alert>
 
@@ -490,12 +491,12 @@ function ConnectionSettings() {
           )}
 
           {/* Periodic tests paused indicator */}
-          <Chip 
-            label="Periodic Tests Paused" 
-            size="small" 
-            variant="outlined" 
+          <Chip
+            label="Periodic Tests Paused"
+            size="small"
+            variant="outlined"
             color="info"
-            sx={{ ml: 'auto' }}
+            sx={{ ml: "auto" }}
           />
         </CardActions>
       </Card>
