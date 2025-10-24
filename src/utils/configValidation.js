@@ -11,41 +11,41 @@ export const validateConfiguration = (config) => {
   const errors = [];
   const warnings = [];
 
-  if (!config || typeof config !== 'object') {
-    errors.push('Configuration must be a valid object');
+  if (!config || typeof config !== "object") {
+    errors.push("Configuration must be a valid object");
     return { isValid: false, errors, warnings };
   }
 
   // Check for required basic structure (using actual config structure)
   if (!config.detectors && !config.detector) {
-    warnings.push('No detector configuration found');
+    warnings.push("No detector configuration found");
   }
 
   if (!config.lasers && !config.actuators) {
-    warnings.push('No laser/actuator configuration found');
+    warnings.push("No laser/actuator configuration found");
   }
 
   if (!config.positioners) {
-    warnings.push('No positioners configuration found');
+    warnings.push("No positioners configuration found");
   }
 
   // Validate device configurations if present
-  if (config.detectors && typeof config.detectors !== 'object') {
-    errors.push('Detectors configuration must be an object');
+  if (config.detectors && typeof config.detectors !== "object") {
+    errors.push("Detectors configuration must be an object");
   }
-  if (config.detector && typeof config.detector !== 'object') {
-    errors.push('Detector configuration must be an object');
-  }
-
-  if (config.lasers && typeof config.lasers !== 'object') {
-    errors.push('Lasers configuration must be an object');
-  }
-  if (config.actuators && typeof config.actuators !== 'object') {
-    errors.push('Actuators configuration must be an object');
+  if (config.detector && typeof config.detector !== "object") {
+    errors.push("Detector configuration must be an object");
   }
 
-  if (config.positioners && typeof config.positioners !== 'object') {
-    errors.push('Positioners configuration must be an object');
+  if (config.lasers && typeof config.lasers !== "object") {
+    errors.push("Lasers configuration must be an object");
+  }
+  if (config.actuators && typeof config.actuators !== "object") {
+    errors.push("Actuators configuration must be an object");
+  }
+
+  if (config.positioners && typeof config.positioners !== "object") {
+    errors.push("Positioners configuration must be an object");
   }
 
   // Check for common configuration issues in detectors
@@ -110,10 +110,10 @@ export const validateJsonString = (jsonString) => {
     const parsed = JSON.parse(jsonString);
     return { isValid: true, error: null, parsed };
   } catch (error) {
-    return { 
-      isValid: false, 
+    return {
+      isValid: false,
       error: error.message,
-      parsed: null 
+      parsed: null,
     };
   }
 };
@@ -125,22 +125,22 @@ export const validateJsonString = (jsonString) => {
  */
 export const formatValidationMessage = (validationResult) => {
   const { isValid, errors, warnings } = validationResult;
-  
-  let message = '';
-  
+
+  let message = "";
+
   if (isValid) {
-    message = '✅ Configuration is valid';
+    message = "✅ Configuration is valid";
     if (warnings.length > 0) {
-      message += `\n⚠️ Warnings:\n${warnings.map(w => `• ${w}`).join('\n')}`;
+      message += `\n⚠️ Warnings:\n${warnings.map((w) => `• ${w}`).join("\n")}`;
     }
   } else {
-    message = '❌ Configuration has errors:';
-    message += `\n${errors.map(e => `• ${e}`).join('\n')}`;
+    message = "❌ Configuration has errors:";
+    message += `\n${errors.map((e) => `• ${e}`).join("\n")}`;
     if (warnings.length > 0) {
-      message += `\n⚠️ Warnings:\n${warnings.map(w => `• ${w}`).join('\n')}`;
+      message += `\n⚠️ Warnings:\n${warnings.map((w) => `• ${w}`).join("\n")}`;
     }
   }
-  
+
   return message;
 };
 
@@ -150,70 +150,70 @@ export const formatValidationMessage = (validationResult) => {
  * @returns {object} - Summary object with counts and key information
  */
 export const createConfigurationPreview = (config) => {
-  if (!config || typeof config !== 'object') {
-    return { 
-      valid: false, 
-      summary: 'Invalid configuration',
+  if (!config || typeof config !== "object") {
+    return {
+      valid: false,
+      summary: "Invalid configuration",
       detectorCount: 0,
       laserCount: 0,
       actuatorCount: 0,
       positionerCount: 0,
       totalDevices: 0,
-      devices: []
+      devices: [],
     };
   }
 
   const devices = [];
-  
+
   // Extract detector information (support both detectors and detector)
   let detectorCount = 0;
   const detectors = config.detectors || config.detector;
-  if (detectors && typeof detectors === 'object') {
+  if (detectors && typeof detectors === "object") {
     detectorCount = Object.keys(detectors).length;
     Object.entries(detectors).forEach(([key, detector]) => {
       devices.push({
         name: key,
-        type: 'Detector',
-        manager: detector.managerName || 'Unknown'
+        type: "Detector",
+        manager: detector.managerName || "Unknown",
       });
     });
   }
 
   // Extract laser information
   let laserCount = 0;
-  if (config.lasers && typeof config.lasers === 'object') {
+  if (config.lasers && typeof config.lasers === "object") {
     laserCount = Object.keys(config.lasers).length;
     Object.entries(config.lasers).forEach(([key, laser]) => {
       devices.push({
         name: key,
-        type: 'Laser',
-        manager: laser.managerName || 'Unknown'
+        type: "Laser",
+        manager: laser.managerName || "Unknown",
       });
     });
   }
 
   // Extract actuator information (legacy support)
   let actuatorCount = 0;
-  if (config.actuators && typeof config.actuators === 'object') {
+  if (config.actuators && typeof config.actuators === "object") {
     actuatorCount = Object.keys(config.actuators).length;
     Object.entries(config.actuators).forEach(([key, actuator]) => {
       devices.push({
         name: key,
-        type: 'Actuator',
-        manager: actuator.managerName || 'Unknown'
+        type: "Actuator",
+        manager: actuator.managerName || "Unknown",
       });
     });
   }
 
   // Extract positioner information
   let positionerCount = 0;
-  if (config.positioners && typeof config.positioners === 'object') {
+  if (config.positioners && typeof config.positioners === "object") {
     positionerCount = Object.keys(config.positioners).length;
     Object.entries(config.positioners).forEach(([key, positioner]) => {
       devices.push({
         name: key,
-        type: 'Positioner',
-        manager: positioner.managerName || 'Unknown'
+        type: "Positioner",
+        manager: positioner.managerName || "Unknown",
       });
     });
   }
@@ -225,6 +225,6 @@ export const createConfigurationPreview = (config) => {
     actuatorCount,
     positionerCount,
     totalDevices: detectorCount + laserCount + actuatorCount + positionerCount,
-    devices
+    devices,
   };
 };
