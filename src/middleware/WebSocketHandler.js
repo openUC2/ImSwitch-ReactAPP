@@ -27,7 +27,7 @@ const WebSocketHandler = () => {
   const hostIP = connectionSettingsState.ip;
   const hostPort = connectionSettingsState.apiPort;
 
-  // Memoized connection check function - following React best practices
+  // Memoized connection check function
   const checkUc2Connection = useCallback(
     async (ip = hostIP, port = hostPort) => {
       // Skip monitoring if backend connection is not configured

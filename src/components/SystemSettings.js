@@ -43,11 +43,14 @@ export default function SystemSettings() {
   // API communication following Copilot Instructions
   const callEndpoint = async (url) => {
     try {
-      const response = await fetch(url, { method: "POST" });
+      const response = await fetch(url, { method: "GET" });
       if (!response.ok) {
         console.error(
           `API call failed: ${response.status} ${response.statusText}`
         );
+      } else {
+        const data = await response.json();
+        console.log("API response:", data);
       }
     } catch (e) {
       console.error("API call error:", e);
