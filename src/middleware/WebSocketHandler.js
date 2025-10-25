@@ -15,6 +15,9 @@ import * as mazeGameSlice from "../state/slices/MazeGameSlice.js";
 
 import { io } from "socket.io-client";
 
+// Singleton socket instance - prevents duplicate connections in React StrictMode
+let socketInstance = null;
+
 //##################################################################################
 const WebSocketHandler = () => {
   console.log("WebSocket WebSocketHandler");
@@ -28,6 +31,12 @@ const WebSocketHandler = () => {
 
   //##################################################################################
   useEffect(() => {
+    // Reuse existing socket or create new one (Singleton pattern for React StrictMode)
+    if (socketInstance && socketInstance.connected) {
+      console.log("WebSocket: Reusing existing connection", socketInstance.id);
+      return () => {}; // Don't disconnect - other instances might still need it
+    }
+    
     //create the socket
     const adress =
       connectionSettingsState.ip + ":" + connectionSettingsState.websocketPort;
@@ -35,6 +44,9 @@ const WebSocketHandler = () => {
     const socket = io(adress, {
       transports: ["websocket"],
     });
+    
+    // Store singleton instance
+    socketInstance = socket;
 
     //listen to all
     socket.on("*", (packet) => {
@@ -48,32 +60,38 @@ const WebSocketHandler = () => {
       //update redux state
       dispatch(webSocketSlice.setConnected(true));
     });
-
-    // Store frame metadata for UC2F parsing
-    let frameMetadata = null;
     
     // Listen for binary frame events (UC2F packets)
-    socket.on("frame", (buf, ack) => {
-      /*
-      console.log('WebSocketHandler: Received UC2F frame:', buf.byteLength, 'bytes');
-      console.log('WebSocketHandler: Buffer type:', buf.constructor.name);
-      console.log('WebSocketHandler: First 20 bytes:', new Uint8Array(buf.slice(0, 20)));
-      */
+    // Socket.IO sends as array: [metadata, binaryData]
+    socket.on("frame", (payload, ack) => {
+      // Parse payload - Socket.IO automatically deserializes [metadata, binary] arrays
+      let metadata = null;
+      let buf = null;
+      
+      if (Array.isArray(payload) && payload.length === 2) {
+        // New format: [metadata, binaryData]
+        metadata = payload[0];
+        buf = payload[1];
+        
+        // Update Redux with current frame ID
+        if (metadata && metadata.image_id !== undefined) {
+          dispatch(liveStreamSlice.setCurrentFrameId(metadata.image_id));
+        }
+      } else {
+        // Legacy format: just binary data (fallback)
+        buf = payload;
+      }
+      
       // Dispatch custom event with metadata for proper parsing
       window.dispatchEvent(new CustomEvent("uc2:frame", { 
         detail: { 
           buffer: buf, 
-          metadata: frameMetadata 
+          metadata: metadata 
         }
       }));
-      // console.log('WebSocketHandler: Dispatched uc2:frame event');
       
       // Send acknowledgement to enable flow control
       // This tells the server we're ready for the next frame
-      // NOTE: Currently sends ACK immediately after dispatch
-      // TODO: Consider delaying ACK until after GPU rendering completes
-      // This would require listening to a custom event from LiveViewerGL
-      // For now, immediate ACK is acceptable as it provides backpressure at network level
       if (ack && typeof ack === 'function') {
         ack();
       } else {
@@ -92,26 +110,12 @@ const WebSocketHandler = () => {
       const dataJson = JSON.parse(data);
       //console.log(dataJson);
       
+      // REMOVED: frame_meta handler - metadata is now sent together with binary frame
       // Store frame metadata for UC2F parsing
-      if (dataJson.name === "frame_meta" && dataJson.metadata) {
-        // console.log('Received frame metadata:', dataJson.metadata);
-        frameMetadata = dataJson.metadata;
-        console.log("Frame id: ", frameMetadata.image_id);
-        
-        // Update Redux with current frame ID
-        if (frameMetadata.image_id !== undefined) {
-          dispatch(liveStreamSlice.setCurrentFrameId(frameMetadata.image_id));
-        }
-        
-        // Send acknowledgement for metadata
-        if (ack && typeof ack === 'function') {
-          ack();
-        } else {
-          socket.emit('frame_ack');
-        }
-      }
+      // if (dataJson.name === "frame_meta" && dataJson.metadata) { ... }
+      
       //----------------------------------------------
-      else if (dataJson.name === "sigUpdateImage") {
+      if (dataJson.name === "sigUpdateImage") {
         //console.log("sigUpdateImage", dataJson);
         //update redux state - LEGACY JPEG PATH
         if (dataJson.detectorname) {
@@ -158,8 +162,10 @@ const WebSocketHandler = () => {
           
           // Send acknowledgement for JPEG frames to enable flow control
           if (ack && typeof ack === 'function') {
+            console.log("Acknowledging JPEG image frame");
             ack();
           } else {
+            console.log("Emitting frame_ack for JPEG image");
             socket.emit('frame_ack');
           }
 

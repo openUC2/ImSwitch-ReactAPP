@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 
 import { Box, IconButton, TextField, Typography, Button } from "@mui/material";
 import {
@@ -11,6 +11,8 @@ import {
 import StreamControlOverlay from "../components/StreamControlOverlay";
 import apiViewControllerGetLiveViewActive from "../backendapi/apiViewControllerGetLiveViewActive";
 import apiPositionerControllerMovePositioner from "../backendapi/apiPositionerControllerMovePositioner";
+import { useSelector } from "react-redux";
+import * as liveStreamSlice from "../state/slices/LiveStreamSlice.js";
 
 export default function StreamControls({
   isStreamRunning,
@@ -25,7 +27,10 @@ export default function StreamControls({
   lastSnapPath,
 }) {
 
-  // State for HUD data from LiveViewerGL
+  // Get stream stats from Redux (includes fps which indicates active frames)
+  const liveStreamState = useSelector(liveStreamSlice.getLiveStreamState);
+
+  // State for HUD data for overlay display
   const [hudData, setHudData] = useState({
     stats: { fps: 0, bps: 0 },
     featureSupport: { webgl2: false, lz4: false },
@@ -34,16 +39,30 @@ export default function StreamControls({
     viewTransform: { scale: 1, translateX: 0, translateY: 0 }
   });
 
+  // Sync hudData stats with Redux stats for overlay display
+  useEffect(() => {
+    setHudData(prevData => ({
+      ...prevData,
+      stats: {
+        fps: liveStreamState.stats.fps || 0,
+        bps: liveStreamState.stats.bps || 0
+      }
+    }));
+  }, [liveStreamState.stats.fps, liveStreamState.stats.bps]);
+
   // State for stream status from backend
   const [isLiveViewActive, setIsLiveViewActive] = useState(false);
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
+  const lastFrameTimeRef = useRef(Date.now());
+  const inactivityCheckIntervalRef = useRef(null);
 
-  // Poll backend for live view status
+  // Check backend live view status once
   const checkLiveViewStatus = useCallback(async () => {
     try {
       setIsCheckingStatus(true);
       const active = await apiViewControllerGetLiveViewActive();
       setIsLiveViewActive(active);
+      console.log('Backend live view status:', active);
     } catch (error) {
       console.warn('Failed to check live view status:', error);
     } finally {
@@ -51,24 +70,12 @@ export default function StreamControls({
     }
   }, []);
 
-  // Check status on mount and set up polling
+  // Check status only on mount (once)
   useEffect(() => {
-    // Check immediately on mount
     checkLiveViewStatus();
-    
-    // Poll every 2 seconds
-    const interval = setInterval(checkLiveViewStatus, 2000);
-    
-    return () => clearInterval(interval);
   }, [checkLiveViewStatus]);
 
-  // Also check status after toggle
-  const handleToggleStream = useCallback(async () => {
-    await onToggleStream();
-    // Wait a bit for backend to update, then check status
-    setTimeout(checkLiveViewStatus, 500);
-  }, [onToggleStream, checkLiveViewStatus]);
-
+ 
   // Move Z-axis handler
   const moveZAxis = useCallback((distance) => {
     apiPositionerControllerMovePositioner({
@@ -126,17 +133,58 @@ export default function StreamControls({
   }, [moveZAxis]);
 
 
+  // Handle start stream
+  const handleStartStream = useCallback(async () => {
+    if (!isLiveViewActive && !isCheckingStatus) {
+      await onToggleStream();
+      // Check status after a short delay to allow backend to update
+      setTimeout(checkLiveViewStatus, 500);
+    }
+  }, [isLiveViewActive, isCheckingStatus, onToggleStream, checkLiveViewStatus]);
+
+  // Handle stop stream
+  const handleStopStream = useCallback(async () => {
+    if (isLiveViewActive && !isCheckingStatus) {
+      await onToggleStream();
+      // Check status after a short delay to allow backend to update
+      setTimeout(checkLiveViewStatus, 500);
+    }
+  }, [isLiveViewActive, isCheckingStatus, onToggleStream, checkLiveViewStatus]);
+
   // Render stream controls with editable image name and icon buttons
   return (
     <Box sx={{ display: "flex", gap: 1, alignItems: "center", position: "relative" }}>
-      {/* Stream toggle icon button */}
+      {/* Stream control buttons */}
       <Typography variant="h6">Stream</Typography>
+      
+      {/* Start button - green when stream is OFF (can start), gray when ON */}
       <IconButton
-        color={isLiveViewActive ? "secondary" : "primary"}
-        onClick={handleToggleStream}
+        onClick={handleStartStream}
         disabled={isCheckingStatus}
+        sx={{
+          color: !isLiveViewActive ? 'success.main' : 'action.disabled',
+          '&:hover': {
+            backgroundColor: !isLiveViewActive ? 'success.light' : 'transparent',
+            opacity: !isLiveViewActive ? 0.8 : 0.5
+          }
+        }}
       >
-        {isLiveViewActive ? <Stop /> : <PlayArrow />}
+        <PlayArrow />
+      </IconButton>
+
+      {/* Stop button - red when stream is ON (can stop), gray when OFF */}
+      <IconButton
+        onClick={handleStopStream}
+        disabled={isCheckingStatus}
+        sx={{
+          color: isLiveViewActive ? 'error.main' : 'action.disabled',
+          '&:hover': {
+            backgroundColor: isLiveViewActive ? 'error.light' : 'transparent',
+            opacity: isLiveViewActive ? 0.8 : 0.5
+          }
+        }}
+      >
+        <Stop />
       </IconButton>
 
       {/* Editable image name field */}

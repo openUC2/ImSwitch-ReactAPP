@@ -12,13 +12,14 @@ import store, { persistor } from "./state/store"; // Import your store
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
-  <React.StrictMode>
-    <Provider store={store}>
-      <PersistGate loading={null} persistor={persistor}>
-        <App />
-      </PersistGate>
-    </Provider>
-  </React.StrictMode>
+  // REMOVED React.StrictMode - causes duplicate socket connections in development
+  // StrictMode intentionally double-mounts components to catch side effects
+  // This conflicts with WebSocket singleton pattern
+  <Provider store={store}>
+    <PersistGate loading={null} persistor={persistor}>
+      <App />
+    </PersistGate>
+  </Provider>
 );
 
 // If you want to start measuring performance in your app, pass a function
