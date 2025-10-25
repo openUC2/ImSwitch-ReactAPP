@@ -12,6 +12,7 @@ import * as objectiveSlice from "../state/slices/ObjectiveSlice.js";
 import * as omeZarrSlice from "../state/slices/OmeZarrTileStreamSlice.js";
 import * as focusLockSlice from "../state/slices/FocusLockSlice.js";
 import * as mazeGameSlice from "../state/slices/MazeGameSlice.js";
+import * as autofocusSlice from "../state/slices/AutofocusSlice.js";
 
 import { io } from "socket.io-client";
 
@@ -239,7 +240,7 @@ const WebSocketHandler = () => {
         */
         //----------------------------------------------
       } else if (dataJson.name == "sigUpdateMotorPosition") {
-        //console.log("sigUpdateMotorPosition", dataJson);
+        console.log("sigUpdateMotorPosition received:", dataJson);
         //parse
         try {
           const parsedArgs = dataJson.args.p0;
@@ -248,23 +249,26 @@ const WebSocketHandler = () => {
           if (positionerKeys.length > 0) {
             const key = positionerKeys[0];
             const correctedPositions = parsedArgs[key];
+            
+            console.log("Parsed positions:", correctedPositions);
 
-            //update redux state
-            dispatch(
-              positionSlice.setPosition(
-                Object.fromEntries(
-                  Object.entries({
-                    x: correctedPositions.X,
-                    y: correctedPositions.Y,
-                    z: correctedPositions.Z,
-                    a: correctedPositions.A,
-                  }).filter(([_, value]) => value !== undefined) //Note: filter out undefined values
-                )
-              )
+            // Build position update object, filtering out undefined values
+            const positionUpdate = Object.fromEntries(
+              Object.entries({
+                x: correctedPositions.X,
+                y: correctedPositions.Y,
+                z: correctedPositions.Z,
+                a: correctedPositions.A,
+              }).filter(([_, value]) => value !== undefined)
             );
+            
+            console.log("Position update to dispatch:", positionUpdate);
+            
+            //update redux state
+            dispatch(positionSlice.setPosition(positionUpdate));
           }
         } catch (error) {
-          console.error("sigUpdateMotorPosition", error);
+          console.error("Error in sigUpdateMotorPosition handler:", error);
         }
         //----------------------------------------------
       } else if (dataJson.name == "sigUpdateOMEZarrStore") {
@@ -401,6 +405,19 @@ const WebSocketHandler = () => {
           }
         } catch (error) {
           console.error("Error parsing calibration progress signal:", error);
+        }
+      } else if (dataJson.name === "sigUpdateFocusPlot") {
+        // Handle autofocus plot data updates
+        try {
+          if (dataJson.args && dataJson.args.p0 && dataJson.args.p1) {
+            // Store focus positions in p0, contrast values in p1
+            dispatch(autofocusSlice.setPlotData({ 
+              x: dataJson.args.p0, 
+              y: dataJson.args.p1 
+            }));
+          }
+        } catch (error) {
+          console.error("Error parsing autofocus plot signal:", error);
         }
       } else if (dataJson.name === "sigGameState") {
         // Handle maze game state updates

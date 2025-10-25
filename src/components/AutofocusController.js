@@ -1,47 +1,25 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { Paper, Grid, TextField, Button } from "@mui/material";
 import Plot from "react-plotly.js";
-import { useWebSocket } from "../context/WebSocketContext";
+import { useDispatch, useSelector } from "react-redux";
+import * as autofocusSlice from "../state/slices/AutofocusSlice.js";
 
 
 const AutofocusController = ({ hostIP, hostPort }) => {
-  const [rangeZ, setRangeZ] = useState(10);
-  const [resolutionZ, setResolutionZ] = useState(1);
-  const [defocusZ, setDefocusZ] = useState(0);
-  const [isRunning, setIsRunning] = useState(false);
-  const [plotData, setPlotData] = useState(null);
-  const [showPlot, setShowPlot] = useState(false);
-  const socket = useWebSocket();
-
-  useEffect(() => {
-    if (!socket) 
-      return;
-    const handleSignal = (data) => {
-      try {
-        const jdata = JSON.parse(data);
-        if (jdata.name === "sigUpdateFocusPlot") {
-          // Store focus positions in p0, contrast values in p1
-          setPlotData({ x: jdata.args.p0, y: jdata.args.p1 });
-        }
-        // ... other signals
-      } catch (error) {
-        console.error("Error parsing signal data:", error);
-      }
-    };
-    socket.on("signal", handleSignal);
-    return () => {
-      socket.off("signal", handleSignal);
-    };
-  }, [socket]);
+  const dispatch = useDispatch();
+  
+  // Access autofocus state from Redux
+  const autofocusState = useSelector(autofocusSlice.getAutofocusState);
+  const { rangeZ, resolutionZ, defocusZ, isRunning, plotData, showPlot } = autofocusState;
 
   const handleStart = () => {
     const url = `${hostIP}:${hostPort}/AutofocusController/autoFocus?rangez=${rangeZ}&resolutionz=${resolutionZ}&defocusz=${defocusZ}`;
     fetch(url, { method: "GET" })
       .then((response) => response.json())
       .then(() => {
-        setIsRunning(true);
-        setShowPlot(false); // Hide plot when starting a new run
-        setPlotData(null);  // Clear old data
+        dispatch(autofocusSlice.setIsRunning(true));
+        dispatch(autofocusSlice.setShowPlot(false)); // Hide plot when starting a new run
+        dispatch(autofocusSlice.clearPlotData());  // Clear old data
       })
       .catch((error) => console.error("Error starting autofocus:", error));
   };
@@ -50,12 +28,12 @@ const AutofocusController = ({ hostIP, hostPort }) => {
     const url = `${hostIP}:${hostPort}/AutofocusController/stopAutoFocus`;
     fetch(url, { method: "GET" })
       .then((response) => response.json())
-      .then(() => setIsRunning(false))
+      .then(() => dispatch(autofocusSlice.setIsRunning(false)))
       .catch((error) => console.error("Error stopping autofocus:", error));
   };
 
   const togglePlot = () => {
-    setShowPlot(!showPlot);
+    dispatch(autofocusSlice.toggleShowPlot());
   };
 
   return (
@@ -65,7 +43,7 @@ const AutofocusController = ({ hostIP, hostPort }) => {
           <TextField
             label="Range Z"
             value={rangeZ}
-            onChange={(e) => setRangeZ(e.target.value)}
+            onChange={(e) => dispatch(autofocusSlice.setRangeZ(e.target.value))}
             fullWidth
           />
         </Grid>
@@ -73,7 +51,7 @@ const AutofocusController = ({ hostIP, hostPort }) => {
           <TextField
             label="Resolution Z"
             value={resolutionZ}
-            onChange={(e) => setResolutionZ(e.target.value)}
+            onChange={(e) => dispatch(autofocusSlice.setResolutionZ(e.target.value))}
             fullWidth
           />
         </Grid>
@@ -81,7 +59,7 @@ const AutofocusController = ({ hostIP, hostPort }) => {
           <TextField
             label="Defocus Z"
             value={defocusZ}
-            onChange={(e) => setDefocusZ(e.target.value)}
+            onChange={(e) => dispatch(autofocusSlice.setDefocusZ(e.target.value))}
             fullWidth
           />
         </Grid>

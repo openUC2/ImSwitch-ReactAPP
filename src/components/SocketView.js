@@ -6,7 +6,10 @@ const SocketView = () => {
   const socket = useWebSocket();
 
   useEffect(() => {
-    if (!socket) return;
+    if (!socket) {
+      console.log("Socket not available");
+      return;
+    }
 
     // Listen for server messages
     socket.on("signal", (data) => {
