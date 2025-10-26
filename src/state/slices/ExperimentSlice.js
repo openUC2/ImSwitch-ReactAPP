@@ -50,6 +50,7 @@ const initialExperimentState = {
     autoFocusMin: 0.0,
     autoFocusMax: 0.0,
     autoFocusStepSize: 0.1,
+    autoFocusIlluminationChannel: "", // Selected illumination channel for autofocus
     zStack: false,
     zStackMin: 0.0,
     zStackMax: 0.0,
@@ -61,6 +62,7 @@ const initialExperimentState = {
     ome_write_tiff: false,
     ome_write_zarr: true,
     ome_write_stitched_tiff: false,
+    ome_write_individual_tiffs: false,
     // Tile overlap parameters (moved from WellSelectorSlice)
     overlapWidth: 0.0,  // 0.0 = no overlap (100% spacing), 0.1 = 10% overlap (90% spacing)
     overlapHeight: 0.0  // 0.0 = no overlap (100% spacing), 0.1 = 10% overlap (90% spacing)
@@ -117,6 +119,10 @@ const experimentSlice = createSlice({
       console.log("setAutoFocusStepSize");
       state.parameterValue.autoFocusStepSize = action.payload;
     },
+    setAutoFocusIlluminationChannel: (state, action) => {
+      console.log("setAutoFocusIlluminationChannel");
+      state.parameterValue.autoFocusIlluminationChannel = action.payload;
+    },
     setZStack: (state, action) => {
       console.log("setZStack");
       state.parameterValue.zStack = action.payload;
@@ -168,6 +174,10 @@ const experimentSlice = createSlice({
     setOmeWriteStitchedTiff: (state, action) => {
       console.log("setOmeWriteStitchedTiff", action.payload);
       state.parameterValue.ome_write_stitched_tiff = action.payload;
+    },
+    setOmeWriteIndividualTiffs: (state, action) => {
+      console.log("setOmeWriteIndividualTiffs", action.payload);
+      state.parameterValue.ome_write_individual_tiffs = action.payload;
     },
     //------------------------ overlap parameters
     setOverlapWidth: (state, action) => {
@@ -241,6 +251,7 @@ export const {
   setAutoFocusMin,
   setAutoFocusMax,
   setAutoFocusStepSize,
+  setAutoFocusIlluminationChannel,
   setZStack,
   setZStackMin,
   setZStackMax,
@@ -252,6 +263,7 @@ export const {
   setOmeWriteTiff,
   setOmeWriteZarr,
   setOmeWriteStitchedTiff,
+  setOmeWriteIndividualTiffs,
   setOverlapWidth,
   setOverlapHeight,
   createPoint,

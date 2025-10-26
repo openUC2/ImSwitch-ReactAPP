@@ -13,6 +13,7 @@ import * as omeZarrSlice from "../state/slices/OmeZarrTileStreamSlice.js";
 import * as focusLockSlice from "../state/slices/FocusLockSlice.js";
 import * as mazeGameSlice from "../state/slices/MazeGameSlice.js";
 import * as autofocusSlice from "../state/slices/AutofocusSlice.js";
+import * as socketDebugSlice from "../state/slices/SocketDebugSlice.js";
 
 import { io } from "socket.io-client";
 
@@ -110,6 +111,9 @@ const WebSocketHandler = () => {
       //handle signal
       const dataJson = JSON.parse(data);
       //console.log(dataJson);
+      
+      // Dispatch to debug slice for SocketView (do this first for all signals)
+      dispatch(socketDebugSlice.addMessage(dataJson));
       
       // REMOVED: frame_meta handler - metadata is now sent together with binary frame
       // Store frame metadata for UC2F parsing

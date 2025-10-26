@@ -24,7 +24,6 @@ import StreamControls from "./StreamControls";
 import IlluminationController from "./IlluminationController";
 import apiLiveViewControllerStartLiveView from "../backendapi/apiLiveViewControllerStartLiveView";
 import apiLiveViewControllerStopLiveView from "../backendapi/apiLiveViewControllerStopLiveView";
-import { useWebSocket } from "../context/WebSocketContext";
 import ObjectiveSwitcher from "./ObjectiveSwitcher";
 import DetectorTriggerController from "./DetectorTriggerController";
 import * as liveViewSlice from "../state/slices/LiveViewSlice.js";
@@ -64,7 +63,6 @@ export default function LiveView({ setFileManagerInitialPath }) {
   const liveViewState = useSelector(liveViewSlice.getLiveViewState);
   const liveStreamState = useSelector(liveStreamSlice.getLiveStreamState);
 
-  const socket = useWebSocket();
 
   // Use Redux state instead of local state
   const detectors = liveViewState.detectors;
@@ -99,27 +97,6 @@ export default function LiveView({ setFileManagerInitialPath }) {
   const [stepSizeXY, setStepSizeXY] = useState(100);
   const [stepSizeZ, setStepSizeZ] = useState(10);
   const [positionerName, setPositionerName] = useState("");
-
-  /* socket */
-  useEffect(() => {
-    if (!socket) return;
-    const handler = (d) => {
-      const j = JSON.parse(d);
-      if (j.name === "sigUpdateImage") {
-        const det = j.detectorname;
-        dispatch(
-          liveViewSlice.setImageUrls({
-            ...imageUrls,
-            [det]: `data:image/jpeg;base64,${j.image}`,
-          })
-        );
-        if (j.pixelsize) dispatch(liveViewSlice.setPixelSize(j.pixelsize));
-      }
-      // Note: sigHistogramComputed is now handled in WebSocketHandler
-    };
-    socket.on("signal", handler);
-    return () => socket.off("signal", handler);
-  }, [socket]);
 
   /* detectors */
   useEffect(() => {

@@ -1,8 +1,10 @@
 import React, { useEffect } from "react";
-import { Paper, Grid, TextField, Button } from "@mui/material";
+import { Paper, Grid, TextField, Button, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 import Plot from "react-plotly.js";
 import { useDispatch, useSelector } from "react-redux";
 import * as autofocusSlice from "../state/slices/AutofocusSlice.js";
+import * as parameterRangeSlice from "../state/slices/ParameterRangeSlice.js";
+import * as connectionSettingsSlice from "../state/slices/ConnectionSettingsSlice.js";
 
 
 const AutofocusController = ({ hostIP, hostPort }) => {
@@ -10,10 +12,60 @@ const AutofocusController = ({ hostIP, hostPort }) => {
   
   // Access autofocus state from Redux
   const autofocusState = useSelector(autofocusSlice.getAutofocusState);
-  const { rangeZ, resolutionZ, defocusZ, isRunning, plotData, showPlot } = autofocusState;
+  const { rangeZ, resolutionZ, defocusZ, illuminationChannel, isRunning, plotData, showPlot } = autofocusState;
+  
+  // Access parameter range state for available illumination sources
+  const parameterRangeState = useSelector(parameterRangeSlice.getParameterRangeState);
+  const connectionSettingsState = useSelector(connectionSettingsSlice.getConnectionSettingsState);
+  
+  // Get available illumination sources and find currently active ones
+  const availableIlluminations = parameterRangeState.illuSources || [];
+  
+  // Function to get currently active illumination (first one that's on)
+  const getCurrentlyActiveIllumination = async () => {
+    if (availableIlluminations.length === 0) return null;
+    
+    const ip = connectionSettingsState.ip || hostIP;
+    const port = connectionSettingsState.apiPort || hostPort;
+    
+    if (!ip || !port) return availableIlluminations[0]; // Fallback to first available
+    
+    try {
+      for (const illumination of availableIlluminations) {
+        const encodedName = encodeURIComponent(illumination);
+        const response = await fetch(`${ip}:${port}/LaserController/getLaserValue?laserName=${encodedName}`);
+        if (response.ok) {
+          const value = await response.json();
+          if (value > 0) {
+            return illumination; // Return the first active illumination
+          }
+        }
+      }
+      return availableIlluminations[0]; // Fallback to first if none active
+    } catch (error) {
+      console.error("Error checking active illuminations:", error);
+      return availableIlluminations[0]; // Fallback to first available
+    }
+  };
+  
+  // Set default illumination channel when component mounts or illumination sources change
+  useEffect(() => {
+    if (availableIlluminations.length > 0 && !illuminationChannel) {
+      // If selected illumination is not available, find currently active one
+      if (!availableIlluminations.includes(illuminationChannel)) {
+        getCurrentlyActiveIllumination().then(activeIllumination => {
+          if (activeIllumination) {
+            dispatch(autofocusSlice.setIlluminationChannel(activeIllumination));
+          }
+        });
+      }
+    }
+  }, [availableIlluminations, illuminationChannel, dispatch]);
 
   const handleStart = () => {
-    const url = `${hostIP}:${hostPort}/AutofocusController/autoFocus?rangez=${rangeZ}&resolutionz=${resolutionZ}&defocusz=${defocusZ}`;
+    // Use selected illumination channel or fallback to currently active one
+    const selectedChannel = illuminationChannel || availableIlluminations[0];
+    const url = `${hostIP}:${hostPort}/AutofocusController/autoFocus?rangez=${rangeZ}&resolutionz=${resolutionZ}&defocusz=${defocusZ}&illuminationChannel=${encodeURIComponent(selectedChannel || '')}`;
     fetch(url, { method: "GET" })
       .then((response) => response.json())
       .then(() => {
@@ -39,7 +91,7 @@ const AutofocusController = ({ hostIP, hostPort }) => {
   return (
     <Paper style={{ padding: "20px" }}>
       <Grid container spacing={2}>
-        <Grid item xs={4}>
+        <Grid item xs={3}>
           <TextField
             label="Range Z"
             value={rangeZ}
@@ -47,7 +99,7 @@ const AutofocusController = ({ hostIP, hostPort }) => {
             fullWidth
           />
         </Grid>
-        <Grid item xs={4}>
+        <Grid item xs={3}>
           <TextField
             label="Resolution Z"
             value={resolutionZ}
@@ -55,13 +107,29 @@ const AutofocusController = ({ hostIP, hostPort }) => {
             fullWidth
           />
         </Grid>
-        <Grid item xs={4}>
+        <Grid item xs={3}>
           <TextField
             label="Defocus Z"
             value={defocusZ}
             onChange={(e) => dispatch(autofocusSlice.setDefocusZ(e.target.value))}
             fullWidth
           />
+        </Grid>
+        <Grid item xs={3}>
+          <FormControl fullWidth>
+            <InputLabel>Illumination Channel</InputLabel>
+            <Select
+              value={illuminationChannel || ''}
+              onChange={(e) => dispatch(autofocusSlice.setIlluminationChannel(e.target.value))}
+              label="Illumination Channel"
+            >
+              {availableIlluminations.map((illumination) => (
+                <MenuItem key={illumination} value={illumination}>
+                  {illumination}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </Grid>
 
         <Grid item xs={12}>

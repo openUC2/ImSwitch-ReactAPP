@@ -38,6 +38,7 @@ import mazeGameReducer from "./slices/MazeGameSlice";
 import themeReducer from "./slices/ThemeSlice";
 import notificationReducer from "./slices/NotificationSlice";
 import autofocusReducer from "./slices/AutofocusSlice";
+import socketDebugReducer from "./slices/SocketDebugSlice";
 
 //#####################################################################################
 // Combine reducers
@@ -73,6 +74,7 @@ const rootReducer = combineReducers({
   themeState: themeReducer,
   notification: notificationReducer,
   autofocusState: autofocusReducer,
+  socketDebugState: socketDebugReducer,
 });
 
 //#####################################################################################

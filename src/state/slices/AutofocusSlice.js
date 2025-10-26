@@ -7,6 +7,7 @@ const initialAutofocusState = {
   rangeZ: 10,
   resolutionZ: 1,
   defocusZ: 0,
+  illuminationChannel: "", // Selected illumination channel for autofocus
   
   // Runtime state
   isRunning: false,
@@ -32,6 +33,9 @@ const autofocusSlice = createSlice({
     },
     setDefocusZ: (state, action) => {
       state.defocusZ = action.payload;
+    },
+    setIlluminationChannel: (state, action) => {
+      state.illuminationChannel = action.payload;
     },
     
     // Runtime state
@@ -68,6 +72,7 @@ export const {
   setRangeZ,
   setResolutionZ,
   setDefocusZ,
+  setIlluminationChannel,
   setIsRunning,
   setPlotData,
   clearPlotData,
