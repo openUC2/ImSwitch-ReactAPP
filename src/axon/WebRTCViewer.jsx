@@ -399,11 +399,9 @@ const WebRTCViewer = ({ detectorName, onDoubleClick }) => {
         controls
         onDoubleClick={onDoubleClick}
         style={{
-          maxWidth: '100%',
-          maxHeight: '100%',
-          width: 'auto',
-          height: 'auto',
-          objectFit: 'contain', // Preserve aspect ratio
+          width: '100%',
+          height: '100%',
+          objectFit: 'contain', // Preserve aspect ratio and fill available space
           display: 'block'
         }}
       />

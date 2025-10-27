@@ -33,14 +33,22 @@ const AutofocusController = ({ hostIP, hostPort }) => {
     rangeZ, 
     resolutionZ, 
     defocusZ, 
-    illuminationChannel, 
+    illuminationChannel,
+    tSettle,
+    isDebug,
+    nGauss,
+    nCropsize,
+    focusAlgorithm,
+    staticOffset,
+    twoStage,
     isRunning, 
     plotData, 
     showPlot,
     isLiveMonitoring,
     liveFocusValue,
     liveMonitoringPeriod,
-    liveMonitoringMethod
+    liveMonitoringMethod,
+    liveMonitoringCropsize
   } = autofocusState;
   
   // Access parameter range state for available illumination sources
@@ -94,7 +102,7 @@ const AutofocusController = ({ hostIP, hostPort }) => {
   const handleStart = () => {
     // Use selected illumination channel or fallback to currently active one
     const selectedChannel = illuminationChannel || availableIlluminations[0];
-    const url = `${hostIP}:${hostPort}/AutofocusController/autoFocus?rangez=${rangeZ}&resolutionz=${resolutionZ}&defocusz=${defocusZ}&illuminationChannel=${encodeURIComponent(selectedChannel || '')}`;
+    const url = `${hostIP}:${hostPort}/AutofocusController/autoFocus?rangez=${rangeZ}&resolutionz=${resolutionZ}&defocusz=${defocusZ}&illuminationChannel=${encodeURIComponent(selectedChannel || '')}&tSettle=${tSettle}&isDebug=${isDebug}&nGauss=${nGauss}&nCropsize=${nCropsize}&focusAlgorithm=${focusAlgorithm}&static_offset=${staticOffset}&twoStage=${twoStage}`;
     fetch(url, { method: "GET" })
       .then((response) => response.json())
       .then(() => {
@@ -119,7 +127,7 @@ const AutofocusController = ({ hostIP, hostPort }) => {
 
   const handleStartLiveMonitoring = async () => {
     try {
-      const result = await apiAutofocusControllerStartLiveMonitoring(liveMonitoringPeriod, liveMonitoringMethod);
+      const result = await apiAutofocusControllerStartLiveMonitoring(liveMonitoringPeriod, liveMonitoringMethod, liveMonitoringCropsize);
       if (result.status === "started") {
         dispatch(autofocusSlice.setIsLiveMonitoring(true));
       }
@@ -213,6 +221,98 @@ const AutofocusController = ({ hostIP, hostPort }) => {
           </FormControl>
         </Grid>
 
+        {/* Advanced Parameters Section */}
+        <Grid item xs={12}>
+          <Typography variant="subtitle2" gutterBottom style={{ marginTop: "10px" }}>
+            Advanced Parameters
+          </Typography>
+        </Grid>
+
+        <Grid item xs={3}>
+          <TextField
+            label="Settle Time (s)"
+            type="number"
+            value={tSettle}
+            onChange={(e) => dispatch(autofocusSlice.setTSettle(parseFloat(e.target.value)))}
+            inputProps={{ step: 0.01, min: 0, max: 10 }}
+            fullWidth
+          />
+        </Grid>
+
+        <Grid item xs={3}>
+          <TextField
+            label="Gaussian Blur Sigma"
+            type="number"
+            value={nGauss}
+            onChange={(e) => dispatch(autofocusSlice.setNGauss(parseInt(e.target.value)))}
+            inputProps={{ step: 1, min: 0, max: 20 }}
+            fullWidth
+          />
+        </Grid>
+
+        <Grid item xs={3}>
+          <TextField
+            label="Crop Size"
+            type="number"
+            value={nCropsize}
+            onChange={(e) => dispatch(autofocusSlice.setNCropsize(parseInt(e.target.value)))}
+            inputProps={{ step: 128, min: 256, max: 4096 }}
+            fullWidth
+          />
+        </Grid>
+
+        <Grid item xs={3}>
+          <FormControl fullWidth>
+            <InputLabel>Focus Algorithm</InputLabel>
+            <Select
+              value={focusAlgorithm}
+              onChange={(e) => dispatch(autofocusSlice.setFocusAlgorithm(e.target.value))}
+              label="Focus Algorithm"
+            >
+              <MenuItem value="LAPE">LAPE (Laplacian)</MenuItem>
+              <MenuItem value="GLVA">GLVA (Variance)</MenuItem>
+              <MenuItem value="JPEG">JPEG (Compression)</MenuItem>
+            </Select>
+          </FormControl>
+        </Grid>
+
+        <Grid item xs={3}>
+          <TextField
+            label="Static Offset"
+            type="number"
+            value={staticOffset}
+            onChange={(e) => dispatch(autofocusSlice.setStaticOffset(parseFloat(e.target.value)))}
+            inputProps={{ step: 0.1, min: -100, max: 100 }}
+            fullWidth
+          />
+        </Grid>
+
+        <Grid item xs={3}>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={isDebug}
+                onChange={(e) => dispatch(autofocusSlice.setIsDebug(e.target.checked))}
+                color="primary"
+              />
+            }
+            label="Debug Mode"
+          />
+        </Grid>
+
+        <Grid item xs={3}>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={twoStage}
+                onChange={(e) => dispatch(autofocusSlice.setTwoStage(e.target.checked))}
+                color="primary"
+              />
+            }
+            label="Two-Stage Focus"
+          />
+        </Grid>
+
         <Grid item xs={12}>
           <Button variant="contained" color="primary" onClick={handleStart}>
             Start Autofocus
@@ -292,11 +392,24 @@ const AutofocusController = ({ hostIP, hostPort }) => {
             >
               <MenuItem value="LAPE">LAPE (Laplacian)</MenuItem>
               <MenuItem value="GLVA">GLVA (Variance)</MenuItem>
+              <MenuItem value="JPEG">JPEG (Compression)</MenuItem>
             </Select>
           </FormControl>
         </Grid>
 
         <Grid item xs={4}>
+          <TextField
+            label="Crop Size"
+            type="number"
+            value={liveMonitoringCropsize}
+            onChange={(e) => dispatch(autofocusSlice.setLiveMonitoringCropsize(parseInt(e.target.value)))}
+            inputProps={{ step: 128, min: 256, max: 4096 }}
+            fullWidth
+            disabled={isLiveMonitoring}
+          />
+        </Grid>
+
+        <Grid item xs={12}>
           <Box display="flex" alignItems="center" height="100%">
             <FormControlLabel
               control={

@@ -26,7 +26,11 @@ import {
   InputLabel,
   FormHelperText,
   ButtonGroup,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from "@mui/material";
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 //##################################################################################
 const WellSelectorComponent = () => {
@@ -99,6 +103,10 @@ const WellSelectorComponent = () => {
     //select layout
     let wellLayout; // = wsUtils.wellLayoutDefault;
 
+    // Get current offsets from Redux state
+    const offsetX = wellSelectorState.layoutOffsetX || 0;
+    const offsetY = wellSelectorState.layoutOffsetY || 0;
+
     //check defaults
     if (event.target.value === "Default") {
       wellLayout = wsUtils.wellLayoutDefault;
@@ -111,7 +119,11 @@ const WellSelectorComponent = () => {
     } else if (event.target.value === "Wellplate 96") {
       wellLayout = wsUtils.wellLayout96;
     } else if (event.target.value === "Wellplate 384") {
-      wellLayout = wsUtils.wellLayout384;
+      // Generate 384 layout with offsets
+      wellLayout = wsUtils.generateWellLayout384({
+        offsetX: offsetX,
+        offsetY: offsetY
+      });
     } else if (event.target.value === "Ropod") {
       wellLayout = wsUtils.ropodLayout;      
     } else {
@@ -134,6 +146,9 @@ const WellSelectorComponent = () => {
 
       return;
     }
+
+    // Apply offsets to the layout
+    wellLayout = wsUtils.applyLayoutOffset(wellLayout, offsetX, offsetY);
 
     //get from web
     ///TODO 
@@ -164,6 +179,24 @@ const WellSelectorComponent = () => {
     if (infoPopupRef.current) {
       infoPopupRef.current.showMessage(`Added position: X=${currentX}, Y=${currentY}`);
     }
+  };
+
+  //##################################################################################
+  const handleLayoutOffsetXChange = (event) => {
+    const value = parseFloat(event.target.value);
+    dispatch(wellSelectorSlice.setLayoutOffsetX(value));
+    
+    // Re-apply the current layout with new offset
+    handleLayoutChange({ target: { value: experimentState.wellLayout.name } });
+  };
+
+  //##################################################################################
+  const handleLayoutOffsetYChange = (event) => {
+    const value = parseFloat(event.target.value);
+    dispatch(wellSelectorSlice.setLayoutOffsetY(value));
+    
+    // Re-apply the current layout with new offset
+    handleLayoutChange({ target: { value: experimentState.wellLayout.name } });
   };
 
   //##################################################################################
@@ -275,6 +308,55 @@ const WellSelectorComponent = () => {
           show shape
         </label>
       </div>
+
+      {/* ADVANCED SETTINGS */}
+      <Accordion style={{ marginBottom: "10px" }}>
+        <AccordionSummary
+          expandIcon={<ExpandMoreIcon />}
+          aria-controls="advanced-settings-content"
+          id="advanced-settings-header"
+        >
+          <Typography>Advanced Layout Settings</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Box display="flex" flexDirection="column" gap={2}>
+            <Typography variant="body2" color="textSecondary">
+              Global layout offsets (applied to all wells in micrometers):
+            </Typography>
+            
+            <FormControl fullWidth>
+              <TextField
+                label="Layout Offset X (μm)"
+                type="number"
+                value={wellSelectorState.layoutOffsetX || 0}
+                onChange={handleLayoutOffsetXChange}
+                inputProps={{
+                  step: 100,
+                }}
+                helperText="Horizontal offset for all wells (default: 0)"
+              />
+            </FormControl>
+
+            <FormControl fullWidth>
+              <TextField
+                label="Layout Offset Y (μm)"
+                type="number"
+                value={wellSelectorState.layoutOffsetY || 0}
+                onChange={handleLayoutOffsetYChange}
+                inputProps={{
+                  step: 100,
+                }}
+                helperText="Vertical offset for all wells (default: 0)"
+              />
+            </FormControl>
+
+            <Typography variant="caption" color="textSecondary" style={{ marginTop: '8px' }}>
+              Note: Changes are applied immediately to the current layout.
+              For Wellplate 384, default startX=29490.625μm, startY=30688.125μm
+            </Typography>
+          </Box>
+        </AccordionDetails>
+      </Accordion>
 
       {/* MODE */}
       <div

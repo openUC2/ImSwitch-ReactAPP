@@ -8,6 +8,13 @@ const initialAutofocusState = {
   resolutionZ: 1,
   defocusZ: 0,
   illuminationChannel: "", // Selected illumination channel for autofocus
+  tSettle: 0.1, // Settling time between steps (seconds)
+  isDebug: false, // Save debug images
+  nGauss: 7, // Gaussian blur sigma (0 to disable)
+  nCropsize: 2048, // Crop size for focus calculation
+  focusAlgorithm: "LAPE", // Focus measurement method (LAPE, GLVA, JPEG)
+  staticOffset: 0.0, // Static offset to add to final focus position
+  twoStage: false, // Enable two-stage autofocus (coarse + fine scan)
   
   // Runtime state
   isRunning: false,
@@ -23,6 +30,7 @@ const initialAutofocusState = {
   liveFocusValue: null, // Current live focus value
   liveMonitoringPeriod: 0.5, // Update period in seconds
   liveMonitoringMethod: "LAPE", // Focus measurement method
+  liveMonitoringCropsize: 2048, // Crop size for live monitoring
 };
 
 // Create autofocus slice
@@ -42,6 +50,27 @@ const autofocusSlice = createSlice({
     },
     setIlluminationChannel: (state, action) => {
       state.illuminationChannel = action.payload;
+    },
+    setTSettle: (state, action) => {
+      state.tSettle = action.payload;
+    },
+    setIsDebug: (state, action) => {
+      state.isDebug = action.payload;
+    },
+    setNGauss: (state, action) => {
+      state.nGauss = action.payload;
+    },
+    setNCropsize: (state, action) => {
+      state.nCropsize = action.payload;
+    },
+    setFocusAlgorithm: (state, action) => {
+      state.focusAlgorithm = action.payload;
+    },
+    setStaticOffset: (state, action) => {
+      state.staticOffset = action.payload;
+    },
+    setTwoStage: (state, action) => {
+      state.twoStage = action.payload;
     },
     
     // Runtime state
@@ -80,6 +109,9 @@ const autofocusSlice = createSlice({
     setLiveMonitoringMethod: (state, action) => {
       state.liveMonitoringMethod = action.payload;
     },
+    setLiveMonitoringCropsize: (state, action) => {
+      state.liveMonitoringCropsize = action.payload;
+    },
     
     // Reset state
     resetState: (state) => {
@@ -94,6 +126,13 @@ export const {
   setResolutionZ,
   setDefocusZ,
   setIlluminationChannel,
+  setTSettle,
+  setIsDebug,
+  setNGauss,
+  setNCropsize,
+  setFocusAlgorithm,
+  setStaticOffset,
+  setTwoStage,
   setIsRunning,
   setPlotData,
   clearPlotData,
@@ -103,6 +142,7 @@ export const {
   setLiveFocusValue,
   setLiveMonitoringPeriod,
   setLiveMonitoringMethod,
+  setLiveMonitoringCropsize,
   resetState,
 } = autofocusSlice.actions;
 
