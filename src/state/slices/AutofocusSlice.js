@@ -17,6 +17,12 @@ const initialAutofocusState = {
   
   // UI state
   showPlot: false,
+  
+  // Live monitoring state
+  isLiveMonitoring: false,
+  liveFocusValue: null, // Current live focus value
+  liveMonitoringPeriod: 0.5, // Update period in seconds
+  liveMonitoringMethod: "LAPE", // Focus measurement method
 };
 
 // Create autofocus slice
@@ -60,6 +66,21 @@ const autofocusSlice = createSlice({
       state.showPlot = !state.showPlot;
     },
     
+    // Live monitoring state
+    setIsLiveMonitoring: (state, action) => {
+      state.isLiveMonitoring = action.payload;
+    },
+    setLiveFocusValue: (state, action) => {
+      // action.payload should be { focus_value: number, timestamp: number, method: string }
+      state.liveFocusValue = action.payload;
+    },
+    setLiveMonitoringPeriod: (state, action) => {
+      state.liveMonitoringPeriod = action.payload;
+    },
+    setLiveMonitoringMethod: (state, action) => {
+      state.liveMonitoringMethod = action.payload;
+    },
+    
     // Reset state
     resetState: (state) => {
       return { ...initialAutofocusState };
@@ -78,6 +99,10 @@ export const {
   clearPlotData,
   setShowPlot,
   toggleShowPlot,
+  setIsLiveMonitoring,
+  setLiveFocusValue,
+  setLiveMonitoringPeriod,
+  setLiveMonitoringMethod,
   resetState,
 } = autofocusSlice.actions;
 

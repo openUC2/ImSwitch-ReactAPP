@@ -423,6 +423,16 @@ const WebSocketHandler = () => {
         } catch (error) {
           console.error("Error parsing autofocus plot signal:", error);
         }
+      } else if (dataJson.name === "sigAutoFocusLiveValue") {
+        // Handle live focus value updates during monitoring mode
+        try {
+          if (dataJson.args && dataJson.args.p0) {
+            // p0 contains {focus_value, timestamp, method}
+            dispatch(autofocusSlice.setLiveFocusValue(dataJson.args.p0));
+          }
+        } catch (error) {
+          console.error("Error parsing autofocus live value signal:", error);
+        }
       } else if (dataJson.name === "sigGameState") {
         // Handle maze game state updates
         try {

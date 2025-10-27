@@ -1,10 +1,27 @@
 import React, { useEffect } from "react";
-import { Paper, Grid, TextField, Button, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
+import { 
+  Paper, 
+  Grid, 
+  TextField, 
+  Button, 
+  FormControl, 
+  InputLabel, 
+  Select, 
+  MenuItem,
+  Typography,
+  Box,
+  Divider,
+  Switch,
+  FormControlLabel
+} from "@mui/material";
 import Plot from "react-plotly.js";
 import { useDispatch, useSelector } from "react-redux";
 import * as autofocusSlice from "../state/slices/AutofocusSlice.js";
 import * as parameterRangeSlice from "../state/slices/ParameterRangeSlice.js";
 import * as connectionSettingsSlice from "../state/slices/ConnectionSettingsSlice.js";
+import apiAutofocusControllerStartLiveMonitoring from "../backendapi/apiAutofocusControllerStartLiveMonitoring.js";
+import apiAutofocusControllerStopLiveMonitoring from "../backendapi/apiAutofocusControllerStopLiveMonitoring.js";
+import apiAutofocusControllerSetLiveMonitoringParameters from "../backendapi/apiAutofocusControllerSetLiveMonitoringParameters.js";
 
 
 const AutofocusController = ({ hostIP, hostPort }) => {
@@ -12,7 +29,19 @@ const AutofocusController = ({ hostIP, hostPort }) => {
   
   // Access autofocus state from Redux
   const autofocusState = useSelector(autofocusSlice.getAutofocusState);
-  const { rangeZ, resolutionZ, defocusZ, illuminationChannel, isRunning, plotData, showPlot } = autofocusState;
+  const { 
+    rangeZ, 
+    resolutionZ, 
+    defocusZ, 
+    illuminationChannel, 
+    isRunning, 
+    plotData, 
+    showPlot,
+    isLiveMonitoring,
+    liveFocusValue,
+    liveMonitoringPeriod,
+    liveMonitoringMethod
+  } = autofocusState;
   
   // Access parameter range state for available illumination sources
   const parameterRangeState = useSelector(parameterRangeSlice.getParameterRangeState);
@@ -88,9 +117,61 @@ const AutofocusController = ({ hostIP, hostPort }) => {
     dispatch(autofocusSlice.toggleShowPlot());
   };
 
+  const handleStartLiveMonitoring = async () => {
+    try {
+      const result = await apiAutofocusControllerStartLiveMonitoring(liveMonitoringPeriod, liveMonitoringMethod);
+      if (result.status === "started") {
+        dispatch(autofocusSlice.setIsLiveMonitoring(true));
+      }
+    } catch (error) {
+      console.error("Error starting live monitoring:", error);
+    }
+  };
+
+  const handleStopLiveMonitoring = async () => {
+    try {
+      const result = await apiAutofocusControllerStopLiveMonitoring();
+      if (result.status === "stopped") {
+        dispatch(autofocusSlice.setIsLiveMonitoring(false));
+        dispatch(autofocusSlice.setLiveFocusValue(null));
+      }
+    } catch (error) {
+      console.error("Error stopping live monitoring:", error);
+    }
+  };
+
+  const handlePeriodChange = async (newPeriod) => {
+    dispatch(autofocusSlice.setLiveMonitoringPeriod(newPeriod));
+    if (isLiveMonitoring) {
+      try {
+        await apiAutofocusControllerSetLiveMonitoringParameters(newPeriod, null);
+      } catch (error) {
+        console.error("Error updating period:", error);
+      }
+    }
+  };
+
+  const handleMethodChange = async (newMethod) => {
+    dispatch(autofocusSlice.setLiveMonitoringMethod(newMethod));
+    if (isLiveMonitoring) {
+      try {
+        await apiAutofocusControllerSetLiveMonitoringParameters(null, newMethod);
+      } catch (error) {
+        console.error("Error updating method:", error);
+      }
+    }
+  };
+
   return (
     <Paper style={{ padding: "20px" }}>
       <Grid container spacing={2}>
+        {/* Autofocus Scan Section */}
+        <Grid item xs={12}>
+          <Typography variant="h6" gutterBottom>
+            Autofocus Scan
+          </Typography>
+        </Grid>
+        
         <Grid item xs={3}>
           <TextField
             label="Range Z"
@@ -174,6 +255,85 @@ const AutofocusController = ({ hostIP, hostPort }) => {
               }}
               style={{ width: "100%", height: "400px" }}
             />
+          </Grid>
+        )}
+
+        {/* Divider */}
+        <Grid item xs={12}>
+          <Divider style={{ margin: "20px 0" }} />
+        </Grid>
+
+        {/* Live Monitoring Section */}
+        <Grid item xs={12}>
+          <Typography variant="h6" gutterBottom>
+            Live Focus Monitoring
+          </Typography>
+        </Grid>
+
+        <Grid item xs={4}>
+          <TextField
+            label="Update Period (s)"
+            type="number"
+            value={liveMonitoringPeriod}
+            onChange={(e) => handlePeriodChange(parseFloat(e.target.value))}
+            inputProps={{ step: 0.1, min: 0.1, max: 10 }}
+            fullWidth
+            disabled={isLiveMonitoring}
+          />
+        </Grid>
+
+        <Grid item xs={4}>
+          <FormControl fullWidth disabled={isLiveMonitoring}>
+            <InputLabel>Focus Method</InputLabel>
+            <Select
+              value={liveMonitoringMethod}
+              onChange={(e) => handleMethodChange(e.target.value)}
+              label="Focus Method"
+            >
+              <MenuItem value="LAPE">LAPE (Laplacian)</MenuItem>
+              <MenuItem value="GLVA">GLVA (Variance)</MenuItem>
+            </Select>
+          </FormControl>
+        </Grid>
+
+        <Grid item xs={4}>
+          <Box display="flex" alignItems="center" height="100%">
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={isLiveMonitoring}
+                  onChange={isLiveMonitoring ? handleStopLiveMonitoring : handleStartLiveMonitoring}
+                  color="primary"
+                />
+              }
+              label={isLiveMonitoring ? "Monitoring Active" : "Start Monitoring"}
+            />
+          </Box>
+        </Grid>
+
+        {/* Live Focus Value Display */}
+        {isLiveMonitoring && (
+          <Grid item xs={12}>
+            <Paper 
+              elevation={3} 
+              style={{ 
+                padding: "20px", 
+                backgroundColor: "#f5f5f5",
+                textAlign: "center"
+              }}
+            >
+              <Typography variant="h4" color="primary" gutterBottom>
+                {liveFocusValue ? liveFocusValue.focus_value.toFixed(2) : "---"}
+              </Typography>
+              <Typography variant="body2" color="textSecondary">
+                Current Focus Value ({liveMonitoringMethod})
+              </Typography>
+              {liveFocusValue && (
+                <Typography variant="caption" color="textSecondary" display="block">
+                  Last updated: {new Date(liveFocusValue.timestamp * 1000).toLocaleTimeString()}
+                </Typography>
+              )}
+            </Paper>
           </Grid>
         )}
       </Grid>
