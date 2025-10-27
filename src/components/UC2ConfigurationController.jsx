@@ -5,7 +5,6 @@ import {
   AutoFixHigh as WizardIcon,
   CheckCircle,
   ErrorOutline,
-  Memory,
   SettingsApplications,
   Build,
 } from "@mui/icons-material";
@@ -42,7 +41,6 @@ import "ace-builds/src-noconflict/theme-github";
 import { JsonEditor } from "json-edit-react";
 import React, { useCallback, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useWebSocket } from "../context/WebSocketContext";
 import {
   clearNotification,
   setNotification,
@@ -87,8 +85,6 @@ const UC2ConfigurationController = () => {
   const selectedSetup = uc2State.selectedSetup;
   const isDialogOpen = uc2State.isDialogOpen;
   const restartSoftware = uc2State.restartSoftware;
-  const serialPayload = uc2State.serialPayload;
-  const serialLog = uc2State.serialLog;
   const uc2Connected = uc2State.uc2Connected;
   const selectedFileForEdit = uc2State.selectedFileForEdit;
   const editorJson = uc2State.editorJson;
@@ -109,8 +105,6 @@ const UC2ConfigurationController = () => {
 
   // Wizard state
   const [showConfigWizard, setShowConfigWizard] = React.useState(false);
-
-  const socket = useWebSocket();
 
   const fetchAvailableSetups = useCallback(() => {
     const url = `${hostIP}:${hostPort}/UC2ConfigController/returnAvailableSetups`;
@@ -194,28 +188,6 @@ const UC2ConfigurationController = () => {
     // Start checking after 5 seconds
     setTimeout(checkStatus, 5000);
   }, [hostIP, hostPort, dispatch]);
-
-  useEffect(() => {
-    if (!socket) return;
-    const handleSignal = (data) => {
-      try {
-        const jdata = JSON.parse(data);
-        if (jdata.name === "sigUC2SerialReadMessage") {
-          dispatch(uc2Slice.addSerialLogEntry(jdata.args?.p0 || ""));
-        } else if (jdata.name === "sigUC2SerialWriteMessage") {
-          dispatch(
-            uc2Slice.addSerialLogEntry(`Write Message: ${jdata.args?.p0 || ""}`)
-          );
-        }
-      } catch (error) {
-        console.error("Error parsing signal data:", error);
-      }
-    };
-    socket.on("signal", handleSignal);
-    return () => {
-      socket.off("signal", handleSignal);
-    };
-  }, [socket, dispatch]);
 
   useEffect(() => {
     fetchAvailableSetups();
@@ -523,19 +495,6 @@ const UC2ConfigurationController = () => {
       });
   };
 
-  const handleSendSerial = () => {
-    if (!serialPayload) return;
-    const url = `${hostIP}:${hostPort}/UC2ConfigController/writeSerial?payload=${encodeURIComponent(
-      serialPayload
-    )}`;
-    fetch(url, { method: "GET" })
-      .then((response) => response.json())
-      .then(() =>
-        dispatch(uc2Slice.addSerialLogEntry(`Sent: ${serialPayload}`))
-      )
-      .catch((error) => console.error("Error sending serial:", error));
-  };
-
   return (
     <Box sx={{ p: 3, maxWidth: 1200, mx: "auto" }}>
       {/* Header */}
@@ -575,7 +534,6 @@ const UC2ConfigurationController = () => {
           aria-label="settings tabs"
         >
           <Tab label="Configuration Setup" />
-          <Tab label="Serial Interface" />
           <Tab label="Advanced Editor" />
         </Tabs>
 
@@ -725,113 +683,6 @@ const UC2ConfigurationController = () => {
         </TabPanel>
 
         <TabPanel value={tabIndex} index={1}>
-          {/* Serial Interface Card */}
-          <Card>
-            <CardContent>
-              <Box
-                sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}
-              >
-                <Memory color="info" />
-                <Typography variant="h6">
-                  Serial Command Line Interface
-                </Typography>
-                <Chip
-                  label={uc2Connected ? "Connected" : "Disconnected"}
-                  color={uc2Connected ? "success" : "error"}
-                  size="small"
-                  variant="outlined"
-                />
-              </Box>
-
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Send raw serial commands directly to the UC2 board for debugging
-                and advanced control
-              </Typography>
-
-              <Box sx={{ mb: 3 }}>
-                <TextField
-                  label="Serial Command Payload"
-                  variant="outlined"
-                  fullWidth
-                  multiline
-                  rows={4}
-                  value={serialPayload}
-                  onChange={(e) =>
-                    dispatch(uc2Slice.setSerialPayload(e.target.value))
-                  }
-                  disabled={!uc2Connected}
-                  placeholder="Enter serial commands here..."
-                  helperText={
-                    uc2Connected
-                      ? "Enter commands and press Send"
-                      : "Connect to UC2 board first"
-                  }
-                />
-              </Box>
-
-              <Button
-                variant="contained"
-                onClick={handleSendSerial}
-                disabled={!uc2Connected || !serialPayload.trim()}
-                startIcon={<Memory />}
-                size="large"
-              >
-                Send Serial Command
-              </Button>
-
-              {/* Serial Log Section */}
-              <Box sx={{ mt: 4 }}>
-                <Typography variant="h6" gutterBottom>
-                  Serial Communication Log
-                </Typography>
-                <Paper
-                  elevation={2}
-                  sx={{
-                    maxHeight: 300,
-                    overflow: "auto",
-                    p: 2,
-                    bgcolor: "grey.50",
-                    border: "1px solid",
-                    borderColor: "grey.300",
-                  }}
-                >
-                  {serialLog.length > 0 ? (
-                    serialLog.map((entry, index) => (
-                      <Typography
-                        key={index}
-                        variant="body2"
-                        component="div"
-                        sx={{
-                          fontFamily: "monospace",
-                          whiteSpace: "pre-wrap",
-                          wordBreak: "break-word",
-                          mb: 0.5,
-                          py: 0.25,
-                          px: 1,
-                          bgcolor: index % 2 === 0 ? "transparent" : "grey.100",
-                          borderRadius: 0.5,
-                        }}
-                      >
-                        {entry}
-                      </Typography>
-                    ))
-                  ) : (
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ textAlign: "center", py: 2 }}
-                    >
-                      No serial communication yet. Send a command to see the
-                      log.
-                    </Typography>
-                  )}
-                </Paper>
-              </Box>
-            </CardContent>
-          </Card>
-        </TabPanel>
-
-        <TabPanel value={tabIndex} index={2}>
           {/* Configuration Wizard Recommendation */}
           <Card
             sx={{

@@ -29,6 +29,7 @@ import SystemSettings from "./components/SystemSettings.js";
 import SystemUpdateController from "./components/SystemUpdateController.jsx";
 import TimelapseController from "./components/TimelapseController.js";
 import UC2ConfigurationController from "./components/UC2ConfigurationController.jsx";
+import SerialDebugController from "./components/SerialDebugController.jsx";
 import WiFiController from "./components/WiFiController.jsx";
 import { JupyterProvider } from "./context/JupyterContext.js";
 
@@ -487,6 +488,7 @@ function App() {
               <StageOffsetCalibration />
             )}
             {selectedPlugin === "UC2" && <UC2ConfigurationController />}
+            {selectedPlugin === "SerialDebug" && <SerialDebugController />}
             {selectedPlugin === "DetectorTrigger" && (
               <DetectorTriggerController />
             )}

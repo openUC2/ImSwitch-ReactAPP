@@ -24,7 +24,6 @@ import {
   Memory,
   Cable,
   Tune,
-  Computer,
   SystemUpdate,
   Storage,
 } from "@mui/icons-material";
@@ -415,33 +414,6 @@ const SettingsMenu = ({ onNavigate }) => {
         </MenuItem>
 
         <Divider />
-
-        {/* Socket View - Requires backend connection for debugging */}
-        <MenuItem
-          onClick={() => handleNavigationClick("SocketView")}
-          disabled={!isBackendConnected}
-          sx={{
-            opacity: isBackendConnected ? 1 : 0.5,
-            "&.Mui-disabled": {
-              opacity: 0.5,
-            },
-          }}
-        >
-          <ListItemIcon>
-            <Computer
-              fontSize="small"
-              color={isBackendConnected ? "inherit" : "disabled"}
-            />
-          </ListItemIcon>
-          <ListItemText
-            primary="Socket View"
-            secondary={
-              isBackendConnected
-                ? "Debug connections"
-                : "Requires backend connection"
-            }
-          />
-        </MenuItem>
 
         {/* System Updates */}
         <MenuItem

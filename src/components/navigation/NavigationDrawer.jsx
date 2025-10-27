@@ -15,7 +15,9 @@ import {
   SettingsOverscanSharp as SettingsOverscanSharpIcon,
   SportsEsports as SportsEsportsIcon,
   Straighten as StraightenIcon,
+  Terminal as TerminalIcon,
   ThreeDRotation as ThreeDRotationIcon,
+  Wifi as WifiIcon,
   ZoomOutMap as ZoomOutMapIcon,
 } from "@mui/icons-material";
 import { Divider, Drawer, List } from "@mui/material";
@@ -373,7 +375,29 @@ const NavigationDrawer = ({
             label="StageOffsetCalibration"
             selected={selectedPlugin === "StageOffsetCalibration"}
             onClick={() => handlePluginChange("StageOffsetCalibration")}
-            tooltip="Stage calibration"
+            tooltip="Stage Offset Calibration"
+            color={SIDEBAR_COLORS.system}
+            collapsed={!sidebarVisible}
+            nested={true}
+          />
+
+          <DrawerEntry
+            icon={<TerminalIcon />}
+            label="Serial Debug"
+            selected={selectedPlugin === "SerialDebug"}
+            onClick={() => handlePluginChange("SerialDebug")}
+            tooltip="Serial Debug Interface"
+            color={SIDEBAR_COLORS.system}
+            collapsed={!sidebarVisible}
+            nested={true}
+          />
+
+          <DrawerEntry
+            icon={<WifiIcon />}
+            label="Socket View"
+            selected={selectedPlugin === "SocketView"}
+            onClick={() => handlePluginChange("SocketView")}
+            tooltip="WebSocket Debug Interface"
             color={SIDEBAR_COLORS.system}
             collapsed={!sidebarVisible}
             nested={true}
