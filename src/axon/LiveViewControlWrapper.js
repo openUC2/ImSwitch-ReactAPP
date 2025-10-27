@@ -2,6 +2,7 @@
 import React, { useState, useCallback } from "react";
 import LiveViewComponent from "./LiveViewComponent";
 import LiveViewerGL from "../components/LiveViewerGL";
+import WebRTCViewer from "./WebRTCViewer";
 import PositionControllerComponent from "./PositionControllerComponent";
 import apiPositionerControllerMovePositioner from "../backendapi/apiPositionerControllerMovePositioner";
 import { useSelector } from "react-redux";
@@ -21,9 +22,13 @@ const LiveViewControlWrapper = ({ useFastMode = true }) => {
     viewTransform: { scale: 1, translateX: 0, translateY: 0 }
   });
   
-  // Determine if we should use WebGL based on backend capabilities AND current format
-  // Use LiveViewComponent (legacy) for JPEG, LiveViewerGL for binary
-  const useWebGL = liveStreamState.backendCapabilities.webglSupported && 
+  // Determine which viewer to use based on stream format
+  // - WebRTC: Use WebRTCViewer for real-time low-latency streaming
+  // - Binary: Use LiveViewerGL for high-performance WebGL rendering
+  // - JPEG: Use LiveViewComponent (legacy) for JPEG streaming
+  const useWebRTC = liveStreamState.imageFormat === 'webrtc';
+  const useWebGL = !useWebRTC && 
+                   liveStreamState.backendCapabilities.webglSupported && 
                    !liveStreamState.isLegacyBackend &&
                    liveStreamState.imageFormat !== 'jpeg';
 
@@ -107,8 +112,17 @@ const LiveViewControlWrapper = ({ useFastMode = true }) => {
           alignItems: "center",
           justifyContent: "center"
         }}>
-        {/* Re-enable WebGL/UC2F viewer with metadata-assisted parsing */}
-        {useWebGL ? (
+        {/* Select appropriate viewer based on stream format */}
+        {useWebRTC ? (
+          <WebRTCViewer 
+            onDoubleClick={handleImageDoubleClick}
+            onImageLoad={(width, height) => {
+              // Optional: handle image load events
+              //console.log(`WebRTC video loaded: ${width}x${height}`);
+            }}
+            onHudDataUpdate={handleHudDataUpdate}
+          />
+        ) : useWebGL ? (
           <LiveViewerGL 
             onDoubleClick={handleImageDoubleClick}
             onImageLoad={(width, height) => {

@@ -31,6 +31,12 @@ const initialLiveStreamState = {
     jpeg: {
       enabled: false,
       quality: 85
+    },
+    webrtc: {
+      enabled: false,
+      max_width: 1280,
+      throttle_ms: 33,
+      subsampling_factor: 1
     }
   },
   // Histogram data

@@ -216,13 +216,12 @@ export default function LiveView({ setFileManagerInitialPath }) {
     try {
       if (shouldStart) {
         // Determine protocol from current stream settings
-        // Use imageFormat from Redux state (not currentImageFormat which is the old field name)
-        const currentFormat = liveStreamState.imageFormat || 'binary';
-        const protocol = currentFormat === 'jpeg' ? 'jpeg' : 'binary';
+        // Use imageFormat from Redux state - supports binary, jpeg, and webrtc
+        const protocol = liveStreamState.imageFormat || 'binary';
         
         console.log(`Starting ${protocol} stream (imageFormat: ${liveStreamState.imageFormat})`);
         
-        // Start stream with current protocol
+        // Start stream with current protocol (binary, jpeg, or webrtc)
         await apiLiveViewControllerStartLiveView(null, protocol);
         console.log(`Started ${protocol} stream`);
       } else {

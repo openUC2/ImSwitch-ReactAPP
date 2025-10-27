@@ -34,6 +34,8 @@ import { useSelector, useDispatch } from 'react-redux';
 import { setMinVal, setMaxVal, setGamma, getLiveStreamState, setStreamSettings, setImageFormat } from '../state/slices/LiveStreamSlice.js';
 import apiLiveViewControllerSetStreamParameters from '../backendapi/apiLiveViewControllerSetStreamParameters';
 import apiLiveViewControllerGetStreamParameters from '../backendapi/apiLiveViewControllerGetStreamParameters';
+import apiLiveViewControllerStopLiveView from '../backendapi/apiLiveViewControllerStopLiveView';
+import apiLiveViewControllerStartLiveView from '../backendapi/apiLiveViewControllerStartLiveView';
 import * as connectionSettingsSlice from "../state/slices/ConnectionSettingsSlice.js";
 
 
@@ -106,6 +108,12 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
             quality: allParams.jpeg?.jpeg_quality || 85,
             subsampling: { factor: allParams.jpeg?.subsampling_factor || 1 },
             throttle_ms: allParams.jpeg?.throttle_ms || 100
+          },
+          webrtc: {
+            enabled: allParams.webrtc?.is_active || currentProtocol === 'webrtc',
+            max_width: allParams.webrtc?.max_width || 1280,
+            throttle_ms: allParams.webrtc?.throttle_ms || 33,
+            subsampling_factor: allParams.webrtc?.subsampling_factor || 1
           }
         };
         
@@ -142,6 +150,12 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
             quality: 85,
             subsampling: { factor: 1 },
             throttle_ms: 100
+          },
+          webrtc: {
+            enabled: false,
+            max_width: 1280,
+            throttle_ms: 33,
+            subsampling_factor: 1
           }
         };
         setDraftSettings(fallbackSettings);
@@ -178,15 +192,26 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
     setSubmitError(null);
     setSubmitSuccess(false);
 
+    // Capture current Redux format BEFORE making any changes
+    const previousFormat = liveStreamState.imageFormat || 'binary';
+
     try {
       // Determine the format and prepare parameters
       const isJpegMode = draftSettings.jpeg?.enabled === true;
-      const newFormat = isJpegMode ? 'jpeg' : 'binary';
+      const isWebRTCMode = draftSettings.webrtc?.enabled === true;
+      const newFormat = isWebRTCMode ? 'webrtc' : (isJpegMode ? 'jpeg' : 'binary');
       
       console.log('Submitting settings for format:', newFormat, 'Draft settings:', draftSettings);
       
       // Submit to backend FIRST using new LiveViewController API
-      if (isJpegMode) {
+      if (isWebRTCMode) {
+        // Set WebRTC stream parameters
+        await apiLiveViewControllerSetStreamParameters('webrtc', {
+          max_width: draftSettings.webrtc?.max_width || 1280,
+          throttle_ms: draftSettings.webrtc?.throttle_ms || 33,
+          subsampling_factor: draftSettings.webrtc?.subsampling_factor || 1
+        });
+      } else if (isJpegMode) {
         // Set JPEG stream parameters
         await apiLiveViewControllerSetStreamParameters('jpeg', {
           jpeg_quality: draftSettings.jpeg?.quality || 85,
@@ -205,12 +230,35 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
       
       console.log('Stream parameters updated successfully for protocol:', newFormat);
       
-      // THEN update Redux with new format so LiveViewerGL can switch
+      // Check if format changed by comparing with previousFormat (captured at start of function)
+      const formatChanged = previousFormat !== newFormat;
+      
+      // Update Redux FIRST before starting stream so frontend knows the correct format
       dispatch(setImageFormat(newFormat));
       dispatch(setStreamSettings(draftSettings));
       
+      // Restart stream if format changed
+      if (formatChanged) {
+        console.log(`Format changed from ${previousFormat} to ${newFormat}, restarting stream...`);
+        
+        // Stop current stream
+        await apiLiveViewControllerStopLiveView(null, false);
+        
+        // Wait a bit for cleanup
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Start new stream with NEW protocol (not default binary!)
+        await apiLiveViewControllerStartLiveView(null, newFormat);
+        
+        console.log(`Stream restarted with protocol: ${newFormat}`);
+      }
+      
       // Update min/max values based on format
       if (isJpegMode) {
+        dispatch(setMinVal(0));
+        dispatch(setMaxVal(255));
+      } else if (isWebRTCMode) {
+        // WebRTC mode: no intensity control needed (handled by camera)
         dispatch(setMinVal(0));
         dispatch(setMaxVal(255));
       } else {
@@ -225,8 +273,8 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
       dispatch({ 
         type: 'liveStreamState/setBackendCapabilities', 
         payload: { 
-          binaryStreaming: !isJpegMode,
-          webglSupported: !isJpegMode
+          binaryStreaming: !isJpegMode && !isWebRTCMode,
+          webglSupported: !isJpegMode && !isWebRTCMode
         } 
       });
 
@@ -411,40 +459,32 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
                   <FormControl fullWidth size="small">
                     <InputLabel>Stream Format</InputLabel>
                     <Select
-                      value={draftSettings?.jpeg?.enabled ? 'jpeg' : 'binary'}
+                      value={draftSettings?.webrtc?.enabled ? 'webrtc' : (draftSettings?.jpeg?.enabled ? 'jpeg' : 'binary')}
                       label="Stream Format"
                       onChange={(e) => {
-                        const isJpeg = e.target.value === 'jpeg';
-                        const newFormat = isJpeg ? 'jpeg' : 'binary';
+                        const newFormat = e.target.value;
+                        const isJpeg = newFormat === 'jpeg';
+                        const isWebRTC = newFormat === 'webrtc';
                         
-                        // Update draft settings
+                        // Update ONLY draft settings - do NOT update Redux yet
+                        // Redux will be updated when user clicks Submit
                         setDraftSettings((prev) => ({
                           ...prev,
-                          binary: { ...prev?.binary, enabled: !isJpeg },
-                          jpeg: { ...prev?.jpeg, enabled: isJpeg }
+                          binary: { ...prev?.binary, enabled: !isJpeg && !isWebRTC },
+                          jpeg: { ...prev?.jpeg, enabled: isJpeg },
+                          webrtc: { ...prev?.webrtc, enabled: isWebRTC }
                         }));
                         
-                        // Immediately update Redux state so currentImageFormat is set
                         console.log('Format changed to:', newFormat);
-                        dispatch(setImageFormat(newFormat));
-                        
-                        // Update min/max values immediately based on format
-                        if (isJpeg) {
-                          dispatch(setMinVal(0));
-                          dispatch(setMaxVal(255));
-                        } else {
-                          // Binary mode: reset to max range
-                          dispatch(setMinVal(0));
-                          dispatch(setMaxVal(65535));
-                        }
                       }}
                     >
                       <MenuItem value="binary">Binary (16-bit) - High Quality</MenuItem>
                       <MenuItem value="jpeg">JPEG (8-bit) - Legacy</MenuItem>
+                      <MenuItem value="webrtc">WebRTC - Low Latency</MenuItem>
                     </Select>
                   </FormControl>
                   <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mt: 1 }}>
-                    Current: {draftSettings?.binary?.enabled ? 'Binary' : 'JPEG'}
+                    Current: {draftSettings?.webrtc?.enabled ? 'WebRTC' : (draftSettings?.binary?.enabled ? 'Binary' : 'JPEG')}
                   </Typography>
                 </Box>
 
@@ -623,6 +663,92 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
                         valueLabelDisplay="auto"
                         size="small"
                       />
+                    </Box>
+                  </Box>
+                )}
+
+                {/* WebRTC Settings */}
+                {draftSettings?.webrtc?.enabled && (
+                  <Box sx={{ mb: 3 }}>
+                    <Typography variant="body2" sx={{ mb: 2, fontWeight: 'medium' }}>
+                      WebRTC Settings
+                    </Typography>
+                    
+                    <Alert severity="info" sx={{ mb: 2 }}>
+                      WebRTC mode provides real-time low-latency streaming with adaptive bitrate.
+                    </Alert>
+
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 1 }}>
+                        Max Width: {draftSettings.webrtc?.max_width || 1280}px
+                      </Typography>
+                      <Slider
+                        value={draftSettings.webrtc?.max_width || 1280}
+                        onChange={(_, value) =>
+                          setDraftSettings((prev) => ({
+                            ...prev,
+                            webrtc: { ...prev.webrtc, max_width: value }
+                          }))
+                        }
+                        min={320}
+                        max={1920}
+                        step={160}
+                        marks={[
+                          { value: 320, label: '320p' },
+                          { value: 640, label: '640p' },
+                          { value: 1280, label: '1280p' },
+                          { value: 1920, label: '1080p' }
+                        ]}
+                        valueLabelDisplay="auto"
+                        size="small"
+                      />
+                      <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mt: 1 }}>
+                        Higher resolution = better quality, more bandwidth
+                      </Typography>
+                    </Box>
+
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 1 }}>
+                        Subsampling: {draftSettings.webrtc?.subsampling_factor || 1}x
+                      </Typography>
+                      <Slider
+                        value={draftSettings.webrtc?.subsampling_factor || 1}
+                        onChange={(_, value) =>
+                          setDraftSettings((prev) => ({
+                            ...prev,
+                            webrtc: { ...prev.webrtc, subsampling_factor: value }
+                          }))
+                        }
+                        min={1}
+                        max={8}
+                        step={1}
+                        marks
+                        valueLabelDisplay="auto"
+                        size="small"
+                      />
+                    </Box>
+
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 1 }}>
+                        Throttle: {draftSettings.webrtc?.throttle_ms || 33}ms
+                      </Typography>
+                      <Slider
+                        value={draftSettings.webrtc?.throttle_ms || 33}
+                        onChange={(_, value) =>
+                          setDraftSettings((prev) => ({
+                            ...prev,
+                            webrtc: { ...prev.webrtc, throttle_ms: value }
+                          }))
+                        }
+                        min={16}
+                        max={1000}
+                        step={16}
+                        valueLabelDisplay="auto"
+                        size="small"
+                      />
+                      <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mt: 1 }}>
+                        Frame interval: ~{Math.round(1000 / (draftSettings.webrtc?.throttle_ms || 33))} FPS
+                      </Typography>
                     </Box>
                   </Box>
                 )}
