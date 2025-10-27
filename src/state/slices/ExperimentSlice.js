@@ -51,6 +51,13 @@ const initialExperimentState = {
     autoFocusMax: 0.0,
     autoFocusStepSize: 0.1,
     autoFocusIlluminationChannel: "", // Selected illumination channel for autofocus
+    autoFocusSettleTime: 0.1, // Settling time between steps (seconds)
+    autoFocusRange: 100, // Z-range to scan (±range from current position)
+    autoFocusResolution: 10, // Step size in Z
+    autoFocusCropsize: 2048, // Crop size for focus calculation
+    autoFocusStaticOffset: 0.0, // Static offset to add to final focus position
+    autoFocusTwoStage: false, // Enable two-stage autofocus (coarse + fine scan)
+    autoFocusAlgorithm: "LAPE", // Focus measurement method (LAPE, GLVA, JPEG)
     zStack: false,
     zStackMin: 0.0,
     zStackMax: 0.0,
@@ -122,6 +129,34 @@ const experimentSlice = createSlice({
     setAutoFocusIlluminationChannel: (state, action) => {
       console.log("setAutoFocusIlluminationChannel");
       state.parameterValue.autoFocusIlluminationChannel = action.payload;
+    },
+    setAutoFocusSettleTime: (state, action) => {
+      console.log("setAutoFocusSettleTime");
+      state.parameterValue.autoFocusSettleTime = action.payload;
+    },
+    setAutoFocusRange: (state, action) => {
+      console.log("setAutoFocusRange");
+      state.parameterValue.autoFocusRange = action.payload;
+    },
+    setAutoFocusResolution: (state, action) => {
+      console.log("setAutoFocusResolution");
+      state.parameterValue.autoFocusResolution = action.payload;
+    },
+    setAutoFocusCropsize: (state, action) => {
+      console.log("setAutoFocusCropsize");
+      state.parameterValue.autoFocusCropsize = action.payload;
+    },
+    setAutoFocusStaticOffset: (state, action) => {
+      console.log("setAutoFocusStaticOffset");
+      state.parameterValue.autoFocusStaticOffset = action.payload;
+    },
+    setAutoFocusTwoStage: (state, action) => {
+      console.log("setAutoFocusTwoStage");
+      state.parameterValue.autoFocusTwoStage = action.payload;
+    },
+    setAutoFocusAlgorithm: (state, action) => {
+      console.log("setAutoFocusAlgorithm");
+      state.parameterValue.autoFocusAlgorithm = action.payload;
     },
     setZStack: (state, action) => {
       console.log("setZStack");
@@ -252,6 +287,13 @@ export const {
   setAutoFocusMax,
   setAutoFocusStepSize,
   setAutoFocusIlluminationChannel,
+  setAutoFocusSettleTime,
+  setAutoFocusRange,
+  setAutoFocusResolution,
+  setAutoFocusCropsize,
+  setAutoFocusStaticOffset,
+  setAutoFocusTwoStage,
+  setAutoFocusAlgorithm,
   setZStack,
   setZStackMin,
   setZStackMax,

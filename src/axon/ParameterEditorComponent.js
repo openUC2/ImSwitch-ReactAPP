@@ -256,7 +256,7 @@ const ParameterEditorComponent = () => {
 
           {/* Autofocus */}
           <tr>
-            <td rowSpan="5" style={tdStyle}>
+            <td rowSpan="12" style={tdStyle}>
               Autofocus
             </td>
             <td style={tdStyle}>Enable</td>
@@ -287,6 +287,116 @@ const ParameterEditorComponent = () => {
                   </option>
                 ))}
               </select>
+            </td>
+          </tr>
+          <tr>
+            <td style={tdStyle}>Settle Time (s)</td>
+            <td style={tdStyle}>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                max="10"
+                value={parameterValue.autoFocusSettleTime || 0.1}
+                onChange={(e) =>
+                  dispatch(experimentSlice.setAutoFocusSettleTime(Number(e.target.value)))
+                }
+                style={{ width: "100%", padding: 5 }}
+              />
+            </td>
+          </tr>
+          <tr>
+            <td style={tdStyle}>Range (±µm)</td>
+            <td style={tdStyle}>
+              <input
+                type="number"
+                step="1"
+                min="1"
+                value={parameterValue.autoFocusRange || 100}
+                onChange={(e) =>
+                  dispatch(experimentSlice.setAutoFocusRange(Number(e.target.value)))
+                }
+                style={{ width: "100%", padding: 5 }}
+              />
+            </td>
+          </tr>
+          <tr>
+            <td style={tdStyle}>Resolution (µm)</td>
+            <td style={tdStyle}>
+              <input
+                type="number"
+                step="0.1"
+                min="0.1"
+                value={parameterValue.autoFocusResolution || 10}
+                onChange={(e) =>
+                  dispatch(experimentSlice.setAutoFocusResolution(Number(e.target.value)))
+                }
+                style={{ width: "100%", padding: 5 }}
+              />
+            </td>
+          </tr>
+          <tr>
+            <td style={tdStyle}>Crop Size (px)</td>
+            <td style={tdStyle}>
+              <input
+                type="number"
+                step="128"
+                min="256"
+                max="4096"
+                value={parameterValue.autoFocusCropsize || 2048}
+                onChange={(e) =>
+                  dispatch(experimentSlice.setAutoFocusCropsize(Number(e.target.value)))
+                }
+                style={{ width: "100%", padding: 5 }}
+              />
+            </td>
+          </tr>
+          <tr>
+            <td style={tdStyle}>Focus Algorithm</td>
+            <td style={tdStyle}>
+              <select
+                value={parameterValue.autoFocusAlgorithm || "LAPE"}
+                onChange={(e) =>
+                  dispatch(experimentSlice.setAutoFocusAlgorithm(e.target.value))
+                }
+                style={{ width: "100%", padding: 5 }}
+              >
+                <option value="LAPE">LAPE (Laplacian)</option>
+                <option value="GLVA">GLVA (Variance)</option>
+                <option value="JPEG">JPEG (Compression)</option>
+              </select>
+            </td>
+          </tr>
+          <tr>
+            <td style={tdStyle}>Static Offset (µm)</td>
+            <td style={tdStyle}>
+              <input
+                type="number"
+                step="0.1"
+                min="-100"
+                max="100"
+                value={parameterValue.autoFocusStaticOffset || 0.0}
+                onChange={(e) =>
+                  dispatch(experimentSlice.setAutoFocusStaticOffset(Number(e.target.value)))
+                }
+                style={{ width: "100%", padding: 5 }}
+              />
+            </td>
+          </tr>
+          <tr>
+            <td style={tdStyle}>Two-Stage Focus</td>
+            <td style={tdStyle}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={parameterValue.autoFocusTwoStage || false}
+                    onChange={(e) =>
+                      dispatch(experimentSlice.setAutoFocusTwoStage(e.target.checked))
+                    }
+                  />
+                }
+                label=""
+              />
             </td>
           </tr>
           <tr>

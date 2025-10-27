@@ -41,13 +41,31 @@ import autofocusReducer from "./slices/AutofocusSlice";
 import socketDebugReducer from "./slices/SocketDebugSlice";
 
 //#####################################################################################
+// Nested persist config for liveStreamState
+// Only persist settings, not live data like stats or histogram
+const liveStreamPersistConfig = {
+  key: "liveStreamState",
+  storage,
+  whitelist: [
+    "minVal",
+    "maxVal",
+    "gamma",
+    "imageFormat", // Persist selected format (binary/jpeg/webrtc)
+    "streamSettings", // Persist all stream settings
+    "isLegacyBackend",
+    "backendCapabilities",
+  ],
+  // Don't persist: histogramX, histogramY, showHistogram, zoom, translateX, translateY, stats
+};
+
+//#####################################################################################
 // Combine reducers
 const rootReducer = combineReducers({
   connectionSettingsState: connectionSettingsReducer,
   webSocketState: webSocketReducer,
   experimentState: experimentReducer,
   experimentStatusState: experimentStatusReducer,
-  liveStreamState: liveStreamReducer,
+  liveStreamState: persistReducer(liveStreamPersistConfig, liveStreamReducer), // Nested persist
   tileStreamState: tileStreamReducer,
   parameterRangeState: parameterRangeReducer,
   wellSelectorState: wellSelectorReducer,
@@ -92,6 +110,7 @@ const persistConfig = {
     "workflowState",
     "themeState",
     "mazeGameState",
+    // liveStreamState uses nested persist config above
   ],
   //blacklist: ['webSocketState'],  // Do not persist these
 };
