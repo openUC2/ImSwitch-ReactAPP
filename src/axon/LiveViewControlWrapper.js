@@ -8,10 +8,12 @@ import apiPositionerControllerMovePositioner from "../backendapi/apiPositionerCo
 import { useSelector } from "react-redux";
 import * as objectiveSlice from "../state/slices/ObjectiveSlice.js";
 import * as liveStreamSlice from "../state/slices/LiveStreamSlice.js";
+import * as liveViewSlice from "../state/slices/LiveViewSlice.js";
 
 const LiveViewControlWrapper = ({ useFastMode = true }) => {
   const objectiveState = useSelector(objectiveSlice.getObjectiveState);
   const liveStreamState = useSelector(liveStreamSlice.getLiveStreamState);
+  const liveViewState = useSelector(liveViewSlice.getLiveViewState);
   
   // State for HUD data from LiveViewerGL
   const [hudData, setHudData] = useState({
@@ -113,8 +115,10 @@ const LiveViewControlWrapper = ({ useFastMode = true }) => {
           justifyContent: "center"
         }}>
         {/* Select appropriate viewer based on stream format */}
-        {useWebRTC ? (
+        {/* WebRTC: Only render when stream is running to force remount on start/stop */}
+        {useWebRTC && liveViewState.isStreamRunning ? (
           <WebRTCViewer 
+            key="webrtc-viewer" // Force new instance on remount
             onDoubleClick={handleImageDoubleClick}
             onImageLoad={(width, height) => {
               // Optional: handle image load events
