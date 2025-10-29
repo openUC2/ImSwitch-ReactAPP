@@ -63,6 +63,14 @@ export default function LiveView({ setFileManagerInitialPath }) {
   const liveViewState = useSelector(liveViewSlice.getLiveViewState);
   const liveStreamState = useSelector(liveStreamSlice.getLiveStreamState);
 
+  // Debug log to verify persisted stream format
+  useEffect(() => {
+    console.log('[LiveView] Mounted with stream state:', {
+      imageFormat: liveStreamState.imageFormat,
+      streamSettings: liveStreamState.streamSettings,
+      isStreamRunning: liveViewState.isStreamRunning
+    });
+  }, []);
 
   // Use Redux state instead of local state
   const detectors = liveViewState.detectors;
@@ -217,7 +225,7 @@ export default function LiveView({ setFileManagerInitialPath }) {
       if (shouldStart) {
         // Determine protocol from current stream settings
         // Use imageFormat from Redux state - supports binary, jpeg, and webrtc
-        const protocol = liveStreamState.imageFormat || 'binary';
+        const protocol = liveStreamState.imageFormat || 'jpeg'; // Default to JPEG
         
         console.log(`Starting ${protocol} stream (imageFormat: ${liveStreamState.imageFormat})`);
         

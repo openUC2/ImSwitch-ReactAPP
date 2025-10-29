@@ -82,12 +82,12 @@ export default function ObjectiveSwitcher({ hostIP, hostPort }) {
             <Grid item>
               <Button
                 variant="contained"
-                color={currentSlot === 1 ? "secondary" : "primary"}
-                onClick={() => switchTo(1)}
+                color={currentSlot === 0 ? "secondary" : "primary"}
+                onClick={() => switchTo(0)}
               >
                 {/* Button text */}
                 Switch to{" "}
-                {isSwitching && currentSlot !== 2 ? (
+                {isSwitching && currentSlot !== 0 ? (
                   <CircularProgress
                     size={14}
                     sx={{ color: "#fff", marginLeft: 8 }}
@@ -101,11 +101,11 @@ export default function ObjectiveSwitcher({ hostIP, hostPort }) {
               <Button
                 variant="contained"
                 color={currentSlot === 2 ? "secondary" : "primary"}
-                onClick={() => switchTo(2)}
+                onClick={() => switchTo(1)}
               >
                 {/* Button text */}
                 Switch to{" "}
-                {isSwitching && currentSlot !== 2 ? (
+                {isSwitching && currentSlot !== 1 ? (
                   <CircularProgress
                     size={14}
                     sx={{ color: "#fff", marginLeft: 8 }}

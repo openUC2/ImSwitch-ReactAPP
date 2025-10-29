@@ -70,6 +70,16 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
   const formatLabel = isJpeg ? 'JPEG' : 'Binary';
   const rangeLabel = `0–${maxRange}`;
   
+  // Debug log on mount to verify persisted state
+  useEffect(() => {
+    console.log('[StreamControlOverlay] Mounted with persisted state:', {
+      imageFormat,
+      streamSettings,
+      minVal,
+      maxVal
+    });
+  }, []);
+  
   // Get current frame ID from stats
   const currentFrameId = liveStreamState?.stats?.currentFrameId;
 
@@ -88,7 +98,7 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
         
         // Extract protocol data from new API response format
         const allParams = response.protocols || response;
-        const currentProtocol = response.current_protocol || 'binary';
+        const currentProtocol = response.current_protocol || imageFormat || 'jpeg'; // Use persisted format as fallback
         
         console.log('Current active protocol from backend:', currentProtocol);
         
@@ -119,34 +129,38 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
         
         setDraftSettings(loadedSettings);
         
-        // Use current_protocol from backend to set format
-        console.log('Setting initial format to:', currentProtocol);
-        dispatch(setImageFormat(currentProtocol));
-        dispatch(setStreamSettings(loadedSettings));
-        
-        // Set appropriate min/max values based on format
-        if (currentProtocol === 'jpeg') {
-          dispatch(setMinVal(0));
-          dispatch(setMaxVal(255));
+        // ONLY update format if it differs from persisted state
+        // This preserves user's last selected format across sessions
+        if (currentProtocol !== imageFormat) {
+          console.log('Backend protocol differs from persisted format, updating to:', currentProtocol);
+          dispatch(setImageFormat(currentProtocol));
+          
+          // Set appropriate min/max values based on format
+          if (currentProtocol === 'jpeg') {
+            dispatch(setMinVal(0));
+            dispatch(setMaxVal(255));
+          } else {
+            // Binary mode: auto-stretch to max range
+            dispatch(setMinVal(0));
+            dispatch(setMaxVal(65535));
+          }
         } else {
-          // Binary mode: auto-stretch to max range
-          dispatch(setMinVal(0));
-          dispatch(setMaxVal(65535));
+          console.log('Using persisted format:', imageFormat);
         }
         
-        hasLoadedSettings.current = true;
+        dispatch(setStreamSettings(loadedSettings));
       } catch (error) {
         console.warn('Failed to load backend settings:', error);
-        // Use Redux state as fallback or set defaults
+        // Use Redux state as fallback or set defaults to JPEG
         const fallbackSettings = streamSettings || {
           binary: {
-            enabled: true,
+            enabled: false,
             compression: { algorithm: 'lz4', level: 0 },
             subsampling: { factor: 4 },
             throttle_ms: 100
           },
           jpeg: {
-            enabled: false,
+            enabled: true,
             quality: 85,
             subsampling: { factor: 1 },
             throttle_ms: 100
@@ -160,11 +174,15 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
         };
         setDraftSettings(fallbackSettings);
         
-        // Set default format to binary if not set
-        console.log('Setting default format to binary (fallback)');
-        dispatch(setImageFormat('binary'));
-        dispatch(setMinVal(0));
-        dispatch(setMaxVal(65535));
+        // Only set default format if not already persisted
+        if (!imageFormat || imageFormat === 'binary') {
+          console.log('Setting default format to jpeg (fallback)');
+          dispatch(setImageFormat('jpeg'));
+          dispatch(setMinVal(0));
+          dispatch(setMaxVal(255));
+        } else {
+          console.log('Using persisted format:', imageFormat);
+        }
         dispatch(setStreamSettings(fallbackSettings));
         
         hasLoadedSettings.current = true;
@@ -173,7 +191,7 @@ const StreamControlOverlay = ({ stats, featureSupport, isWebGL, imageSize, viewT
     
     loadBackendSettings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only load on mount, not when streamSettings changes
+  }, []); // Only load on mount, imageFormat is captured from closure
 
   // Auto contrast function
   const handleAutoContrast = () => {
