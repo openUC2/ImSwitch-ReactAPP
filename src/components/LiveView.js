@@ -220,7 +220,7 @@ export default function LiveView({ setFileManagerInitialPath }) {
 
   const toggleStream = async () => {
     const shouldStart = !isStreamRunning;
-    
+
     try {
       if (shouldStart) {
         // Determine protocol from current stream settings
@@ -235,13 +235,13 @@ export default function LiveView({ setFileManagerInitialPath }) {
       } else {
         // Stop stream
         await apiLiveViewControllerStopLiveView();
-        console.log('Stopped stream');
+        console.log("Stopped stream");
       }
-      
+
       // Update Redux state
       dispatch(liveViewSlice.setIsStreamRunning(shouldStart));
     } catch (error) {
-      console.error('Error toggling stream:', error);
+      console.error("Error toggling stream:", error);
       // Fallback: try to update state anyway for UI consistency
       dispatch(liveViewSlice.setIsStreamRunning(shouldStart));
     }
@@ -406,11 +406,13 @@ export default function LiveView({ setFileManagerInitialPath }) {
         </Tabs>
 
         {/* Live View Container - Fixed Height // TODO: This does not look really nice..  */}
-        <Box sx={{
-          height: "60%",
-          mb: 2,
-          position: "relative"
-        }}>
+        <Box
+          sx={{
+            height: "60%",
+            mb: 2,
+            position: "relative",
+          }}
+        >
           <LiveViewControlWrapper />
         </Box>
 

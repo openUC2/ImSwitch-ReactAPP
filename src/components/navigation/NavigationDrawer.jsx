@@ -6,22 +6,18 @@ import {
   BlurOn as BlurOnIcon,
   Build as BuildIcon,
   Code as CodeIcon,
-  Comment as CommentIcon,
   Computer as ComputerIcon,
   Dashboard as DashboardIcon,
   Extension as ExtensionIcon,
   Folder as FolderIcon,
-  Info as InfoIcon,
-  Link as LinkIcon,
-  Memory as MemoryIcon,
   Science as ScienceIcon,
   Sensors as SensorsIcon,
-  Settings as SettingsIcon,
   SettingsOverscanSharp as SettingsOverscanSharpIcon,
   SportsEsports as SportsEsportsIcon,
   Straighten as StraightenIcon,
+  Terminal as TerminalIcon,
   ThreeDRotation as ThreeDRotationIcon,
-  WifiSharp as WifiSharpIcon,
+  Wifi as WifiIcon,
   ZoomOutMap as ZoomOutMapIcon,
 } from "@mui/icons-material";
 import { Divider, Drawer, List } from "@mui/material";
@@ -148,19 +144,6 @@ const NavigationDrawer = ({
             selected={selectedPlugin === "WellPlate"}
             onClick={() => handlePluginChange("WellPlate")}
             tooltip="WellPlate"
-            color={SIDEBAR_COLORS.apps}
-            collapsed={!sidebarVisible}
-            nested={true}
-          />
-
-          {/* HistoScan - Automated scanning */}
-          <DrawerEntry
-            avatar={true}
-            avatarText="HS"
-            label="HistoScan"
-            selected={selectedPlugin === "HistoScan"}
-            onClick={() => handlePluginChange("HistoScan")}
-            tooltip="HistoScan"
             color={SIDEBAR_COLORS.apps}
             collapsed={!sidebarVisible}
             nested={true}
@@ -388,22 +371,33 @@ const NavigationDrawer = ({
           />
 
           <DrawerEntry
-            icon={<CommentIcon />}
-            label="SocketView"
-            selected={selectedPlugin === "SocketView"}
-            onClick={() => handlePluginChange("SocketView")}
-            tooltip="WebSocket communication"
+            icon={<StraightenIcon />}
+            label="StageOffsetCalibration"
+            selected={selectedPlugin === "StageOffsetCalibration"}
+            onClick={() => handlePluginChange("StageOffsetCalibration")}
+            tooltip="Stage Offset Calibration"
             color={SIDEBAR_COLORS.system}
             collapsed={!sidebarVisible}
             nested={true}
           />
 
           <DrawerEntry
-            icon={<StraightenIcon />}
-            label="StageOffsetCalibration"
-            selected={selectedPlugin === "StageOffsetCalibration"}
-            onClick={() => handlePluginChange("StageOffsetCalibration")}
-            tooltip="Stage calibration"
+            icon={<TerminalIcon />}
+            label="Serial Debug"
+            selected={selectedPlugin === "SerialDebug"}
+            onClick={() => handlePluginChange("SerialDebug")}
+            tooltip="Serial Debug Interface"
+            color={SIDEBAR_COLORS.system}
+            collapsed={!sidebarVisible}
+            nested={true}
+          />
+
+          <DrawerEntry
+            icon={<WifiIcon />}
+            label="Socket View"
+            selected={selectedPlugin === "SocketView"}
+            onClick={() => handlePluginChange("SocketView")}
+            tooltip="WebSocket Debug Interface"
             color={SIDEBAR_COLORS.system}
             collapsed={!sidebarVisible}
             nested={true}
@@ -445,67 +439,6 @@ const NavigationDrawer = ({
             collapsed={!sidebarVisible}
           />
         ))}
-
-        {/* System Settings Group */}
-        <DrawerEntry
-          icon={<SettingsIcon />}
-          label="System Settings"
-          onClick={() => toggleGroup("systemSettings")}
-          tooltip="System Settings"
-          collapsed={!sidebarVisible}
-          collapsible={true}
-          expanded={groupsOpen.systemSettings}
-        >
-          <DrawerEntry
-            icon={<WifiSharpIcon />}
-            label="WiFi"
-            selected={selectedPlugin === "WiFi"}
-            onClick={() => handlePluginChange("WiFi")}
-            tooltip="WiFi configuration"
-            collapsed={!sidebarVisible}
-            nested={true}
-          />
-
-          <DrawerEntry
-            icon={<LinkIcon />}
-            label="Connection Settings"
-            selected={selectedPlugin === "Connections"}
-            onClick={() => handlePluginChange("Connections")}
-            tooltip="Connection Settings"
-            collapsed={!sidebarVisible}
-            nested={true}
-          />
-
-          <DrawerEntry
-            icon={<MemoryIcon />}
-            label="UC2"
-            selected={selectedPlugin === "UC2"}
-            onClick={() => handlePluginChange("UC2")}
-            tooltip="UC2 hardware control"
-            collapsed={!sidebarVisible}
-            nested={true}
-          />
-
-          <DrawerEntry
-            icon={<SettingsIcon />}
-            label="Settings"
-            selected={selectedPlugin === "SystemSettings"}
-            onClick={() => handlePluginChange("SystemSettings")}
-            tooltip="System Settings"
-            collapsed={!sidebarVisible}
-            nested={true}
-          />
-
-          <DrawerEntry
-            icon={<InfoIcon />}
-            label="About"
-            selected={selectedPlugin === "About"}
-            onClick={() => handlePluginChange("About")}
-            tooltip="About ImSwitch"
-            collapsed={!sidebarVisible}
-            nested={true}
-          />
-        </DrawerEntry>
       </List>
     </Drawer>
   );
