@@ -27,6 +27,7 @@ import {
   SystemUpdate,
   Storage,
 } from "@mui/icons-material";
+import { formatDiskUsage } from "../../utils/formatUtils";
 
 // Redux state management following Copilot Instructions
 import { toggleTheme, getThemeState } from "../../state/slices/ThemeSlice.js";
@@ -71,15 +72,7 @@ const SettingsMenu = ({ onNavigate }) => {
           const data = await response.json();
 
           // Handle the actual API response format - direct number
-          let usage;
-          if (typeof data === "number") {
-            // Convert decimal to percentage (0.686940516168836 -> 68.7%)
-            usage = `${(data * 100).toFixed(1)}%`;
-          } else if (typeof data === "string") {
-            usage = data;
-          } else {
-            usage = "Unknown format";
-          }
+          const usage = formatDiskUsage(data);
 
           setDiskUsage(usage);
         } else {

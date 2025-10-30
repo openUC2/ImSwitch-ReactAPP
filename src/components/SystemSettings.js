@@ -22,6 +22,7 @@ import {
   ErrorOutline,
   Memory,
 } from "@mui/icons-material";
+import { formatDiskUsage } from "../utils/formatUtils";
 
 export default function SystemSettings() {
   // Get connection settings from Redux
@@ -117,24 +118,7 @@ export default function SystemSettings() {
           console.log("Full disk usage response:", data);
 
           // Handle the actual API response format - direct number
-          let usage;
-          if (typeof data === "number") {
-            // Convert decimal to percentage (0.686940516168836 -> 68.69%)
-            usage = `${(data * 100).toFixed(1)}%`;
-          } else if (typeof data === "string") {
-            // If it's already a string, use it directly
-            usage = data;
-          } else if (data && typeof data === "object") {
-            // Fallback: check for various possible property names
-            usage =
-              data.usage ||
-              data.disk_usage ||
-              data.diskUsage ||
-              data.percentage ||
-              "Unknown format";
-          } else {
-            usage = "Unknown format";
-          }
+          const usage = formatDiskUsage(data);
 
           setDiskUsage(usage);
           console.log("Processed disk usage:", usage);
