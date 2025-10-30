@@ -220,11 +220,26 @@ const WebSocketHandler = () => {
       return () => {}; // Don't disconnect - other instances might still need it
     }
     
-    //create the socket
-    const adress =
-      connectionSettingsState.ip + ":" + connectionSettingsState.websocketPort;
-    console.log("WebSocket", adress);
-    const socket = io(adress, {
+    // Extract protocol from IP settings (following ImSwitch-ReactAPP patterns)
+    let protocol = "http"; // Default fallback
+    let cleanIP;
+
+    if (connectionSettingsState.ip.startsWith("https://")) {
+      protocol = "https";
+      cleanIP = connectionSettingsState.ip.replace(/^https?:\/\//, "");
+    } else if (connectionSettingsState.ip.startsWith("http://")) {
+      protocol = "http";
+      cleanIP = connectionSettingsState.ip.replace(/^https?:\/\//, "");
+    } else {
+      // No protocol specified, use HTTP as default
+      cleanIP = connectionSettingsState.ip;
+    }
+
+    // Create the socket address with proper protocol
+    const address = `${protocol}://${cleanIP}:${connectionSettingsState.websocketPort}`;
+    console.log("WebSocket", address);
+    
+    const socket = io(address, {
       transports: ["websocket"],
       secure: protocol === "https", // Enable secure connection for HTTPS
     });
