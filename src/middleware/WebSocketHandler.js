@@ -375,7 +375,7 @@ const WebSocketHandler = () => {
           }
 
           // Send acknowledgement for JPEG frames to enable flow control
-          if (ack && typeof ack === 'function') {
+          if (ack && typeof ack === "function") {
             console.log("Acknowledging JPEG image frame");
             ack();
           } else {
