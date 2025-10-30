@@ -88,7 +88,7 @@ const WebSocketHandler = () => {
 
       // Extract protocol from IP settings (following Copilot Instructions)
       let protocol = "http"; // Default fallback
-      let cleanIP = testIP;
+      let cleanIP;
 
       if (testIP.startsWith("https://")) {
         protocol = "https";
