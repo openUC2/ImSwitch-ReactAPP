@@ -1,33 +1,24 @@
 import { Box, Checkbox, Slider, Typography, Paper, Grid } from "@mui/material";
 import React, { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
 import AxisControl from "./AxisControl";
-import { useWebSocket } from "../context/WebSocketContext";
+import * as positionSlice from "../state/slices/PositionSlice.js";
 
 function XYZControls({ hostIP, hostPort }) {
   const [positionerName, setPositionerName] = useState("");
-  const [positions, setPositions] = useState({});
-  const socket = useWebSocket();
+  
+  // Get positions from Redux instead of local state
+  const positionState = useSelector(positionSlice.getPositionState);
+  
+  // Map Redux state to positions object (x, y, z, a -> X, Y, Z, A)
+  const positions = {
+    X: positionState.x,
+    Y: positionState.y,
+    Z: positionState.z,
+    A: positionState.a,
+  };
 
-  /* --- websocket updates --- */
-  useEffect(() => {
-    if (!socket) return;
-    const handler = (data) => {
-      try {
-        const j = JSON.parse(data);
-        if (j.name === "sigUpdateMotorPosition") {
-          const p = j.args.p0;
-          const first = Object.keys(p)[0];
-          if (first) setPositions((s) => ({ ...s, ...p[first] }));
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    };
-    socket.on("signal", handler);
-    return () => socket.off("signal", handler);
-  }, [socket]);
-
-  /* --- initial fetches --- */
+  /* --- initial fetch for positioner name --- */
   useEffect(() => {
     (async () => {
       try {
@@ -39,19 +30,6 @@ function XYZControls({ hostIP, hostPort }) {
       }
     })();
   }, [hostIP, hostPort]);
-
-  useEffect(() => {
-    if (!positionerName) return;
-    (async () => {
-      try {
-        const r = await fetch(`${hostIP}:${hostPort}/PositionerController/getPositionerPositions`);
-        const d = await r.json();
-        if (d[positionerName]) setPositions(d[positionerName]);
-      } catch (e) {
-        console.error(e);
-      }
-    })();
-  }, [positionerName, hostIP, hostPort]);
 
   /* --- layout: stack controllers vertically --- */
   return (

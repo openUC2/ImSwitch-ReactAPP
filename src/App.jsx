@@ -37,7 +37,7 @@ import { JupyterProvider } from "./context/JupyterContext.js";
 import { NavigationDrawer, TopBar } from "./components/navigation";
 
 import { MCTProvider } from "./context/MCTContext.js";
-import { WebSocketProvider } from "./context/WebSocketContext.js";
+// REMOVED: import { WebSocketProvider } from "./context/WebSocketContext.js"; - duplicate socket connection
 import { setApiPort, setIp } from "./state/slices/ConnectionSettingsSlice.js";
 
 //axon
@@ -362,14 +362,15 @@ function App() {
   return (
     <ThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
       <WebSocketHandler />
-      <WebSocketProvider hostIP={hostIP}>
-        <CssBaseline />
-        {/* Global Status/Notification Message */}
-        <StatusMessage
-          message={notification.message}
-          type={notification.type}
-          onClose={() => dispatch(clearNotification())}
-        />
+      {/* headless */}
+      {/* REMOVED: WebSocketProvider - duplicate socket connection */}
+      <CssBaseline />
+      {/* Global Status/Notification Message */}
+      <StatusMessage
+        message={notification.message}
+        type={notification.type}
+        onClose={() => dispatch(clearNotification())}
+      />
         <Box sx={{ display: "flex" }}>
           <NavigationDrawer
             sidebarVisible={sidebarVisible}
@@ -502,7 +503,7 @@ function App() {
             {selectedPlugin === "Connections" && <ConnectionSettings />}
           </Box>
         </Box>
-      </WebSocketProvider>
+      {/* REMOVED: Closing WebSocketProvider tag - duplicate socket connection */}
     </ThemeProvider>
   );
 }

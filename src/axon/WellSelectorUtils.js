@@ -649,19 +649,21 @@ export const wellLayout96 = {
 export function generateWellLayout384({
   cols = 24,
   rows = 16,
-  pitch = 4500 * 2.22, // ~9 mm spacing (adjust if needed)
-  radius = 3000,       // 3 mm radius
+  pitch = 4500, // ~9 mm spacing (adjust if needed)
+  radius = 2000,       // 3 mm radius
   startX = 29490.625,
   startY = 30688.125,
-  width = 128000,
-  height = 86000,
+  width = 170000,
+  height = 120000,
+  offsetX = 0,  // Global offset in X direction (micrometers)
+  offsetY = 0,  // Global offset in Y direction (micrometers)
 } = {}) {
   const wells = [];
 
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
-      const x = startX + c * pitch;
-      const y = startY + r * pitch;
+      const x = startX + c * pitch + offsetX;
+      const y = startY + r * pitch + offsetY;
       wells.push({
         x: Number(x.toFixed(3)),
         y: Number(y.toFixed(3)),
@@ -682,6 +684,29 @@ export function generateWellLayout384({
 
 // Optional: export a ready-to-use layout
 export const wellLayout384 = generateWellLayout384();
+
+//##################################################################################
+/**
+ * Apply global offset to all wells in a layout
+ * @param {Object} layout - Well layout object
+ * @param {number} offsetX - X offset in micrometers
+ * @param {number} offsetY - Y offset in micrometers
+ * @returns {Object} New layout with offset applied
+ */
+export function applyLayoutOffset(layout, offsetX = 0, offsetY = 0) {
+  if (!layout || !layout.wells) {
+    return layout;
+  }
+
+  return {
+    ...layout,
+    wells: layout.wells.map(well => ({
+      ...well,
+      x: well.x + offsetX,
+      y: well.y + offsetY
+    }))
+  };
+}
 
 //##################################################################################
 // New functions for well pattern generation

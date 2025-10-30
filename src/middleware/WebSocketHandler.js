@@ -11,9 +11,14 @@ import * as objectiveSlice from "../state/slices/ObjectiveSlice.js";
 import * as omeZarrSlice from "../state/slices/OmeZarrTileStreamSlice.js";
 import * as focusLockSlice from "../state/slices/FocusLockSlice.js";
 import * as mazeGameSlice from "../state/slices/MazeGameSlice.js";
+import * as autofocusSlice from "../state/slices/AutofocusSlice.js";
+import * as socketDebugSlice from "../state/slices/SocketDebugSlice.js";
 import * as uc2Slice from "../state/slices/UC2Slice.js";
 
 import { io } from "socket.io-client";
+
+// Singleton socket instance - prevents duplicate connections in React StrictMode
+let socketInstance = null;
 
 //##################################################################################
 const WebSocketHandler = () => {
@@ -209,26 +214,23 @@ const WebSocketHandler = () => {
 
   //##################################################################################
   useEffect(() => {
-    // Extract protocol from connection settings
-    let protocol = "http"; // Default fallback
-    let cleanIP = connectionSettingsState.ip;
-
-    if (connectionSettingsState.ip.startsWith("https://")) {
-      protocol = "https";
-      cleanIP = connectionSettingsState.ip.replace(/^https?:\/\//, "");
-    } else if (connectionSettingsState.ip.startsWith("http://")) {
-      protocol = "http";
-      cleanIP = connectionSettingsState.ip.replace(/^https?:\/\//, "");
+    // Reuse existing socket or create new one (Singleton pattern for React StrictMode)
+    if (socketInstance && socketInstance.connected) {
+      console.log("WebSocket: Reusing existing connection", socketInstance.id);
+      return () => {}; // Don't disconnect - other instances might still need it
     }
-
-    // Create the socket with proper protocol
-    const address = `${protocol}://${cleanIP}:${connectionSettingsState.websocketPort}`;
-    console.log(`WebSocket connecting to: ${address} (protocol: ${protocol})`);
-
-    const socket = io(address, {
+    
+    //create the socket
+    const adress =
+      connectionSettingsState.ip + ":" + connectionSettingsState.websocketPort;
+    console.log("WebSocket", adress);
+    const socket = io(adress, {
       transports: ["websocket"],
       secure: protocol === "https", // Enable secure connection for HTTPS
     });
+    
+    // Store singleton instance
+    socketInstance = socket;
 
     //listen to all
     socket.on("*", (packet) => {
@@ -242,28 +244,36 @@ const WebSocketHandler = () => {
       //update redux state
       dispatch(webSocketSlice.setConnected(true));
     });
-
-    // Store frame metadata for UC2F parsing
-    let frameMetadata = null;
-
+    
     // Listen for binary frame events (UC2F packets)
-    socket.on("frame", (buf, ack) => {
-      /*
-      console.log('WebSocketHandler: Received UC2F frame:', buf.byteLength, 'bytes');
-      console.log('WebSocketHandler: Buffer type:', buf.constructor.name);
-      console.log('WebSocketHandler: First 20 bytes:', new Uint8Array(buf.slice(0, 20)));
-      */
+    // Socket.IO sends as array: [metadata, binaryData]
+    socket.on("frame", (payload, ack) => {
+      // Parse payload - Socket.IO automatically deserializes [metadata, binary] arrays
+      let metadata = null;
+      let buf = null;
+      
+      if (Array.isArray(payload) && payload.length === 2) {
+        // New format: [metadata, binaryData]
+        metadata = payload[0];
+        buf = payload[1];
+        
+        // Update Redux with current frame ID
+        if (metadata && metadata.image_id !== undefined) {
+          dispatch(liveStreamSlice.setCurrentFrameId(metadata.image_id));
+        }
+      } else {
+        // Legacy format: just binary data (fallback)
+        buf = payload;
+      }
+      
       // Dispatch custom event with metadata for proper parsing
-      window.dispatchEvent(
-        new CustomEvent("uc2:frame", {
-          detail: {
-            buffer: buf,
-            metadata: frameMetadata,
-          },
-        })
-      );
-      // console.log('WebSocketHandler: Dispatched uc2:frame event');
-
+      window.dispatchEvent(new CustomEvent("uc2:frame", { 
+        detail: { 
+          buffer: buf, 
+          metadata: metadata 
+        }
+      }));
+      
       // Send acknowledgement to enable flow control
       // This tells the server we're ready for the next frame
       if (ack && typeof ack === "function") {
@@ -283,20 +293,16 @@ const WebSocketHandler = () => {
       //handle signal
       const dataJson = JSON.parse(data);
       //console.log(dataJson);
-
+      
+      // Dispatch to debug slice for SocketView (do this first for all signals)
+      dispatch(socketDebugSlice.addMessage(dataJson));
+      
+      // REMOVED: frame_meta handler - metadata is now sent together with binary frame
       // Store frame metadata for UC2F parsing
-      if (dataJson.name === "frame_meta" && dataJson.metadata) {
-        // console.log('Received frame metadata:', dataJson.metadata);
-        frameMetadata = dataJson.metadata;
-        console.log("Frame id: ", frameMetadata.image_id);
-
-        // Update Redux with current frame ID
-        if (frameMetadata.image_id !== undefined) {
-          dispatch(liveStreamSlice.setCurrentFrameId(frameMetadata.image_id));
-        }
-      }
+      // if (dataJson.name === "frame_meta" && dataJson.metadata) { ... }
+      
       //----------------------------------------------
-      else if (dataJson.name === "sigUpdateImage") {
+      if (dataJson.name === "sigUpdateImage") {
         //console.log("sigUpdateImage", dataJson);
         //update redux state - LEGACY JPEG PATH
         if (dataJson.detectorname) {
@@ -354,10 +360,12 @@ const WebSocketHandler = () => {
           }
 
           // Send acknowledgement for JPEG frames to enable flow control
-          if (ack && typeof ack === "function") {
+          if (ack && typeof ack === 'function') {
+            console.log("Acknowledging JPEG image frame");
             ack();
           } else {
-            socket.emit("frame_ack");
+            console.log("Emitting frame_ack for JPEG image");
+            socket.emit('frame_ack');
           }
 
           /*
@@ -423,8 +431,8 @@ const WebSocketHandler = () => {
               # pixelsize, NA, magnification, objectiveName, FOVx, FOVy
         */
         //----------------------------------------------
-      } else if (dataJson.name === "sigUpdateMotorPosition") {
-        //console.log("sigUpdateMotorPosition", dataJson);
+      } else if (dataJson.name == "sigUpdateMotorPosition") {
+        console.log("sigUpdateMotorPosition received:", dataJson);
         //parse
         try {
           const parsedArgs = dataJson.args.p0;
@@ -433,23 +441,26 @@ const WebSocketHandler = () => {
           if (positionerKeys.length > 0) {
             const key = positionerKeys[0];
             const correctedPositions = parsedArgs[key];
+            
+            console.log("Parsed positions:", correctedPositions);
 
-            //update redux state
-            dispatch(
-              positionSlice.setPosition(
-                Object.fromEntries(
-                  Object.entries({
-                    x: correctedPositions.X,
-                    y: correctedPositions.Y,
-                    z: correctedPositions.Z,
-                    a: correctedPositions.A,
-                  }).filter(([_, value]) => value !== undefined) //Note: filter out undefined values
-                )
-              )
+            // Build position update object, filtering out undefined values
+            const positionUpdate = Object.fromEntries(
+              Object.entries({
+                x: correctedPositions.X,
+                y: correctedPositions.Y,
+                z: correctedPositions.Z,
+                a: correctedPositions.A,
+              }).filter(([_, value]) => value !== undefined)
             );
+            
+            console.log("Position update to dispatch:", positionUpdate);
+            
+            //update redux state
+            dispatch(positionSlice.setPosition(positionUpdate));
           }
         } catch (error) {
-          console.error("sigUpdateMotorPosition", error);
+          console.error("Error in sigUpdateMotorPosition handler:", error);
         }
         //----------------------------------------------
       } else if (dataJson.name === "sigUpdateOMEZarrStore") {
@@ -618,6 +629,29 @@ const WebSocketHandler = () => {
           }
         } catch (error) {
           console.error("Error parsing calibration progress signal:", error);
+        }
+      } else if (dataJson.name === "sigUpdateFocusPlot") {
+        // Handle autofocus plot data updates
+        try {
+          if (dataJson.args && dataJson.args.p0 && dataJson.args.p1) {
+            // Store focus positions in p0, contrast values in p1
+            dispatch(autofocusSlice.setPlotData({ 
+              x: dataJson.args.p0, 
+              y: dataJson.args.p1 
+            }));
+          }
+        } catch (error) {
+          console.error("Error parsing autofocus plot signal:", error);
+        }
+      } else if (dataJson.name === "sigAutoFocusLiveValue") {
+        // Handle live focus value updates during monitoring mode
+        try {
+          if (dataJson.args && dataJson.args.p0) {
+            // p0 contains {focus_value, timestamp, method}
+            dispatch(autofocusSlice.setLiveFocusValue(dataJson.args.p0));
+          }
+        } catch (error) {
+          console.error("Error parsing autofocus live value signal:", error);
         }
       } else if (dataJson.name === "sigGameState") {
         // Handle maze game state updates

@@ -5,9 +5,9 @@ const initialLiveStreamState = {
   // Image data removed - handled directly by viewer components
   // liveViewImage: "", // REMOVED: no longer store pixel data in Redux
   minVal: 0,
-  maxVal: 65535, // Default to full 16-bit range for binary streaming
+  maxVal: 255, // Default to 8-bit range for JPEG streaming
   gamma: 1.0, // New: gamma correction
-  imageFormat: "binary", // Track image format (jpeg, binary, etc.) - default to binary
+  imageFormat: "jpeg", // Track image format (jpeg, binary, etc.) - default to JPEG
   pixelSize: null,
   fovX: 0,
   fovY: 0, 
@@ -19,9 +19,9 @@ const initialLiveStreamState = {
   },
   // Persistent stream settings
   streamSettings: {
-    current_compression_algorithm: "binary",
+    current_compression_algorithm: "jpeg",
     binary: {
-      enabled: true,
+      enabled: false,
       compression: { algorithm: "lz4", level: 0 },
       subsampling: { factor: 4 },
       throttle_ms: 100,
@@ -29,8 +29,14 @@ const initialLiveStreamState = {
       pixfmt: "GRAY16"
     },
     jpeg: {
-      enabled: false,
+      enabled: true,
       quality: 85
+    },
+    webrtc: {
+      enabled: false,
+      max_width: 1280,
+      throttle_ms: 33,
+      subsampling_factor: 1
     }
   },
   // Histogram data

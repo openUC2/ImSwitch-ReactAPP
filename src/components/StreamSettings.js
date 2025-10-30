@@ -90,9 +90,9 @@ const StreamSettings = ({ onOpen }) => {
   // Reset to defaults
   const handleReset = useCallback(() => {
     const defaultSettings = {
-      current_compression_algorithm: "binary",
+      current_compression_algorithm: "jpeg",
       binary: {
-        enabled: true,
+        enabled: false,
         compression: { algorithm: "lz4", level: 0 },
         subsampling: { factor: 4 },
         throttle_ms: 100,
@@ -100,7 +100,7 @@ const StreamSettings = ({ onOpen }) => {
         pixfmt: "GRAY16"
       },
       jpeg: {
-        enabled: false,
+        enabled: true,
         quality: 85
       }
     };

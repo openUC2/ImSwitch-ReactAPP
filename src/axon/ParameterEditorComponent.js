@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { FormControlLabel, Switch } from "@mui/material";
+import { FormControlLabel, Switch, Tooltip, IconButton } from "@mui/material";
+import { Info as InfoIcon } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
 
 import * as experimentSlice from "../state/slices/ExperimentSlice.js";
@@ -255,7 +256,7 @@ const ParameterEditorComponent = () => {
 
           {/* Autofocus */}
           <tr>
-            <td rowSpan="4" style={tdStyle}>
+            <td rowSpan="12" style={tdStyle}>
               Autofocus
             </td>
             <td style={tdStyle}>Enable</td>
@@ -266,6 +267,135 @@ const ParameterEditorComponent = () => {
                 onChange={(e) =>
                   dispatch(experimentSlice.setAutoFocus(e.target.checked))
                 }
+              />
+            </td>
+          </tr>
+          <tr>
+            <td style={tdStyle}>Illumination Channel</td>
+            <td style={tdStyle}>
+              <select
+                value={parameterValue.autoFocusIlluminationChannel || ""}
+                onChange={(e) =>
+                  dispatch(experimentSlice.setAutoFocusIlluminationChannel(e.target.value))
+                }
+                style={{ width: "100%", padding: 5 }}
+              >
+                <option value="">Auto (use active channel)</option>
+                {parameterRange.illuSources.map((source) => (
+                  <option key={source} value={source}>
+                    {source}
+                  </option>
+                ))}
+              </select>
+            </td>
+          </tr>
+          <tr>
+            <td style={tdStyle}>Settle Time (s)</td>
+            <td style={tdStyle}>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                max="10"
+                value={parameterValue.autoFocusSettleTime || 0.1}
+                onChange={(e) =>
+                  dispatch(experimentSlice.setAutoFocusSettleTime(Number(e.target.value)))
+                }
+                style={{ width: "100%", padding: 5 }}
+              />
+            </td>
+          </tr>
+          <tr>
+            <td style={tdStyle}>Range (±µm)</td>
+            <td style={tdStyle}>
+              <input
+                type="number"
+                step="1"
+                min="1"
+                value={parameterValue.autoFocusRange || 100}
+                onChange={(e) =>
+                  dispatch(experimentSlice.setAutoFocusRange(Number(e.target.value)))
+                }
+                style={{ width: "100%", padding: 5 }}
+              />
+            </td>
+          </tr>
+          <tr>
+            <td style={tdStyle}>Resolution (µm)</td>
+            <td style={tdStyle}>
+              <input
+                type="number"
+                step="0.1"
+                min="0.1"
+                value={parameterValue.autoFocusResolution || 10}
+                onChange={(e) =>
+                  dispatch(experimentSlice.setAutoFocusResolution(Number(e.target.value)))
+                }
+                style={{ width: "100%", padding: 5 }}
+              />
+            </td>
+          </tr>
+          <tr>
+            <td style={tdStyle}>Crop Size (px)</td>
+            <td style={tdStyle}>
+              <input
+                type="number"
+                step="128"
+                min="256"
+                max="4096"
+                value={parameterValue.autoFocusCropsize || 2048}
+                onChange={(e) =>
+                  dispatch(experimentSlice.setAutoFocusCropsize(Number(e.target.value)))
+                }
+                style={{ width: "100%", padding: 5 }}
+              />
+            </td>
+          </tr>
+          <tr>
+            <td style={tdStyle}>Focus Algorithm</td>
+            <td style={tdStyle}>
+              <select
+                value={parameterValue.autoFocusAlgorithm || "LAPE"}
+                onChange={(e) =>
+                  dispatch(experimentSlice.setAutoFocusAlgorithm(e.target.value))
+                }
+                style={{ width: "100%", padding: 5 }}
+              >
+                <option value="LAPE">LAPE (Laplacian)</option>
+                <option value="GLVA">GLVA (Variance)</option>
+                <option value="JPEG">JPEG (Compression)</option>
+              </select>
+            </td>
+          </tr>
+          <tr>
+            <td style={tdStyle}>Static Offset (µm)</td>
+            <td style={tdStyle}>
+              <input
+                type="number"
+                step="0.1"
+                min="-100"
+                max="100"
+                value={parameterValue.autoFocusStaticOffset || 0.0}
+                onChange={(e) =>
+                  dispatch(experimentSlice.setAutoFocusStaticOffset(Number(e.target.value)))
+                }
+                style={{ width: "100%", padding: 5 }}
+              />
+            </td>
+          </tr>
+          <tr>
+            <td style={tdStyle}>Two-Stage Focus</td>
+            <td style={tdStyle}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={parameterValue.autoFocusTwoStage || false}
+                    onChange={(e) =>
+                      dispatch(experimentSlice.setAutoFocusTwoStage(e.target.checked))
+                    }
+                  />
+                }
+                label=""
               />
             </td>
           </tr>
@@ -422,10 +552,19 @@ const ParameterEditorComponent = () => {
 
           {/* File Format Options */}
           <tr>
-            <td rowSpan="3" style={tdStyle}>
+            <td rowSpan="4" style={tdStyle}>
               File Format
             </td>
-            <td style={tdStyle}>OME-TIFF</td>
+            <td style={tdStyle}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                OME-TIFF
+                <Tooltip title="Creates OME-TIFF files with full metadata. Each image is stored as a separate TIFF file with comprehensive metadata for compatibility with ImageJ, FIJI, and other image analysis software." arrow>
+                  <IconButton size="small" style={{ padding: "2px" }}>
+                    <InfoIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </div>
+            </td>
             <td style={tdStyle}>
               <FormControlLabel
                 control={
@@ -441,7 +580,16 @@ const ParameterEditorComponent = () => {
             </td>
           </tr>
           <tr>
-            <td style={tdStyle}>OME-Zarr</td>
+            <td style={tdStyle}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                OME-Zarr
+                <Tooltip title="Creates OME-Zarr files for cloud-optimized storage. Zarr is a chunked, compressed array format that enables efficient access to large multidimensional datasets and is particularly suitable for remote access and parallel processing." arrow>
+                  <IconButton size="small" style={{ padding: "2px" }}>
+                    <InfoIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </div>
+            </td>
             <td style={tdStyle}>
               <FormControlLabel
                 control={
@@ -457,7 +605,16 @@ const ParameterEditorComponent = () => {
             </td>
           </tr>
           <tr>
-            <td style={tdStyle}>Stitched OME-TIFF</td>
+            <td style={tdStyle}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                Stitched OME-TIFF
+                <Tooltip title="Creates a single large stitched TIFF file by combining all tiles into one continuous image. This provides a complete overview of the entire scanned area but results in very large file sizes for big experiments." arrow>
+                  <IconButton size="small" style={{ padding: "2px" }}>
+                    <InfoIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </div>
+            </td>
             <td style={tdStyle}>
               <FormControlLabel
                 control={
@@ -465,6 +622,31 @@ const ParameterEditorComponent = () => {
                     checked={parameterValue.ome_write_stitched_tiff || false}
                     onChange={(e) =>
                       dispatch(experimentSlice.setOmeWriteStitchedTiff(e.target.checked))
+                    }
+                  />
+                }
+                label=""
+              />
+            </td>
+          </tr>
+          <tr>
+            <td style={tdStyle}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                Individual TIFFs
+                <Tooltip title="Saves each tile as a separate TIFF file with position-based naming (e.g., x5000_y3000_z1500_c0_i0042_p80.tif). This allows for easy access to individual tiles and is useful for distributed processing or when you need specific regions." arrow>
+                  <IconButton size="small" style={{ padding: "2px" }}>
+                    <InfoIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </div>
+            </td>
+            <td style={tdStyle}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={parameterValue.ome_write_individual_tiffs || false}
+                    onChange={(e) =>
+                      dispatch(experimentSlice.setOmeWriteIndividualTiffs(e.target.checked))
                     }
                   />
                 }

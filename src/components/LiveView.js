@@ -24,7 +24,6 @@ import StreamControls from "./StreamControls";
 import IlluminationController from "./IlluminationController";
 import apiLiveViewControllerStartLiveView from "../backendapi/apiLiveViewControllerStartLiveView";
 import apiLiveViewControllerStopLiveView from "../backendapi/apiLiveViewControllerStopLiveView";
-import { useWebSocket } from "../context/WebSocketContext";
 import ObjectiveSwitcher from "./ObjectiveSwitcher";
 import DetectorTriggerController from "./DetectorTriggerController";
 import * as liveViewSlice from "../state/slices/LiveViewSlice.js";
@@ -64,7 +63,14 @@ export default function LiveView({ setFileManagerInitialPath }) {
   const liveViewState = useSelector(liveViewSlice.getLiveViewState);
   const liveStreamState = useSelector(liveStreamSlice.getLiveStreamState);
 
-  const socket = useWebSocket();
+  // Debug log to verify persisted stream format
+  useEffect(() => {
+    console.log('[LiveView] Mounted with stream state:', {
+      imageFormat: liveStreamState.imageFormat,
+      streamSettings: liveStreamState.streamSettings,
+      isStreamRunning: liveViewState.isStreamRunning
+    });
+  }, []);
 
   // Use Redux state instead of local state
   const detectors = liveViewState.detectors;
@@ -99,27 +105,6 @@ export default function LiveView({ setFileManagerInitialPath }) {
   const [stepSizeXY, setStepSizeXY] = useState(100);
   const [stepSizeZ, setStepSizeZ] = useState(10);
   const [positionerName, setPositionerName] = useState("");
-
-  /* socket */
-  useEffect(() => {
-    if (!socket) return;
-    const handler = (d) => {
-      const j = JSON.parse(d);
-      if (j.name === "sigUpdateImage") {
-        const det = j.detectorname;
-        dispatch(
-          liveViewSlice.setImageUrls({
-            ...imageUrls,
-            [det]: `data:image/jpeg;base64,${j.image}`,
-          })
-        );
-        if (j.pixelsize) dispatch(liveViewSlice.setPixelSize(j.pixelsize));
-      }
-      // Note: sigHistogramComputed is now handled in WebSocketHandler
-    };
-    socket.on("signal", handler);
-    return () => socket.off("signal", handler);
-  }, [socket]);
 
   /* detectors */
   useEffect(() => {
@@ -239,15 +224,12 @@ export default function LiveView({ setFileManagerInitialPath }) {
     try {
       if (shouldStart) {
         // Determine protocol from current stream settings
-        // Use imageFormat from Redux state (not currentImageFormat which is the old field name)
-        const currentFormat = liveStreamState.imageFormat || "binary";
-        const protocol = currentFormat === "jpeg" ? "jpeg" : "binary";
-
-        console.log(
-          `Starting ${protocol} stream (imageFormat: ${liveStreamState.imageFormat})`
-        );
-
-        // Start stream with current protocol
+        // Use imageFormat from Redux state - supports binary, jpeg, and webrtc
+        const protocol = liveStreamState.imageFormat || 'jpeg'; // Default to JPEG
+        
+        console.log(`Starting ${protocol} stream (imageFormat: ${liveStreamState.imageFormat})`);
+        
+        // Start stream with current protocol (binary, jpeg, or webrtc)
         await apiLiveViewControllerStartLiveView(null, protocol);
         console.log(`Started ${protocol} stream`);
       } else {

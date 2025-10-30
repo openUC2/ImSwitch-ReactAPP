@@ -22,7 +22,6 @@ import {
 import {
   Refresh as RefreshIcon,
 } from "@mui/icons-material";
-import { useWebSocket } from "../context/WebSocketContext";
 import * as uc2Slice from "../state/slices/UC2Slice.js";
 import {
   setNotification,
@@ -44,8 +43,6 @@ const SelectSetupController = ({ hostIP, hostPort }) => {
   const currentActiveFilename = uc2State.currentActiveFilename;
   const isLoadingCurrentFilename = uc2State.isLoadingCurrentFilename;
   const isRestarting = uc2State.isRestarting;
-
-  const socket = useWebSocket();
 
   const fetchCurrentActiveFilename = useCallback(() => {
     const url = `${hostIP}:${hostPort}/UC2ConfigController/getCurrentSetupFilename`;

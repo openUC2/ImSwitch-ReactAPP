@@ -12,12 +12,9 @@ import {
   MenuItem,
   Box,
 } from "@mui/material";
-import { useWebSocket } from "../context/WebSocketContext";
 import * as stageOffsetCalibrationSlice from "../state/slices/StageOffsetCalibrationSlice.js";
 
 const JoystickController = ({ hostIP, hostPort }) => {
-  const socket = useWebSocket();
-  const dispatch = useDispatch();
   
   // Access Redux state for image display
   const stageOffsetState = useSelector(stageOffsetCalibrationSlice.getStageOffsetCalibrationState);
@@ -28,47 +25,6 @@ const JoystickController = ({ hostIP, hostPort }) => {
   const [stepSizeXY, setStepSizeXY] = useState(100);
   const [stepSizeZ, setStepSizeZ] = useState(10);
   
-  // Fetch the list of detectors from the server
-  useEffect(() => {
-    const fetchDetectorNames = async () => {
-      try {
-        const response = await fetch(
-          `${hostIP}:${hostPort}/SettingsController/getDetectorNames`
-        );
-        const data = await response.json();
-        dispatch(stageOffsetCalibrationSlice.setDetectors(data || []));
-      } catch (error) {
-        console.error("Error fetching detector names:", error);
-      }
-    };
-
-    fetchDetectorNames();
-  }, [hostIP, hostPort, dispatch]);
-
-  // Handle socket signals for live stream
-  useEffect(() => {
-    if (!socket) return;
-    const handleSignal = (rawData) => {
-      try {
-        const jdata = JSON.parse(rawData);
-        if (jdata.name === "sigUpdateImage") {
-          const detectorName = jdata.detectorname;
-          const imgSrc = `data:image/jpeg;base64,${jdata.image}`;
-          dispatch(stageOffsetCalibrationSlice.updateImageUrl({
-            detector: detectorName,
-            url: imgSrc
-          }));
-        }
-      } catch (error) {
-        console.error("Error parsing signal data:", error);
-      }
-    };
-    socket.on("signal", handleSignal);
-    return () => {
-      socket.off("signal", handleSignal);
-    };
-  }, [socket, dispatch]);
-
   // Movement functions
   const moveStage = (axis, distance) => {
     fetch(

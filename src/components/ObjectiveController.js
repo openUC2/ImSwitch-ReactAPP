@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Paper, Grid, Button, Typography, TextField, Box } from "@mui/material";
-import { useWebSocket } from "../context/WebSocketContext";
 import LiveViewControlWrapper from "../axon/LiveViewControlWrapper";
 import ObjectiveCalibrationWizard from "./ObjectiveCalibrationWizard";
 import * as objectiveSlice from "../state/slices/ObjectiveSlice.js";
+import * as positionSlice from "../state/slices/PositionSlice.js";
 import { getConnectionSettingsState } from "../state/slices/ConnectionSettingsSlice";
 import { useTheme } from "@mui/material/styles";
 
@@ -46,54 +46,19 @@ const ExtendedObjectiveController = () => {
   // Local state for wizard
   const [wizardOpen, setWizardOpen] = useState(false);
 
-  // Local state for live positions (X, Y, Z, A)
-  const [positions, setPositions] = useState({});
+  // Get positions from Redux instead of local state
+  const positionState = useSelector(positionSlice.getPositionState);
+  const positions = {
+    X: positionState.x,
+    Y: positionState.y,
+    Z: positionState.z,
+    A: positionState.a,
+  };
 
-  const socket = useWebSocket(); //TODO remove
-
-  // Update objective parameters from socket signal "sigObjectiveChanged"
-  useEffect(() => {
-    if (!socket) return;
-    const handleSignal = (data) => {
-      try {
-        const jdata = JSON.parse(data);
-        if (jdata.name === "sigObjectiveChanged") {
-          //Note: this is allready handled in WebSocketHandler !!!!!!!!
-          // Expected order: [pixelsize, NA, magnification, objectiveName]
-          ///dispatch(objectiveSlice.setPixelSize(jdata.args[0])); //setPixelsize(jdata.args[0]);
-          ///dispatch(objectiveSlice.setNA(jdata.args[1])); //setNA(jdata.args[1]);
-          ///dispatch(objectiveSlice.setMagnification(jdata.args[2])); //setMagnification(jdata.args[2]);
-          ///dispatch(objectiveSlice.setObjectiveName(jdata.args[2])); //setObjectiveName(jdata.args[3]);
-        } else if (jdata.name === "sigUpdateImage") {
-          //TODO dont get wat archived here
-          //TODO
-          //console.log(jdata);
-          //console.log(imageUrls);
-          const detectorName = jdata.detectorname;
-          const imgSrc = `data:image/jpeg;base64,${jdata.image}`;
-          dispatch(
-            objectiveSlice.setImageUrls({
-              ...imageUrls,
-              [detectorName]: imgSrc,
-            })
-          );
-          if (jdata.pixelsize) {
-            console.log(
-              "TODO change ExtendedObjectiveController setPixelSize call"
-            );
-            //TODO why is pixel size grabbed from here?
-            dispatch(objectiveSlice.setPixelSize(jdata.pixelsize)); //TODO is this needed? its not changed, but its frequently updated
-          }
-        }
-      } catch (error) {
-        console.error("Error parsing signal data:", error);
-      }
-    };
-    socket.on("signal", handleSignal);
-    return () => {
-      socket.off("signal", handleSignal);
-    };
-  }, [socket]);
+  // Remove all WebSocket handlers - now handled by WebSocketHandler.js
+  // - sigObjectiveChanged: Already handled in WebSocketHandler -> objectiveSlice
+  // - sigUpdateImage: Already handled in WebSocketHandler -> liveStreamSlice
+  // - sigUpdateMotorPosition: Already handled in WebSocketHandler -> positionSlice
 
   useEffect(() => {
     //fetch current objective
@@ -270,41 +235,8 @@ const ExtendedObjectiveController = () => {
       });
   };
 
-  // Fetch initial positions on mount
-  useEffect(() => {
-    (async () => {
-      try {
-        const r = await fetch(
-          `${hostIP}:${hostPort}/PositionerController/getPositionerPositions`
-        );
-        const d = await r.json();
-        // Use first positioner (usually 'ESP32Stage' or similar)
-        const first = Object.keys(d)[0];
-        if (first) setPositions(d[first]);
-      } catch (e) {
-        console.error(e);
-      }
-    })();
-  }, [hostIP, hostPort]);
-
-  // WebSocket updates for live positions
-  useEffect(() => {
-    if (!socket) return;
-    const handler = (data) => {
-      try {
-        const j = JSON.parse(data);
-        if (j.name === "sigUpdateMotorPosition") {
-          const p = j.args.p0;
-          const first = Object.keys(p)[0];
-          if (first) setPositions((s) => ({ ...s, ...p[first] }));
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    };
-    socket.on("signal", handler);
-    return () => socket.off("signal", handler);
-  }, [socket]);
+  // Position updates now come automatically via WebSocketHandler -> positionSlice
+  // No need to fetch positions or listen to socket events - data is in Redux
 
   return (
     <Paper style={{ padding: "24px", maxWidth: 1100, margin: "0 auto" }}>

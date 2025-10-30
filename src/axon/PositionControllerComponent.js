@@ -27,9 +27,10 @@ const PositionControllerComponent = () => {
   const keyMoveDistance = 100; // Distance for keyboard single press
   const continuousMoveSpeed = 5000; // Speed for continuous movement
 
-  // Track pressed keys and their timers
+  // Track pressed keys, their timers, and whether continuous mode was triggered
   const keyTimersRef = useRef({});
   const keyPressedRef = useRef({});
+  const continuousModeTriggeredRef = useRef({}); // Track if continuous mode was activated
  
   //##################################################################################
   const movePositioner = (axis, dist) => {
@@ -115,10 +116,27 @@ const PositionControllerComponent = () => {
       return;
     }
 
+    console.log(`Key down: ${event.key}`);
+    
+    // Initialize all state for this key press
     keyPressedRef.current[event.key] = true;
+    continuousModeTriggeredRef.current[event.key] = false; // Reset continuous mode flag
+    
+    // Clear any existing timer for this key (just in case)
+    if (keyTimersRef.current[event.key]) {
+      clearTimeout(keyTimersRef.current[event.key]);
+    }
 
     // Set a timer for 1 second - if still pressed, switch to continuous mode
     keyTimersRef.current[event.key] = setTimeout(() => {
+      console.log(`Key ${event.key} held for 1s - starting continuous mode`);
+      
+      // Mark that continuous mode was triggered
+      continuousModeTriggeredRef.current[event.key] = true;
+      
+      // Remove the timer reference since it has fired
+      delete keyTimersRef.current[event.key];
+      
       // Key held for more than 1 second, start continuous movement
       let axis = null;
       let speed = continuousMoveSpeed;
@@ -156,6 +174,8 @@ const PositionControllerComponent = () => {
       return;
     }
 
+    console.log(`Key up: ${event.key}`);
+
     // Determine axis first
     let axis = null;
     let dist = keyMoveDistance;
@@ -178,31 +198,45 @@ const PositionControllerComponent = () => {
         dist = -keyMoveDistance;
         break;
       default:
+        // Clean up state even for unhandled keys
         keyPressedRef.current[event.key] = false;
+        delete continuousModeTriggeredRef.current[event.key];
+        if (keyTimersRef.current[event.key]) {
+          clearTimeout(keyTimersRef.current[event.key]);
+          delete keyTimersRef.current[event.key];
+        }
         return;
     }
 
-    // Check if the timer is still running (less than 1 second)
-    const timerExists = keyTimersRef.current[event.key] !== undefined;
+    // Check if continuous mode was triggered
+    const wasContinuousMode = continuousModeTriggeredRef.current[event.key];
+    console.log(`Key ${event.key} - continuous mode was: ${wasContinuousMode}`);
     
-    if (timerExists) {
-      // Timer still running = key was pressed for less than 1 second
+    // Clean up timer if it still exists
+    if (keyTimersRef.current[event.key]) {
       clearTimeout(keyTimersRef.current[event.key]);
       delete keyTimersRef.current[event.key];
-      
-      // Do a single move
-      if (axis) {
-        movePositioner(axis, dist);
-      }
-    } else {
-      // Timer already fired = key was held for more than 1 second
-      // Stop continuous movement
+    }
+    
+    if (wasContinuousMode) {
+      // Continuous mode was active, just stop it
+      console.log(`Stopping continuous mode for ${event.key}`);
       if (axis) {
         movePositionerForever(axis, continuousMoveSpeed, true);
       }
+    } else {
+      // Do a single move (only if continuous mode was NOT triggered)
+      console.log(`Single move for ${event.key}`);
+      if (axis) {
+        movePositioner(axis, dist);
+      }
     }
 
+    // Clean up ALL tracking state for this key
     keyPressedRef.current[event.key] = false;
+    delete continuousModeTriggeredRef.current[event.key];
+    
+    console.log(`Key ${event.key} state cleaned up`);
   };
 
   //##################################################################################
@@ -220,6 +254,7 @@ const PositionControllerComponent = () => {
       Object.values(keyTimersRef.current).forEach(timer => clearTimeout(timer));
       keyTimersRef.current = {};
       keyPressedRef.current = {};
+      continuousModeTriggeredRef.current = {};
     };
   }, []); // Empty dependency array means this effect runs once on mount
 

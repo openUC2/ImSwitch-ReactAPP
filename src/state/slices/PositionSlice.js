@@ -15,12 +15,13 @@ const positionSlice = createSlice({
   initialState: initialPositionState,
   reducers: {
     setPosition: (state, action) => {
-        //console.log("setPosition");
-        //console.log(action.payload);
+        console.log("PositionSlice.setPosition called with payload:", action.payload);
+        console.log("Current state before update:", { x: state.x, y: state.y, z: state.z, a: state.a });
         state.x = action.payload.x ?? state.x;
         state.y = action.payload.y ?? state.y;
         state.z = action.payload.z ?? state.z;
         state.a = action.payload.a ?? state.a;
+        console.log("State after update:", { x: state.x, y: state.y, z: state.z, a: state.a });
       },
   },
 });
