@@ -150,16 +150,6 @@ export default function SystemSettings() {
     return "success";
   };
 
-  // Helper function to get disk usage severity
-  const getDiskUsageSeverity = (usage) => {
-    if (!usage || usage === "Loading..." || usage.includes("Error"))
-      return "info";
-    const percentage = parseFloat(usage.replace("%", ""));
-    if (percentage > 90) return "error";
-    if (percentage > 75) return "warning";
-    return "success";
-  };
-
   return (
     <Box sx={{ p: 3, maxWidth: 800, mx: "auto" }}>
       {/* Header */}
