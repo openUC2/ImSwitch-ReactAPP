@@ -14,22 +14,22 @@ import {
   Sensors as SensorsIcon,
   SettingsOverscanSharp as SettingsOverscanSharpIcon,
   SportsEsports as SportsEsportsIcon,
+  Star as StarIcon,
   Straighten as StraightenIcon,
   Terminal as TerminalIcon,
   ThreeDRotation as ThreeDRotationIcon,
   Wifi as WifiIcon,
   ZoomOutMap as ZoomOutMapIcon,
 } from "@mui/icons-material";
-import { Divider, Drawer, List } from "@mui/material";
+import { Divider, Drawer, List, useTheme } from "@mui/material";
 import { useState } from "react";
-import SIDEBAR_COLORS from "../../constants/sidebarColors.js";
+import { getSidebarColors } from "../../constants/sidebarColors.js";
 import DrawerEntry from "./DrawerEntry.jsx";
 import DrawerHeader from "./DrawerHeader.jsx";
 
 /**
  * ImSwitch Navigation Drawer Component
  * Main navigation sidebar for microscopy control interface
- * Follows Copilot Instructions for component extraction and modularity
  * Refactored to use DrawerEntry components for consistency
  */
 const NavigationDrawer = ({
@@ -46,7 +46,11 @@ const NavigationDrawer = ({
   // Dynamic plugins
   plugins = [],
 }) => {
-  // Internal state management for drawer groups - following Copilot Instructions
+  // Get current theme for color adaptation
+  const theme = useTheme();
+  const SIDEBAR_COLORS = getSidebarColors(theme.palette.mode);
+
+  // Internal state management for drawer groups
   const [groupsOpen, setGroupsOpen] = useState(() => {
     // Restore from localStorage if available, otherwise start collapsed
     try {
@@ -56,6 +60,7 @@ const NavigationDrawer = ({
       // Ignore JSON/localStorage errors
     }
     return {
+      essentials: true,
       apps: false,
       coding: false,
       system: false,
@@ -103,6 +108,8 @@ const NavigationDrawer = ({
             }),
           display: "flex",
           flexDirection: "column",
+          // Remove overflow here - let the List handle scrolling
+          overflow: "hidden",
         },
       }}
     >
@@ -112,17 +119,61 @@ const NavigationDrawer = ({
         isMobile={isMobile}
       />
 
-      <List>
-        {/* LiveView - Main microscopy interface */}
+      <List
+        sx={{
+          width: "100%",
+          boxSizing: "border-box",
+          padding: 0,
+          flex: 1, // Take remaining space
+          // Enable scrolling with hidden scrollbars
+          overflowY: "auto",
+          overflowX: "hidden",
+          "&::-webkit-scrollbar": {
+            width: "0px",
+            background: "transparent", // Hide scrollbar for webkit
+          },
+          "&::-webkit-scrollbar-thumb": {
+            background: "transparent",
+          },
+          scrollbarWidth: "none", // Hide scrollbar for Firefox
+          msOverflowStyle: "none", // Hide scrollbar for IE/Edge
+        }}
+      >
+        {/* Essentials Group - Core microscopy components */}
         <DrawerEntry
-          icon={<DashboardIcon />}
-          label="Live View"
-          selected={selectedPlugin === "LiveView"}
-          onClick={() => handlePluginChange("LiveView")}
-          tooltip="Live View - Main microscopy control"
-          color={SIDEBAR_COLORS.liveView}
+          icon={<StarIcon />}
+          label="Essentials"
+          onClick={() => toggleGroup("essentials")}
+          tooltip="Essential microscopy components"
+          color={SIDEBAR_COLORS.essentials}
           collapsed={!sidebarVisible}
-        />
+          collapsible={true}
+          expanded={groupsOpen.essentials}
+        >
+          {/* LiveView - Main microscopy interface */}
+          <DrawerEntry
+            icon={<DashboardIcon />}
+            label="Live View"
+            selected={selectedPlugin === "LiveView"}
+            onClick={() => handlePluginChange("LiveView")}
+            tooltip="Live View - Main microscopy control"
+            color={SIDEBAR_COLORS.essentials}
+            collapsed={!sidebarVisible}
+            nested={true}
+          />
+
+          {/* File Manager - Microscopy data management */}
+          <DrawerEntry
+            icon={<FolderIcon />}
+            label="File Manager"
+            selected={selectedPlugin === "FileManager"}
+            onClick={() => handlePluginChange("FileManager")}
+            tooltip="File Manager - Microscopy data management"
+            color={SIDEBAR_COLORS.essentials}
+            collapsed={!sidebarVisible}
+            nested={true}
+          />
+        </DrawerEntry>
         <Divider sx={{ my: 1 }} />
 
         {/* Apps Group - Microscopy Applications */}
@@ -262,18 +313,6 @@ const NavigationDrawer = ({
             nested={true}
           />
         </DrawerEntry>
-        <Divider sx={{ my: 1 }} />
-
-        {/* File Manager - Microscopy data management */}
-        <DrawerEntry
-          icon={<FolderIcon />}
-          label="File Manager"
-          selected={selectedPlugin === "FileManager"}
-          onClick={() => handlePluginChange("FileManager")}
-          tooltip="File Manager - Microscopy data management"
-          color={SIDEBAR_COLORS.fileManager}
-          collapsed={!sidebarVisible}
-        />
         <Divider sx={{ my: 1 }} />
 
         {/* Coding Group - Programming tools */}
