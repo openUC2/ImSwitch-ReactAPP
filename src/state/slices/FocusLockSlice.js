@@ -18,8 +18,8 @@ const initialFocusLockState = {
   safetyMotionActive: false,
   
   // Astigmatism parameters
-  gaussianSigma: 1.0,
-  backgroundThreshold: 100.0,
+  gaussian_sigma: 1.0,
+  background_threshold: 100.0,
   cropSize: 100,
   cropCenter: [0, 0],
   frameSize: [640, 480], // Default frame size, can be adjusted
@@ -94,11 +94,11 @@ const focusLockSlice = createSlice({
     },
     
     // Astigmatism parameters
-    setGaussianSigma: (state, action) => {
-      state.gaussianSigma = action.payload;
+    setgaussian_sigma: (state, action) => {
+      state.gaussian_sigma = action.payload;
     },
     setBackgroundThreshold: (state, action) => {
-      state.backgroundThreshold = action.payload;
+      state.background_threshold = action.payload;
     },
     setCropSize: (state, action) => {
       state.cropSize = action.payload;
@@ -199,7 +199,7 @@ export const {
   setSafetyMoveLimit,
   setMinStepThreshold,
   setSafetyMotionActive,
-  setGaussianSigma,
+  setgaussian_sigma,
   setBackgroundThreshold,
   setCropSize,
   setFrameSize,

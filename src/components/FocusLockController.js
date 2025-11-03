@@ -122,8 +122,8 @@ const FocusLockController = () => {
   const focusLockUI = useSelector((state) => ({
     isFocusLocked: state.focusLockState.isFocusLocked,
     isCalibrating: state.focusLockState.isCalibrating,
-    gaussianSigma: state.focusLockState.gaussianSigma,
-    backgroundThreshold: state.focusLockState.backgroundThreshold,
+    gaussian_sigma: state.focusLockState.gaussian_sigma,
+    background_threshold: state.focusLockState.background_threshold,
     cropSize: state.focusLockState.cropSize,
     cropCenter: state.focusLockState.cropCenter,
     frameSize: state.focusLockState.frameSize,
@@ -432,10 +432,10 @@ const FocusLockController = () => {
     try {
       const params = await apiFocusLockControllerGetParamsAstigmatism();
       if (params) {
-        dispatch(focusLockSlice.setGaussianSigma(params.gaussianSigma || 1.0));
+        dispatch(focusLockSlice.setgaussian_sigma(params.gaussian_sigma || 1.0));
         dispatch(
           focusLockSlice.setBackgroundThreshold(
-            params.backgroundThreshold || 100.0
+            params.background_threshold || 100.0
           )
         );
         dispatch(focusLockSlice.setCropSize(params.cropSize || 100));
@@ -594,8 +594,8 @@ const FocusLockController = () => {
   const updateAstigmatismParameters = useCallback(async () => {
     try {
       await apiFocusLockControllerSetParamsAstigmatism({
-        gaussianSigma: focusLockUI.gaussianSigma,
-        backgroundThreshold: focusLockUI.backgroundThreshold,
+        gaussian_sigma: focusLockUI.gaussian_sigma,
+        background_threshold: focusLockUI.background_threshold,
         cropSize: focusLockUI.cropSize,
         cropCenter: focusLockUI.cropCenter,
       });
@@ -603,8 +603,8 @@ const FocusLockController = () => {
       console.error("Failed to update astigmatism parameters:", error);
     }
   }, [
-    focusLockUI.gaussianSigma,
-    focusLockUI.backgroundThreshold,
+    focusLockUI.gaussian_sigma,
+    focusLockUI.background_threshold,
     focusLockUI.cropSize,
     focusLockUI.cropCenter,
   ]);
@@ -1347,10 +1347,10 @@ const FocusLockController = () => {
                 <TextField
                   label="Gaussian Sigma"
                   type="number"
-                  value={focusLockUI.gaussianSigma}
+                  value={focusLockUI.gaussian_sigma}
                   onChange={(e) =>
                     dispatch(
-                      focusLockSlice.setGaussianSigma(
+                      focusLockSlice.setgaussian_sigma(
                         parseFloat(e.target.value)
                       )
                     )
@@ -1362,7 +1362,7 @@ const FocusLockController = () => {
                 <TextField
                   label="Background Threshold"
                   type="number"
-                  value={focusLockUI.backgroundThreshold}
+                  value={focusLockUI.background_threshold}
                   onChange={(e) =>
                     dispatch(
                       focusLockSlice.setBackgroundThreshold(
