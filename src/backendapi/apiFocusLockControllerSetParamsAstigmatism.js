@@ -1,15 +1,15 @@
 import createAxiosInstance from "./createAxiosInstance.js";
 
-const apiFocusLockControllerSetParamsAstigmatism = async ({ gaussianSigma, backgroundThreshold, cropSize, cropCenter }) => {
+const apiFocusLockControllerSetParamsAstigmatism = async ({ gaussian_sigma, background_threshold, crop_size, crop_center }) => {
   try {
     const axiosInstance = createAxiosInstance();
     const config = {
-      params: { gaussianSigma, backgroundThreshold, cropSize }
+      params: { gaussian_sigma, background_threshold, crop_size }
     };
     
     // Add cropCenter as request body if provided
-    if (cropCenter) {
-      config.data = cropCenter;
+    if (crop_center) {
+      config.data = crop_center;
       config.headers = {
         'Content-Type': 'application/json'
       };

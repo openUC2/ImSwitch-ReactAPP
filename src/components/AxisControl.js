@@ -68,7 +68,7 @@ return (
         </Grid>
         <Grid item>
           <TextField
-            label="Steps"
+            label="Move By (µm)"
             type="number"
             size="small"
             variant="outlined"
@@ -95,7 +95,7 @@ return (
             sx={{ minWidth: w, px: 1, py: 0.5 }}
             onClick={() => moveRel(+relStep)}
           >
-            ←
+            +
           </Button>
         </Grid>
         <Grid item>
@@ -105,7 +105,7 @@ return (
             sx={{ minWidth: w, px: 1, py: 0.5 }}
             onClick={() => moveRel(-relStep)}
           >
-            →
+            -
           </Button>
         </Grid>
       </Grid>
@@ -117,7 +117,7 @@ return (
         <Grid item sx={{ width: "120px" }} /> {/* Spacer */}
         <Grid item>
           <TextField
-            label="Absolute"
+            label="Move To (µm)"
             type="number"
             size="small"
             variant="outlined"
