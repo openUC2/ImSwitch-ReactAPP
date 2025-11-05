@@ -191,12 +191,12 @@ const LiveViewComponent = ({ useFastMode = true, onDoubleClick }) => {
           setImageLoaded(false);
           setCanvasStyle({}); // Reset canvas style on error
         };
-        img.src = `data:image/jpeg;base64,${liveStreamState.liveViewImage}`;
+        img.src = `data:image/jpeg;base64,${liveStreamState.liveViewImage}`; // TODO: We could consider rendering the fraame into a canvas
       } else {
         setImageLoaded(false);
         setCanvasStyle({}); // Reset canvas style when no image
       }
-    }, [liveStreamState.liveViewImage, applyResponsiveSizing]);
+    }, [liveStreamState.liveViewImage, applyResponsiveSizing]); // TODO: @gokugiant => let's check if this re-renders/repaints the whole page with every frame
 
     // Reapply sizing when container size changes
     useEffect(() => {
