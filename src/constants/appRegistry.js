@@ -257,7 +257,7 @@ export const APP_REGISTRY = {
       "development",
       "analysis",
     ],
-    pluginId: "JupyteNotebook",
+    pluginId: "JupyterNotebook",
   },
 
   // === SYSTEM - Configuration and system tools ===

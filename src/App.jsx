@@ -429,7 +429,7 @@ function App() {
           {selectedPlugin === "STORMArkitekt" && <STORMControllerArkitekt />}
           {selectedPlugin === "Stresstest" && <StresstestController />}
           {selectedPlugin === "FocusLock" && <FocusLockController />}
-          {selectedPlugin === "JupyteNotebook" && (
+          {selectedPlugin === "JupyterNotebook" && (
             <JupyterProvider>
               <JupyterExecutor />
             </JupyterProvider>
