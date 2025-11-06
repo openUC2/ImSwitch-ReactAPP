@@ -16,6 +16,20 @@ import {
   Lock as LockIcon,
   SportsEsports as SportsEsportsIcon,
   ThreeDRotation as ThreeDRotationIcon,
+  // Additional icons for better differentiation
+  ViewModule as ViewModuleIcon,
+  CropFree as CropFreeIcon,
+  FlashOn as FlashOnIcon,
+  Tune as TuneIcon,
+  NetworkCheck as NetworkCheckIcon,
+  DeviceHub as DeviceHubIcon,
+  Speed as SpeedIcon,
+  Thermostat as ThermostatIcon,
+  Insights as InsightsIcon,
+  PhotoCamera as PhotoCameraIcon,
+  // Coding-specific icons
+  MenuBook as MenuBookIcon,
+  Psychology as PsychologyIcon,
 } from "@mui/icons-material";
 
 /**
@@ -72,7 +86,7 @@ export const APP_REGISTRY = {
   // === APPS - Optional microscopy applications ===
   wellSelector: {
     id: "wellSelector",
-    name: "Well Selector",
+    name: "Well Plate",
     description:
       "Multi-well plate navigation and selection. Choose wells for automated experiments and sample screening.",
     category: APP_CATEGORIES.APPS,
@@ -81,19 +95,6 @@ export const APP_REGISTRY = {
     essential: false,
     keywords: ["well", "plate", "multiwell", "selection", "screening"],
     pluginId: "WellPlate",
-  },
-
-  timelapse: {
-    id: "timelapse",
-    name: "Timelapse",
-    description:
-      "Time-lapse microscopy with automated image acquisition. Schedule multi-position experiments over time.",
-    category: APP_CATEGORIES.APPS,
-    icon: AccessTimeIcon,
-    enabled: false,
-    essential: false,
-    keywords: ["timelapse", "time", "automated", "acquisition", "scheduling"],
-    pluginId: "Timelapse",
   },
 
   stormLocal: {
@@ -109,6 +110,46 @@ export const APP_REGISTRY = {
     pluginId: "STORMLocal",
   },
 
+  stormArkitekt: {
+    id: "stormArkitekt",
+    name: "STORM Arkitekt",
+    description:
+      "Advanced STORM microscopy controller with Arkitekt integration. Cloud-based super-resolution image processing and workflow management.",
+    category: APP_CATEGORIES.APPS,
+    icon: InsightsIcon,
+    enabled: false,
+    essential: false,
+    keywords: [
+      "storm",
+      "arkitekt",
+      "superresolution",
+      "cloud",
+      "workflow",
+      "processing",
+    ],
+    pluginId: "STORMArkitekt",
+  },
+
+  infinityScanning: {
+    id: "infinityScanning",
+    name: "Infinity Scanning",
+    description:
+      "Large field-of-view scanning microscopy with OpenLayers integration. Create stitched panoramic images from multiple high-resolution tiles.",
+    category: APP_CATEGORIES.APPS,
+    icon: CropFreeIcon,
+    enabled: false,
+    essential: false,
+    keywords: [
+      "infinity",
+      "scanning",
+      "largefov",
+      "panoramic",
+      "stitching",
+      "openlayers",
+    ],
+    pluginId: "Infinity Scanning",
+  },
+
   lightsheet: {
     id: "lightsheet",
     name: "LightSheet",
@@ -122,13 +163,26 @@ export const APP_REGISTRY = {
     pluginId: "LightSheet",
   },
 
+  timelapse: {
+    id: "timelapse",
+    name: "Timelapse",
+    description:
+      "Time-lapse microscopy with automated image acquisition. Schedule multi-position experiments over time.",
+    category: APP_CATEGORIES.APPS,
+    icon: AccessTimeIcon,
+    enabled: false,
+    essential: false,
+    keywords: ["timelapse", "time", "automated", "acquisition", "scheduling"],
+    pluginId: "Timelapse",
+  },
+
   flowStop: {
     id: "flowStop",
-    name: "Flow Stop Controller",
+    name: "Flow Stop",
     description:
       "Control flow stop mechanisms for microfluidics experiments. Manage fluid flow and timing.",
     category: APP_CATEGORIES.APPS,
-    icon: ComputerIcon,
+    icon: DeviceHubIcon,
     enabled: false,
     essential: false,
     keywords: ["flow", "stop", "microfluidics", "fluid", "timing"],
@@ -141,7 +195,7 @@ export const APP_REGISTRY = {
     description:
       "Lepmon thermal imaging and monitoring. Control thermal sensors and imaging.",
     category: APP_CATEGORIES.APPS,
-    icon: ComputerIcon,
+    icon: ThermostatIcon,
     enabled: false,
     essential: false,
     keywords: ["lepmon", "thermal", "imaging", "monitoring", "sensors"],
@@ -179,11 +233,31 @@ export const APP_REGISTRY = {
     description:
       "Integration with ImJoy platform for advanced image analysis. Run Python and JavaScript plugins in the browser.",
     category: APP_CATEGORIES.CODING,
-    icon: CodeIcon,
+    icon: PsychologyIcon,
     enabled: false,
     essential: false,
     keywords: ["imjoy", "analysis", "python", "javascript", "plugins"],
     pluginId: "ImJoy",
+  },
+
+  jupyterNotebook: {
+    id: "jupyterNotebook",
+    name: "Jupyter Notebook",
+    description:
+      "Interactive development environment for Python scripting and data analysis. Execute code cells, visualize data, and create documentation.",
+    category: APP_CATEGORIES.CODING,
+    icon: MenuBookIcon,
+    enabled: false,
+    essential: false,
+    keywords: [
+      "jupyter",
+      "notebook",
+      "python",
+      "interactive",
+      "development",
+      "analysis",
+    ],
+    pluginId: "JupyteNotebook",
   },
 
   // === SYSTEM - Configuration and system tools ===
@@ -220,7 +294,7 @@ export const APP_REGISTRY = {
     description:
       "Control motorized objective turret. Switch between objectives during experiments for multi-magnification imaging.",
     category: APP_CATEGORIES.SYSTEM,
-    icon: ThreeDRotationIcon,
+    icon: PhotoCameraIcon,
     enabled: false,
     essential: false,
     keywords: ["objective", "lens", "turret", "magnification", "switch"],
@@ -233,7 +307,7 @@ export const APP_REGISTRY = {
     description:
       "System stress testing and performance monitoring. Test hardware limits and system stability.",
     category: APP_CATEGORIES.SYSTEM,
-    icon: ComputerIcon,
+    icon: SpeedIcon,
     enabled: false,
     essential: false,
     keywords: ["stress", "test", "performance", "stability", "hardware"],
@@ -246,7 +320,7 @@ export const APP_REGISTRY = {
     description:
       "Calibrate stage positioning offsets for accurate movement. Compensate for mechanical tolerances and improve positioning precision.",
     category: APP_CATEGORIES.SYSTEM,
-    icon: AutoFixHighIcon,
+    icon: TuneIcon,
     enabled: false,
     essential: false,
     keywords: [
@@ -266,7 +340,7 @@ export const APP_REGISTRY = {
     description:
       "Monitor and debug WebSocket connections. View real-time communication between frontend and backend for troubleshooting.",
     category: APP_CATEGORIES.SYSTEM,
-    icon: CableIcon,
+    icon: NetworkCheckIcon,
     enabled: false,
     essential: false,
     keywords: [
@@ -286,7 +360,7 @@ export const APP_REGISTRY = {
     description:
       "Control detector triggering mechanisms for synchronized image acquisition. Configure external trigger signals and timing.",
     category: APP_CATEGORIES.SYSTEM,
-    icon: AccessTimeIcon,
+    icon: FlashOnIcon,
     enabled: false,
     essential: false,
     keywords: [
@@ -306,7 +380,7 @@ export const APP_REGISTRY = {
     description:
       "Advanced LED matrix controller for structured illumination. Control complex LED patterns for enhanced microscopy techniques.",
     category: APP_CATEGORIES.SYSTEM,
-    icon: GridOnIcon,
+    icon: ViewModuleIcon,
     enabled: false,
     essential: false,
     keywords: [
@@ -318,26 +392,6 @@ export const APP_REGISTRY = {
       "enhanced",
     ],
     pluginId: "ExtendedLEDMatrix",
-  },
-
-  jupyterNotebook: {
-    id: "jupyterNotebook",
-    name: "Jupyter Notebook",
-    description:
-      "Interactive development environment for Python scripting and data analysis. Execute code cells, visualize data, and create documentation.",
-    category: APP_CATEGORIES.CODING,
-    icon: CodeIcon,
-    enabled: false,
-    essential: false,
-    keywords: [
-      "jupyter",
-      "notebook",
-      "python",
-      "interactive",
-      "development",
-      "analysis",
-    ],
-    pluginId: "JupyteNotebook",
   },
 };
 

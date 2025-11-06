@@ -368,7 +368,8 @@ const AppManager = ({ onNavigateToApp }) => {
           </Box>
 
           <Typography variant="body2" sx={{ mr: 2 }}>
-            {stats.enabledCount} of {stats.totalApps} apps enabled
+            {stats.enabledCount} of {stats.totalApps + 2} apps enabled
+            {/* 2 additional for essential apps */}
           </Typography>
 
           <Tooltip title="Reset to defaults">
@@ -483,13 +484,40 @@ const AppManager = ({ onNavigateToApp }) => {
                 <Tab
                   key={key}
                   value={key}
+                  sx={{
+                    minWidth: 120, // Ensure minimum width for proper spacing
+                    px: 2, // Add horizontal padding
+                  }}
                   label={
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1.5, // Increase gap between elements
+                        minWidth: 0, // Allow text to shrink if needed
+                      }}
+                    >
                       <IconComponent fontSize="small" />
-                      <span>{info.label}</span>
-                      <Badge
-                        badgeContent={`${enabled}/${count}`}
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {info.label}
+                      </Typography>
+                      <Chip
+                        label={`${enabled}/${count}`}
+                        size="small"
                         color="primary"
+                        variant="outlined"
+                        sx={{
+                          height: 20,
+                          fontSize: "0.75rem",
+                          minWidth: 40,
+                        }}
                       />
                     </Box>
                   }
