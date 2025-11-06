@@ -27,9 +27,6 @@ const initialState = {
   searchQuery: "",
   selectedCategory: "all", // 'all' or specific category
 
-  // UI state
-  isAppManagerOpen: false,
-
   // Statistics
   stats: {
     totalApps: Object.keys(APP_REGISTRY).length,
@@ -167,20 +164,6 @@ const appManagerSlice = createSlice({
     },
 
     /**
-     * Toggle app manager UI visibility
-     */
-    toggleAppManager: (state) => {
-      state.isAppManagerOpen = !state.isAppManagerOpen;
-    },
-
-    /**
-     * Close app manager
-     */
-    closeAppManager: (state) => {
-      state.isAppManagerOpen = false;
-    },
-
-    /**
      * Clear search and filters
      */
     clearFilters: (state) => {
@@ -201,8 +184,6 @@ export const {
   setEnabledApps,
   setSearchQuery,
   setSelectedCategory,
-  toggleAppManager,
-  closeAppManager,
   clearFilters,
 } = appManagerSlice.actions;
 
@@ -211,8 +192,6 @@ export const selectEnabledApps = (state) => state.appManager.enabledApps;
 export const selectSearchQuery = (state) => state.appManager.searchQuery;
 export const selectSelectedCategory = (state) =>
   state.appManager.selectedCategory;
-export const selectIsAppManagerOpen = (state) =>
-  state.appManager.isAppManagerOpen;
 export const selectAppStats = (state) => state.appManager.stats;
 
 // Computed selectors

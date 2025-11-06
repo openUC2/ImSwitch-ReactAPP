@@ -258,7 +258,7 @@ const NavigationDrawer = ({
             <Divider sx={{ my: 1 }} />
             <DrawerEntry
               icon={<CodeIcon />}
-              label="Development"
+              label="Coding"
               onClick={() => toggleGroup("coding")}
               tooltip="Development and debugging tools"
               color={SIDEBAR_COLORS.coding}

@@ -82,7 +82,7 @@ const CATEGORY_INFO = {
     description: "Microscopy applications and tools",
   },
   [APP_CATEGORIES.CODING]: {
-    label: "Development",
+    label: "Coding",
     icon: CodeIcon,
     color: "#f44336",
     description: "Development and debugging tools",

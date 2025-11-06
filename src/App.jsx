@@ -34,7 +34,6 @@ import { JupyterProvider } from "./context/JupyterContext.js";
 
 // ImSwitch Navigation Drawer
 import { NavigationDrawer, TopBar } from "./components/navigation";
-import AppManagerModal from "./components/AppManager/AppManagerModal.jsx";
 import AppManagerPage from "./components/AppManagerPage.jsx";
 
 import { MCTProvider } from "./context/MCTContext.js";
@@ -79,10 +78,6 @@ function App() {
     connectionSettingsSlice.getConnectionSettingsState
   );
   const { isDarkMode } = useSelector(getThemeState);
-  // App Manager state - modal state managed by Redux
-  const isAppManagerOpen = useSelector(
-    (state) => state.appManager.isAppManagerModalOpen
-  );
 
   // Hook to detect mobile screens
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -378,10 +373,6 @@ function App() {
         onClose={() => dispatch(clearNotification())}
       />
 
-      {/* App Manager Modal */}
-      {isAppManagerOpen && (
-        <AppManagerModal onNavigateToApp={handlePluginChange} />
-      )}
       <Box sx={{ display: "flex" }}>
         <NavigationDrawer
           sidebarVisible={sidebarVisible}
