@@ -39,6 +39,7 @@ import themeReducer from "./slices/ThemeSlice";
 import notificationReducer from "./slices/NotificationSlice";
 import autofocusReducer from "./slices/AutofocusSlice";
 import socketDebugReducer from "./slices/SocketDebugSlice";
+import appManagerReducer from "./slices/appManagerSlice";
 
 //#####################################################################################
 // Nested persist config for liveStreamState
@@ -93,6 +94,7 @@ const rootReducer = combineReducers({
   notification: notificationReducer,
   autofocusState: autofocusReducer,
   socketDebugState: socketDebugReducer,
+  appManager: appManagerReducer,
 });
 
 //#####################################################################################
@@ -110,6 +112,7 @@ const persistConfig = {
     "workflowState",
     "themeState",
     "mazeGameState",
+    "appManager", // Persist user's app preferences
     // liveStreamState uses nested persist config above
   ],
   //blacklist: ['webSocketState'],  // Do not persist these
