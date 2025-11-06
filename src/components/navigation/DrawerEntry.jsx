@@ -13,7 +13,7 @@ import { ExpandLess, ExpandMore } from "@mui/icons-material";
 
 /**
  * ImSwitch DrawerEntry Component
- * Reusable sidebar menu entry following Copilot Instructions
+ * Reusable sidebar menu entry
  * Focused component for navigation entries with consistent styling
  */
 const DrawerEntry = ({
@@ -24,7 +24,7 @@ const DrawerEntry = ({
   tooltip = "",
   color,
 
-  // Layout props following ImSwitch patterns
+  // Layout props
   collapsed = false,
   nested = false,
 
@@ -64,6 +64,21 @@ const DrawerEntry = ({
           minHeight: 48,
           pl: nested ? 4 : 2, // Left padding: nested=32px, normal=16px
           pr: 2, // Consistent right padding
+          // Special styling for collapsible folders - reduced to prevent overflow
+          ...(collapsible && {
+            backgroundColor: (theme) =>
+              theme.palette.mode === "dark"
+                ? "rgba(255, 255, 255, 0.03)"
+                : "rgba(0, 0, 0, 0.02)",
+            borderLeft: (theme) =>
+              `2px solid ${color || theme.palette.primary.main}`, // Thinner border
+            "&:hover": {
+              backgroundColor: (theme) =>
+                theme.palette.mode === "dark"
+                  ? "rgba(255, 255, 255, 0.06)"
+                  : "rgba(0, 0, 0, 0.04)",
+            },
+          }),
         }}
       >
         <ListItemIcon
@@ -72,12 +87,37 @@ const DrawerEntry = ({
             minWidth: collapsed ? 0 : 40, // Consistent icon space
             mr: collapsed ? "auto" : 2, // Consistent margin
             justifyContent: "center",
+            // Special styling for folder icons - more conservative approach
+            ...(collapsible && {
+              backgroundColor: (theme) =>
+                `${color || theme.palette.primary.main}15`, // 15% opacity (reduced)
+              borderRadius: "4px", // Smaller radius
+              padding: "2px", // Reduced padding
+              // Removed transform to prevent overflow
+            }),
           }}
         >
           {displayIcon}
         </ListItemIcon>
 
-        {!collapsed && <ListItemText primary={label} sx={{ opacity: 1 }} />}
+        {!collapsed && (
+          <ListItemText
+            primary={label}
+            sx={{
+              opacity: 1,
+              // Special typography for folders
+              ...(collapsible && {
+                "& .MuiListItemText-primary": {
+                  fontWeight: 600,
+                  fontSize: "0.875rem",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                  color: (theme) => color || theme.palette.text.primary,
+                },
+              }),
+            }}
+          />
+        )}
 
         {/* Collapsible indicator for ImSwitch groups */}
         {collapsible && !collapsed && (

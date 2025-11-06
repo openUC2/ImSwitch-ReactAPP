@@ -1,36 +1,25 @@
-import * as Icons from "@mui/icons-material";
 import {
-  AccessTime as AccessTimeIcon,
-  Air as AirIcon,
   Apps as AppsIcon,
-  BlurOn as BlurOnIcon,
-  Build as BuildIcon,
   Code as CodeIcon,
   Computer as ComputerIcon,
   Dashboard as DashboardIcon,
-  Extension as ExtensionIcon,
   Folder as FolderIcon,
-  Science as ScienceIcon,
-  Sensors as SensorsIcon,
-  SettingsOverscanSharp as SettingsOverscanSharpIcon,
-  SportsEsports as SportsEsportsIcon,
-  Straighten as StraightenIcon,
-  Terminal as TerminalIcon,
-  ThreeDRotation as ThreeDRotationIcon,
-  Wifi as WifiIcon,
-  ZoomOutMap as ZoomOutMapIcon,
+  Star as StarIcon,
+  GridView as GridViewIcon,
 } from "@mui/icons-material";
-import { Divider, Drawer, List } from "@mui/material";
+import { Divider, Drawer, List, useTheme } from "@mui/material";
 import { useState } from "react";
-import SIDEBAR_COLORS from "../../constants/sidebarColors.js";
+import { useSelector } from "react-redux";
+import { getSidebarColors } from "../../constants/sidebarColors.js";
+import { selectEnabledApps } from "../../state/slices/appManagerSlice.js";
+import { APP_REGISTRY, APP_CATEGORIES } from "../../constants/appRegistry.js";
 import DrawerEntry from "./DrawerEntry.jsx";
 import DrawerHeader from "./DrawerHeader.jsx";
 
 /**
  * ImSwitch Navigation Drawer Component
  * Main navigation sidebar for microscopy control interface
- * Follows Copilot Instructions for component extraction and modularity
- * Refactored to use DrawerEntry components for consistency
+ * Now dynamically shows only enabled applications from app registry
  */
 const NavigationDrawer = ({
   // Drawer state
@@ -46,7 +35,29 @@ const NavigationDrawer = ({
   // Dynamic plugins
   plugins = [],
 }) => {
-  // Internal state management for drawer groups - following Copilot Instructions
+  // Get current theme for color adaptation
+  const theme = useTheme();
+  const SIDEBAR_COLORS = getSidebarColors(theme.palette.mode);
+
+  // Redux state
+  const enabledApps = useSelector(selectEnabledApps);
+
+  // Helper function to check if an app is enabled
+  const isAppEnabled = (appId) => enabledApps.includes(appId);
+
+  // Helper function to get enabled apps by category
+  const getEnabledAppsByCategory = (category) => {
+    return Object.values(APP_REGISTRY).filter(
+      (app) => app.category === category && isAppEnabled(app.id)
+    );
+  };
+
+  // Handle App Manager opening (currently handled by plugin change)
+  // const handleOpenAppManager = () => {
+  //   dispatch(openAppManager());
+  // };
+
+  // Internal state management for drawer groups
   const [groupsOpen, setGroupsOpen] = useState(() => {
     // Restore from localStorage if available, otherwise start collapsed
     try {
@@ -56,6 +67,7 @@ const NavigationDrawer = ({
       // Ignore JSON/localStorage errors
     }
     return {
+      essentials: true,
       apps: false,
       coding: false,
       system: false,
@@ -70,24 +82,44 @@ const NavigationDrawer = ({
         ...prev,
         [groupName]: !prev[groupName],
       };
-      // Persist the open/closed state for ImSwitch session
+      // Persist to localStorage
       try {
         localStorage.setItem("imswitch.groupsOpen", JSON.stringify(next));
       } catch (e) {
-        // Ignore storage errors
+        // Ignore localStorage errors
       }
       return next;
     });
   };
 
+  // Render enabled apps for a specific category
+  const renderAppsForCategory = (category, color) => {
+    const enabledApps = getEnabledAppsByCategory(category);
+
+    return enabledApps.map((app) => {
+      const IconComponent = app.icon;
+      return (
+        <DrawerEntry
+          key={app.id}
+          icon={<IconComponent />}
+          label={app.name}
+          selected={selectedPlugin === app.pluginId}
+          onClick={() => handlePluginChange(app.pluginId)}
+          tooltip={app.description}
+          color={color}
+          collapsed={!sidebarVisible}
+          nested={true}
+        />
+      );
+    });
+  };
+
   return (
     <Drawer
-      variant={isMobile ? "temporary" : "permanent"}
-      open={sidebarVisible}
+      variant={isMobile ? "temporary" : "persistent"}
+      anchor="left"
+      open={isMobile ? sidebarVisible : true} // Desktop: always open, Mobile: controlled by sidebarVisible
       onClose={() => setSidebarVisible(false)}
-      ModalProps={{
-        keepMounted: true, // Better open performance on mobile
-      }}
       sx={{
         width: drawerWidth,
         flexShrink: 0,
@@ -103,6 +135,8 @@ const NavigationDrawer = ({
             }),
           display: "flex",
           flexDirection: "column",
+          // Remove overflow here - let the List handle scrolling
+          overflow: "hidden",
         },
       }}
     >
@@ -112,333 +146,155 @@ const NavigationDrawer = ({
         isMobile={isMobile}
       />
 
-      <List>
-        {/* LiveView - Main microscopy interface */}
+      <List
+        sx={{
+          width: "100%",
+          boxSizing: "border-box",
+          padding: 0,
+          flex: 1, // Take remaining space
+          // Enable scrolling with hidden scrollbars
+          overflowY: "auto",
+          overflowX: "hidden",
+          "&::-webkit-scrollbar": {
+            width: "0px",
+            background: "transparent", // Hide scrollbar for webkit
+          },
+          "&::-webkit-scrollbar-thumb": {
+            background: "transparent",
+          },
+          scrollbarWidth: "none", // Hide scrollbar for Firefox
+          msOverflowStyle: "none", // Hide scrollbar for IE/Edge
+        }}
+      >
+        {/* App Manager - Meta controller for managing all other apps */}
         <DrawerEntry
-          icon={<DashboardIcon />}
-          label="Live View"
-          selected={selectedPlugin === "LiveView"}
-          onClick={() => handlePluginChange("LiveView")}
-          tooltip="Live View - Main microscopy control"
-          color={SIDEBAR_COLORS.liveView}
+          icon={<GridViewIcon />}
+          label={sidebarVisible ? "App Manager" : "Apps"}
+          selected={selectedPlugin === "AppManager"}
+          onClick={() => handlePluginChange("AppManager")}
+          tooltip="📱 Customize Your Workspace: Choose which apps appear in your navigation drawer. Add or remove tools based on your workflow needs."
+          color="#9c27b0" // Purple color for special emphasis
           collapsed={!sidebarVisible}
+          nested={false}
+          sx={{
+            backgroundColor: (theme) =>
+              selectedPlugin === "AppManager"
+                ? theme.palette.mode === "dark"
+                  ? "rgba(156, 39, 176, 0.2)"
+                  : "rgba(156, 39, 176, 0.1)"
+                : "transparent",
+            borderLeft:
+              selectedPlugin === "AppManager"
+                ? "4px solid #9c27b0"
+                : "4px solid transparent",
+            marginBottom: "8px", // Space between App Manager and Essentials
+            "&:hover": {
+              backgroundColor: (theme) =>
+                theme.palette.mode === "dark"
+                  ? "rgba(156, 39, 176, 0.15)"
+                  : "rgba(156, 39, 176, 0.08)",
+            },
+          }}
         />
-        <Divider sx={{ my: 1 }} />
+
+        {/* Essentials Group - Core microscopy components */}
+        <DrawerEntry
+          icon={<StarIcon />}
+          label="Essentials"
+          onClick={() => toggleGroup("essentials")}
+          tooltip="Essential microscopy components"
+          color={SIDEBAR_COLORS.essentials}
+          collapsed={!sidebarVisible}
+          collapsible={true}
+          expanded={groupsOpen.essentials}
+        >
+          {/* LiveView - Main microscopy interface - Always show as it's essential */}
+          <DrawerEntry
+            icon={<DashboardIcon />}
+            label="Live View"
+            selected={selectedPlugin === "LiveView"}
+            onClick={() => handlePluginChange("LiveView")}
+            tooltip="Live View - Main microscopy control"
+            color={SIDEBAR_COLORS.essentials}
+            collapsed={!sidebarVisible}
+            nested={true}
+          />
+
+          {/* File Manager - Microscopy data management - Always show as it's essential */}
+          <DrawerEntry
+            icon={<FolderIcon />}
+            label="File Manager"
+            selected={selectedPlugin === "FileManager"}
+            onClick={() => handlePluginChange("FileManager")}
+            tooltip="File Manager - Microscopy data management"
+            color={SIDEBAR_COLORS.essentials}
+            collapsed={!sidebarVisible}
+            nested={true}
+          />
+        </DrawerEntry>
 
         {/* Apps Group - Microscopy Applications */}
-        <DrawerEntry
-          icon={<AppsIcon />}
-          label="Apps"
-          onClick={() => toggleGroup("apps")}
-          tooltip="Microscopy Applications"
-          color={SIDEBAR_COLORS.apps}
-          collapsed={!sidebarVisible}
-          collapsible={true}
-          expanded={groupsOpen.apps}
-        >
-          {/* WellPlate - Multi-well microscopy */}
-          <DrawerEntry
-            avatar={true}
-            avatarText="WP"
-            label="WellPlate"
-            selected={selectedPlugin === "WellPlate"}
-            onClick={() => handlePluginChange("WellPlate")}
-            tooltip="WellPlate"
-            color={SIDEBAR_COLORS.apps}
-            collapsed={!sidebarVisible}
-            nested={true}
-          />
+        {getEnabledAppsByCategory(APP_CATEGORIES.APPS).length > 0 && (
+          <>
+            <Divider sx={{ my: 1 }} />
+            <DrawerEntry
+              icon={<AppsIcon />}
+              label="Apps"
+              onClick={() => toggleGroup("apps")}
+              tooltip="Microscopy Applications"
+              color={SIDEBAR_COLORS.apps}
+              collapsed={!sidebarVisible}
+              collapsible={true}
+              expanded={groupsOpen.apps}
+            >
+              {renderAppsForCategory(APP_CATEGORIES.APPS, SIDEBAR_COLORS.apps)}
+            </DrawerEntry>
+          </>
+        )}
 
-          {/* STORM Local - Super-resolution microscopy */}
-          <DrawerEntry
-            avatar={true}
-            avatarText="SL"
-            label="STORM Local"
-            selected={selectedPlugin === "STORMLocal"}
-            onClick={() => handlePluginChange("STORMLocal")}
-            tooltip="STORM Local"
-            color={SIDEBAR_COLORS.apps}
-            collapsed={!sidebarVisible}
-            nested={true}
-          />
+        {/* Coding Group - Development Tools */}
+        {getEnabledAppsByCategory(APP_CATEGORIES.CODING).length > 0 && (
+          <>
+            <Divider sx={{ my: 1 }} />
+            <DrawerEntry
+              icon={<CodeIcon />}
+              label="Coding"
+              onClick={() => toggleGroup("coding")}
+              tooltip="Development and debugging tools"
+              color={SIDEBAR_COLORS.coding}
+              collapsed={!sidebarVisible}
+              collapsible={true}
+              expanded={groupsOpen.coding}
+            >
+              {renderAppsForCategory(
+                APP_CATEGORIES.CODING,
+                SIDEBAR_COLORS.coding
+              )}
+            </DrawerEntry>
+          </>
+        )}
 
-          {/* STORM Arkitekt */}
-          <DrawerEntry
-            avatar={true}
-            avatarText="SA"
-            label="STORM Arkitekt"
-            selected={selectedPlugin === "STORMArkitekt"}
-            onClick={() => handlePluginChange("STORMArkitekt")}
-            tooltip="STORM Arkitekt"
-            color={SIDEBAR_COLORS.apps}
-            collapsed={!sidebarVisible}
-            nested={true}
-          />
-
-          {/* Infinity Scanning */}
-          <DrawerEntry
-            avatar={true}
-            avatarText="IS"
-            label="Infinity Scanning"
-            selected={selectedPlugin === "Infinity Scanning"}
-            onClick={() => handlePluginChange("Infinity Scanning")}
-            tooltip="Infinity Scanning"
-            color={SIDEBAR_COLORS.apps}
-            collapsed={!sidebarVisible}
-            nested={true}
-          />
-
-          {/* LightSheet - 3D microscopy */}
-          <DrawerEntry
-            icon={<ThreeDRotationIcon />}
-            label="LightSheet"
-            selected={selectedPlugin === "LightSheet"}
-            onClick={() => handlePluginChange("LightSheet")}
-            tooltip="LightSheet - 3D microscopy"
-            color={SIDEBAR_COLORS.apps}
-            collapsed={!sidebarVisible}
-            nested={true}
-          />
-
-          {/* Demo Application */}
-          <DrawerEntry
-            avatar={true}
-            avatarText="DM"
-            label="Demo"
-            selected={selectedPlugin === "Demo"}
-            onClick={() => handlePluginChange("Demo")}
-            tooltip="Demo"
-            color={SIDEBAR_COLORS.apps}
-            collapsed={!sidebarVisible}
-            nested={true}
-          />
-
-          {/* Timelapse - Time-series microscopy */}
-          <DrawerEntry
-            icon={<AccessTimeIcon />}
-            label="Timelapse"
-            selected={selectedPlugin === "Timelapse"}
-            onClick={() => handlePluginChange("Timelapse")}
-            tooltip="Timelapse - Time-series microscopy"
-            color={SIDEBAR_COLORS.apps}
-            collapsed={!sidebarVisible}
-            nested={true}
-          />
-
-          {/* FlowStop - Flow control */}
-          <DrawerEntry
-            icon={<AirIcon />}
-            label="FlowStop"
-            selected={selectedPlugin === "FlowStop"}
-            onClick={() => handlePluginChange("FlowStop")}
-            tooltip="FlowStop - Flow control"
-            color={SIDEBAR_COLORS.apps}
-            collapsed={!sidebarVisible}
-            nested={true}
-          />
-
-          {/* Lepmon */}
-          <DrawerEntry
-            avatar={true}
-            avatarText="LM"
-            label="Lepmon"
-            selected={selectedPlugin === "Lepmon"}
-            onClick={() => handlePluginChange("Lepmon")}
-            tooltip="Lepmon"
-            color={SIDEBAR_COLORS.apps}
-            collapsed={!sidebarVisible}
-            nested={true}
-          />
-
-          {/* Maze Game */}
-          <DrawerEntry
-            icon={<SportsEsportsIcon />}
-            label="Maze Game"
-            selected={selectedPlugin === "MazeGame"}
-            onClick={() => handlePluginChange("MazeGame")}
-            tooltip="Maze Game"
-            color={SIDEBAR_COLORS.apps}
-            collapsed={!sidebarVisible}
-            nested={true}
-          />
-        </DrawerEntry>
-        <Divider sx={{ my: 1 }} />
-
-        {/* File Manager - Microscopy data management */}
-        <DrawerEntry
-          icon={<FolderIcon />}
-          label="File Manager"
-          selected={selectedPlugin === "FileManager"}
-          onClick={() => handlePluginChange("FileManager")}
-          tooltip="File Manager - Microscopy data management"
-          color={SIDEBAR_COLORS.fileManager}
-          collapsed={!sidebarVisible}
-        />
-        <Divider sx={{ my: 1 }} />
-
-        {/* Coding Group - Programming tools */}
-        <DrawerEntry
-          icon={<CodeIcon />}
-          label="Coding"
-          onClick={() => toggleGroup("coding")}
-          tooltip="Programming tools"
-          color={SIDEBAR_COLORS.coding}
-          collapsed={!sidebarVisible}
-          collapsible={true}
-          expanded={groupsOpen.coding}
-        >
-          {/* Fiji (ImJoy) - ImageJ integration */}
-          <DrawerEntry
-            icon={<ScienceIcon />}
-            label="Fiji"
-            selected={selectedPlugin === "ImJoy"}
-            onClick={() => handlePluginChange("ImJoy")}
-            tooltip="Fiji - ImageJ integration"
-            color={SIDEBAR_COLORS.coding}
-            collapsed={!sidebarVisible}
-            nested={true}
-          />
-
-          {/* Blockly - Visual programming */}
-          <DrawerEntry
-            icon={<ExtensionIcon />}
-            label="Blockly"
-            selected={selectedPlugin === "Blockly"}
-            onClick={() => handlePluginChange("Blockly")}
-            tooltip="Blockly - Visual programming"
-            color={SIDEBAR_COLORS.coding}
-            collapsed={!sidebarVisible}
-            nested={true}
-          />
-
-          {/* Jupyter Notebook - Python scripting */}
-          <DrawerEntry
-            icon={<SettingsOverscanSharpIcon />}
-            label="JupyteNotebook"
-            selected={selectedPlugin === "JupyteNotebook"}
-            onClick={() => handlePluginChange("JupyteNotebook")}
-            tooltip="Jupyter Notebook - Python scripting"
-            color={SIDEBAR_COLORS.coding}
-            collapsed={!sidebarVisible}
-            nested={true}
-          />
-        </DrawerEntry>
-        <Divider sx={{ my: 1 }} />
-
-        {/* System Group - Hardware control */}
-        <DrawerEntry
-          icon={<ComputerIcon />}
-          label="System"
-          onClick={() => toggleGroup("system")}
-          tooltip="Hardware control"
-          color={SIDEBAR_COLORS.system}
-          collapsed={!sidebarVisible}
-          collapsible={true}
-          expanded={groupsOpen.system}
-        >
-          {/* System testing and calibration tools */}
-          <DrawerEntry
-            icon={<SettingsOverscanSharpIcon />}
-            label="Stresstest"
-            selected={selectedPlugin === "Stresstest"}
-            onClick={() => handlePluginChange("Stresstest")}
-            tooltip="Stresstest"
-            color={SIDEBAR_COLORS.system}
-            collapsed={!sidebarVisible}
-            nested={true}
-          />
-
-          <DrawerEntry
-            icon={<ZoomOutMapIcon />}
-            label="Objective"
-            selected={selectedPlugin === "Objective"}
-            onClick={() => handlePluginChange("Objective")}
-            tooltip="Objective control"
-            color={SIDEBAR_COLORS.system}
-            collapsed={!sidebarVisible}
-            nested={true}
-          />
-
-          <DrawerEntry
-            icon={<Icons.CenterFocusStrong />}
-            label="Focus Lock"
-            selected={selectedPlugin === "FocusLock"}
-            onClick={() => handlePluginChange("FocusLock")}
-            tooltip="Focus Lock"
-            color={SIDEBAR_COLORS.system}
-            collapsed={!sidebarVisible}
-            nested={true}
-          />
-
-          <DrawerEntry
-            icon={<StraightenIcon />}
-            label="StageOffsetCalibration"
-            selected={selectedPlugin === "StageOffsetCalibration"}
-            onClick={() => handlePluginChange("StageOffsetCalibration")}
-            tooltip="Stage Offset Calibration"
-            color={SIDEBAR_COLORS.system}
-            collapsed={!sidebarVisible}
-            nested={true}
-          />
-
-          <DrawerEntry
-            icon={<TerminalIcon />}
-            label="Serial Debug"
-            selected={selectedPlugin === "SerialDebug"}
-            onClick={() => handlePluginChange("SerialDebug")}
-            tooltip="Serial Debug Interface"
-            color={SIDEBAR_COLORS.system}
-            collapsed={!sidebarVisible}
-            nested={true}
-          />
-
-          <DrawerEntry
-            icon={<WifiIcon />}
-            label="Socket View"
-            selected={selectedPlugin === "SocketView"}
-            onClick={() => handlePluginChange("SocketView")}
-            tooltip="WebSocket Debug Interface"
-            color={SIDEBAR_COLORS.system}
-            collapsed={!sidebarVisible}
-            nested={true}
-          />
-
-          <DrawerEntry
-            icon={<SensorsIcon />}
-            label="DetectorTrigger"
-            selected={selectedPlugin === "DetectorTrigger"}
-            onClick={() => handlePluginChange("DetectorTrigger")}
-            tooltip="Detector synchronization"
-            color={SIDEBAR_COLORS.system}
-            collapsed={!sidebarVisible}
-            nested={true}
-          />
-
-          <DrawerEntry
-            icon={<BlurOnIcon />}
-            label="ExtendedLEDMatrix"
-            selected={selectedPlugin === "ExtendedLEDMatrix"}
-            onClick={() => handlePluginChange("ExtendedLEDMatrix")}
-            tooltip="LED illumination control"
-            color={SIDEBAR_COLORS.system}
-            collapsed={!sidebarVisible}
-            nested={true}
-          />
-        </DrawerEntry>
-        <Divider sx={{ my: 1 }} />
-
-        {/* Dynamic Plugins from ImSwitch backend */}
-        {plugins.map((p) => (
-          <DrawerEntry
-            key={p.name}
-            icon={<BuildIcon />}
-            label={p.name}
-            selected={selectedPlugin === p.name}
-            onClick={() => handlePluginChange(p.name)}
-            tooltip={`Dynamic plugin: ${p.name}`}
-            collapsed={!sidebarVisible}
-          />
-        ))}
+        {/* System Group - System Configuration */}
+        {getEnabledAppsByCategory(APP_CATEGORIES.SYSTEM).length > 0 && (
+          <>
+            <Divider sx={{ my: 1 }} />
+            <DrawerEntry
+              icon={<ComputerIcon />}
+              label="System"
+              onClick={() => toggleGroup("system")}
+              tooltip="System configuration and utilities"
+              color={SIDEBAR_COLORS.system}
+              collapsed={!sidebarVisible}
+              collapsible={true}
+              expanded={groupsOpen.system}
+            >
+              {renderAppsForCategory(
+                APP_CATEGORIES.SYSTEM,
+                SIDEBAR_COLORS.system
+              )}
+            </DrawerEntry>
+          </>
+        )}
       </List>
     </Drawer>
   );

@@ -7,7 +7,6 @@ import { darkTheme, lightTheme } from "./themes";
 import AboutPage from "./components/AboutPage.js";
 import BlocklyController from "./components/BlocklyController.js";
 import ConnectionSettings from "./components/ConnectionSettings.jsx";
-import DemoController from "./components/DemoController.js";
 import DetectorTriggerController from "./components/DetectorTriggerController.js";
 import ExtendedLEDMatrixController from "./components/ExtendedLEDMatrixController.jsx";
 import FlowStopController from "./components/FlowStopController.js";
@@ -35,6 +34,7 @@ import { JupyterProvider } from "./context/JupyterContext.js";
 
 // ImSwitch Navigation Drawer
 import { NavigationDrawer, TopBar } from "./components/navigation";
+import AppManagerPage from "./components/AppManagerPage.jsx";
 
 import { MCTProvider } from "./context/MCTContext.js";
 // REMOVED: import { WebSocketProvider } from "./context/WebSocketContext.js"; - duplicate socket connection
@@ -365,144 +365,147 @@ function App() {
       {/* headless */}
       {/* REMOVED: WebSocketProvider - duplicate socket connection */}
       <CssBaseline />
+
       {/* Global Status/Notification Message */}
       <StatusMessage
         message={notification.message}
         type={notification.type}
         onClose={() => dispatch(clearNotification())}
       />
-        <Box sx={{ display: "flex" }}>
-          <NavigationDrawer
-            sidebarVisible={sidebarVisible}
-            setSidebarVisible={setSidebarVisible}
-            isMobile={isMobile}
-            drawerWidth={drawerWidth}
-            selectedPlugin={selectedPlugin}
-            handlePluginChange={handlePluginChange}
-            plugins={plugins}
-          />
 
-          <TopBar
-            isMobile={isMobile}
-            sidebarVisible={sidebarVisible}
-            setSidebarVisible={setSidebarVisible}
-            selectedPlugin={selectedPlugin}
-            drawerWidth={drawerWidth}
-            onSettingsNavigate={handlePluginChange} // Pass existing navigation handler
-          />
+      <Box sx={{ display: "flex" }}>
+        <NavigationDrawer
+          sidebarVisible={sidebarVisible}
+          setSidebarVisible={setSidebarVisible}
+          isMobile={isMobile}
+          drawerWidth={drawerWidth}
+          selectedPlugin={selectedPlugin}
+          handlePluginChange={handlePluginChange}
+          plugins={plugins}
+        />
 
-          <Box
-            component="main"
-            sx={{
-              top: 64,
-              flexGrow: 1,
-              display: "flex",
-              position: "absolute",
-              p: isMobile ? 1 : 3,
-              left: drawerWidth,
-              width: "calc(100% - " + drawerWidth + "px)",
-              height: "calc(100vh - 64px)",
-              marginLeft: !isMobile && sidebarVisible ? 0 : 0,
-              transition: (theme) =>
-                theme.transitions.create(["margin", "padding"], {
-                  easing: theme.transitions.easing.sharp,
-                  duration: theme.transitions.duration.leavingScreen,
-                }),
-              minHeight: "calc(100vh - 64px)",
-              overflow: "auto",
-            }}
-          >
-            {selectedPlugin === "LiveView" && (
-              <LiveView
-                // pass down a setter or context for the image if needed
-                setFileManagerInitialPath={handleFileManagerInitialPathChange} // pass function
-              />
-            )}
-            {selectedPlugin === "WellPlate" && <AxonTabComponent />}
-            {selectedPlugin === "ImJoy" && (
-              <ImJoyView sharedImage={sharedImage} />
-            )}
-            {selectedPlugin === "STORMLocal" && <STORMControllerLocal />}
-            {selectedPlugin === "STORMArkitekt" && <STORMControllerArkitekt />}
-            {selectedPlugin === "Stresstest" && <StresstestController />}
-            {selectedPlugin === "FocusLock" && <FocusLockController />}
-            {selectedPlugin === "JupyteNotebook" && (
-              <JupyterProvider>
-                <JupyterExecutor />
-              </JupyterProvider>
-            )}
-            {selectedPlugin === "Infinity Scanning" && (
-              <LargeFovScanController />
-            )}
-            {selectedPlugin === "Blockly" && <BlocklyController />}
-            {selectedPlugin === "Timelapse" && (
-              <MCTProvider>
-                <TimelapseController />
-              </MCTProvider>
-            )}
-            {selectedPlugin === "Objective" && <ObjectiveController />}
-            {selectedPlugin === "About" && <AboutPage />}
-            {selectedPlugin === "SystemSettings" && <SystemSettings />}
-            {selectedPlugin === "FileManager" && (
-              <div className="app" style={{ width: "100%", maxWidth: "100%" }}>
-                <div
-                  className="file-manager-container"
-                  style={{ width: "100%", maxWidth: "100%" }}
-                >
-                  <FileManager
-                    baseUrl={`${hostIP}:${apiPort}`}
-                    files={files}
-                    fileUploadConfig={fileUploadConfig}
-                    isLoading={isLoading}
-                    onCreateFolder={handleCreateFolder}
-                    onFileUploading={handleFileUploading}
-                    onFileUploaded={handleFileUploaded}
-                    onPaste={handlePaste}
-                    onRename={handleRename}
-                    onDownload={handleDownload}
-                    onFileOpen={handleOpenWithImJoy}
-                    onDelete={handleDelete}
-                    onRefresh={handleRefresh}
-                    layout="list"
-                    enableFilePreview
-                    maxFileSize={10485760}
-                    filePreviewPath={`${hostIP}:${apiPort}/`}
-                    acceptedFileTypes=".txt, .png, .jpg, .jpeg, .pdf, .doc, .docx, .exe, .js, .csv"
-                    initialPath={fileManagerInitialPath} // TODO: THIS IS REALLY HACKY!
-                  />
-                </div>
+        <TopBar
+          isMobile={isMobile}
+          sidebarVisible={sidebarVisible}
+          setSidebarVisible={setSidebarVisible}
+          selectedPlugin={selectedPlugin}
+          drawerWidth={drawerWidth}
+          onSettingsNavigate={handlePluginChange} // Pass existing navigation handler
+        />
+
+        <Box
+          component="main"
+          sx={{
+            top: 64,
+            flexGrow: 1,
+            display: "flex",
+            position: "absolute",
+            p: isMobile ? 1 : 3,
+            left: drawerWidth,
+            width: "calc(100% - " + drawerWidth + "px)",
+            height: "calc(100vh - 64px)",
+            marginLeft: !isMobile && sidebarVisible ? 0 : 0,
+            transition: (theme) =>
+              theme.transitions.create(["margin", "padding"], {
+                easing: theme.transitions.easing.sharp,
+                duration: theme.transitions.duration.leavingScreen,
+              }),
+            minHeight: "calc(100vh - 64px)",
+            overflow: "auto",
+          }}
+        >
+          {selectedPlugin === "LiveView" && (
+            <LiveView
+              // pass down a setter or context for the image if needed
+              setFileManagerInitialPath={handleFileManagerInitialPathChange} // pass function
+            />
+          )}
+
+          {selectedPlugin === "WellPlate" && <AxonTabComponent />}
+          {selectedPlugin === "ImJoy" && (
+            <ImJoyView sharedImage={sharedImage} />
+          )}
+          {selectedPlugin === "STORMLocal" && <STORMControllerLocal />}
+          {selectedPlugin === "STORMArkitekt" && <STORMControllerArkitekt />}
+          {selectedPlugin === "Stresstest" && <StresstestController />}
+          {selectedPlugin === "FocusLock" && <FocusLockController />}
+          {selectedPlugin === "JupyterNotebook" && (
+            <JupyterProvider>
+              <JupyterExecutor />
+            </JupyterProvider>
+          )}
+          {selectedPlugin === "Infinity Scanning" && <LargeFovScanController />}
+          {selectedPlugin === "Blockly" && <BlocklyController />}
+          {selectedPlugin === "Timelapse" && (
+            <MCTProvider>
+              <TimelapseController />
+            </MCTProvider>
+          )}
+          {selectedPlugin === "Objective" && <ObjectiveController />}
+          {selectedPlugin === "About" && <AboutPage />}
+          {selectedPlugin === "SystemSettings" && <SystemSettings />}
+          {selectedPlugin === "FileManager" && (
+            <div className="app" style={{ width: "100%", maxWidth: "100%" }}>
+              <div
+                className="file-manager-container"
+                style={{ width: "100%", maxWidth: "100%" }}
+              >
+                <FileManager
+                  baseUrl={`${hostIP}:${apiPort}`}
+                  files={files}
+                  fileUploadConfig={fileUploadConfig}
+                  isLoading={isLoading}
+                  onCreateFolder={handleCreateFolder}
+                  onFileUploading={handleFileUploading}
+                  onFileUploaded={handleFileUploaded}
+                  onPaste={handlePaste}
+                  onRename={handleRename}
+                  onDownload={handleDownload}
+                  onFileOpen={handleOpenWithImJoy}
+                  onDelete={handleDelete}
+                  onRefresh={handleRefresh}
+                  layout="list"
+                  enableFilePreview
+                  maxFileSize={10485760}
+                  filePreviewPath={`${hostIP}:${apiPort}/`}
+                  acceptedFileTypes=".txt, .png, .jpg, .jpeg, .pdf, .doc, .docx, .exe, .js, .csv"
+                  initialPath={fileManagerInitialPath} // TODO: THIS IS REALLY HACKY!
+                />
               </div>
-            )}
-            {selectedPlugin === "LightSheet" && <LightsheetController />}
-            {selectedPlugin === "Demo" && <DemoController />}
-            {selectedPlugin === "WiFi" && <WiFiController />}
-            {plugins.map(
-              (p) =>
-                selectedPlugin === p.name && (
-                  <Suspense fallback={<div>loading…</div>} key={p.name}>
-                    <p.Component hostIP={hostIP} hostPort={apiPort} />
-                  </Suspense>
-                )
-            )}
-            {selectedPlugin === "FlowStop" && <FlowStopController />}
-            {selectedPlugin === "StageOffsetCalibration" && (
-              <StageOffsetCalibration />
-            )}
-            {selectedPlugin === "UC2" && <UC2ConfigurationController />}
-            {selectedPlugin === "SerialDebug" && <SerialDebugController />}
-            {selectedPlugin === "DetectorTrigger" && (
-              <DetectorTriggerController />
-            )}
-            {selectedPlugin === "ExtendedLEDMatrix" && (
-              <ExtendedLEDMatrixController />
-            )}
-            {selectedPlugin === "Lepmon" && <LepMonController />}
-            {selectedPlugin === "MazeGame" && <MazeGameController />}
-            {selectedPlugin === "SocketView" && <SocketView />}
-            {selectedPlugin === "SystemUpdate" && <SystemUpdateController />}
-            {selectedPlugin === "Connections" && <ConnectionSettings />}
-          </Box>
+            </div>
+          )}
+          {selectedPlugin === "AppManager" && (
+            <AppManagerPage onNavigateToApp={handlePluginChange} />
+          )}
+          {selectedPlugin === "LightSheet" && <LightsheetController />}
+          {selectedPlugin === "WiFi" && <WiFiController />}
+          {plugins.map(
+            (p) =>
+              selectedPlugin === p.name && (
+                <Suspense fallback={<div>loading…</div>} key={p.name}>
+                  <p.Component hostIP={hostIP} hostPort={apiPort} />
+                </Suspense>
+              )
+          )}
+          {selectedPlugin === "FlowStop" && <FlowStopController />}
+          {selectedPlugin === "StageOffsetCalibration" && (
+            <StageOffsetCalibration />
+          )}
+          {selectedPlugin === "UC2" && <UC2ConfigurationController />}
+          {selectedPlugin === "SerialDebug" && <SerialDebugController />}
+          {selectedPlugin === "DetectorTrigger" && (
+            <DetectorTriggerController />
+          )}
+          {selectedPlugin === "ExtendedLEDMatrix" && (
+            <ExtendedLEDMatrixController />
+          )}
+          {selectedPlugin === "Lepmon" && <LepMonController />}
+          {selectedPlugin === "MazeGame" && <MazeGameController />}
+          {selectedPlugin === "SocketView" && <SocketView />}
+          {selectedPlugin === "SystemUpdate" && <SystemUpdateController />}
+          {selectedPlugin === "Connections" && <ConnectionSettings />}
         </Box>
+      </Box>
       {/* REMOVED: Closing WebSocketProvider tag - duplicate socket connection */}
     </ThemeProvider>
   );
