@@ -21,7 +21,6 @@ import {
   AppBar,
   Toolbar,
   IconButton,
-  Badge,
   Tabs,
   Tab,
   Paper,

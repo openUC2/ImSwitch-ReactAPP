@@ -6,13 +6,10 @@ import {
   AccessTime as AccessTimeIcon,
   AutoFixHigh as AutoFixHighIcon,
   Cable as CableIcon,
-  Code as CodeIcon,
-  Computer as ComputerIcon,
   Dashboard as DashboardIcon,
   Extension as ExtensionIcon,
   Folder as FolderIcon,
   GridOn as GridOnIcon,
-  GridView as GridViewIcon,
   Lock as LockIcon,
   SportsEsports as SportsEsportsIcon,
   ThreeDRotation as ThreeDRotationIcon,
@@ -213,7 +210,9 @@ export const APP_REGISTRY = {
     essential: false,
     keywords: ["game", "training", "interactive", "navigation", "learn"],
     pluginId: "MazeGame",
-  }, // === CODING - Development and debugging tools ===
+  },
+
+  // === CODING - Development and debugging tools ===
   blockly: {
     id: "blockly",
     name: "Blockly Controller",
