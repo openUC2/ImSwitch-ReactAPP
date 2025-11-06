@@ -122,16 +122,16 @@ const AppCard = ({ app, isEnabled, onToggle, onLaunch }) => {
         }`,
       }}
     >
-      <CardContent 
-        sx={{ 
+      <CardContent
+        sx={{
           flexGrow: 1,
-          cursor: 'pointer',
-          '&:hover': {
-            backgroundColor: (theme) => 
-              theme.palette.mode === 'dark' 
-                ? 'rgba(255, 255, 255, 0.05)' 
-                : 'rgba(0, 0, 0, 0.02)',
-          }
+          cursor: "pointer",
+          "&:hover": {
+            backgroundColor: (theme) =>
+              theme.palette.mode === "dark"
+                ? "rgba(255, 255, 255, 0.05)"
+                : "rgba(0, 0, 0, 0.02)",
+          },
         }}
         onClick={() => onLaunch && onLaunch(app)}
       >
@@ -236,19 +236,24 @@ const AppCard = ({ app, isEnabled, onToggle, onLaunch }) => {
             },
           }}
         />
-        
+
         <Tooltip title={`Launch ${app.name}`}>
-          <IconButton 
-            size="small" 
+          <IconButton
+            size="small"
             onClick={(e) => {
               e.stopPropagation(); // Prevent triggering card click
               onLaunch && onLaunch(app);
             }}
             sx={{
-              color: CATEGORY_INFO[app.category]?.color || theme.palette.primary.main,
-              '&:hover': {
-                backgroundColor: `${CATEGORY_INFO[app.category]?.color || theme.palette.primary.main}20`,
-              }
+              color:
+                CATEGORY_INFO[app.category]?.color ||
+                theme.palette.primary.main,
+              "&:hover": {
+                backgroundColor: `${
+                  CATEGORY_INFO[app.category]?.color ||
+                  theme.palette.primary.main
+                }20`,
+              },
             }}
           >
             <PlayArrowIcon />
@@ -381,18 +386,25 @@ const AppManager = ({ onNavigateToApp }) => {
       </AppBar>
 
       {/* Quick Help Banner */}
-      <Paper 
-        elevation={0} 
-        sx={{ 
-          bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(156, 39, 176, 0.1)' : 'rgba(156, 39, 176, 0.05)',
-          borderBottom: 1, 
-          borderColor: 'divider' 
+      <Paper
+        elevation={0}
+        sx={{
+          bgcolor: (theme) =>
+            theme.palette.mode === "dark"
+              ? "rgba(156, 39, 176, 0.1)"
+              : "rgba(156, 39, 176, 0.05)",
+          borderBottom: 1,
+          borderColor: "divider",
         }}
       >
         <Container maxWidth="lg" sx={{ py: 1 }}>
-          <Typography variant="body2" sx={{ textAlign: 'center', color: 'text.secondary' }}>
-            💡 <strong>Tip:</strong> Toggle apps on/off to customize your navigation drawer. 
-            Enabled apps will appear in your sidebar for quick access.
+          <Typography
+            variant="body2"
+            sx={{ textAlign: "center", color: "text.secondary" }}
+          >
+            💡 <strong>Tip:</strong> Toggle apps on/off to customize your
+            navigation drawer. Enabled apps will appear in your sidebar for
+            quick access.
           </Typography>
         </Container>
       </Paper>

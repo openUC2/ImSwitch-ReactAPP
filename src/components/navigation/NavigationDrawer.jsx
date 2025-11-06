@@ -177,22 +177,23 @@ const NavigationDrawer = ({
           collapsed={!sidebarVisible}
           nested={false}
           sx={{
-            backgroundColor: (theme) => 
-              selectedPlugin === "AppManager" 
-                ? theme.palette.mode === 'dark' 
-                  ? 'rgba(156, 39, 176, 0.2)' 
-                  : 'rgba(156, 39, 176, 0.1)'
-                : 'transparent',
-            borderLeft: selectedPlugin === "AppManager" 
-              ? '4px solid #9c27b0' 
-              : '4px solid transparent',
-            marginBottom: '8px', // Space between App Manager and Essentials
-            '&:hover': {
-              backgroundColor: (theme) => 
-                theme.palette.mode === 'dark' 
-                  ? 'rgba(156, 39, 176, 0.15)' 
-                  : 'rgba(156, 39, 176, 0.08)',
-            }
+            backgroundColor: (theme) =>
+              selectedPlugin === "AppManager"
+                ? theme.palette.mode === "dark"
+                  ? "rgba(156, 39, 176, 0.2)"
+                  : "rgba(156, 39, 176, 0.1)"
+                : "transparent",
+            borderLeft:
+              selectedPlugin === "AppManager"
+                ? "4px solid #9c27b0"
+                : "4px solid transparent",
+            marginBottom: "8px", // Space between App Manager and Essentials
+            "&:hover": {
+              backgroundColor: (theme) =>
+                theme.palette.mode === "dark"
+                  ? "rgba(156, 39, 176, 0.15)"
+                  : "rgba(156, 39, 176, 0.08)",
+            },
           }}
         />
 

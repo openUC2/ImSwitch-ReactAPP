@@ -379,7 +379,9 @@ function App() {
       />
 
       {/* App Manager Modal */}
-      {isAppManagerOpen && <AppManagerModal onNavigateToApp={handlePluginChange} />}
+      {isAppManagerOpen && (
+        <AppManagerModal onNavigateToApp={handlePluginChange} />
+      )}
       <Box sx={{ display: "flex" }}>
         <NavigationDrawer
           sidebarVisible={sidebarVisible}
