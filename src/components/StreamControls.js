@@ -11,11 +11,12 @@ import {
 import StreamControlOverlay from "../components/StreamControlOverlay";
 import apiViewControllerGetLiveViewActive from "../backendapi/apiViewControllerGetLiveViewActive";
 import apiPositionerControllerMovePositioner from "../backendapi/apiPositionerControllerMovePositioner";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import * as liveStreamSlice from "../state/slices/LiveStreamSlice.js";
+import * as liveViewSlice from "../state/slices/LiveViewSlice.js";
 
 export default function StreamControls({
-  isStreamRunning,
+  isStreamRunning, // This prop is kept for backwards compatibility but we prefer Redux state
   onToggleStream,
   onSnap,
   isRecording,
@@ -27,8 +28,14 @@ export default function StreamControls({
   lastSnapPath,
 }) {
 
+  const dispatch = useDispatch();
+  
   // Get stream stats from Redux (includes fps which indicates active frames)
   const liveStreamState = useSelector(liveStreamSlice.getLiveStreamState);
+  const liveViewState = useSelector(liveViewSlice.getLiveViewState);
+  
+  // Use Redux state as source of truth for stream status
+  const isLiveViewActive = liveViewState.isStreamRunning;
 
   // State for HUD data for overlay display
   const [hudData, setHudData] = useState({
@@ -50,29 +57,26 @@ export default function StreamControls({
     }));
   }, [liveStreamState.stats.fps, liveStreamState.stats.bps]);
 
-  // State for stream status from backend
-  const [isLiveViewActive, setIsLiveViewActive] = useState(false);
-  const [isCheckingStatus, setIsCheckingStatus] = useState(false);
-  const lastFrameTimeRef = useRef(Date.now());
-  const inactivityCheckIntervalRef = useRef(null);
-
-  // Check backend live view status once
+  // Periodic status check to keep Redux in sync with backend
+  // This catches cases where backend state changes without frontend knowledge
   const checkLiveViewStatus = useCallback(async () => {
     try {
-      setIsCheckingStatus(true);
       const active = await apiViewControllerGetLiveViewActive();
-      setIsLiveViewActive(active);
-      console.log('Backend live view status:', active);
+      
+      // Only update Redux if state differs from backend
+      if (active !== liveViewState.isStreamRunning) {
+        console.log(`[StreamControls] Backend status mismatch detected. Backend: ${active}, Frontend: ${liveViewState.isStreamRunning}`);
+        dispatch(liveViewSlice.setIsStreamRunning(active));
+      }
     } catch (error) {
-      console.warn('Failed to check live view status:', error);
-    } finally {
-      setIsCheckingStatus(false);
+      console.warn('[StreamControls] Failed to check live view status:', error);
     }
-  }, []);
+  }, [liveViewState.isStreamRunning, dispatch]);
 
-  // Check status only on mount (once)
+  // Periodic sync every 5 seconds to catch any state drift
   useEffect(() => {
-    checkLiveViewStatus();
+    const interval = setInterval(checkLiveViewStatus, 5000);
+    return () => clearInterval(interval);
   }, [checkLiveViewStatus]);
 
  
@@ -135,21 +139,19 @@ export default function StreamControls({
 
   // Handle start stream
   const handleStartStream = useCallback(async () => {
-    if (!isLiveViewActive && !isCheckingStatus) {
+    if (!isLiveViewActive) {
       await onToggleStream();
-      // Check status after a short delay to allow backend to update
-      setTimeout(checkLiveViewStatus, 500);
+      // Status will be updated by the toggleStream function in LiveView.js
     }
-  }, [isLiveViewActive, isCheckingStatus, onToggleStream, checkLiveViewStatus]);
+  }, [isLiveViewActive, onToggleStream]);
 
   // Handle stop stream
   const handleStopStream = useCallback(async () => {
-    if (isLiveViewActive && !isCheckingStatus) {
+    if (isLiveViewActive) {
       await onToggleStream();
-      // Check status after a short delay to allow backend to update
-      setTimeout(checkLiveViewStatus, 500);
+      // Status will be updated by the toggleStream function in LiveView.js
     }
-  }, [isLiveViewActive, isCheckingStatus, onToggleStream, checkLiveViewStatus]);
+  }, [isLiveViewActive, onToggleStream]);
 
   // Render stream controls with editable image name and icon buttons
   return (
@@ -160,7 +162,6 @@ export default function StreamControls({
       {/* Start button - green when stream is OFF (can start), gray when ON */}
       <IconButton
         onClick={handleStartStream}
-        disabled={isCheckingStatus}
         sx={{
           color: !isLiveViewActive ? 'success.main' : 'action.disabled',
           '&:hover': {
@@ -175,7 +176,6 @@ export default function StreamControls({
       {/* Stop button - red when stream is ON (can stop), gray when OFF */}
       <IconButton
         onClick={handleStopStream}
-        disabled={isCheckingStatus}
         sx={{
           color: isLiveViewActive ? 'error.main' : 'action.disabled',
           '&:hover': {

@@ -14,16 +14,27 @@ import * as mazeGameSlice from "../state/slices/MazeGameSlice.js";
 import * as autofocusSlice from "../state/slices/AutofocusSlice.js";
 import * as socketDebugSlice from "../state/slices/SocketDebugSlice.js";
 import * as uc2Slice from "../state/slices/UC2Slice.js";
+import * as liveViewSlice from "../state/slices/LiveViewSlice.js";
 
 import { io } from "socket.io-client";
 
-// Singleton socket instance - prevents duplicate connections in React StrictMode
-let socketInstance = null;
+// MessagePack for efficient binary serialization
+import { decode as msgpackDecode } from "@msgpack/msgpack";
+
+// Import API to check livestream status
+import apiViewControllerGetLiveViewActive from "../backendapi/apiViewControllerGetLiveViewActive.js";
 
 //##################################################################################
 const WebSocketHandler = () => {
   const dispatch = useDispatch();
   const connectionCheckRef = useRef(null);
+  
+  // Per-instance server capabilities (each tab has its own)
+  const serverCapabilitiesRef = useRef({
+    messagepack: false,
+    binary_streaming: false,
+    protocol_version: "unknown"
+  });
 
   // Access global Redux state
   const connectionSettingsState = useSelector(
@@ -79,6 +90,25 @@ const WebSocketHandler = () => {
     },
     [hostIP, hostPort, dispatch] // Dependencies for useCallback
   );
+
+  // Sync livestream status with backend
+  const syncLivestreamStatus = useCallback(async () => {
+    try {
+      console.log('[WebSocket] Syncing livestream status with backend...');
+      const isActive = await apiViewControllerGetLiveViewActive();
+      console.log(`[WebSocket] Backend livestream status: ${isActive}`);
+      
+      // Update Redux state to match backend
+      dispatch(liveViewSlice.setIsStreamRunning(isActive));
+      
+      return isActive;
+    } catch (error) {
+      console.error('[WebSocket] Failed to sync livestream status:', error);
+      // On error, assume stream is not running to prevent incorrect state
+      dispatch(liveViewSlice.setIsStreamRunning(false));
+      return false;
+    }
+  }, [dispatch]);
 
   // WebSocket connection test
   const testWebSocketConnection = useCallback(
@@ -214,12 +244,6 @@ const WebSocketHandler = () => {
 
   //##################################################################################
   useEffect(() => {
-    // Reuse existing socket or create new one (Singleton pattern for React StrictMode)
-    if (socketInstance && socketInstance.connected) {
-      console.log("WebSocket: Reusing existing connection", socketInstance.id);
-      return () => {}; // Don't disconnect - other instances might still need it
-    }
-    
     // Extract protocol from IP settings (following ImSwitch-ReactAPP patterns)
     let protocol = "http"; // Default fallback
     let cleanIP;
@@ -237,15 +261,13 @@ const WebSocketHandler = () => {
 
     // Create the socket address with proper protocol
     const address = `${protocol}://${cleanIP}:${connectionSettingsState.websocketPort}`;
-    console.log("WebSocket", address);
+    console.log("WebSocket: Creating new connection to", address);
     
+    // Create new socket instance for this component/tab
     const socket = io(address, {
       transports: ["websocket"],
       secure: protocol === "https", // Enable secure connection for HTTPS
     });
-    
-    // Store singleton instance
-    socketInstance = socket;
 
     //listen to all
     socket.on("*", (packet) => {
@@ -258,49 +280,133 @@ const WebSocketHandler = () => {
       console.log(`WebSocket connected with socket id: ${socket.id}`);
       //update redux state
       dispatch(webSocketSlice.setConnected(true));
+      
+      // Sync livestream status with backend on connect/reconnect
+      // This ensures frontend state matches backend state after backend restart
+      syncLivestreamStatus().then((isActive) => {
+        console.log(`[WebSocket] Livestream status synced: ${isActive}`);
+      });
+    });
+    
+    // Listen for server capabilities
+    socket.on("server_capabilities", (capabilities) => {
+      console.log("Received server capabilities:", capabilities);
+      serverCapabilitiesRef.current = capabilities;
+      
+      // Update Redux with backend capabilities
+      dispatch(liveStreamSlice.setBackendCapabilities({
+        binaryStreaming: capabilities.binary_streaming,
+        messagepack: capabilities.messagepack,
+        protocolVersion: capabilities.protocol_version
+      }));
     });
     
     // Listen for binary frame events (UC2F packets)
-    // Socket.IO sends as array: [metadata, binaryData]
+    // UNIFIED HANDLING: Both binary and JPEG frames use 'frame' event with complete MessagePack encoding
     socket.on("frame", (payload, ack) => {
-      // Parse payload - Socket.IO automatically deserializes [metadata, binary] arrays
       let metadata = null;
-      let buf = null;
+      let frameData = null;
       
-      if (Array.isArray(payload) && payload.length === 2) {
-        // New format: [metadata, binaryData]
-        metadata = payload[0];
-        buf = payload[1];
+      try {
+        // Decode complete MessagePack payload
+        if (payload instanceof ArrayBuffer || payload instanceof Uint8Array) {
+          // MessagePack-encoded frame (new format)
+          const decoded = msgpackDecode(payload);
+          metadata = decoded.metadata;
+          
+          // Handle different frame types
+          if (decoded.data) {
+            // Binary frame - ensure it's an ArrayBuffer for UC2F parser
+            if (decoded.data instanceof ArrayBuffer) {
+              frameData = decoded.data;
+            } else if (decoded.data instanceof Uint8Array) {
+              // Extract the underlying ArrayBuffer
+              frameData = decoded.data.buffer.slice(decoded.data.byteOffset, decoded.data.byteOffset + decoded.data.byteLength);
+            } else if (Array.isArray(decoded.data)) {
+              // MessagePack may decode binary as array - convert to ArrayBuffer
+              const uint8 = new Uint8Array(decoded.data);
+              frameData = uint8.buffer;
+            } else {
+              console.error("Unexpected binary data format:", typeof decoded.data, decoded.data);
+              return;
+            }
+          } else if (decoded.image) {
+            // JPEG frame
+            frameData = decoded.image;
+          }
+        } else if (Array.isArray(payload) && payload.length === 2) {
+          // Legacy format: [packed_metadata, frameData]
+          const metadataRaw = payload[0];
+          frameData = payload[1];
+          
+          // Decode metadata
+          if (metadataRaw instanceof ArrayBuffer || metadataRaw instanceof Uint8Array) {
+            metadata = msgpackDecode(metadataRaw);
+          } else if (typeof metadataRaw === 'object') {
+            metadata = metadataRaw;
+          } else if (typeof metadataRaw === 'string') {
+            metadata = JSON.parse(metadataRaw);
+          }
+        } else {
+          // Very old legacy format: just binary data
+          frameData = payload;
+        }
         
-        // Update Redux with current frame ID
-        if (metadata && metadata.image_id !== undefined) {
-          dispatch(liveStreamSlice.setCurrentFrameId(metadata.image_id));
+        // Update Redux with current frame ID (unified field name)
+        if (metadata && metadata.frame_id !== undefined) {
+          dispatch(liveStreamSlice.setCurrentFrameId(metadata.frame_id));
         }
-      } else {
-        // Legacy format: just binary data (fallback)
-        buf = payload;
+        
+        // Handle based on protocol type in metadata
+        if (metadata && (metadata.protocol === 'binary' || metadata.format === 'binary')) {
+          // Binary frame - dispatch to UC2F parser
+          window.dispatchEvent(new CustomEvent("uc2:frame", { 
+            detail: { 
+              buffer: frameData, 
+              metadata: metadata 
+            }
+          }));
+        } else if (metadata && (metadata.protocol === 'jpeg' || metadata.format === 'jpeg')) {
+          // JPEG frame - update Redux (base64 image)
+          dispatch(liveStreamSlice.setLiveViewImage(frameData));
+          dispatch(liveStreamSlice.setImageFormat("jpeg"));
+          
+          // Update pixel size if available
+          if (metadata.pixel_size) {
+            dispatch(liveStreamSlice.setPixelSize(metadata.pixel_size));
+          }
+          
+          // Track latency if server timestamp is available
+          if (metadata.server_timestamp) {
+            const latency = (Date.now() / 1000 - metadata.server_timestamp) * 1000; // Convert to ms
+            dispatch(liveStreamSlice.updateLatency(latency));
+          }
+        } else if (frameData) {
+          // No metadata - fallback to binary frame
+          window.dispatchEvent(new CustomEvent("uc2:frame", { 
+            detail: { 
+              buffer: frameData, 
+              metadata: null 
+            }
+          }));
+        }
+      } catch (error) {
+        console.error("Error decoding frame:", error);
+        return;
       }
-      
-      // Dispatch custom event with metadata for proper parsing
-      window.dispatchEvent(new CustomEvent("uc2:frame", { 
-        detail: { 
-          buffer: buf, 
-          metadata: metadata 
-        }
-      }));
       
       // Send acknowledgement to enable flow control
       // This tells the server we're ready for the next frame
       if (ack && typeof ack === "function") {
         ack();
       } else {
-        // Fallback: emit explicit acknowledgement event
-        socket.emit("frame_ack");
+        // Fallback: emit explicit acknowledgement event with unified field name
+        socket.emit("frame_ack", { frame_id: metadata?.frame_id });
       }
     });
 
-    // Listen to signals
-    socket.on("signal", (data, ack) => {
+    // Listen to signals (JSON format - legacy/fallback)
+    socket.on("signal", (data, ack) => { 
       //console.log('WebSocket signal', data);
       //update redux state
       dispatch(webSocketSlice.incrementSignalCount());
@@ -309,6 +415,30 @@ const WebSocketHandler = () => {
       const dataJson = JSON.parse(data);
       //console.log(dataJson);
       
+      // Process signal data
+      processSignalData(dataJson, ack);
+    });
+    
+    // Listen to signals (MessagePack format - preferred for efficiency)
+    socket.on("signal_msgpack", (data, ack) => {
+      //console.log('WebSocket signal_msgpack received');
+      //update redux state
+      dispatch(webSocketSlice.incrementSignalCount());
+
+      try {
+        // Decode MessagePack data
+        const dataJson = msgpackDecode(data);
+        //console.log(dataJson);
+        
+        // Process signal data
+        processSignalData(dataJson, ack);
+      } catch (error) {
+        console.error("Error decoding MessagePack signal:", error);
+      }
+    });
+    
+    // Common signal processing function for both JSON and MessagePack
+    const processSignalData = (dataJson, ack) => {
       // Dispatch to debug slice for SocketView (do this first for all signals)
       dispatch(socketDebugSlice.addMessage(dataJson));
       
@@ -319,11 +449,11 @@ const WebSocketHandler = () => {
       //----------------------------------------------
       if (dataJson.name === "sigUpdateImage") {
         //console.log("sigUpdateImage", dataJson);
-        //update redux state - LEGACY JPEG PATH
-        if (dataJson.detectorname) {
+        //update redux state - LEGACY JPEG PATH (deprecated - use 'frame' event instead)
+        if (dataJson.detectorname || dataJson.detector_name) {
           // Note: Legacy JPEG image handling - kept for backward compatibility
-          // The new LiveViewerGL component uses binary "frame" events instead
-          dispatch(liveStreamSlice.setLiveViewImage(dataJson.image)); // REMOVED
+          // The new unified "frame" event handler above should be preferred
+          dispatch(liveStreamSlice.setLiveViewImage(dataJson.image));
 
           // Track image format and set appropriate defaults based on streaming capability
           if (dataJson.format === "jpeg") {
@@ -337,6 +467,11 @@ const WebSocketHandler = () => {
               // Set initial defaults for JPEG
               dispatch(liveStreamSlice.setMinVal(0));
               dispatch(liveStreamSlice.setMaxVal(255));
+            }
+            // Support both legacy image_id and new frame_id
+            const frameId = dataJson.frame_id ?? dataJson.image_id;
+            if (frameId !== undefined) {
+              dispatch(liveStreamSlice.setCurrentFrameId(frameId));
             }
           } else {
             // Binary streaming - use 16-bit range
@@ -353,9 +488,10 @@ const WebSocketHandler = () => {
             }
           }
 
-          // Update pixel size if available
-          if (dataJson.pixelsize) {
-            dispatch(liveStreamSlice.setPixelSize(dataJson.pixelsize));
+          // Update pixel size if available (support both field names)
+          const pixelSize = dataJson.pixel_size ?? dataJson.pixelsize;
+          if (pixelSize) {
+            dispatch(liveStreamSlice.setPixelSize(pixelSize));
           }
 
           // Track latency if server timestamp is available
@@ -375,12 +511,14 @@ const WebSocketHandler = () => {
           }
 
           // Send acknowledgement for JPEG frames to enable flow control
+          // Support both legacy image_id and new frame_id
+          const frameId = dataJson.frame_id ?? dataJson.image_id;
           if (ack && typeof ack === "function") {
             console.log("Acknowledging JPEG image frame");
             ack();
           } else {
             console.log("Emitting frame_ack for JPEG image");
-            socket.emit('frame_ack');
+            socket.emit('frame_ack', { frame_id: frameId });
           }
 
           /*
@@ -749,7 +887,7 @@ const WebSocketHandler = () => {
         //console.warn("WebSocket: Unhandled signal from socket:", dataJson.name);
         //console.warn(dataJson);
       }
-    });
+    }; // End of processSignalData function
 
     socket.on("broadcast", (data) => {
       console.log("WebSocket broadcast");
@@ -764,11 +902,27 @@ const WebSocketHandler = () => {
       //update redux state
       dispatch(webSocketSlice.resetState());
     };
+    
+    // Listen for disconnect events
+    socket.on("disconnect", (reason) => {
+      console.log(`[WebSocket] Disconnected. Reason: ${reason}`);
+      dispatch(webSocketSlice.setConnected(false));
+      
+      // Note: We don't reset isStreamRunning here because the backend might still be running
+      // The stream status will be re-synced on reconnect
+    });
 
     //##################################################################################
     return () => {
+      console.log("WebSocket: Cleaning up connection", socket.id);
       socket.off("signal");
+      socket.off("signal_msgpack");
+      socket.off("frame");
       socket.off("broadcast");
+      socket.off("connect");
+      socket.off("disconnect");
+      socket.off("server_capabilities");
+      socket.disconnect();
       socket.close();
     };
   }, [dispatch, connectionSettingsState]);
