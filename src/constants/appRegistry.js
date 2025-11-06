@@ -122,12 +122,38 @@ export const APP_REGISTRY = {
     pluginId: "LightSheet",
   },
 
+  flowStop: {
+    id: "flowStop",
+    name: "Flow Stop Controller",
+    description:
+      "Control flow stop mechanisms for microfluidics experiments. Manage fluid flow and timing.",
+    category: APP_CATEGORIES.APPS,
+    icon: ComputerIcon,
+    enabled: false,
+    essential: false,
+    keywords: ["flow", "stop", "microfluidics", "fluid", "timing"],
+    pluginId: "FlowStop",
+  },
+
+  lepmon: {
+    id: "lepmon",
+    name: "Lepmon Controller",
+    description:
+      "Lepmon thermal imaging and monitoring. Control thermal sensors and imaging.",
+    category: APP_CATEGORIES.APPS,
+    icon: ComputerIcon,
+    enabled: false,
+    essential: false,
+    keywords: ["lepmon", "thermal", "imaging", "monitoring", "sensors"],
+    pluginId: "Lepmon",
+  },
+
   mazeGame: {
     id: "mazeGame",
     name: "Maze Game",
     description:
       "Interactive game for microscope control training. Learn stage navigation through engaging gameplay.",
-    category: APP_CATEGORIES.CODING,
+    category: APP_CATEGORIES.APPS,
     icon: SportsEsportsIcon,
     enabled: false,
     essential: false,
@@ -193,7 +219,7 @@ export const APP_REGISTRY = {
     name: "Objective Controller",
     description:
       "Control motorized objective turret. Switch between objectives during experiments for multi-magnification imaging.",
-    category: APP_CATEGORIES.APPS,
+    category: APP_CATEGORIES.SYSTEM,
     icon: ThreeDRotationIcon,
     enabled: false,
     essential: false,
@@ -214,30 +240,104 @@ export const APP_REGISTRY = {
     pluginId: "Stresstest",
   },
 
-  flowStop: {
-    id: "flowStop",
-    name: "Flow Stop Controller",
+  stageOffsetCalibration: {
+    id: "stageOffsetCalibration",
+    name: "Stage Offset Calibration",
     description:
-      "Control flow stop mechanisms for microfluidics experiments. Manage fluid flow and timing.",
-    category: APP_CATEGORIES.APPS,
-    icon: ComputerIcon,
+      "Calibrate stage positioning offsets for accurate movement. Compensate for mechanical tolerances and improve positioning precision.",
+    category: APP_CATEGORIES.SYSTEM,
+    icon: AutoFixHighIcon,
     enabled: false,
     essential: false,
-    keywords: ["flow", "stop", "microfluidics", "fluid", "timing"],
-    pluginId: "FlowStop",
+    keywords: [
+      "stage",
+      "offset",
+      "calibration",
+      "positioning",
+      "precision",
+      "mechanical",
+    ],
+    pluginId: "StageOffsetCalibration",
   },
 
-  lepmon: {
-    id: "lepmon",
-    name: "Lepmon Controller",
+  socketView: {
+    id: "socketView",
+    name: "Socket View Controller",
     description:
-      "Lepmon thermal imaging and monitoring. Control thermal sensors and imaging.",
-    category: APP_CATEGORIES.APPS,
-    icon: ComputerIcon,
+      "Monitor and debug WebSocket connections. View real-time communication between frontend and backend for troubleshooting.",
+    category: APP_CATEGORIES.SYSTEM,
+    icon: CableIcon,
     enabled: false,
     essential: false,
-    keywords: ["lepmon", "thermal", "imaging", "monitoring", "sensors"],
-    pluginId: "Lepmon",
+    keywords: [
+      "socket",
+      "websocket",
+      "debug",
+      "communication",
+      "realtime",
+      "troubleshoot",
+    ],
+    pluginId: "SocketView",
+  },
+
+  detectorTrigger: {
+    id: "detectorTrigger",
+    name: "Detector Trigger",
+    description:
+      "Control detector triggering mechanisms for synchronized image acquisition. Configure external trigger signals and timing.",
+    category: APP_CATEGORIES.SYSTEM,
+    icon: AccessTimeIcon,
+    enabled: false,
+    essential: false,
+    keywords: [
+      "detector",
+      "trigger",
+      "synchronization",
+      "acquisition",
+      "timing",
+      "external",
+    ],
+    pluginId: "DetectorTrigger",
+  },
+
+  extendedLEDMatrix: {
+    id: "extendedLEDMatrix",
+    name: "Extended LED Matrix",
+    description:
+      "Advanced LED matrix controller for structured illumination. Control complex LED patterns for enhanced microscopy techniques.",
+    category: APP_CATEGORIES.SYSTEM,
+    icon: GridOnIcon,
+    enabled: false,
+    essential: false,
+    keywords: [
+      "led",
+      "matrix",
+      "illumination",
+      "structured",
+      "patterns",
+      "enhanced",
+    ],
+    pluginId: "ExtendedLEDMatrix",
+  },
+
+  jupyterNotebook: {
+    id: "jupyterNotebook",
+    name: "Jupyter Notebook",
+    description:
+      "Interactive development environment for Python scripting and data analysis. Execute code cells, visualize data, and create documentation.",
+    category: APP_CATEGORIES.CODING,
+    icon: CodeIcon,
+    enabled: false,
+    essential: false,
+    keywords: [
+      "jupyter",
+      "notebook",
+      "python",
+      "interactive",
+      "development",
+      "analysis",
+    ],
+    pluginId: "JupyteNotebook",
   },
 };
 
