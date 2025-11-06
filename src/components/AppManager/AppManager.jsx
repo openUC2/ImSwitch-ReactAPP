@@ -29,7 +29,6 @@ import {
 } from "@mui/material";
 import {
   Search as SearchIcon,
-  Close as CloseIcon,
   Apps as AppsIcon,
   Star as StarIcon,
   Code as CodeIcon,
@@ -52,7 +51,6 @@ import {
   resetToDefaults,
   enableCategory,
   disableCategory,
-  closeAppManager,
 } from "../../state/slices/appManagerSlice";
 
 // App registry imports
@@ -317,10 +315,6 @@ const AppManager = ({ onNavigateToApp }) => {
     dispatch(resetToDefaults());
   };
 
-  const handleCloseManager = () => {
-    dispatch(closeAppManager());
-  };
-
   const handleEnableAllInCategory = () => {
     if (selectedCategory !== "all") {
       dispatch(enableCategory(selectedCategory));
@@ -375,12 +369,6 @@ const AppManager = ({ onNavigateToApp }) => {
           <Tooltip title="Reset to defaults">
             <IconButton color="inherit" onClick={handleResetToDefaults}>
               <RefreshIcon />
-            </IconButton>
-          </Tooltip>
-
-          <Tooltip title="Close">
-            <IconButton color="inherit" onClick={handleCloseManager}>
-              <CloseIcon />
             </IconButton>
           </Tooltip>
         </Toolbar>

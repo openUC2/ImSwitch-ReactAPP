@@ -174,13 +174,6 @@ const appManagerSlice = createSlice({
     },
 
     /**
-     * Open app manager
-     */
-    openAppManager: (state) => {
-      state.isAppManagerOpen = true;
-    },
-
-    /**
      * Close app manager
      */
     closeAppManager: (state) => {
@@ -209,7 +202,6 @@ export const {
   setSearchQuery,
   setSelectedCategory,
   toggleAppManager,
-  openAppManager,
   closeAppManager,
   clearFilters,
 } = appManagerSlice.actions;
