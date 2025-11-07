@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 
 import { Box, IconButton, TextField, Typography, Button } from "@mui/material";
 import {
@@ -101,6 +101,11 @@ export default function StreamControls({
       // Only handle if not typing in an input field
       if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
         return;
+      }
+
+      // Don't intercept browser zoom shortcuts (Cmd/Ctrl + Plus/Minus)
+      if ((event.metaKey || event.ctrlKey) && (event.key === '+' || event.key === '-' || event.key === '=')) {
+        return; // Let browser handle zoom
       }
 
       switch (event.key) {
