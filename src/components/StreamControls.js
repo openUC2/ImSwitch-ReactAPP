@@ -27,13 +27,12 @@ export default function StreamControls({
   onGoToImage,
   lastSnapPath,
 }) {
-
   const dispatch = useDispatch();
-  
+
   // Get stream stats from Redux (includes fps which indicates active frames)
   const liveStreamState = useSelector(liveStreamSlice.getLiveStreamState);
   const liveViewState = useSelector(liveViewSlice.getLiveViewState);
-  
+
   // Use Redux state as source of truth for stream status
   const isLiveViewActive = liveViewState.isStreamRunning;
 
@@ -43,17 +42,17 @@ export default function StreamControls({
     featureSupport: { webgl2: false, lz4: false },
     isWebGL: false,
     imageSize: { width: 0, height: 0 },
-    viewTransform: { scale: 1, translateX: 0, translateY: 0 }
+    viewTransform: { scale: 1, translateX: 0, translateY: 0 },
   });
 
   // Sync hudData stats with Redux stats for overlay display
   useEffect(() => {
-    setHudData(prevData => ({
+    setHudData((prevData) => ({
       ...prevData,
       stats: {
         fps: liveStreamState.stats.fps || 0,
-        bps: liveStreamState.stats.bps || 0
-      }
+        bps: liveStreamState.stats.bps || 0,
+      },
     }));
   }, [liveStreamState.stats.fps, liveStreamState.stats.bps]);
 
@@ -62,14 +61,16 @@ export default function StreamControls({
   const checkLiveViewStatus = useCallback(async () => {
     try {
       const active = await apiViewControllerGetLiveViewActive();
-      
+
       // Only update Redux if state differs from backend
       if (active !== liveViewState.isStreamRunning) {
-        console.log(`[StreamControls] Backend status mismatch detected. Backend: ${active}, Frontend: ${liveViewState.isStreamRunning}`);
+        console.log(
+          `[StreamControls] Backend status mismatch detected. Backend: ${active}, Frontend: ${liveViewState.isStreamRunning}`
+        );
         dispatch(liveViewSlice.setIsStreamRunning(active));
       }
     } catch (error) {
-      console.warn('[StreamControls] Failed to check live view status:', error);
+      console.warn("[StreamControls] Failed to check live view status:", error);
     }
   }, [liveViewState.isStreamRunning, dispatch]);
 
@@ -79,7 +80,6 @@ export default function StreamControls({
     return () => clearInterval(interval);
   }, [checkLiveViewStatus]);
 
- 
   // Move Z-axis handler
   const moveZAxis = useCallback((distance) => {
     apiPositionerControllerMovePositioner({
@@ -99,33 +99,39 @@ export default function StreamControls({
   useEffect(() => {
     const handleKeyDown = (event) => {
       // Only handle if not typing in an input field
-      if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+      if (
+        event.target.tagName === "INPUT" ||
+        event.target.tagName === "TEXTAREA"
+      ) {
         return;
       }
 
       // Don't intercept browser zoom shortcuts (Cmd/Ctrl + Plus/Minus)
-      if ((event.metaKey || event.ctrlKey) && (event.key === '+' || event.key === '-' || event.key === '=')) {
+      if (
+        (event.metaKey || event.ctrlKey) &&
+        (event.key === "+" || event.key === "-" || event.key === "=")
+      ) {
         return; // Let browser handle zoom
       }
 
       switch (event.key) {
-        case '+':
-        case '=': // Also handle = key (same physical key as + without shift)
+        case "+":
+        case "=": // Also handle = key (same physical key as + without shift)
           event.preventDefault();
           moveZAxis(10); // Move up 10 steps
           break;
-        case '-':
-        case '_': // Also handle _ key (same physical key as - with shift)
+        case "-":
+        case "_": // Also handle _ key (same physical key as - with shift)
           event.preventDefault();
           moveZAxis(-10); // Move down 10 steps
           break;
-        case '.':
-        case '>': // Also handle > key (same physical key as . with shift)
+        case ".":
+        case ">": // Also handle > key (same physical key as . with shift)
           event.preventDefault();
           moveZAxis(100); // Move up 100 steps
           break;
-        case ',':
-        case '<': // Also handle < key (same physical key as , with shift)
+        case ",":
+        case "<": // Also handle < key (same physical key as , with shift)
           event.preventDefault();
           moveZAxis(-100); // Move down 100 steps
           break;
@@ -134,13 +140,12 @@ export default function StreamControls({
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener("keydown", handleKeyDown);
     };
   }, [moveZAxis]);
-
 
   // Handle start stream
   const handleStartStream = useCallback(async () => {
@@ -160,19 +165,28 @@ export default function StreamControls({
 
   // Render stream controls with editable image name and icon buttons
   return (
-    <Box sx={{ display: "flex", gap: 1, alignItems: "center", position: "relative" }}>
+    <Box
+      sx={{
+        display: "flex",
+        gap: 1,
+        alignItems: "center",
+        position: "relative",
+      }}
+    >
       {/* Stream control buttons */}
       <Typography variant="h6">Stream</Typography>
-      
+
       {/* Start button - green when stream is OFF (can start), gray when ON */}
       <IconButton
         onClick={handleStartStream}
         sx={{
-          color: !isLiveViewActive ? 'success.main' : 'action.disabled',
-          '&:hover': {
-            backgroundColor: !isLiveViewActive ? 'success.light' : 'transparent',
-            opacity: !isLiveViewActive ? 0.8 : 0.5
-          }
+          color: !isLiveViewActive ? "success.main" : "action.disabled",
+          "&:hover": {
+            backgroundColor: !isLiveViewActive
+              ? "success.light"
+              : "transparent",
+            opacity: !isLiveViewActive ? 0.8 : 0.5,
+          },
         }}
       >
         <PlayArrow />
@@ -182,11 +196,11 @@ export default function StreamControls({
       <IconButton
         onClick={handleStopStream}
         sx={{
-          color: isLiveViewActive ? 'error.main' : 'action.disabled',
-          '&:hover': {
-            backgroundColor: isLiveViewActive ? 'error.light' : 'transparent',
-            opacity: isLiveViewActive ? 0.8 : 0.5
-          }
+          color: isLiveViewActive ? "error.main" : "action.disabled",
+          "&:hover": {
+            backgroundColor: isLiveViewActive ? "error.light" : "transparent",
+            opacity: isLiveViewActive ? 0.8 : 0.5,
+          },
         }}
       >
         <Stop />
@@ -228,7 +242,9 @@ export default function StreamControls({
       )}
 
       {/* Stream Control Overlay - positioned absolutely to not affect layout */}
-      <Box sx={{ position: "absolute", top: -10, right: -100, zIndex: 1001 }}> {/* FIXME: Adjust position as needed */}
+      <Box sx={{ position: "absolute", top: -10, right: -100, zIndex: 1001 }}>
+        {" "}
+        {/* FIXME: Adjust position as needed */}
         <StreamControlOverlay
           stats={hudData.stats}
           featureSupport={hudData.featureSupport}

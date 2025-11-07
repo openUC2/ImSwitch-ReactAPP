@@ -10,25 +10,29 @@ export const useKeyPress = (keys, callback, disable = false) => {
     return new Set(keys.map((key) => normalizeKey(key)));
   }, [keys]);
 
-  const handleKeyDown = useCallback((e) => {
-    if (e.repeat) return; // To prevent this function from triggering on key hold e.g. Ctrl hold
+  const handleKeyDown = useCallback(
+    (e) => {
+      if (e.repeat) return; // To prevent this function from triggering on key hold e.g. Ctrl hold
 
-    // Don't prevent default for browser zoom shortcuts (Cmd/Ctrl + Plus/Minus/0)
-    const isZoomShortcut = (e.metaKey || e.ctrlKey) && 
-      (e.key === '+' || e.key === '-' || e.key === '=' || e.key === '0');
-    
-    if (isZoomShortcut) {
-      return; // Let browser handle zoom shortcuts
-    }
+      // Don't prevent default for browser zoom shortcuts (Cmd/Ctrl + Plus/Minus/0)
+      const isZoomShortcut =
+        (e.metaKey || e.ctrlKey) &&
+        (e.key === "+" || e.key === "-" || e.key === "=" || e.key === "0");
 
-    lastKeyPressed.current.add(normalizeKey(e.key));
+      if (isZoomShortcut) {
+        return; // Let browser handle zoom shortcuts
+      }
 
-    if (keysSet.isSubsetOf(lastKeyPressed.current) && !disable) {
-      e.preventDefault();
-      callback(e);
-      return;
-    }
-  }, [keysSet, callback, disable]);
+      lastKeyPressed.current.add(normalizeKey(e.key));
+
+      if (keysSet.isSubsetOf(lastKeyPressed.current) && !disable) {
+        e.preventDefault();
+        callback(e);
+        return;
+      }
+    },
+    [keysSet, callback, disable]
+  );
 
   const handleKeyUp = (e) => {
     lastKeyPressed.current.delete(normalizeKey(e.key));
