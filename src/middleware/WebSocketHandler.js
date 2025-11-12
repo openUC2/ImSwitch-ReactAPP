@@ -15,6 +15,7 @@ import * as autofocusSlice from "../state/slices/AutofocusSlice.js";
 import * as socketDebugSlice from "../state/slices/SocketDebugSlice.js";
 import * as uc2Slice from "../state/slices/UC2Slice.js";
 import * as liveViewSlice from "../state/slices/LiveViewSlice.js";
+import * as canOtaSlice from "../state/slices/canOtaSlice.js";
 
 import { io } from "socket.io-client";
 
@@ -614,6 +615,63 @@ const WebSocketHandler = () => {
           }
         } catch (error) {
           console.error("Error in sigUpdateMotorPosition handler:", error);
+        }
+        //----------------------------------------------
+      } else if (dataJson.name === "sigOTAStatusUpdate") {
+        // Handle CAN OTA status updates
+        console.log("sigOTAStatusUpdate received:", dataJson);
+        try {
+          // Expected format: dataJson.args.p0 = { canId, status, statusMsg, ip, hostname, success }
+          const otaStatus = dataJson.args?.p0;
+          
+          if (otaStatus && otaStatus.canId !== undefined) {
+            const { canId, status, statusMsg, success } = otaStatus;
+            
+            // Determine status string and progress
+            let statusString = "unknown";
+            let progress = 0;
+            
+            if (status === 0) {
+              statusString = "completed";
+              progress = 100;
+            } else if (status === 1) {
+              statusString = "wifi_failed";
+              progress = 0;
+            } else if (status === 2) {
+              statusString = "ota_failed";
+              progress = 50;
+            } else {
+              statusString = success ? "completed" : "failed";
+              progress = success ? 100 : 0;
+            }
+            
+            // Update Redux state with OTA progress
+            dispatch(canOtaSlice.setUpdateProgress({
+              canId: canId,
+              status: statusString,
+              message: statusMsg || "Status update received",
+              progress: progress,
+              timestamp: new Date().toISOString(),
+            }));
+            
+            // If update is completed or failed, check if all updates are done
+            if (statusString === "completed" || statusString === "failed" || statusString === "wifi_failed" || statusString === "ota_failed") {
+              const state = store.getState();
+              const canOtaState = state.canOtaState;
+              const totalDevices = canOtaState.selectedDeviceIds.length;
+              const completedCount = canOtaState.completedUpdateCount;
+              const failedCount = canOtaState.failedUpdateCount;
+              
+              // If all devices are done, stop updating state
+              if (completedCount + failedCount >= totalDevices) {
+                dispatch(canOtaSlice.setIsUpdating(false));
+              }
+            }
+            
+            console.log(`OTA update for device ${canId}: ${statusString} - ${statusMsg}`);
+          }
+        } catch (error) {
+          console.error("Error in sigOTAStatusUpdate handler:", error);
         }
         //----------------------------------------------
       } else if (dataJson.name === "sigUpdateOMEZarrStore") {
