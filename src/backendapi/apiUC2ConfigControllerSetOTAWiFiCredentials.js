@@ -4,10 +4,11 @@ import createAxiosInstance from "./createAxiosInstance";
 const apiUC2ConfigControllerSetOTAWiFiCredentials = async (ssid, password) => {
   try {
     const axiosInstance = createAxiosInstance();
-    const response = await axiosInstance.post("/UC2ConfigController/setOTAWiFiCredentials", {
+    const response = await axiosInstance.get("/UC2ConfigController/setOTAWiFiCredentials", { 
+      params: {
       ssid,
       password,
-    });
+  }});
     return response.data; // { status: "success", message: "..." }
   } catch (error) {
     console.error("Error setting OTA WiFi credentials:", error);

@@ -178,8 +178,8 @@ const CanOtaWizard = ({ open, onClose }) => {
       dispatch(canOtaSlice.setIsScanningDevices(true));
       dispatch(canOtaSlice.setScanError(null));
       const devices = await apiUC2ConfigControllerScanCanbus(5);
-      dispatch(canOtaSlice.setScannedDevices(devices || []));
-      if (!devices || devices.length === 0) {
+      dispatch(canOtaSlice.setScannedDevices(devices.scan || []));
+      if (!devices || devices.scan.length === 0) {
         dispatch(canOtaSlice.setScanError("No CAN devices found"));
       }
       dispatch(canOtaSlice.setIsScanningDevices(false));

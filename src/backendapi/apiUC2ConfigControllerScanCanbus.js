@@ -3,9 +3,11 @@ import createAxiosInstance from "./createAxiosInstance";
 
 const apiUC2ConfigControllerScanCanbus = async (timeout = 5) => {
   try {
-    const axiosInstance = createAxiosInstance();
-    const response = await axiosInstance.post("/UC2ConfigController/scan_canbus", {
-      timeout,
+    const axiosInstance = createAxiosInstance(timeout + 5);
+    const response = await axiosInstance.get("/UC2ConfigController/scan_canbus", {
+      params: {
+        timeout,
+      },
     });
     return response.data; // Array of devices: [{ canId, deviceType, status, deviceTypeStr, statusStr }]
   } catch (error) {
