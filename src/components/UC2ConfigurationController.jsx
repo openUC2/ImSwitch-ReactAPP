@@ -54,6 +54,7 @@ import {
 } from "../utils/configValidation";
 import ConfigurationPreviewDialog from "./ConfigurationPreviewDialog";
 import ConfigurationWizard from "./ConfigurationWizard";
+import CanOtaWizard from "./CanOtaWizard";
 
 const TabPanel = ({ children, value, index, ...other }) => (
   <div
@@ -105,6 +106,7 @@ const UC2ConfigurationController = () => {
 
   // Wizard state
   const [showConfigWizard, setShowConfigWizard] = React.useState(false);
+  const [showCanOtaWizard, setShowCanOtaWizard] = React.useState(false);
 
   const fetchAvailableSetups = useCallback(() => {
     const url = `${hostIP}:${hostPort}/UC2ConfigController/returnAvailableSetups`;
@@ -680,6 +682,40 @@ const UC2ConfigurationController = () => {
               </Dialog>
             </CardContent>
           </Card>
+
+          {/* CAN OTA Update Card */}
+          <Card sx={{ mt: 3 }}>
+            <CardContent>
+              <Box
+                sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}
+              >
+                <Build color="primary" />
+                <Typography variant="h6">CAN Device Firmware Update</Typography>
+              </Box>
+
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                Update firmware on CAN-connected devices (motors, lasers, LEDs) via Over-The-Air (OTA) updates
+              </Typography>
+
+              <Button
+                variant="contained"
+                color="secondary"
+                onClick={() => setShowCanOtaWizard(true)}
+                startIcon={<WizardIcon />}
+                size="large"
+                fullWidth
+                disabled={!uc2Connected}
+              >
+                Launch CAN OTA Wizard
+              </Button>
+
+              {!uc2Connected && (
+                <Alert severity="warning" sx={{ mt: 2 }}>
+                  UC2 device must be connected to use CAN OTA updates
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
         </TabPanel>
 
         <TabPanel value={tabIndex} index={1}>
@@ -982,6 +1018,12 @@ const UC2ConfigurationController = () => {
         onClose={() => setShowConfigWizard(false)}
         hostIP={hostIP}
         hostPort={hostPort}
+      />
+
+      {/* CAN OTA Wizard */}
+      <CanOtaWizard
+        open={showCanOtaWizard}
+        onClose={() => setShowCanOtaWizard(false)}
       />
     </Box>
   );
