@@ -34,7 +34,7 @@ const SerialDebugController = () => {
 
   // Get UC2 state from Redux
   const uc2State = useSelector(uc2Slice.getUc2State);
-  const isBackendConnected = uc2State.backendConnected;      // API reachable
+  const isBackendConnected = uc2State.backendConnected; // API reachable
   const serialPayload = uc2State.serialPayload;
   const serialLog = uc2State.serialLog;
 

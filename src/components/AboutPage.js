@@ -38,12 +38,12 @@ const AboutPage = () => {
   // Redux state management
   const connectionSettings = useSelector(getConnectionSettingsState);
   const uc2State = useSelector(uc2Slice.getUc2State);
-  const isBackendConnected = uc2State.backendConnected;      // API reachable
+  const isBackendConnected = uc2State.backendConnected; // API reachable
 
   const hostIP = connectionSettings.ip || "http://localhost";
   const hostPort = connectionSettings.apiPort || "8000";
   const apiDocsUrl = `${hostIP}:${hostPort}/docs`;
-  
+
   // Backend version state
   const [backendVersion, setBackendVersion] = useState(null);
   const [versionLoading, setVersionLoading] = useState(false);
@@ -66,14 +66,15 @@ const AboutPage = () => {
         if (response.ok) {
           const data = await response.json();
           console.log("Backend version response:", data);
-          
+
           // Handle different possible response formats
-          const version = data.version || 
-                         data.imswitch_version || 
-                         data.backend_version || 
-                         data.app_version ||
-                         (typeof data === 'string' ? data : null);
-                         
+          const version =
+            data.version ||
+            data.imswitch_version ||
+            data.backend_version ||
+            data.app_version ||
+            (typeof data === "string" ? data : null);
+
           setBackendVersion(version || "Unknown");
         } else {
           console.warn(`Backend version fetch failed: ${response.status}`);
@@ -138,7 +139,7 @@ const AboutPage = () => {
                   }`}
                 />
               </ListItem>
-              
+
               {/* Backend Version */}
               <ListItem>
                 <ListItemIcon>
@@ -147,11 +148,11 @@ const AboutPage = () => {
                 <ListItemText
                   primary="Backend Version"
                   secondary={
-                    versionLoading 
-                      ? "Loading..." 
+                    versionLoading
+                      ? "Loading..."
                       : isBackendConnected
-                        ? `Version: ${backendVersion || "Not available"}`
-                        : "Backend not connected"
+                      ? `Version: ${backendVersion || "Not available"}`
+                      : "Backend not connected"
                   }
                 />
                 <Chip

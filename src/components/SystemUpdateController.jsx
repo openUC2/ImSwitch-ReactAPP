@@ -41,7 +41,7 @@ const SystemUpdateController = () => {
   const [isUpdating, setIsUpdating] = useState(false);
 
   const uc2State = useSelector(uc2Slice.getUc2State);
-  const isBackendConnected = uc2State.backendConnected;      // API reachable
+  const isBackendConnected = uc2State.backendConnected; // API reachable
 
   // Mock update check (future API integration via src/backendapi/)
   const handleCheckUpdates = async () => {

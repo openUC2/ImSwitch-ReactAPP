@@ -49,8 +49,8 @@ function ConnectionSettings() {
 
   // Get connection status from Redux state
   const uc2State = useSelector(uc2Slice.getUc2State);
-  const isBackendConnected = uc2State.backendConnected;     // Backend API reachable
-  const isHardwareConnected = uc2State.uc2Connected;        // UC2 hardware connected
+  const isBackendConnected = uc2State.backendConnected; // Backend API reachable
+  const isHardwareConnected = uc2State.uc2Connected; // UC2 hardware connected
 
   // Get WebSocket connection status from Redux state
   const webSocketState = useSelector(webSocketSlice.getWebSocketState);
@@ -282,9 +282,15 @@ function ConnectionSettings() {
               <>
                 <strong>Backend API Connected:</strong> Settings are accessible.
                 {isHardwareConnected ? (
-                  <span> Hardware also connected - full control available.</span>
+                  <span>
+                    {" "}
+                    Hardware also connected - full control available.
+                  </span>
                 ) : (
-                  <span> Hardware not connected - check UC2 board connection.</span>
+                  <span>
+                    {" "}
+                    Hardware not connected - check UC2 board connection.
+                  </span>
                 )}
                 {websocketTestStatus === "success" || isWebSocketConnected ? (
                   <span> WebSocket ready for live streaming.</span>
@@ -321,7 +327,11 @@ function ConnectionSettings() {
             />
             {isBackendConnected && (
               <Chip
-                label={isHardwareConnected ? "Hardware Connected" : "Hardware Disconnected"}
+                label={
+                  isHardwareConnected
+                    ? "Hardware Connected"
+                    : "Hardware Disconnected"
+                }
                 color={isHardwareConnected ? "success" : "warning"}
                 size="small"
                 variant="outlined"
