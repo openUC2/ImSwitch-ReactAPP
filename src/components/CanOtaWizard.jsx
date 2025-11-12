@@ -196,7 +196,19 @@ const CanOtaWizard = ({ open, onClose }) => {
       dispatch(canOtaSlice.clearUpdateProgress());
       dispatch(canOtaSlice.setActiveUpdateCount(canOtaState.selectedDeviceIds.length));
 
-      // Start multiple device OTA
+      // Initialize all devices with "initiating" status
+      canOtaState.selectedDeviceIds.forEach(canId => {
+        dispatch(canOtaSlice.setUpdateProgress({
+          canId: canId,
+          status: "initiating",
+          message: "Starting OTA update...",
+          progress: 0,
+          timestamp: new Date().toISOString(),
+        }));
+      });
+
+      // Start multiple device OTA (non-blocking call)
+      // The actual progress will come via WebSocket (sigOTAStatusUpdate)
       const result = await apiUC2ConfigControllerStartMultipleDeviceOTA(
         canOtaState.selectedDeviceIds,
         canOtaState.wifiSsid,
@@ -205,12 +217,35 @@ const CanOtaWizard = ({ open, onClose }) => {
         2 // 2 seconds delay between devices
       );
 
-      console.log("OTA update started:", result);
-      // Note: Progress updates will come via WebSocket (sigOTAStatusUpdate)
+      console.log("OTA update initiated successfully:", result);
+      
+      // Update status to "initiated" for all devices
+      canOtaState.selectedDeviceIds.forEach(canId => {
+        dispatch(canOtaSlice.setUpdateProgress({
+          canId: canId,
+          status: "initiated",
+          message: "OTA command sent, waiting for device response...",
+          progress: 5,
+          timestamp: new Date().toISOString(),
+        }));
+      });
+      
+      // Note: Further progress updates will come via WebSocket (sigOTAStatusUpdate)
+      // The backend uploads firmware in the background and sends status via socket
+      
     } catch (error) {
       console.error("Error starting OTA update:", error);
-      dispatch(canOtaSlice.setError("Failed to start OTA update: " + error.message));
-      dispatch(canOtaSlice.setIsUpdating(false));
+      
+      // Even if API call fails/times out, the backend might still be processing
+      // So we show a warning instead of complete failure
+      dispatch(canOtaSlice.setError(
+        "OTA update may be starting in background. Check progress below. " +
+        "If no progress appears within 30 seconds, the update may have failed. Error: " + 
+        error.message
+      ));
+      
+      // Don't set isUpdating to false - let WebSocket updates control the state
+      // If truly failed, user can manually stop or restart
     }
   };
 
