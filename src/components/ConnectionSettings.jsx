@@ -49,7 +49,8 @@ function ConnectionSettings() {
 
   // Get connection status from Redux state
   const uc2State = useSelector(uc2Slice.getUc2State);
-  const isBackendConnected = uc2State.uc2Connected;
+  const isBackendConnected = uc2State.backendConnected;     // Backend API reachable
+  const isHardwareConnected = uc2State.uc2Connected;        // UC2 hardware connected
 
   // Get WebSocket connection status from Redux state
   const webSocketState = useSelector(webSocketSlice.getWebSocketState);
@@ -279,17 +280,21 @@ function ConnectionSettings() {
           <Typography variant="body2">
             {isBackendConnected ? (
               <>
-                <strong>Backend Connected:</strong> Ready for microscope
-                control.
+                <strong>Backend API Connected:</strong> Settings are accessible.
+                {isHardwareConnected ? (
+                  <span> Hardware also connected - full control available.</span>
+                ) : (
+                  <span> Hardware not connected - check UC2 board connection.</span>
+                )}
                 {websocketTestStatus === "success" || isWebSocketConnected ? (
-                  <span> WebSocket also ready for live streaming.</span>
+                  <span> WebSocket ready for live streaming.</span>
                 ) : (
                   <span> Configure WebSocket port for live streaming.</span>
                 )}
               </>
             ) : hasConnectionSettings ? (
               <>
-                <strong>Connection Failed:</strong> Please check your settings
+                <strong>Backend API Failed:</strong> Please check your settings
                 and ensure the backend is running.
               </>
             ) : (
@@ -314,6 +319,14 @@ function ConnectionSettings() {
               size="small"
               variant="outlined"
             />
+            {isBackendConnected && (
+              <Chip
+                label={isHardwareConnected ? "Hardware Connected" : "Hardware Disconnected"}
+                color={isHardwareConnected ? "success" : "warning"}
+                size="small"
+                variant="outlined"
+              />
+            )}
             {websocketPort && (
               <Chip
                 label={`WebSocket ${getWebSocketStatusLabel(

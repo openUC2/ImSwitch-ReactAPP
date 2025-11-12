@@ -65,16 +65,18 @@ const WebSocketHandler = () => {
 
         if (response.ok) {
           const data = await response.json();
-          const isConnected = data === true;
-          console.log(
-            `UC2 connection check result: ${
-              isConnected ? "Connected" : "Not connected"
-            }`
-          );
-          dispatch(uc2Slice.setUc2Connected(isConnected));
-          return isConnected;
+          const hardwareConnected = data === true;
+          
+          console.log(`Backend API: Connected, Hardware: ${hardwareConnected ? "Connected" : "Disconnected"}`);
+          
+          // Update BOTH statuses
+          dispatch(uc2Slice.setBackendConnected(true));    // API is reachable
+          dispatch(uc2Slice.setUc2Connected(hardwareConnected)); // Hardware status
+          
+          return hardwareConnected; // Return hardware status for compatibility
         } else {
           console.log(`UC2 connection check: HTTP ${response.status}`);
+          dispatch(uc2Slice.setBackendConnected(false));
           dispatch(uc2Slice.setUc2Connected(false));
           return false;
         }
@@ -84,6 +86,7 @@ const WebSocketHandler = () => {
         } else {
           console.log("UC2 connection check: Network error", error.message);
         }
+        dispatch(uc2Slice.setBackendConnected(false));
         dispatch(uc2Slice.setUc2Connected(false));
         return false;
       }

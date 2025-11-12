@@ -85,7 +85,8 @@ const UC2ConfigurationController = () => {
   const selectedSetup = uc2State.selectedSetup;
   const isDialogOpen = uc2State.isDialogOpen;
   const restartSoftware = uc2State.restartSoftware;
-  const uc2Connected = uc2State.uc2Connected;
+  const isBackendConnected = uc2State.backendConnected;      // API reachable (enables UI)
+  const uc2Connected = uc2State.uc2Connected;                // Hardware connected
   const selectedFileForEdit = uc2State.selectedFileForEdit;
   const editorJson = uc2State.editorJson;
   const editorJsonText = uc2State.editorJsonText;

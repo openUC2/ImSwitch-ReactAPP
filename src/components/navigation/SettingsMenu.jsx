@@ -52,7 +52,8 @@ const SettingsMenu = ({ onNavigate }) => {
 
   // Get actual backend connection status from UC2 slice - following Copilot Instructions
   const uc2State = useSelector(uc2Slice.getUc2State);
-  const isBackendConnected = uc2State.uc2Connected;
+  const isBackendConnected = uc2State.backendConnected;      // API reachable (enables UI)
+  const isHardwareConnected = uc2State.uc2Connected;         // Hardware connected
 
   // API endpoint for disk usage - following Copilot Instructions for API communication
   const base = `${connectionSettings.ip}:${connectionSettings.apiPort}/UC2ConfigController`;
@@ -190,17 +191,21 @@ const SettingsMenu = ({ onNavigate }) => {
             <Chip
               label={
                 isBackendConnected
-                  ? "Connected"
+                  ? isHardwareConnected 
+                    ? "Connected" 
+                    : "API Connected"
                   : hasConnectionSettings
                   ? "Connection Failed"
                   : "Not Configured"
               }
               color={
                 isBackendConnected
-                  ? "success"
+                  ? isHardwareConnected 
+                    ? "success"      // ✅ Full connection
+                    : "warning"      // 🟡 API only, no hardware
                   : hasConnectionSettings
-                  ? "error"
-                  : "warning"
+                  ? "error"          // ❌ Connection failed
+                  : "warning"        // ⚠️ Not configured
               }
               size="small"
               variant="outlined"
