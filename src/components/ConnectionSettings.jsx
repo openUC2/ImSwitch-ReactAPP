@@ -26,6 +26,9 @@ import {
   CircularProgress,
   Chip,
   Divider,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from "@mui/material";
 import {
   Cable,
@@ -36,6 +39,8 @@ import {
   Info,
   Save,
   Settings,
+  ExpandMore,
+  Tune,
 } from "@mui/icons-material";
 
 /**
@@ -57,17 +62,35 @@ function ConnectionSettings() {
   const websocketTestStatus = webSocketState.testStatus;
   const isWebSocketConnected = webSocketState.connected;
 
-  // Local state, initialized from Redux
+  // Smart fallbacks for empty values
+  const getSmartDefaults = () => {
+    const location = window.location;
+    return {
+      protocol: location.protocol === "https:" ? "https://" : "http://",
+      hostname: location.hostname,
+      port: "8001",
+    };
+  };
+
+  const smartDefaults = getSmartDefaults();
+
+  // Local state, initialized from Redux with smart fallbacks
   const [hostProtocol, setHostProtocol] = useState(
-    connectionSettings.ip?.startsWith("http://") ? "http://" : "https://"
+    connectionSettings.ip?.startsWith("http://")
+      ? "http://"
+      : connectionSettings.ip?.startsWith("https://")
+      ? "https://"
+      : smartDefaults.protocol
   );
   const [hostIP, setHostIP] = useState(
-    connectionSettings.ip?.replace(/^https?:\/\//, "") || ""
+    connectionSettings.ip?.replace(/^https?:\/\//, "") || smartDefaults.hostname
   );
   const [websocketPort, setWebsocketPortState] = useState(
-    connectionSettings.websocketPort || ""
+    connectionSettings.websocketPort || smartDefaults.port
   );
-  const [apiPort, setApiPortState] = useState(connectionSettings.apiPort || "");
+  const [apiPort, setApiPortState] = useState(
+    connectionSettings.apiPort || smartDefaults.port
+  );
 
   // Connection test state
   const [isTestingConnection, setIsTestingConnection] = useState(false);
@@ -357,7 +380,7 @@ function ConnectionSettings() {
             backend server.
           </Typography>
 
-          {/* Configuration Form */}
+          {/* Basic Configuration Form */}
           <Box
             component="form"
             sx={{
@@ -365,6 +388,7 @@ function ConnectionSettings() {
               gridTemplateColumns: "1fr 2fr",
               gap: 3,
               alignItems: "start",
+              mb: 3,
             }}
             autoComplete="off"
           >
@@ -384,7 +408,7 @@ function ConnectionSettings() {
             {/* IP Address */}
             <TextField
               id="ip-address"
-              label="IP Address"
+              label="IP Address / Hostname"
               type="text"
               value={hostIP}
               onChange={(e) =>
@@ -392,30 +416,60 @@ function ConnectionSettings() {
               }
               fullWidth
               placeholder="e.g., 192.168.1.100 or localhost"
-            />
-
-            {/* WebSocket Port */}
-            <TextField
-              id="port-websocket"
-              label="WebSocket Port"
-              type="text"
-              value={websocketPort}
-              onChange={(e) => setWebsocketPortState(e.target.value.trim())}
-              fullWidth
-              placeholder="e.g., 8001"
-            />
-
-            {/* API Port */}
-            <TextField
-              id="port-api"
-              label="API Port"
-              type="text"
-              value={apiPort}
-              onChange={(e) => setApiPortState(e.target.value.trim())}
-              fullWidth
-              placeholder="e.g., 8000"
+              helperText="Usually same as frontend URL"
             />
           </Box>
+
+          {/* Advanced Settings Accordion */}
+          <Accordion sx={{ mb: 3 }}>
+            <AccordionSummary
+              expandIcon={<ExpandMore />}
+              aria-controls="advanced-settings-content"
+              id="advanced-settings-header"
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Tune color="action" />
+                <Typography variant="subtitle1">Advanced Settings</Typography>
+              </Box>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Both services typically run on port 8001. Only change these if
+                you have a custom setup.
+              </Typography>
+
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 2fr",
+                  gap: 3,
+                  alignItems: "start",
+                }}
+              >
+                {/* WebSocket Port */}
+                <TextField
+                  id="port-websocket"
+                  label="WebSocket Port"
+                  type="text"
+                  value={websocketPort}
+                  onChange={(e) => setWebsocketPortState(e.target.value.trim())}
+                  fullWidth
+                  placeholder="e.g., 8001"
+                />
+
+                {/* API Port */}
+                <TextField
+                  id="port-api"
+                  label="API Port"
+                  type="text"
+                  value={apiPort}
+                  onChange={(e) => setApiPortState(e.target.value.trim())}
+                  fullWidth
+                  placeholder="e.g., 8001"
+                />
+              </Box>
+            </AccordionDetails>
+          </Accordion>
 
           {/* Current Configuration Preview */}
           {hasConnectionSettings && (
@@ -452,7 +506,9 @@ function ConnectionSettings() {
                       </ListItemIcon>
                       <ListItemText
                         primary="WebSocket Connection"
-                        secondary={`ws://${hostIP}:${websocketPort}`}
+                        secondary={`${
+                          hostProtocol === "https://" ? "wss" : "ws"
+                        }://${hostIP}:${websocketPort}`}
                       />
                       <Chip
                         label={getWebSocketStatusLabel(websocketTestStatus)}
@@ -495,6 +551,22 @@ function ConnectionSettings() {
             }
           >
             {isTestingConnection ? "Testing..." : "Test Connection"}
+          </Button>
+
+          {/* Reset to Smart Defaults Button */}
+          <Button
+            variant="text"
+            color="secondary"
+            onClick={() => {
+              const defaults = getSmartDefaults();
+              setHostProtocol(defaults.protocol);
+              setHostIP(defaults.hostname);
+              setWebsocketPortState(defaults.port);
+              setApiPortState(defaults.port);
+            }}
+            disabled={isTestingConnection || isSaving}
+          >
+            Reset to Defaults
           </Button>
 
           {/* Status Text */}
