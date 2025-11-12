@@ -86,6 +86,8 @@ export default function LiveView({ setFileManagerInitialPath }) {
   const [histogramActive, setHistogramActive] = useState(false);
   // Save format state for recording and snap
   const [saveFormat, setSaveFormat] = useState(4); // Default: MP4
+  // Editable file name for snap
+  const [snapFileName, setSnapFileName] = useState("openUC2_snapshot");
   const saveFormatOptions = [
     { value: 1, label: "TIFF" },
     { value: 2, label: "HDF5" },
@@ -247,9 +249,9 @@ export default function LiveView({ setFileManagerInitialPath }) {
     }
   };
   async function snap() {
-    // English comment: Example fetch for snapping an image
+    // English comment: Example fetch for snapping an image with editable fileName
     const response = await fetch(
-      `${hostIP}:${hostPort}/RecordingController/snapImageToPath?fileName=openUC2_snapshot&mSaveFormat=${saveFormat}`
+      `${hostIP}:${hostPort}/RecordingController/snapImageToPath?fileName=${snapFileName}&mSaveFormat=${saveFormat}`
     );
     const data = await response.json();
     // data.relativePath might be "recordings/2025_05_20-11-12-44_PM"
@@ -376,6 +378,8 @@ export default function LiveView({ setFileManagerInitialPath }) {
             onStopRecord={stopRec}
             onGoToImage={handleGoToImage}
             lastSnapPath={lastSnapPath}
+            snapFileName={snapFileName}
+            setSnapFileName={setSnapFileName}
           />
         </Box>
 
