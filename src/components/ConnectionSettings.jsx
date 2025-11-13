@@ -421,7 +421,7 @@ function ConnectionSettings() {
           </Box>
 
           {/* Advanced Settings Accordion */}
-          <Accordion sx={{ mb: 3 }}>
+          <Accordion sx={{ mb: 3 }} aria-label="Advanced connection settings">
             <AccordionSummary
               expandIcon={<ExpandMore />}
               aria-controls="advanced-settings-content"
