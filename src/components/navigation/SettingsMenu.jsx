@@ -66,16 +66,6 @@ const SettingsMenu = ({ onNavigate }) => {
   // API endpoint for disk usage - following Copilot Instructions for API communication
   const base = `${connectionSettings.ip}:${connectionSettings.apiPort}/UC2ConfigController`;
 
-  // Developer Mode Console Info - Show instructions in development
-  useEffect(() => {
-    if (process.env.NODE_ENV === "development" && !isDeveloperMode) {
-      console.log("🔧 ImSwitch Developer Backdoor Available:");
-      console.log("  • Konami Code: ↑↑↓↓←→←→BA");
-      console.log("  • Quick Access: Ctrl+Shift+D+E+V");
-      console.log("  • Enables settings access when backend offline");
-    }
-  }, [isDeveloperMode]);
-
   // Fetch disk usage when backend is connected - following Copilot Instructions
   useEffect(() => {
     // Only fetch if backend is connected and menu is open
