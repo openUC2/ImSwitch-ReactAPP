@@ -30,6 +30,7 @@ import {
   CheckCircle,
   ErrorOutline,
 } from "@mui/icons-material";
+import { fetchWithTimeout } from "../utils/fetchWithTimeout";
 
 /**
  * AboutPage Component - Enhanced version with modern UI
@@ -58,10 +59,13 @@ const AboutPage = () => {
 
       try {
         setVersionLoading(true);
-        const response = await fetch(`${hostIP}:${hostPort}/version`, {
-          method: "GET",
-          signal: AbortSignal.timeout(5000),
-        });
+
+        // Use cross-browser compatible fetch with timeout
+        const response = await fetchWithTimeout(
+          `${hostIP}:${hostPort}/version`,
+          { method: "GET" },
+          5000
+        );
 
         if (response.ok) {
           const data = await response.json();

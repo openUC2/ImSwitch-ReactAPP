@@ -23,6 +23,7 @@ import { decode as msgpackDecode } from "@msgpack/msgpack";
 
 // Import API to check livestream status
 import apiViewControllerGetLiveViewActive from "../backendapi/apiViewControllerGetLiveViewActive.js";
+import { fetchWithTimeout } from "../utils/fetchWithTimeout";
 
 //##################################################################################
 const WebSocketHandler = () => {
@@ -55,12 +56,11 @@ const WebSocketHandler = () => {
       try {
         console.log(`Checking UC2 connection to ${ip}:${port}`);
 
-        const response = await fetch(
+        // Use cross-browser compatible fetch with timeout
+        const response = await fetchWithTimeout(
           `${ip}:${port}/UC2ConfigController/is_connected`,
-          {
-            method: "GET",
-            signal: AbortSignal.timeout(8000),
-          }
+          { method: "GET" },
+          8000
         );
 
         if (response.ok) {
