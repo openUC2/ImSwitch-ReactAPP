@@ -13,7 +13,10 @@ const initialState = {
   // Serial communication
   serialPayload: "",
   serialLog: [],
-  uc2Connected: false,
+
+  // Connection status (IMPORTANT: Two different types!)
+  backendConnected: false, // Backend API reachable (enables UI functions)
+  uc2Connected: false, // UC2 hardware connected to backend
 
   // Config file editing
   selectedFileForEdit: "",
@@ -75,6 +78,11 @@ const uc2Slice = createSlice({
     },
     clearSerialLog: (state) => {
       state.serialLog = [];
+    },
+
+    // Connection status setters
+    setBackendConnected: (state, action) => {
+      state.backendConnected = action.payload;
     },
     setUc2Connected: (state, action) => {
       state.uc2Connected = action.payload;
@@ -174,6 +182,7 @@ export const {
   setSerialPayload,
   addSerialLogEntry,
   clearSerialLog,
+  setBackendConnected,
   setUc2Connected,
   setSelectedFileForEdit,
   setEditorJson,

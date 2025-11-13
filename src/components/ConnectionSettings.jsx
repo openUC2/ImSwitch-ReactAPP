@@ -26,6 +26,9 @@ import {
   CircularProgress,
   Chip,
   Divider,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from "@mui/material";
 import {
   Cable,
@@ -36,6 +39,8 @@ import {
   Info,
   Save,
   Settings,
+  ExpandMore,
+  Tune,
 } from "@mui/icons-material";
 
 /**
@@ -49,24 +54,43 @@ function ConnectionSettings() {
 
   // Get connection status from Redux state
   const uc2State = useSelector(uc2Slice.getUc2State);
-  const isBackendConnected = uc2State.uc2Connected;
+  const isBackendConnected = uc2State.backendConnected; // Backend API reachable
+  const isHardwareConnected = uc2State.uc2Connected; // UC2 hardware connected
 
   // Get WebSocket connection status from Redux state
   const webSocketState = useSelector(webSocketSlice.getWebSocketState);
   const websocketTestStatus = webSocketState.testStatus;
   const isWebSocketConnected = webSocketState.connected;
 
-  // Local state, initialized from Redux
+  // Smart fallbacks for empty values
+  const getSmartDefaults = () => {
+    const location = window.location;
+    return {
+      protocol: location.protocol === "https:" ? "https://" : "http://",
+      hostname: location.hostname,
+      port: "8001",
+    };
+  };
+
+  const smartDefaults = getSmartDefaults();
+
+  // Local state, initialized from Redux with smart fallbacks
   const [hostProtocol, setHostProtocol] = useState(
-    connectionSettings.ip?.startsWith("http://") ? "http://" : "https://"
+    connectionSettings.ip?.startsWith("http://")
+      ? "http://"
+      : connectionSettings.ip?.startsWith("https://")
+      ? "https://"
+      : smartDefaults.protocol
   );
   const [hostIP, setHostIP] = useState(
-    connectionSettings.ip?.replace(/^https?:\/\//, "") || ""
+    connectionSettings.ip?.replace(/^https?:\/\//, "") || smartDefaults.hostname
   );
   const [websocketPort, setWebsocketPortState] = useState(
-    connectionSettings.websocketPort || ""
+    connectionSettings.websocketPort || smartDefaults.port
   );
-  const [apiPort, setApiPortState] = useState(connectionSettings.apiPort || "");
+  const [apiPort, setApiPortState] = useState(
+    connectionSettings.apiPort || smartDefaults.port
+  );
 
   // Connection test state
   const [isTestingConnection, setIsTestingConnection] = useState(false);
@@ -279,17 +303,27 @@ function ConnectionSettings() {
           <Typography variant="body2">
             {isBackendConnected ? (
               <>
-                <strong>Backend Connected:</strong> Ready for microscope
-                control.
+                <strong>Backend API Connected:</strong> Settings are accessible.
+                {isHardwareConnected ? (
+                  <span>
+                    {" "}
+                    Hardware also connected - full control available.
+                  </span>
+                ) : (
+                  <span>
+                    {" "}
+                    Hardware not connected - check UC2 board connection.
+                  </span>
+                )}
                 {websocketTestStatus === "success" || isWebSocketConnected ? (
-                  <span> WebSocket also ready for live streaming.</span>
+                  <span> WebSocket ready for live streaming.</span>
                 ) : (
                   <span> Configure WebSocket port for live streaming.</span>
                 )}
               </>
             ) : hasConnectionSettings ? (
               <>
-                <strong>Connection Failed:</strong> Please check your settings
+                <strong>Backend API Failed:</strong> Please check your settings
                 and ensure the backend is running.
               </>
             ) : (
@@ -314,6 +348,18 @@ function ConnectionSettings() {
               size="small"
               variant="outlined"
             />
+            {isBackendConnected && (
+              <Chip
+                label={
+                  isHardwareConnected
+                    ? "Hardware Connected"
+                    : "Hardware Disconnected"
+                }
+                color={isHardwareConnected ? "success" : "warning"}
+                size="small"
+                variant="outlined"
+              />
+            )}
             {websocketPort && (
               <Chip
                 label={`WebSocket ${getWebSocketStatusLabel(
@@ -334,7 +380,7 @@ function ConnectionSettings() {
             backend server.
           </Typography>
 
-          {/* Configuration Form */}
+          {/* Basic Configuration Form */}
           <Box
             component="form"
             sx={{
@@ -342,6 +388,7 @@ function ConnectionSettings() {
               gridTemplateColumns: "1fr 2fr",
               gap: 3,
               alignItems: "start",
+              mb: 3,
             }}
             autoComplete="off"
           >
@@ -361,7 +408,7 @@ function ConnectionSettings() {
             {/* IP Address */}
             <TextField
               id="ip-address"
-              label="IP Address"
+              label="IP Address / Hostname"
               type="text"
               value={hostIP}
               onChange={(e) =>
@@ -369,30 +416,60 @@ function ConnectionSettings() {
               }
               fullWidth
               placeholder="e.g., 192.168.1.100 or localhost"
-            />
-
-            {/* WebSocket Port */}
-            <TextField
-              id="port-websocket"
-              label="WebSocket Port"
-              type="text"
-              value={websocketPort}
-              onChange={(e) => setWebsocketPortState(e.target.value.trim())}
-              fullWidth
-              placeholder="e.g., 8001"
-            />
-
-            {/* API Port */}
-            <TextField
-              id="port-api"
-              label="API Port"
-              type="text"
-              value={apiPort}
-              onChange={(e) => setApiPortState(e.target.value.trim())}
-              fullWidth
-              placeholder="e.g., 8000"
+              helperText="Usually same as frontend URL"
             />
           </Box>
+
+          {/* Advanced Settings Accordion */}
+          <Accordion sx={{ mb: 3 }}>
+            <AccordionSummary
+              expandIcon={<ExpandMore />}
+              aria-controls="advanced-settings-content"
+              id="advanced-settings-header"
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Tune color="action" />
+                <Typography variant="subtitle1">Advanced Settings</Typography>
+              </Box>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Both services typically run on port 8001. Only change these if
+                you have a custom setup.
+              </Typography>
+
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 2fr",
+                  gap: 3,
+                  alignItems: "start",
+                }}
+              >
+                {/* WebSocket Port */}
+                <TextField
+                  id="port-websocket"
+                  label="WebSocket Port"
+                  type="text"
+                  value={websocketPort}
+                  onChange={(e) => setWebsocketPortState(e.target.value.trim())}
+                  fullWidth
+                  placeholder="e.g., 8001"
+                />
+
+                {/* API Port */}
+                <TextField
+                  id="port-api"
+                  label="API Port"
+                  type="text"
+                  value={apiPort}
+                  onChange={(e) => setApiPortState(e.target.value.trim())}
+                  fullWidth
+                  placeholder="e.g., 8001"
+                />
+              </Box>
+            </AccordionDetails>
+          </Accordion>
 
           {/* Current Configuration Preview */}
           {hasConnectionSettings && (
@@ -429,7 +506,9 @@ function ConnectionSettings() {
                       </ListItemIcon>
                       <ListItemText
                         primary="WebSocket Connection"
-                        secondary={`ws://${hostIP}:${websocketPort}`}
+                        secondary={`${
+                          hostProtocol === "https://" ? "wss" : "ws"
+                        }://${hostIP}:${websocketPort}`}
                       />
                       <Chip
                         label={getWebSocketStatusLabel(websocketTestStatus)}
@@ -472,6 +551,22 @@ function ConnectionSettings() {
             }
           >
             {isTestingConnection ? "Testing..." : "Test Connection"}
+          </Button>
+
+          {/* Reset to Smart Defaults Button */}
+          <Button
+            variant="text"
+            color="secondary"
+            onClick={() => {
+              const defaults = getSmartDefaults();
+              setHostProtocol(defaults.protocol);
+              setHostIP(defaults.hostname);
+              setWebsocketPortState(defaults.port);
+              setApiPortState(defaults.port);
+            }}
+            disabled={isTestingConnection || isSaving}
+          >
+            Reset to Defaults
           </Button>
 
           {/* Status Text */}

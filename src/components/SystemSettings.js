@@ -32,7 +32,7 @@ export default function SystemSettings() {
 
   // Get backend connection status
   const uc2State = useSelector(uc2Slice.getUc2State);
-  const isBackendConnected = uc2State.uc2Connected;
+  const isBackendConnected = uc2State.backendConnected; // API reachable (enables UI)
 
   // Safety toggles
   const [enableImSwitch, setEnableImSwitch] = useState(false);
