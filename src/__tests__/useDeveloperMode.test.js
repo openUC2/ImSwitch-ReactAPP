@@ -20,11 +20,13 @@ describe("useDeveloperMode", () => {
   beforeEach(() => {
     // Clear all mocks
     jest.clearAllMocks();
-    localStorageMock.getItem.mockReturnValue(null);
     mockDispatch.mockClear();
 
-    // Clear any existing developer mode state
-    localStorageMock.removeItem("imswitch_developer_mode");
+    // Reset localStorage mock to return null by default
+    localStorageMock.getItem.mockReset();
+    localStorageMock.setItem.mockReset();
+    localStorageMock.removeItem.mockReset();
+    localStorageMock.getItem.mockReturnValue(null);
 
     // Clear console.log spy if it exists
     if (console.log.mockRestore) {
@@ -76,10 +78,13 @@ describe("useDeveloperMode", () => {
       expect(consoleSpy).toHaveBeenCalledWith(
         "🔧 ImSwitch Developer Mode Activated"
       );
-      expect(window.showSnackbar).toHaveBeenCalledWith(
-        "🔧 Developer Mode Activated",
-        "success"
-      );
+      expect(mockDispatch).toHaveBeenCalledWith({
+        type: "notification/setNotification",
+        payload: {
+          message: "🔧 Developer Mode Activated",
+          type: "success",
+        },
+      });
 
       consoleSpy.mockRestore();
     });
@@ -100,10 +105,13 @@ describe("useDeveloperMode", () => {
         "imswitch_developer_mode"
       );
       expect(consoleSpy).toHaveBeenCalledWith("Developer Mode Deactivated");
-      expect(window.showSnackbar).toHaveBeenCalledWith(
-        "Developer Mode Deactivated",
-        "info"
-      );
+      expect(mockDispatch).toHaveBeenCalledWith({
+        type: "notification/setNotification",
+        payload: {
+          message: "Developer Mode Deactivated",
+          type: "info",
+        },
+      });
 
       consoleSpy.mockRestore();
     });
