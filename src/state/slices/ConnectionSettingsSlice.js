@@ -8,8 +8,8 @@ const getSmartDefaults = () => {
 
   return {
     ip: `${protocol}://${hostname}`,
-    websocketPort: 8001, // Both services now on same port
-    apiPort: 8001, // Team decision: unified port
+    websocketPort: 8001, // Both services now defaults on same port
+    apiPort: 8001,
   };
 };
 
