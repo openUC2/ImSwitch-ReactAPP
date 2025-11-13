@@ -10,14 +10,18 @@ const localStorageMock = {
 };
 global.localStorage = localStorageMock;
 
-// Mock window.showSnackbar
-global.window.showSnackbar = jest.fn();
+// Mock Redux hooks for testing
+const mockDispatch = jest.fn();
+jest.mock("react-redux", () => ({
+  useDispatch: () => mockDispatch,
+}));
 
 describe("useDeveloperMode", () => {
   beforeEach(() => {
     // Clear all mocks
     jest.clearAllMocks();
     localStorageMock.getItem.mockReturnValue(null);
+    mockDispatch.mockClear();
 
     // Clear any existing developer mode state
     localStorageMock.removeItem("imswitch_developer_mode");

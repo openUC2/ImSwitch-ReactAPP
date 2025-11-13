@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
+import { useDispatch } from "react-redux";
+import { setNotification } from "../state/slices/NotificationSlice.js";
 
 /**
  * Developer Mode Hook
@@ -29,6 +31,7 @@ const KONAMI_CODE = [
 const DEV_SEQUENCE = ["KeyD", "KeyE", "KeyV"];
 
 export const useDeveloperMode = () => {
+  const dispatch = useDispatch();
   const [isDeveloperMode, setIsDeveloperMode] = useState(false);
   const [konamiSequence, setKonamiSequence] = useState([]);
   const [devSequence, setDevSequence] = useState([]);
@@ -50,11 +53,14 @@ export const useDeveloperMode = () => {
     // Visual feedback
     console.log("🔧 ImSwitch Developer Mode Activated");
 
-    // Show notification if available
-    if (window.showSnackbar) {
-      window.showSnackbar("🔧 Developer Mode Activated", "success");
-    }
-  }, []);
+    // Show notification via Redux
+    dispatch(
+      setNotification({
+        message: "🔧 Developer Mode Activated",
+        type: "success",
+      })
+    );
+  }, [dispatch]);
 
   // Deactivate developer mode
   const deactivateDeveloperMode = useCallback(() => {
@@ -63,10 +69,14 @@ export const useDeveloperMode = () => {
 
     console.log("Developer Mode Deactivated");
 
-    if (window.showSnackbar) {
-      window.showSnackbar("Developer Mode Deactivated", "info");
-    }
-  }, []);
+    // Show notification via Redux
+    dispatch(
+      setNotification({
+        message: "Developer Mode Deactivated",
+        type: "info",
+      })
+    );
+  }, [dispatch]);
 
   // Handle keyboard events
   useEffect(() => {
