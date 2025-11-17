@@ -40,6 +40,7 @@ import notificationReducer from "./slices/NotificationSlice";
 import autofocusReducer from "./slices/AutofocusSlice";
 import socketDebugReducer from "./slices/SocketDebugSlice";
 import appManagerReducer from "./slices/appManagerSlice";
+import canOtaReducer from "./slices/canOtaSlice";
 
 //#####################################################################################
 // Nested persist config for liveStreamState
@@ -95,6 +96,7 @@ const rootReducer = combineReducers({
   autofocusState: autofocusReducer,
   socketDebugState: socketDebugReducer,
   appManager: appManagerReducer,
+  canOtaState: canOtaReducer,
 });
 
 //#####################################################################################

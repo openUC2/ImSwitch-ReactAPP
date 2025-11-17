@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { getConnectionSettingsState } from "../state/slices/ConnectionSettingsSlice";
 import * as uc2Slice from "../state/slices/UC2Slice.js"; // Add UC2 state for connection status
@@ -30,6 +30,7 @@ import {
   CheckCircle,
   ErrorOutline,
 } from "@mui/icons-material";
+import { fetchWithTimeout } from "../utils/fetchWithTimeout";
 
 /**
  * AboutPage Component - Enhanced version with modern UI
@@ -38,11 +39,61 @@ const AboutPage = () => {
   // Redux state management
   const connectionSettings = useSelector(getConnectionSettingsState);
   const uc2State = useSelector(uc2Slice.getUc2State);
-  const isBackendConnected = uc2State.uc2Connected;
+  const isBackendConnected = uc2State.backendConnected; // API reachable
 
   const hostIP = connectionSettings.ip || "http://localhost";
   const hostPort = connectionSettings.apiPort || "8000";
   const apiDocsUrl = `${hostIP}:${hostPort}/docs`;
+
+  // Backend version state
+  const [backendVersion, setBackendVersion] = useState(null);
+  const [versionLoading, setVersionLoading] = useState(false);
+
+  // Fetch backend version when component mounts and backend is connected
+  useEffect(() => {
+    const fetchBackendVersion = async () => {
+      if (!isBackendConnected) {
+        setBackendVersion(null);
+        return;
+      }
+
+      try {
+        setVersionLoading(true);
+
+        // Use cross-browser compatible fetch with timeout
+        const response = await fetchWithTimeout(
+          `${hostIP}:${hostPort}/version`,
+          { method: "GET" },
+          5000
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Backend version response:", data);
+
+          // Handle different possible response formats
+          const version =
+            data.version ||
+            data.imswitch_version ||
+            data.backend_version ||
+            data.app_version ||
+            (typeof data === "string" ? data : null);
+
+          setBackendVersion(version || "Unknown");
+        } else {
+          console.warn(`Backend version fetch failed: ${response.status}`);
+          setBackendVersion("Failed to fetch");
+        }
+      } catch (error) {
+        console.error("Error fetching backend version:", error);
+        setBackendVersion("Error fetching version");
+      } finally {
+        setVersionLoading(false);
+      }
+    };
+
+    fetchBackendVersion();
+  }, [isBackendConnected, hostIP, hostPort]);
 
   return (
     <Box sx={{ p: 3, maxWidth: 800, mx: "auto" }}>
@@ -86,10 +137,33 @@ const AboutPage = () => {
                   <Web fontSize="small" />
                 </ListItemIcon>
                 <ListItemText
-                  primary="App Version"
+                  primary="Frontend Version"
                   secondary={`Version: ${
                     process.env.REACT_APP_VERSION || "Unknown"
                   }`}
+                />
+              </ListItem>
+
+              {/* Backend Version */}
+              <ListItem>
+                <ListItemIcon>
+                  <Computer fontSize="small" />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Backend Version"
+                  secondary={
+                    versionLoading
+                      ? "Loading..."
+                      : isBackendConnected
+                      ? `Version: ${backendVersion || "Not available"}`
+                      : "Backend not connected"
+                  }
+                />
+                <Chip
+                  label={isBackendConnected ? "Connected" : "Disconnected"}
+                  color={isBackendConnected ? "success" : "error"}
+                  size="small"
+                  variant="outlined"
                 />
               </ListItem>
             </List>

@@ -1,12 +1,20 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-// Define the initial state
-const initialState = {
-  ip: `https://${window.location.hostname}`, //ip: "https://localhost", "https://imswitch.openuc2.com"
-  websocketPort: 8002,
-  apiPort: 8001,
-  //TODO protocol? seperated? http/https
+// Smart detection of frontend URL for backend defaults
+const getSmartDefaults = () => {
+  const location = window.location;
+  const protocol = location.protocol.replace(":", ""); // 'http' or 'https'
+  const hostname = location.hostname;
+
+  return {
+    ip: `${protocol}://${hostname}`,
+    websocketPort: 8001, // Both services now defaults on same port
+    apiPort: 8001,
+  };
 };
+
+// Define the initial state with smart defaults
+const initialState = getSmartDefaults();
 
 // Create webSocketSettingsSlice slice
 const connectionSettingsSlice = createSlice({

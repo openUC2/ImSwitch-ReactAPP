@@ -26,8 +26,10 @@ import {
   Tune,
   SystemUpdate,
   Storage,
+  Build,
 } from "@mui/icons-material";
 import { formatDiskUsage } from "../../utils/formatUtils";
+import { useDeveloperMode } from "../../utils/useDeveloperMode";
 
 // Redux state management following Copilot Instructions
 import { toggleTheme, getThemeState } from "../../state/slices/ThemeSlice.js";
@@ -45,6 +47,9 @@ const SettingsMenu = ({ onNavigate }) => {
   const [diskUsage, setDiskUsage] = useState(null);
   const open = Boolean(anchorEl);
 
+  // Developer Mode Hook - enables backdoor access when backend is offline
+  const { isDeveloperMode, deactivateDeveloperMode } = useDeveloperMode();
+
   const { isDarkMode } = useSelector(getThemeState);
   const connectionSettings = useSelector(
     connectionSettingsSlice.getConnectionSettingsState
@@ -52,7 +57,11 @@ const SettingsMenu = ({ onNavigate }) => {
 
   // Get actual backend connection status from UC2 slice - following Copilot Instructions
   const uc2State = useSelector(uc2Slice.getUc2State);
-  const isBackendConnected = uc2State.uc2Connected;
+  const isBackendConnected = uc2State.backendConnected; // API reachable (enables UI)
+  const isHardwareConnected = uc2State.uc2Connected; // Hardware connected
+
+  // Developer Override: Allow access to all features when developer mode is active
+  const allowAccess = isBackendConnected || isDeveloperMode;
 
   // API endpoint for disk usage - following Copilot Instructions for API communication
   const base = `${connectionSettings.ip}:${connectionSettings.apiPort}/UC2ConfigController`;
@@ -131,16 +140,31 @@ const SettingsMenu = ({ onNavigate }) => {
 
   return (
     <>
-      <Tooltip title="Settings & Configuration">
+      <Tooltip
+        title={
+          isDeveloperMode
+            ? "Settings & Configuration (🔧 Developer Mode)"
+            : "Settings & Configuration"
+        }
+      >
         <IconButton
           color="inherit"
           onClick={handleClick}
-          sx={{ ml: 1 }}
+          sx={{
+            ml: 1,
+            // Developer mode glow effect
+            ...(isDeveloperMode && {
+              boxShadow: "0 0 8px rgba(255, 152, 0, 0.5)",
+              backgroundColor: "rgba(255, 152, 0, 0.1)",
+            }),
+          }}
           aria-label="settings menu"
         >
           <Badge
             color={
-              isBackendConnected
+              isDeveloperMode
+                ? "warning" // 🔧 Developer mode overrides status
+                : isBackendConnected
                 ? "success"
                 : hasConnectionSettings
                 ? "error"
@@ -190,17 +214,21 @@ const SettingsMenu = ({ onNavigate }) => {
             <Chip
               label={
                 isBackendConnected
-                  ? "Connected"
+                  ? isHardwareConnected
+                    ? "Connected"
+                    : "API Connected"
                   : hasConnectionSettings
                   ? "Connection Failed"
                   : "Not Configured"
               }
               color={
                 isBackendConnected
-                  ? "success"
+                  ? isHardwareConnected
+                    ? "success" // ✅ Full connection
+                    : "warning" // 🟡 API only, no hardware
                   : hasConnectionSettings
-                  ? "error"
-                  : "warning"
+                  ? "error" // ❌ Connection failed
+                  : "warning" // ⚠️ Not configured
               }
               size="small"
               variant="outlined"
@@ -328,9 +356,9 @@ const SettingsMenu = ({ onNavigate }) => {
         {/* System Settings - Requires backend API calls */}
         <MenuItem
           onClick={() => handleNavigationClick("SystemSettings")}
-          disabled={!isBackendConnected}
+          disabled={!allowAccess}
           sx={{
-            opacity: isBackendConnected ? 1 : 0.5,
+            opacity: allowAccess ? 1 : 0.5,
             "&.Mui-disabled": {
               opacity: 0.5,
             },
@@ -339,14 +367,16 @@ const SettingsMenu = ({ onNavigate }) => {
           <ListItemIcon>
             <Tune
               fontSize="small"
-              color={isBackendConnected ? "inherit" : "disabled"}
+              color={allowAccess ? "inherit" : "disabled"}
             />
           </ListItemIcon>
           <ListItemText
             primary="System Settings"
             secondary={
-              isBackendConnected
-                ? "Hardware configuration"
+              allowAccess
+                ? isDeveloperMode && !isBackendConnected
+                  ? "Hardware configuration (Developer Mode)"
+                  : "Hardware configuration"
                 : "Requires backend connection"
             }
           />
@@ -355,9 +385,9 @@ const SettingsMenu = ({ onNavigate }) => {
         {/* ImSwitch Backend Settings */}
         <MenuItem
           onClick={() => handleNavigationClick("UC2")}
-          disabled={!isBackendConnected}
+          disabled={!allowAccess}
           sx={{
-            opacity: isBackendConnected ? 1 : 0.5,
+            opacity: allowAccess ? 1 : 0.5,
             "&.Mui-disabled": {
               opacity: 0.5,
             },
@@ -366,14 +396,16 @@ const SettingsMenu = ({ onNavigate }) => {
           <ListItemIcon>
             <Memory
               fontSize="small"
-              color={isBackendConnected ? "inherit" : "disabled"}
+              color={allowAccess ? "inherit" : "disabled"}
             />
           </ListItemIcon>
           <ListItemText
             primary="ImSwitch Backend Settings"
             secondary={
-              isBackendConnected
-                ? "Microscope configuration"
+              allowAccess
+                ? isDeveloperMode && !isBackendConnected
+                  ? "Microscope configuration (Developer Mode)"
+                  : "Microscope configuration"
                 : "Requires backend connection"
             }
           />
@@ -382,9 +414,9 @@ const SettingsMenu = ({ onNavigate }) => {
         {/* WiFi Configuration - Requires backend API calls for network management */}
         <MenuItem
           onClick={() => handleNavigationClick("WiFi")}
-          disabled={!isBackendConnected}
+          disabled={!allowAccess}
           sx={{
-            opacity: isBackendConnected ? 1 : 0.5,
+            opacity: allowAccess ? 1 : 0.5,
             "&.Mui-disabled": {
               opacity: 0.5,
             },
@@ -393,14 +425,16 @@ const SettingsMenu = ({ onNavigate }) => {
           <ListItemIcon>
             <Wifi
               fontSize="small"
-              color={isBackendConnected ? "inherit" : "disabled"}
+              color={allowAccess ? "inherit" : "disabled"}
             />
           </ListItemIcon>
           <ListItemText
             primary="WiFi Configuration"
             secondary={
-              isBackendConnected
-                ? "Network setup"
+              allowAccess
+                ? isDeveloperMode && !isBackendConnected
+                  ? "Network setup (Developer Mode)"
+                  : "Network setup"
                 : "Requires backend connection"
             }
           />
@@ -411,9 +445,9 @@ const SettingsMenu = ({ onNavigate }) => {
         {/* System Updates */}
         <MenuItem
           onClick={() => handleNavigationClick("SystemUpdate")}
-          disabled={!isBackendConnected}
+          disabled={!allowAccess}
           sx={{
-            opacity: isBackendConnected ? 1 : 0.5,
+            opacity: allowAccess ? 1 : 0.5,
             "&.Mui-disabled": {
               opacity: 0.5,
             },
@@ -422,20 +456,37 @@ const SettingsMenu = ({ onNavigate }) => {
           <ListItemIcon>
             <SystemUpdate
               fontSize="small"
-              color={isBackendConnected ? "inherit" : "disabled"}
+              color={allowAccess ? "inherit" : "disabled"}
             />
           </ListItemIcon>
           <ListItemText
             primary="System Updates"
             secondary={
-              isBackendConnected
-                ? "Update system & firmware"
+              allowAccess
+                ? isDeveloperMode && !isBackendConnected
+                  ? "Update system & firmware (Developer Mode)"
+                  : "Update system & firmware"
                 : "Requires backend connection"
             }
           />
         </MenuItem>
 
         <Divider />
+
+        {/* Developer Mode Toggle - Only visible when active */}
+        {isDeveloperMode && (
+          <MenuItem onClick={deactivateDeveloperMode}>
+            <ListItemIcon>
+              <Build fontSize="small" color="warning" />
+            </ListItemIcon>
+            <ListItemText
+              primary="Developer Mode"
+              secondary="Click to deactivate (🔧 Active)"
+            />
+          </MenuItem>
+        )}
+
+        {isDeveloperMode && <Divider />}
 
         {/* About - Always available (static information) */}
         <MenuItem onClick={() => handleNavigationClick("About")}>

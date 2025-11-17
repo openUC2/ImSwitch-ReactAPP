@@ -3,8 +3,8 @@ import { createSlice } from "@reduxjs/toolkit";
 // Define the initial state for the demo controller
 const initialDemoState = {
   // Demo parameters (matching the DemoParams model from the backend)
-  maxRangeX: 1000.0,
-  maxRangeY: 1000.0,
+  maxRangeX: 10000.0,
+  maxRangeY: 10000.0,
   scanningScheme: "random",
   illuminationMode: "random",
   
@@ -17,8 +17,8 @@ const initialDemoState = {
   numRandomPositions: 10,
   
   // Demo control parameters
-  dwellTime: 2.0,
-  totalRunTime: 60.0,
+  dwellTime: 0.5,
+  totalRunTime: 600000.0,
   
   // Demo results
   isRunning: false,
