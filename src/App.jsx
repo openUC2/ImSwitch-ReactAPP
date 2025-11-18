@@ -22,6 +22,7 @@ import LargeFovScanController from "./components/OpenLayers.js";
 import SocketView from "./components/SocketView.js";
 import StageOffsetCalibration from "./components/StageOffsetCalibrationController.jsx";
 import STORMControllerArkitekt from "./components/STORMControllerArkitekt.js";
+import FRAMESettingsController from "./components/FRAMESettingsController.js";
 import STORMControllerLocal from "./components/STORMControllerLocal.js";
 import StresstestController from "./components/StresstestController.js";
 import SystemSettings from "./components/SystemSettings.js";
@@ -427,6 +428,7 @@ function App() {
           )}
           {selectedPlugin === "STORMLocal" && <STORMControllerLocal />}
           {selectedPlugin === "STORMArkitekt" && <STORMControllerArkitekt />}
+          {selectedPlugin === "FRAMESettings" && <FRAMESettingsController />}
           {selectedPlugin === "Stresstest" && <StresstestController />}
           {selectedPlugin === "FocusLock" && <FocusLockController />}
           {selectedPlugin === "JupyterNotebook" && (

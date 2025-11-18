@@ -127,6 +127,28 @@ export const APP_REGISTRY = {
     pluginId: "STORMArkitekt",
   },
 
+  frameSettings: {
+    id: "frameSettings",
+    name: "FRAMESettings",
+    description:
+      "Comprehensive settings for FRAMEModule including pixel calibration, stage tracking, and laser configuration.",
+    category: APP_CATEGORIES.APPS,
+    icon: CropFreeIcon,
+    enabled: false,
+    essential: false,
+    keywords: [
+      "frame",
+      "settings",
+      "pixel",
+      "calibration",
+      "stage",
+      "tracking",
+      "laser",
+      "configuration",
+    ],
+    pluginId: "FRAMESettings",
+  },
+
   infinityScanning: {
     id: "infinityScanning",
     name: "Infinity Scanning",
