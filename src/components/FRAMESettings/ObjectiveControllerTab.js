@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Box, 
   Button, 
@@ -20,6 +20,7 @@ import * as objectiveSlice from '../../state/slices/ObjectiveSlice';
 import apiObjectiveControllerMoveToObjective from '../../backendapi/apiObjectiveControllerMoveToObjective';
 import apiObjectiveControllerGetCurrentObjective from '../../backendapi/apiObjectiveControllerGetCurrentObjective';
 import apiObjectiveControllerGetStatus from '../../backendapi/apiObjectiveControllerGetStatus';
+import apiPixelCalibrationControllerOverviewStream from '../../backendapi/apiPixelCalibrationControllerOverviewStream';
 import fetchObjectiveControllerGetStatus from '../../middleware/fetchObjectiveControllerGetStatus';
 import fetchObjectiveControllerGetCurrentObjective from '../../middleware/fetchObjectiveControllerGetCurrentObjective';
 
@@ -39,6 +40,11 @@ const ObjectiveControllerTab = () => {
   const hostIP = connectionSettings.ip;
   const hostPort = connectionSettings.apiPort;
 
+  // Overview stream state
+  const [overviewStreamUrl, setOverviewStreamUrl] = useState('');
+  const [overviewStreamActive, setOverviewStreamActive] = useState(false);
+  const overviewImgRef = useRef(null);
+
   // UI state
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState('');
@@ -55,6 +61,30 @@ const ObjectiveControllerTab = () => {
   useEffect(() => {
     refreshObjectiveStatus();
   }, []);
+
+  // Set up overview stream URL
+  useEffect(() => {
+    if (hostIP && hostPort) {
+      setOverviewStreamUrl(`${hostIP}:${hostPort}/PixelCalibrationController/overviewStream`);
+    }
+  }, [hostIP, hostPort]);
+
+  // Handle overview stream toggle
+  const handleOverviewStreamToggle = async () => {
+    try {
+      const newStreamState = !overviewStreamActive;
+      
+      if (!newStreamState) {
+        // Stop stream via API
+        await apiPixelCalibrationControllerOverviewStream(false);
+      }
+      
+      setOverviewStreamActive(newStreamState);
+      setStatus(newStreamState ? 'Overview stream started' : 'Overview stream stopped');
+    } catch (err) {
+      setError(`Failed to toggle overview stream: ${err.message}`);
+    }
+  };
 
   // Refresh objective status from backend
   const refreshObjectiveStatus = async () => {
@@ -122,6 +152,59 @@ const ObjectiveControllerTab = () => {
   return (
     <Box>
       <Grid container spacing={3}>
+        {/* Top: Overview Camera */}
+        <Grid item xs={12}>
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              Overview Camera Stream
+            </Typography>
+            
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Wide field view to verify objective position and field of view
+            </Typography>
+            
+            <Box sx={{ mb: 2 }}>
+              <Button 
+                variant="contained" 
+                onClick={handleOverviewStreamToggle}
+              >
+                {overviewStreamActive ? 'Stop Stream' : 'Start Stream'}
+              </Button>
+            </Box>
+
+            <Box 
+              sx={{ 
+                backgroundColor: 'black', 
+                minHeight: 300,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              {overviewStreamActive ? (
+                <img
+                  ref={overviewImgRef}
+                  src={overviewStreamUrl}
+                  alt="Overview Camera"
+                  style={{ 
+                    display: 'block',
+                    margin: 'auto',
+                    maxWidth: '100%', 
+                    maxHeight: 300,
+                    objectFit: 'contain',
+                    WebkitUserSelect: 'none'
+                  }}
+                />
+              ) : (
+                <Typography color="white">
+                  Stream not active
+                </Typography>
+              )}
+            </Box>
+          </Paper>
+        </Grid>
+
+        {/* Bottom Row: Status and Controls */}
         {/* Left: Current Status */}
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 2, mb: 2 }}>

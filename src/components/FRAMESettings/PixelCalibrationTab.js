@@ -18,7 +18,9 @@ import {
 import { useSelector } from 'react-redux';
 import { getConnectionSettingsState } from '../../state/slices/ConnectionSettingsSlice';
 
+import LiveViewControlWrapper from '../../axon/LiveViewControlWrapper';
 import apiPixelCalibrationControllerCalibrateStageAffine from '../../backendapi/apiPixelCalibrationControllerCalibrateStageAffine';
+import apiPixelCalibrationControllerOverviewStream from '../../backendapi/apiPixelCalibrationControllerOverviewStream';
 
 /**
  * PixelCalibrationTab - Stage affine calibration
@@ -36,7 +38,8 @@ const PixelCalibrationTab = () => {
   const hostPort = connectionSettings.apiPort;
 
   // Stream state
-  const [streamUrl, setStreamUrl] = useState('');
+  const [overviewStreamUrl, setOverviewStreamUrl] = useState('');
+  const [overviewStreamActive, setOverviewStreamActive] = useState(false);
   
   // Calibration parameters
   const [objectiveId, setObjectiveId] = useState(0);
@@ -51,16 +54,32 @@ const PixelCalibrationTab = () => {
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
 
-  // Reference for live stream image
-  const imgRef = useRef(null);
+  // References for streams
+  const overviewImgRef = useRef(null);
 
-  // Set up stream URL for live view
+  // Set up overview stream URL
   useEffect(() => {
     if (hostIP && hostPort) {
-      // Use the main detector live stream
-      setStreamUrl(`${hostIP}:${hostPort}/video_feeder`);
+      setOverviewStreamUrl(`${hostIP}:${hostPort}/PixelCalibrationController/overviewStream`);
     }
   }, [hostIP, hostPort]);
+
+  // Handle overview stream toggle
+  const handleOverviewStreamToggle = async () => {
+    try {
+      const newStreamState = !overviewStreamActive;
+      
+      if (!newStreamState) {
+        // Stop stream via API
+        await apiPixelCalibrationControllerOverviewStream(false);
+      }
+      
+      setOverviewStreamActive(newStreamState);
+      setStatus(newStreamState ? 'Overview stream started' : 'Overview stream stopped');
+    } catch (err) {
+      setError(`Failed to toggle overview stream: ${err.message}`);
+    }
+  };
 
   // Start calibration
   const handleCalibrateAffine = async () => {
@@ -91,46 +110,77 @@ const PixelCalibrationTab = () => {
   return (
     <Box>
       <Grid container spacing={3}>
-        {/* Left: Live Detector Stream */}
+        {/* Left: Dual Camera View */}
         <Grid item xs={12} md={7}>
-          <Paper sx={{ p: 2 }}>
+          {/* Overview Camera */}
+          <Paper sx={{ p: 2, mb: 2 }}>
             <Typography variant="h6" gutterBottom>
-              Detector Live Stream
+              Overview Camera
             </Typography>
             
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Monitor detector image during calibration process
+              Wide field view for stage position monitoring
             </Typography>
 
-            {/* Live Stream Display */}
+            <Box sx={{ mb: 2 }}>
+              <Button 
+                variant="contained" 
+                onClick={handleOverviewStreamToggle}
+              >
+                {overviewStreamActive ? 'Stop Overview Stream' : 'Start Overview Stream'}
+              </Button>
+            </Box>
+
             <Box 
               sx={{ 
                 backgroundColor: 'black', 
-                minHeight: 500,
+                minHeight: 300,
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                position: 'relative'
+                justifyContent: 'center'
               }}
             >
-              <img
-                ref={imgRef}
-                src={streamUrl}
-                alt="Detector Live Stream"
-                style={{ 
-                  maxWidth: '100%', 
-                  maxHeight: 600,
-                  objectFit: 'contain'
-                }}
-                onError={() => {
-                  // Stream might not be active
-                }}
-              />
+              {overviewStreamActive ? (
+                <img
+                  ref={overviewImgRef}
+                  src={overviewStreamUrl}
+                  alt="Overview Camera"
+                  style={{ 
+                    maxWidth: '100%', 
+                    maxHeight: 300,
+                    objectFit: 'contain'
+                  }}
+                />
+              ) : (
+                <Typography color="white">
+                  Stream not active
+                </Typography>
+              )}
             </Box>
-            
-            <Typography variant="caption" display="block" sx={{ mt: 1, color: 'text.secondary' }}>
-              Note: Live stream must be started from Live View tab
+          </Paper>
+
+          {/* Detector Camera */}
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              Detector Camera
             </Typography>
+            
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              High-resolution view for calibration verification
+            </Typography>
+
+            <Box 
+              sx={{ 
+                border: '1px solid #ddd',
+                borderRadius: 2,
+                overflow: 'hidden',
+                minHeight: 400,
+                maxHeight: 500,
+                backgroundColor: '#000'
+              }}
+            >
+              <LiveViewControlWrapper useFastMode={true} />
+            </Box>
           </Paper>
         </Grid>
 

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Box, 
   Button, 
@@ -18,9 +18,11 @@ import { useSelector } from 'react-redux';
 import { getConnectionSettingsState } from '../../state/slices/ConnectionSettingsSlice';
 
 import IlluminationController from '../IlluminationController';
+import LiveViewControlWrapper from '../../axon/LiveViewControlWrapper';
 import apiLaserControllerSetLaserChannelIndex from '../../backendapi/apiLaserControllerSetLaserChannelIndex';
 import apiLaserControllerGetLaserNames from '../../backendapi/apiLaserControllerGetLaserNames';
 import apiLEDMatrixControllerSetAllLED from '../../backendapi/apiLEDMatrixControllerSetAllLED';
+import apiPixelCalibrationControllerOverviewStream from '../../backendapi/apiPixelCalibrationControllerOverviewStream';
 
 /**
  * SetLasersTab - Laser channel configuration and testing
@@ -36,9 +38,12 @@ const SetLasersTab = () => {
   const hostIP = connectionSettings.ip;
   const hostPort = connectionSettings.apiPort;
 
-  // Stream state
-  const [streamUrl, setStreamUrl] = useState('');
-  const [streamActive, setStreamActive] = useState(false);
+  // Overview stream state
+  const [overviewStreamUrl, setOverviewStreamUrl] = useState('');
+  const [overviewStreamActive, setOverviewStreamActive] = useState(false);
+  const overviewImgRef = useRef(null);
+
+  // LED matrix state
   const [ledEnabled, setLedEnabled] = useState(false);
   
   // Laser names and channel mapping
@@ -51,8 +56,12 @@ const SetLasersTab = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Reference for live stream image
-  const imgRef = useRef(null);
+  // Set up overview stream URL
+  useEffect(() => {
+    if (hostIP && hostPort) {
+      setOverviewStreamUrl(`${hostIP}:${hostPort}/PixelCalibrationController/overviewStream`);
+    }
+  }, [hostIP, hostPort]);
 
   // Fetch available laser names on mount
   useEffect(() => {
@@ -79,12 +88,22 @@ const SetLasersTab = () => {
     }
   }, [hostIP, hostPort]);
 
-  // Set up stream URL for live view (using LiveViewController MJPEG endpoint)
-  useEffect(() => {
-    if (hostIP && hostPort) {
-      setStreamUrl(`${hostIP}:${hostPort}/LiveViewController/mjpeg_stream?startStream=true`);
+  // Handle overview stream toggle
+  const handleOverviewStreamToggle = async () => {
+    try {
+      const newStreamState = !overviewStreamActive;
+      
+      if (!newStreamState) {
+        // Stop stream via API
+        await apiPixelCalibrationControllerOverviewStream(false);
+      }
+      
+      setOverviewStreamActive(newStreamState);
+      setStatus(newStreamState ? 'Overview stream started' : 'Overview stream stopped');
+    } catch (err) {
+      setError(`Failed to toggle overview stream: ${err.message}`);
     }
-  }, [hostIP, hostPort]);
+  };
 
   // Toggle LED matrix
   const handleLedToggle = async (event) => {
@@ -218,57 +237,79 @@ const SetLasersTab = () => {
           )}
         </Grid>
 
-        {/* Right: Live Stream */}
+        {/* Right: Live Streams */}
         <Grid item xs={12} md={7}>
-          <Paper sx={{ p: 2 }}>
+          {/* Overview Camera Stream */}
+          <Paper sx={{ p: 2, mb: 2 }}>
             <Typography variant="h6" gutterBottom>
-              Live Stream (Detector)
+              Overview Camera Stream
             </Typography>
             
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              View the detector image to verify laser illumination and channel mapping
+              Wide field view to see laser illumination pattern
             </Typography>
             
             <Box sx={{ mb: 2 }}>
               <Button 
                 variant="contained" 
-                onClick={() => setStreamActive(!streamActive)}
-                sx={{ mr: 2 }}
+                onClick={handleOverviewStreamToggle}
               >
-                {streamActive ? 'Stop Stream' : 'Start Stream'}
+                {overviewStreamActive ? 'Stop Overview Stream' : 'Start Overview Stream'}
               </Button>
             </Box>
 
-            {/* Live Stream Display */}
             <Box 
               sx={{ 
                 backgroundColor: 'black', 
-                minHeight: 500,
+                minHeight: 300,
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                position: 'relative'
+                justifyContent: 'center'
               }}
             >
-              {streamActive ? (
+              {overviewStreamActive ? (
                 <img
-                  ref={imgRef}
-                  src={streamUrl}
-                  alt="Live Detector Stream"
+                  ref={overviewImgRef}
+                  src={overviewStreamUrl}
+                  alt="Overview Camera"
                   style={{ 
                     display: 'block',
                     margin: 'auto',
                     maxWidth: '100%', 
-                    maxHeight: 600,
+                    maxHeight: 300,
                     objectFit: 'contain',
                     WebkitUserSelect: 'none'
                   }}
                 />
               ) : (
                 <Typography color="white">
-                  Stream not active. Click "Start Stream" to begin.
+                  Stream not active
                 </Typography>
               )}
+            </Box>
+          </Paper>
+
+          {/* Detector Stream */}
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              Detector Stream
+            </Typography>
+            
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              High-resolution view to verify laser illumination and channel mapping
+            </Typography>
+
+            <Box 
+              sx={{ 
+                border: '1px solid #ddd',
+                borderRadius: 2,
+                overflow: 'hidden',
+                minHeight: 400,
+                maxHeight: 500,
+                backgroundColor: '#000'
+              }}
+            >
+              <LiveViewControlWrapper useFastMode={true} />
             </Box>
           </Paper>
         </Grid>

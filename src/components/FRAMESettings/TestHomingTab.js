@@ -22,6 +22,7 @@ import { getConnectionSettingsState } from '../../state/slices/ConnectionSetting
 
 import apiPositionerControllerHomeAxis from '../../backendapi/apiPositionerControllerHomeAxis';
 import apiPixelCalibrationControllerOverviewVerifyHoming from '../../backendapi/apiPixelCalibrationControllerOverviewVerifyHoming';
+import apiPixelCalibrationControllerOverviewStream from '../../backendapi/apiPixelCalibrationControllerOverviewStream';
 
 /**
  * TestHomingTab - Axis homing verification
@@ -39,6 +40,7 @@ const TestHomingTab = () => {
 
   // Stream state
   const [streamUrl, setStreamUrl] = useState('');
+  const [streamActive, setStreamActive] = useState(false);
   
   // UI state
   const [loading, setLoading] = useState(false);
@@ -69,9 +71,26 @@ const TestHomingTab = () => {
   // Set up stream URL
   useEffect(() => {
     if (hostIP && hostPort) {
-      setStreamUrl(`${hostIP}:${hostPort}/PixelCalibrationController/overviewStreamMJPEG`);
+      setStreamUrl(`${hostIP}:${hostPort}/PixelCalibrationController/overviewStream`);
     }
   }, [hostIP, hostPort]);
+
+  // Handle stream toggle
+  const handleStreamToggle = async () => {
+    try {
+      const newStreamState = !streamActive;
+      
+      if (!newStreamState) {
+        // Stop stream via API
+        await apiPixelCalibrationControllerOverviewStream(false);
+      }
+      
+      setStreamActive(newStreamState);
+      setStatus(newStreamState ? 'Stream started' : 'Stream stopped');
+    } catch (err) {
+      setError(`Failed to toggle stream: ${err.message}`);
+    }
+  };
 
   // Home single axis
   const handleHomeAxis = async (axis) => {
@@ -140,6 +159,16 @@ const TestHomingTab = () => {
               Visual verification of stage position during homing
             </Typography>
 
+            {/* Stream Control */}
+            <Box sx={{ mb: 2 }}>
+              <Button 
+                variant="contained" 
+                onClick={handleStreamToggle}
+              >
+                {streamActive ? 'Stop Stream' : 'Start Stream'}
+              </Button>
+            </Box>
+
             {/* MJPEG Stream Display */}
             <Box 
               sx={{ 
@@ -151,24 +180,26 @@ const TestHomingTab = () => {
                 position: 'relative'
               }}
             >
-              <img
-                ref={imgRef}
-                src={streamUrl}
-                alt="Overview Camera"
-                style={{ 
-                  maxWidth: '100%', 
-                  maxHeight: 600,
-                  objectFit: 'contain'
-                }}
-                onError={() => {
-                  // Stream might not be active
-                }}
-              />
+              {streamActive ? (
+                <img
+                  ref={imgRef}
+                  src={streamUrl}
+                  alt="Overview Camera"
+                  style={{ 
+                    maxWidth: '100%', 
+                    maxHeight: 600,
+                    objectFit: 'contain'
+                  }}
+                  onError={() => {
+                    // Stream might not be active
+                  }}
+                />
+              ) : (
+                <Typography color="white">
+                  Stream not active
+                </Typography>
+              )}
             </Box>
-            
-            <Typography variant="caption" display="block" sx={{ mt: 1, color: 'text.secondary' }}>
-              Note: Start the overview stream from Track Motion tab
-            </Typography>
           </Paper>
         </Grid>
 
