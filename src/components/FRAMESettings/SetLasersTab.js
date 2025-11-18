@@ -159,7 +159,7 @@ const SetLasersTab = () => {
             </Typography>
             
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Associate laser names with channel indices
+              Associate laser names with channel indices (Becomes available after restarting ImSwitch)
             </Typography>
             
             <FormControl fullWidth sx={{ mb: 2 }}>
