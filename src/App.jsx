@@ -22,6 +22,7 @@ import LargeFovScanController from "./components/OpenLayers.js";
 import SocketView from "./components/SocketView.js";
 import StageOffsetCalibration from "./components/StageOffsetCalibrationController.jsx";
 import STORMControllerArkitekt from "./components/STORMControllerArkitekt.js";
+import FRAMESettingsController from "./components/FRAMESettingsController.js";
 import STORMControllerLocal from "./components/STORMControllerLocal.js";
 import StresstestController from "./components/StresstestController.js";
 import SystemSettings from "./components/SystemSettings.js";
@@ -31,6 +32,7 @@ import UC2ConfigurationController from "./components/UC2ConfigurationController.
 import SerialDebugController from "./components/SerialDebugController.jsx";
 import WiFiController from "./components/WiFiController.jsx";
 import { JupyterProvider } from "./context/JupyterContext.js";
+import DemoController from "./components/DemoController.js";
 
 // ImSwitch Navigation Drawer
 import { NavigationDrawer, TopBar } from "./components/navigation";
@@ -427,6 +429,7 @@ function App() {
           )}
           {selectedPlugin === "STORMLocal" && <STORMControllerLocal />}
           {selectedPlugin === "STORMArkitekt" && <STORMControllerArkitekt />}
+          {selectedPlugin === "FRAMESettings" && <FRAMESettingsController />}
           {selectedPlugin === "Stresstest" && <StresstestController />}
           {selectedPlugin === "FocusLock" && <FocusLockController />}
           {selectedPlugin === "JupyterNotebook" && (
@@ -487,6 +490,7 @@ function App() {
                 </Suspense>
               )
           )}
+          {selectedPlugin === "DemoController" && <DemoController />}
           {selectedPlugin === "FlowStop" && <FlowStopController />}
           {selectedPlugin === "StageOffsetCalibration" && (
             <StageOffsetCalibration />

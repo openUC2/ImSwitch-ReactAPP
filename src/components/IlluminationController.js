@@ -7,6 +7,7 @@ import * as parameterRangeSlice from "../state/slices/ParameterRangeSlice.js";
 import * as connectionSettingsSlice from "../state/slices/ConnectionSettingsSlice.js";
 import fetchExperimentControllerGetCurrentExperimentParams from "../middleware/fetchExperimentControllerGetCurrentExperimentParams.js";
 import fetchLaserControllerCurrentValues from "../middleware/fetchLaserControllerCurrentValues.js";
+import apiLaserControllerGetLaserChannelIndex from "../backendapi/apiLaserControllerGetLaserChannelIndex.js";
 
 export default function IlluminationController({ hostIP, hostPort }) {
   const dispatch = useDispatch();
@@ -16,8 +17,9 @@ export default function IlluminationController({ hostIP, hostPort }) {
   const experimentState = useSelector((state) => state.experimentState);
   const connectionSettingsState = useSelector(connectionSettingsSlice.getConnectionSettingsState);
   
-  // Local state for laser active status since it's not in Redux yet
+  // Local state for laser active status and channel indices
   const [laserActiveStates, setLaserActiveStates] = useState([]);
+  const [laserChannelIndices, setLaserChannelIndices] = useState([]);
 
   // Debounce refs for laser value updates to prevent serial overload
   const laserTimeoutRefs = useRef([]);
@@ -38,6 +40,23 @@ export default function IlluminationController({ hostIP, hostPort }) {
       
       if (ip && port) {
         fetchLaserControllerCurrentValues(dispatch, { ip, apiPort: port }, parameterRangeState.illuSources);
+        
+        // Fetch channel indices for all lasers
+        const fetchChannelIndices = async () => {
+          const indices = await Promise.all(
+            parameterRangeState.illuSources.map(async (laserName) => {
+              try {
+                const channelIndex = await apiLaserControllerGetLaserChannelIndex(laserName);
+                return channelIndex !== null ? channelIndex : '?';
+              } catch (err) {
+                console.error(`Failed to get channel index for ${laserName}:`, err);
+                return '?';
+              }
+            })
+          );
+          setLaserChannelIndices(indices);
+        };
+        fetchChannelIndices();
       }
       
       // Initialize active states for each laser (default to false)
@@ -162,6 +181,10 @@ export default function IlluminationController({ hostIP, hostPort }) {
 
   return (
     <Paper sx={{ p: 2 }}>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        Channel indices shown in brackets. Adjust laser intensity and observe the color change on the detector stream to verify the laser-to-channel mapping.
+      </Typography>
+      
       <Grid container direction="column" spacing={2}>
         
         {laserSources.length ? (
@@ -170,6 +193,7 @@ export default function IlluminationController({ hostIP, hostPort }) {
             const minValue = laserMinValues[idx] || 0;
             const maxValue = laserMaxValues[idx] || 1023;
             const isActive = laserActiveStates[idx] || false;
+            const channelIndex = laserChannelIndices[idx] !== undefined ? laserChannelIndices[idx] : '?';
             
             return (
               <Grid
@@ -177,8 +201,10 @@ export default function IlluminationController({ hostIP, hostPort }) {
                 key={laserName}
                 sx={{ display: "flex", alignItems: "center", gap: 2 }}
               >
-                {/* Laser name */}
-                <Typography sx={{ minWidth: 80 }}>{laserName}</Typography>
+                {/* Laser name with channel index */}
+                <Typography sx={{ minWidth: 120 }}>
+                  {laserName} <span style={{ color: '#888' }}>[{channelIndex}]</span>
+                </Typography>
 
                 {/* Slider with dynamic min and max */}
                 <Box sx={{ flex: 1, px: 1 }}>
