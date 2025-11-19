@@ -127,6 +127,19 @@ export const APP_REGISTRY = {
     pluginId: "STORMArkitekt",
   },
 
+  demoController: {
+    id: "demoController",
+    name: "Demo Controller",
+    description:
+      "Simulated microscopy environment for training and testing. Explore ImSwitch features without hardware.",
+    category: APP_CATEGORIES.APPS,
+    icon: SportsEsportsIcon,
+    enabled: false,
+    essential: false,
+    keywords: ["demo", "simulation", "training", "testing", "features"],
+    pluginId: "DemoController",
+  },
+
   frameSettings: {
     id: "frameSettings",
     name: "FRAMESettings",

@@ -13,7 +13,8 @@ import {
   CircularProgress,
   Accordion,
   AccordionSummary,
-  AccordionDetails
+  AccordionDetails,
+  Slider
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useSelector } from 'react-redux';
@@ -26,7 +27,11 @@ import apiPixelCalibrationControllerGridSetConfig from '../../backendapi/apiPixe
 import apiPixelCalibrationControllerGridDetectTags from '../../backendapi/apiPixelCalibrationControllerGridDetectTags';
 import apiPixelCalibrationControllerGridMoveToTag from '../../backendapi/apiPixelCalibrationControllerGridMoveToTag';
 import apiPixelCalibrationControllerToggleAprilTagOverlay from '../../backendapi/apiPixelCalibrationControllerToggleAprilTagOverlay';
-import apiLEDMatrixControllerSetAllLED from '../../backendapi/apiLEDMatrixControllerSetAllLED';
+import apiLaserControllerGetLaserActive from '../../backendapi/apiLaserControllerGetLaserActive';
+import apiLaserControllerSetLaserActive from '../../backendapi/apiLaserControllerSetLaserActive';
+import apiLaserControllerGetLaserValue from '../../backendapi/apiLaserControllerGetLaserValue';
+import apiLaserControllerSetLaserValue from '../../backendapi/apiLaserControllerSetLaserValue';
+import apiLaserControllerGetLaserValueRanges from '../../backendapi/apiLaserControllerGetLaserValueRanges';
 
 /**
  * TrackMotionTab - AprilTag grid calibration and motion tracking
@@ -50,6 +55,9 @@ const TrackMotionTab = () => {
   // UI state
   const [overlayEnabled, setOverlayEnabled] = useState(true);
   const [ledEnabled, setLedEnabled] = useState(false);
+  const [ledIntensity, setLedIntensity] = useState(0);
+  const [ledMinValue, setLedMinValue] = useState(0);
+  const [ledMaxValue, setLedMaxValue] = useState(255);
   const [rotation180, setRotation180] = useState(false);
   const [developerMode, setDeveloperMode] = useState(false);
   
@@ -82,6 +90,31 @@ const TrackMotionTab = () => {
       setStreamUrl(`${hostIP}:${hostPort}/PixelCalibrationController/overviewStream`);
     }
   }, [hostIP, hostPort]);
+
+  // Fetch LED state and value ranges on mount
+  useEffect(() => {
+    const fetchLedState = async () => {
+      try {
+        // Fetch current LED active state
+        const active = await apiLaserControllerGetLaserActive('LED');
+        setLedEnabled(active);
+        
+        // Fetch current LED intensity value
+        const value = await apiLaserControllerGetLaserValue('LED');
+        setLedIntensity(value);
+        
+        // Fetch LED value ranges
+        const [min, max] = await apiLaserControllerGetLaserValueRanges('LED');
+        setLedMinValue(min);
+        setLedMaxValue(max);
+      } catch (err) {
+        console.warn('Failed to fetch LED state:', err);
+        // Use defaults if fetch fails
+      }
+    };
+    
+    fetchLedState();
+  }, []);
 
   // Handle stream start/stop
   const handleStreamToggle = async () => {
@@ -124,15 +157,27 @@ const TrackMotionTab = () => {
     }
   };
 
-  // Toggle LED matrix
+  // Toggle LED active state
   const handleLedToggle = async (event) => {
     const enabled = event.target.checked;
     try {
-      await apiLEDMatrixControllerSetAllLED(enabled ? 255 : 0);
+      await apiLaserControllerSetLaserActive('LED', enabled);
       setLedEnabled(enabled);
-      setStatus(`LED matrix ${enabled ? 'enabled' : 'disabled'}`);
+      setStatus(`LED ${enabled ? 'enabled' : 'disabled'}`);
     } catch (err) {
       setError(`Failed to toggle LED: ${err.message}`);
+    }
+  };
+
+  // Handle LED intensity change
+  const handleLedIntensityChange = async (event, value) => {
+    setLedIntensity(value);
+    
+    // Debounce backend update
+    try {
+      await apiLaserControllerSetLaserValue('LED', value);
+    } catch (err) {
+      console.error('Failed to update LED intensity:', err);
     }
   };
 
@@ -260,15 +305,28 @@ const TrackMotionTab = () => {
                 label="AprilTag Overlay"
               />
               
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={ledEnabled}
-                    onChange={handleLedToggle}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 300 }}>
+                <Typography variant="body2" sx={{ minWidth: 60 }}>LED</Typography>
+                <Box sx={{ flex: 1, px: 1 }}>
+                  <Slider
+                    value={ledIntensity}
+                    onChange={handleLedIntensityChange}
+                    min={ledMinValue}
+                    max={ledMaxValue}
+                    valueLabelDisplay="auto"
+                    size="small"
+                    disabled={!ledEnabled}
                   />
-                }
-                label="LED Matrix"
-              />
+                </Box>
+                <Typography sx={{ minWidth: 40, textAlign: 'center' }}>
+                  {ledIntensity}
+                </Typography>
+                <Switch
+                  checked={ledEnabled}
+                  onChange={handleLedToggle}
+                  size="small"
+                />
+              </Box>
             </Box>
 
             {/* MJPEG Stream Display */}
@@ -511,7 +569,7 @@ const TrackMotionTab = () => {
 
           {/* Results Display */}
           {result && (
-            <Paper sx={{ p: 2, mt: 2, backgroundColor: '#f5f5f5' }}>
+            <Paper sx={{ p: 2, mt: 2, backgroundColor: (theme) => theme.palette.background.paper }}>
               <Typography variant="h6" gutterBottom>
                 Result
               </Typography>

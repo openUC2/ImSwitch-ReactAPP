@@ -32,6 +32,7 @@ import UC2ConfigurationController from "./components/UC2ConfigurationController.
 import SerialDebugController from "./components/SerialDebugController.jsx";
 import WiFiController from "./components/WiFiController.jsx";
 import { JupyterProvider } from "./context/JupyterContext.js";
+import DemoController from "./components/DemoController.js";
 
 // ImSwitch Navigation Drawer
 import { NavigationDrawer, TopBar } from "./components/navigation";
@@ -489,6 +490,7 @@ function App() {
                 </Suspense>
               )
           )}
+          {selectedPlugin === "DemoController" && <DemoController />}
           {selectedPlugin === "FlowStop" && <FlowStopController />}
           {selectedPlugin === "StageOffsetCalibration" && (
             <StageOffsetCalibration />
