@@ -50,6 +50,11 @@ export const darkTheme = createTheme({
           src: local('Roboto Bold'),
                url('/imswitch/fonts/Roboto-Bold.ttf') format('truetype');
         }
+        
+        /* Default zoom for better Mac display */
+        html {
+          zoom: 90%;
+        }
       `,
     },
   },
