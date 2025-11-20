@@ -24,6 +24,7 @@ import {
   Thermostat as ThermostatIcon,
   Insights as InsightsIcon,
   PhotoCamera as PhotoCameraIcon,
+  Visibility as VisibilityIcon,
   // Coding-specific icons
   MenuBook as MenuBookIcon,
   Psychology as PsychologyIcon,
@@ -306,6 +307,19 @@ export const APP_REGISTRY = {
     essential: false,
     keywords: ["focus", "lock", "stabilization", "feedback", "longterm"],
     pluginId: "FocusLock",
+  },
+
+  holoController: {
+    id: "holoController",
+    name: "Hologram Processing",
+    description:
+      "Inline hologram processing with Fresnel propagation. Real-time holographic reconstruction for quantitative phase imaging.",
+    category: APP_CATEGORIES.APPS,
+    icon: VisibilityIcon,
+    enabled: false,
+    essential: false,
+    keywords: ["hologram", "holography", "fresnel", "propagation", "phase", "inline", "reconstruction"],
+    pluginId: "HoloController",
   },
 
   serialDebug: {

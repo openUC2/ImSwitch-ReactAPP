@@ -67,8 +67,8 @@ const initialExperimentState = {
     exposureTimes: 0,
     performanceMode: false,
     ome_write_tiff: false,
-    ome_write_zarr: true,
-    ome_write_stitched_tiff: false,
+    ome_write_zarr: false,
+    ome_write_stitched_tiff: true,
     ome_write_individual_tiffs: false,
     // Tile overlap parameters (moved from WellSelectorSlice)
     overlapWidth: 0.0,  // 0.0 = no overlap (100% spacing), 0.1 = 10% overlap (90% spacing)
