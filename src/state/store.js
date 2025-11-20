@@ -41,6 +41,7 @@ import autofocusReducer from "./slices/AutofocusSlice";
 import socketDebugReducer from "./slices/SocketDebugSlice";
 import appManagerReducer from "./slices/appManagerSlice";
 import canOtaReducer from "./slices/canOtaSlice";
+import holoReducer from "./slices/HoloSlice";
 
 //#####################################################################################
 // Nested persist config for liveStreamState
@@ -97,6 +98,7 @@ const rootReducer = combineReducers({
   socketDebugState: socketDebugReducer,
   appManager: appManagerReducer,
   canOtaState: canOtaReducer,
+  holoState: holoReducer,
 });
 
 //#####################################################################################

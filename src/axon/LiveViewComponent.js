@@ -67,24 +67,38 @@ const LiveViewComponent = ({ useFastMode = true, onDoubleClick }) => {
       const scale = 255.0 / range;
 
       // Apply linear intensity windowing: [minVal, maxVal] → [0, 255]
+      // Preserve color by mapping the pixel luminance and scaling RGB channels proportionally.
       for (let i = 0; i < data.length; i += 4) {
-        // Get original intensity (assuming grayscale, use red channel)
-        const originalIntensity = data[i];
-        
-        // Apply windowing
-        let adjustedIntensity;
-        if (originalIntensity <= minVal) {
-          adjustedIntensity = 0;
-        } else if (originalIntensity >= maxVal) {
-          adjustedIntensity = 255;
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+
+        // Compute perceptual luminance from RGB
+        const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+
+        // Map luminance through the window [minVal, maxVal] -> [0,255]
+        let mappedLum;
+        if (lum <= minVal) {
+          mappedLum = 0;
+        } else if (lum >= maxVal) {
+          mappedLum = 255;
         } else {
-          adjustedIntensity = (originalIntensity - minVal) * scale;
+          mappedLum = (lum - minVal) * scale;
         }
-        
-        // Apply to all color channels (grayscale)
-        data[i] = adjustedIntensity;     // Red
-        data[i + 1] = adjustedIntensity; // Green  
-        data[i + 2] = adjustedIntensity; // Blue
+
+        // If original luminance > 0, scale RGB channels proportionally to preserve colour
+        if (lum > 0) {
+          const factor = mappedLum / lum;
+          data[i] = Math.min(255, Math.max(0, Math.round(r * factor)));
+          data[i + 1] = Math.min(255, Math.max(0, Math.round(g * factor)));
+          data[i + 2] = Math.min(255, Math.max(0, Math.round(b * factor)));
+        } else {
+          // Fallback: if luminance is zero, write mappedLum as grayscale
+          const v = Math.round(mappedLum);
+          data[i] = v;
+          data[i + 1] = v;
+          data[i + 2] = v;
+        }
         // Alpha channel (i + 3) remains unchanged
       }
 
