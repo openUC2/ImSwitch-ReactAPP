@@ -243,7 +243,6 @@ export default function StreamControls({
 
       {/* Stream Control Overlay - positioned absolutely to not affect layout */}
       <Box sx={{ position: "absolute", top: -10, right: -100, zIndex: 1001 }}>
-        {" "}
         {/* FIXME: Adjust position as needed */}
         <StreamControlOverlay
           stats={hudData.stats}
