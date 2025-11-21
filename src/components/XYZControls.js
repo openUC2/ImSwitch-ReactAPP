@@ -1,15 +1,19 @@
-import { Box, Checkbox, Slider, Typography, Paper, Grid } from "@mui/material";
+import { Box, Typography, Paper, ToggleButton, ToggleButtonGroup } from "@mui/material";
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
-import AxisControl from "./AxisControl";
+import ResponsiveAxisControl from "./ResponsiveAxisControl";
+import CNCStyleControls from "./CNCStyleControls";
+import ImprovedAxisControl from "./ImprovedAxisControl";
+import { ViewList, Dashboard, Tune } from "@mui/icons-material";
 import * as positionSlice from "../state/slices/PositionSlice.js";
 
 function XYZControls({ hostIP, hostPort }) {
   const [positionerName, setPositionerName] = useState("");
-  
+  const [viewMode, setViewMode] = useState("improved"); // "individual", "cnc", or "improved"
+
   // Get positions from Redux instead of local state
   const positionState = useSelector(positionSlice.getPositionState);
-  
+
   // Map Redux state to positions object (x, y, z, a -> X, Y, Z, A)
   const positions = {
     X: positionState.x,
@@ -22,7 +26,9 @@ function XYZControls({ hostIP, hostPort }) {
   useEffect(() => {
     (async () => {
       try {
-        const r = await fetch(`${hostIP}:${hostPort}/PositionerController/getPositionerNames`);
+        const r = await fetch(
+          `${hostIP}:${hostPort}/PositionerController/getPositionerNames`
+        );
         const d = await r.json();
         setPositionerName(d[0]);
       } catch (e) {
@@ -31,25 +37,71 @@ function XYZControls({ hostIP, hostPort }) {
     })();
   }, [hostIP, hostPort]);
 
-  /* --- layout: stack controllers vertically --- */
+  /* --- layout: stack controllers vertically with compact zoom --- */
   return (
-        <Paper sx={{ p: 2 }}>
+    <Box sx={{ 
+      transform: 'scale(0.8)', 
+      transformOrigin: 'top left',
+      width: '125%', // Compensate for scale to maintain container width
+      mb: '-10%' // Reduce bottom margin to account for scaling
+    }}>
+      <Paper sx={{ p: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="h6">
+            Multi-Axis Position Control
+          </Typography>
+          
+          <ToggleButtonGroup
+            value={viewMode}
+            exclusive
+            onChange={(_, newMode) => newMode && setViewMode(newMode)}
+            size="small"
+          >
+            <ToggleButton value="improved">
+              <Tune fontSize="small" />
+              Improved
+            </ToggleButton>
+            <ToggleButton value="individual">
+              <ViewList fontSize="small" />
+              Individual
+            </ToggleButton>
+            <ToggleButton value="cnc">
+              <Dashboard fontSize="small" />
+              CNC Style
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
 
-    <Grid container direction="column" spacing={2}>
-      {Object.keys(positions).map((axis) => (
-        <Grid item key={axis}>
-          <AxisControl
-            axisLabel={axis}
-            hostIP={hostIP}
-            hostPort={hostPort}
-            positionerName={positionerName}
-            mPosition={positions[axis]}
-          />
-        </Grid>
-      ))}
-    </Grid>
-    </Paper>
-
+      {viewMode === "improved" ? (
+        <ImprovedAxisControl
+          hostIP={hostIP}
+          hostPort={hostPort}
+          positionerName={positionerName}
+          positions={positions}
+        />
+      ) : viewMode === "individual" ? (
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+          {Object.keys(positions).map((axis) => (
+            <ResponsiveAxisControl
+              key={axis}
+              axisLabel={axis}
+              hostIP={hostIP}
+              hostPort={hostPort}
+              positionerName={positionerName}
+              mPosition={positions[axis]}
+            />
+          ))}
+        </Box>
+      ) : (
+        <CNCStyleControls
+          hostIP={hostIP}
+          hostPort={hostPort}
+          positionerName={positionerName}
+          positions={positions}
+        />
+      )}
+      </Paper>
+    </Box>
   );
 }
 
