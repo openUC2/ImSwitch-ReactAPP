@@ -1,4 +1,10 @@
-import { Box, Typography, Paper, ToggleButton, ToggleButtonGroup } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Paper,
+  ToggleButton,
+  ToggleButtonGroup,
+} from "@mui/material";
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import ResponsiveAxisControl from "./ResponsiveAxisControl";
@@ -39,18 +45,25 @@ function XYZControls({ hostIP, hostPort }) {
 
   /* --- layout: stack controllers vertically with compact zoom --- */
   return (
-    <Box sx={{ 
-      transform: 'scale(0.8)', 
-      transformOrigin: 'top left',
-      width: '125%', // Compensate for scale to maintain container width
-      mb: '-10%' // Reduce bottom margin to account for scaling
-    }}>
+    <Box
+      sx={{
+        transform: "scale(0.8)",
+        transformOrigin: "top left",
+        width: "125%", // Compensate for scale to maintain container width
+        mb: "-10%", // Reduce bottom margin to account for scaling
+      }}
+    >
       <Paper sx={{ p: 2 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6">
-            Multi-Axis Position Control
-          </Typography>
-          
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            mb: 2,
+          }}
+        >
+          <Typography variant="h6">Multi-Axis Position Control</Typography>
+
           <ToggleButtonGroup
             value={viewMode}
             exclusive
@@ -72,34 +85,34 @@ function XYZControls({ hostIP, hostPort }) {
           </ToggleButtonGroup>
         </Box>
 
-      {viewMode === "improved" ? (
-        <ImprovedAxisControl
-          hostIP={hostIP}
-          hostPort={hostPort}
-          positionerName={positionerName}
-          positions={positions}
-        />
-      ) : viewMode === "individual" ? (
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-          {Object.keys(positions).map((axis) => (
-            <ResponsiveAxisControl
-              key={axis}
-              axisLabel={axis}
-              hostIP={hostIP}
-              hostPort={hostPort}
-              positionerName={positionerName}
-              mPosition={positions[axis]}
-            />
-          ))}
-        </Box>
-      ) : (
-        <CNCStyleControls
-          hostIP={hostIP}
-          hostPort={hostPort}
-          positionerName={positionerName}
-          positions={positions}
-        />
-      )}
+        {viewMode === "improved" ? (
+          <ImprovedAxisControl
+            hostIP={hostIP}
+            hostPort={hostPort}
+            positionerName={positionerName}
+            positions={positions}
+          />
+        ) : viewMode === "individual" ? (
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            {Object.keys(positions).map((axis) => (
+              <ResponsiveAxisControl
+                key={axis}
+                axisLabel={axis}
+                hostIP={hostIP}
+                hostPort={hostPort}
+                positionerName={positionerName}
+                mPosition={positions[axis]}
+              />
+            ))}
+          </Box>
+        ) : (
+          <CNCStyleControls
+            hostIP={hostIP}
+            hostPort={hostPort}
+            positionerName={positionerName}
+            positions={positions}
+          />
+        )}
       </Paper>
     </Box>
   );

@@ -131,12 +131,15 @@ const ImprovedAxisControl = ({
         </Typography>
 
         {/* Consolidated Position Display with Multi-Purpose Editing */}
-        <Paper sx={{ 
-          p: 2, 
-          mb: 2, 
-          bgcolor: (theme) => theme.palette.mode === 'dark' ? 'grey.800' : 'grey.900',
-          color: 'common.white' 
-        }}>
+        <Paper
+          sx={{
+            p: 2,
+            mb: 2,
+            bgcolor: (theme) =>
+              theme.palette.mode === "dark" ? "grey.800" : "grey.900",
+            color: "common.white",
+          }}
+        >
           <Typography
             variant="subtitle2"
             sx={{ mb: 1, color: "success.light" }}
@@ -233,12 +236,14 @@ const ImprovedAxisControl = ({
         <Grid container spacing={2}>
           {Object.keys(positions).map((axis) => (
             <Grid item xs={12} sm={6} md={3} key={axis}>
-              <Paper sx={{ 
-                p: 1.5, 
-                bgcolor: 'background.paper',
-                border: 1,
-                borderColor: 'divider'
-              }}>
+              <Paper
+                sx={{
+                  p: 1.5,
+                  bgcolor: "background.paper",
+                  border: 1,
+                  borderColor: "divider",
+                }}
+              >
                 <Typography
                   variant="subtitle1"
                   sx={{
