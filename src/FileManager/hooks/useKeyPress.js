@@ -34,13 +34,13 @@ export const useKeyPress = (keys, callback, disable = false) => {
     [keysSet, callback, disable]
   );
 
-  const handleKeyUp = (e) => {
+  const handleKeyUp = useCallback((e) => {
     lastKeyPressed.current.delete(normalizeKey(e.key));
-  };
+  }, []);
 
-  const handleBlur = () => {
+  const handleBlur = useCallback(() => {
     lastKeyPressed.current.clear();
-  };
+  }, []);
 
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
@@ -52,5 +52,5 @@ export const useKeyPress = (keys, callback, disable = false) => {
       window.removeEventListener("keyup", handleKeyUp);
       window.removeEventListener("blur", handleBlur);
     };
-  }, [handleKeyDown]);
+  }, [handleKeyDown, handleKeyUp, handleBlur]);
 };
