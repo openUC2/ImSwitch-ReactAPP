@@ -72,7 +72,9 @@ const initialExperimentState = {
     ome_write_individual_tiffs: false,
     // Tile overlap parameters (moved from WellSelectorSlice)
     overlapWidth: 0.0,  // 0.0 = no overlap (100% spacing), 0.1 = 10% overlap (90% spacing)
-    overlapHeight: 0.0  // 0.0 = no overlap (100% spacing), 0.1 = 10% overlap (90% spacing)
+    overlapHeight: 0.0,  // 0.0 = no overlap (100% spacing), 0.1 = 10% overlap (90% spacing)
+    // Snakescan pattern for tiling
+    is_snakescan: false,  // Enable snakescan pattern (alternating row directions)
   },
 };
 
@@ -223,6 +225,10 @@ const experimentSlice = createSlice({
       console.log("setOverlapHeight", action.payload);
       state.parameterValue.overlapHeight = Math.max(-0.5, Math.min(0.5, action.payload)); // Clamp between -0.5 and 0.5 (-50% to 50%)
     },
+    setIsSnakescan: (state, action) => {
+      console.log("setIsSnakescan", action.payload);
+      state.parameterValue.is_snakescan = action.payload;
+    },
     //------------------------ points
     createPoint: (state, action) => {
       console.log("createPoint", action);
@@ -308,6 +314,7 @@ export const {
   setOmeWriteIndividualTiffs,
   setOverlapWidth,
   setOverlapHeight,
+  setIsSnakescan,
   createPoint,
   addPoint,
   removePoint,

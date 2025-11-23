@@ -56,7 +56,10 @@ const AutofocusController = ({ hostIP, hostPort }) => {
   const connectionSettingsState = useSelector(connectionSettingsSlice.getConnectionSettingsState);
   
   // Get available illumination sources and find currently active ones
-  const availableIlluminations = parameterRangeState.illuSources || [];
+  // Ensure it's always an array
+  const availableIlluminations = Array.isArray(parameterRangeState.illuSources) 
+    ? parameterRangeState.illuSources 
+    : [];
   
   // Function to get currently active illumination (first one that's on)
   const getCurrentlyActiveIllumination = async () => {
