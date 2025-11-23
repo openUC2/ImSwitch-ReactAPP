@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { Button, ButtonGroup, LinearProgress } from "@mui/material";
 
 import * as wsUtils from "./WellSelectorUtils.js";
+import * as coordinateCalculator from "./CoordinateCalculator.js";
 
 import InfoPopup from "./InfoPopup.js";
 
@@ -92,116 +93,34 @@ const ExperimentComponent = () => {
       dispatch(experimentSlice.setOverlapHeight(wellSelectorState.areaSelectOverlap));
     }
 
-    //create experiment request
+    // Use the new coordinate calculator to generate all scan coordinates
+    console.log("Calculating scan coordinates in frontend...");
+    const scanConfig = coordinateCalculator.calculateScanCoordinates(
+      experimentState,
+      objectiveState,
+      wellSelectorState
+    );
+    
+    console.log("Scan configuration:", scanConfig);
+    console.log(`Total scan areas: ${scanConfig.scanAreas.length}`);
+    console.log(`Total positions: ${scanConfig.metadata.totalPositions}`);
+
+    //create experiment request with pre-calculated coordinates
     const experimentRequest = {
       name: experimentState.name,
       parameterValue: {
         ...experimentState.parameterValue,
+        resortPointListToSnakeCoordinates: false, // IMPORTANT: Tell backend NOT to resort
         is_snakescan: wellSelectorState.areaSelectSnakescan,
         overlapWidth: wellSelectorState.mode === 'area' ? wellSelectorState.areaSelectOverlap : experimentState.parameterValue.overlapWidth,
         overlapHeight: wellSelectorState.mode === 'area' ? wellSelectorState.areaSelectOverlap : experimentState.parameterValue.overlapHeight,
       },
-      pointList: [],
+      // Include scan configuration for backend to use
+      scanAreas: scanConfig.scanAreas,
+      scanMetadata: scanConfig.metadata,
+      // Convert to backward-compatible point list format
+      pointList: coordinateCalculator.convertToBackendFormat(scanConfig, experimentState).pointList,
     };
-
-    // iterate all points
-    experimentState.pointList.map((itPoint) => {
-      // create new point
-      const point = {
-        id: itPoint.id,
-        name: itPoint.name,
-        x: itPoint.x,
-        y: itPoint.y,
-        neighborPointList: [],
-      };
-
-      // Check for new well-based patterns first
-      if (itPoint.wellMode === "center_only") {
-        // Find wells that intersect with this point and return their centers
-        const intersectingWells = wsUtils.findWellsAtPosition(itPoint, experimentState.wellLayout);
-        const centerPositions = wsUtils.generateWellCenterPositions(intersectingWells, experimentState.wellLayout);
-        point.neighborPointList = centerPositions.map(pos => ({
-          x: pos.x,
-          y: pos.y,
-          iX: pos.iX,
-          iY: pos.iY
-        }));
-        
-      } else if (itPoint.wellMode === "pattern") {
-        // Generate pattern within wells
-        const intersectingWells = wsUtils.findWellsAtPosition(itPoint, experimentState.wellLayout);
-        let patternPositions = [];
-        
-        if (itPoint.patternType === "circle") {
-          patternPositions = wsUtils.generateWellCirclePattern(
-            intersectingWells,
-            itPoint.patternRadius || 50,
-            itPoint.patternOverlap || 0.1,
-            Math.min(objectiveState.fovX, objectiveState.fovY) * (1 - (experimentState.parameterValue.overlapWidth || 0))
-          );
-        } else if (itPoint.patternType === "rectangle") {
-          patternPositions = wsUtils.generateWellRectanglePattern(
-            intersectingWells,
-            itPoint.patternWidth || 100,
-            itPoint.patternHeight || 100,
-            itPoint.patternOverlap || 0.1,
-            Math.min(objectiveState.fovX, objectiveState.fovY) * (1 - (experimentState.parameterValue.overlapWidth || 0))
-          );
-        }
-        
-        point.neighborPointList = patternPositions.map(pos => ({
-          x: pos.x,
-          y: pos.y,
-          iX: pos.iX,
-          iY: pos.iY
-        }));
-        
-      } else {
-        // Traditional pattern generation (existing functionality)
-        //calc and fill neighbor points
-        // Negative overlap creates gaps, positive overlap creates overlaps
-        const rasterWidthOverlaped =
-          objectiveState.fovX * (1 - (experimentState.parameterValue.overlapWidth || 0));
-        const rasterHeightOverlaped =
-          objectiveState.fovY * (1 - (experimentState.parameterValue.overlapHeight || 0));
-
-        if (itPoint.shape == Shape.CIRCLE) {
-          //circle shape
-          point.neighborPointList = wsUtils.calculateRasterOval(
-            itPoint,
-            rasterWidthOverlaped,
-            rasterHeightOverlaped,
-            itPoint.circleRadiusX,
-            itPoint.circleRadiusY
-          );
-          //handle invalid area
-          if (point.neighborPointList.length == 0) {
-            point.neighborPointList = [
-              { x: itPoint.x, y: itPoint.y, iX: 0, iY: 0 },
-            ];
-          }
-        } else if (itPoint.shape == Shape.RECTANGLE) {
-          //rect shape
-          point.neighborPointList = wsUtils.calculateRasterRect(
-            itPoint,
-            rasterWidthOverlaped,
-            rasterHeightOverlaped,
-            itPoint.rectPlusX,
-            itPoint.rectMinusX,
-            itPoint.rectPlusY,
-            itPoint.rectMinusY
-          );
-        } else {
-          //no shape
-          point.neighborPointList = [
-            { x: itPoint.x, y: itPoint.y, iX: 0, iY: 0 },
-          ];
-        }
-      }
-
-      //append point
-      experimentRequest.pointList.push(point);
-    });
 
     // Convert object to JSON
     //const jsonString = JSON.stringify(experimentRequest);
