@@ -11,6 +11,12 @@ const initialWellSelectorState = {
   savedBoundingBox: null,          // object: bounding box of the selected wells
   layoutOffsetX: 0.0,          // float: global X offset added to all well layouts in micrometers
   layoutOffsetY: 0.0,          // float: global Y offset added to all well layouts in micrometers
+  // Area select settings
+  areaSelectSnakescan: false,  // bool: enable snakescan pattern for area select
+  areaSelectOverlap: 0.0,      // float: overlap percentage (0.0 = no overlap, 0.1 = 10% overlap)
+  // Cup select settings
+  cupSelectShape: 'circle',    // string: 'circle' or 'rectangle' for well select shape
+  cupSelectOverlap: 0.0,       // float: overlap percentage (0.0 = no overlap, 0.1 = 10% overlap)
 };
 
 // Create wellSelectorState slice
@@ -74,6 +80,28 @@ const wellSelectorSlice = createSlice({
         state.layoutOffsetY = 0;
       }
     },
+    setAreaSelectSnakescan: (state, action) => {
+      console.log("setAreaSelectSnakescan");
+      state.areaSelectSnakescan = action.payload;
+    },
+    setAreaSelectOverlap: (state, action) => {
+      console.log("setAreaSelectOverlap");
+      state.areaSelectOverlap = action.payload;
+      if(isNaN(state.areaSelectOverlap)){
+        state.areaSelectOverlap = 0;
+      }
+    },
+    setCupSelectShape: (state, action) => {
+      console.log("setCupSelectShape");
+      state.cupSelectShape = action.payload;
+    },
+    setCupSelectOverlap: (state, action) => {
+      console.log("setCupSelectOverlap");
+      state.cupSelectOverlap = action.payload;
+      if(isNaN(state.cupSelectOverlap)){
+        state.cupSelectOverlap = 0;
+      }
+    },
   },
 });
 
@@ -88,7 +116,11 @@ export const {
   resetState,
   setSavedBoundingBox,
   setLayoutOffsetX,
-  setLayoutOffsetY
+  setLayoutOffsetY,
+  setAreaSelectSnakescan,
+  setAreaSelectOverlap,
+  setCupSelectShape,
+  setCupSelectOverlap
 } = wellSelectorSlice.actions;
 
 // Selector helper

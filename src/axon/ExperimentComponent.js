@@ -83,10 +83,24 @@ const ExperimentComponent = () => {
   const handleStart = () => {
     console.log("Experiment started");
 
+    // Update is_snakescan from wellSelectorState before creating the request
+    dispatch(experimentSlice.setIsSnakescan(wellSelectorState.areaSelectSnakescan));
+    
+    // Also update overlap values from area select settings if in area select mode
+    if (wellSelectorState.mode === 'area') {
+      dispatch(experimentSlice.setOverlapWidth(wellSelectorState.areaSelectOverlap));
+      dispatch(experimentSlice.setOverlapHeight(wellSelectorState.areaSelectOverlap));
+    }
+
     //create experiment request
     const experimentRequest = {
       name: experimentState.name,
-      parameterValue: experimentState.parameterValue,
+      parameterValue: {
+        ...experimentState.parameterValue,
+        is_snakescan: wellSelectorState.areaSelectSnakescan,
+        overlapWidth: wellSelectorState.mode === 'area' ? wellSelectorState.areaSelectOverlap : experimentState.parameterValue.overlapWidth,
+        overlapHeight: wellSelectorState.mode === 'area' ? wellSelectorState.areaSelectOverlap : experimentState.parameterValue.overlapHeight,
+      },
       pointList: [],
     };
 

@@ -25,10 +25,12 @@ import {
   FormControl,
   InputLabel,
   FormHelperText,
+  FormControlLabel,
   ButtonGroup,
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  Slider,
 } from "@mui/material";
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
@@ -69,22 +71,6 @@ const WellSelectorComponent = () => {
   const handleResetHistory = () => {
     //call child method to reset position history
     childRef.current.resetHistory();
-  };
-
-  //##################################################################################
-  const handleOverlapWidthSpinnerChange = (event) => {
-    // Update the spinner value
-    const value = parseFloat(event.target.value, 10);
-    // Update Redux state
-    dispatch(wellSelectorSlice.setOverlapWidth(value));
-  };
-
-  //##################################################################################
-  const handleOverlapHeightSpinnerChange = (event) => {
-    // Update the spinner value
-    const value = parseFloat(event.target.value, 10);
-    // Update Redux state
-    dispatch(wellSelectorSlice.setOverlapHeight(value));
   };
 
   //##################################################################################
@@ -200,6 +186,28 @@ const WellSelectorComponent = () => {
   };
 
   //##################################################################################
+  const handleAreaSelectSnakescanChange = (event) => {
+    dispatch(wellSelectorSlice.setAreaSelectSnakescan(event.target.checked));
+  };
+
+  //##################################################################################
+  const handleAreaSelectOverlapChange = (event) => {
+    const value = parseFloat(event.target.value);
+    dispatch(wellSelectorSlice.setAreaSelectOverlap(value));
+  };
+
+  //##################################################################################
+  const handleCupSelectShapeChange = (event) => {
+    dispatch(wellSelectorSlice.setCupSelectShape(event.target.value));
+  };
+
+  //##################################################################################
+  const handleCupSelectOverlapChange = (event) => {
+    const value = parseFloat(event.target.value);
+    dispatch(wellSelectorSlice.setCupSelectOverlap(value));
+  };
+
+  //##################################################################################
   return (
     <div style={{ border: "0px solid #eee", padding: "10px" }}>
       
@@ -244,38 +252,34 @@ const WellSelectorComponent = () => {
           </Select>
         </FormControl>
 
-        {/* OVERLAP */}
-
-        <FormControl style={{ marginLeft: "10px", width: "80px" }}>
-          <TextField
-            label="Overlap X"
-            type="number"
-            value={wellSelectorState.overlapWidth}
-            onChange={handleOverlapWidthSpinnerChange}
-            inputProps={{
-              min: -1,
-              max: 1,
-              step: 0.1,
+        {/* TILE OVERLAP SLIDER */}
+        <Box sx={{ width: 250, marginLeft: "20px", marginRight: "20px" }}>
+          <Typography variant="body2" gutterBottom>
+            Tile Overlap: {Math.round((experimentState.parameterValue.overlapWidth || 0) * 100)}%
+          </Typography>
+          <Slider
+            value={(experimentState.parameterValue.overlapWidth || 0) * 100}
+            onChange={(e, newValue) => {
+              const overlapValue = newValue / 100;
+              // Update both states to keep them in sync
+              dispatch(wellSelectorSlice.setOverlapWidth(overlapValue));
+              dispatch(wellSelectorSlice.setOverlapHeight(overlapValue));
+              dispatch(experimentSlice.setOverlapWidth(overlapValue));
+              dispatch(experimentSlice.setOverlapHeight(overlapValue));
             }}
+            min={0}
+            max={50}
+            step={5}
+            marks={[
+              { value: 0, label: '0%' },
+              { value: 25, label: '25%' },
+              { value: 50, label: '50%' },
+            ]}
+            valueLabelDisplay="auto"
+            valueLabelFormat={(value) => `${value}%`}
           />
-        </FormControl>
+        </Box>
 
-        <FormControl>
-          <TextField
-            label="Overlap Y"
-            type="number"
-            value={wellSelectorState.overlapHeight}
-            onChange={handleOverlapHeightSpinnerChange}
-            inputProps={{
-              min: -1,
-              max: 1,
-              step: 0.1,
-            }}
-            style={{ marginRight: "10px", width: "80px" }}
-          />
-        </FormControl>
-
-      
         {/* VIEW */}
 
         <Button variant="contained" onClick={() => handleResetView()}>
@@ -392,7 +396,7 @@ const WellSelectorComponent = () => {
             onClick={() => handleModeChange(Mode.CUP_SELECT)}
             disabled={wellSelectorState.mode == Mode.CUP_SELECT}
           >
-            CUP select
+            Well select
           </Button>
 
           <Button
@@ -413,6 +417,69 @@ const WellSelectorComponent = () => {
           </Button>
         </ButtonGroup>
       </div>
+
+      {/* MODE-SPECIFIC SETTINGS */}
+      {/* Area Select Settings */}
+      {wellSelectorState.mode === Mode.AREA_SELECT && (
+        <Box
+          sx={{
+            marginBottom: "15px",
+            padding: "12px",
+            border: (theme) => `1px solid ${theme.palette.divider}`,
+            borderRadius: "4px",
+            backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#f9f9f9',
+          }}
+        >
+          <Typography variant="subtitle2" gutterBottom>
+            Area Select Settings
+          </Typography>
+          <Box display="flex" flexDirection="column" gap={2}>
+            {/* Snakescan checkbox */}
+            <FormControlLabel
+              control={
+                <input
+                  type="checkbox"
+                  checked={wellSelectorState.areaSelectSnakescan}
+                  onChange={handleAreaSelectSnakescanChange}
+                />
+              }
+              label="Enable Snakescan Pattern"
+            />
+          </Box>
+        </Box>
+      )}
+
+      {/* Cup/Well Select Settings */}
+      {wellSelectorState.mode === Mode.CUP_SELECT && (
+        <Box
+          sx={{
+            marginBottom: "15px",
+            padding: "12px",
+            border: (theme) => `1px solid ${theme.palette.divider}`,
+            borderRadius: "4px",
+            backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#f9f9f9',
+          }}
+        >
+          <Typography variant="subtitle2" gutterBottom>
+            Well Select Settings
+          </Typography>
+          <Box display="flex" flexDirection="column" gap={2}>
+            {/* Shape selector */}
+            <FormControl size="small" sx={{ width: "200px" }}>
+              <InputLabel>Well Shape</InputLabel>
+              <Select
+                value={wellSelectorState.cupSelectShape}
+                onChange={handleCupSelectShapeChange}
+                label="Well Shape"
+              >
+                <MenuItem value="circle">Circle</MenuItem>
+                <MenuItem value="rectangle">Rectangle</MenuItem>
+              </Select>
+              <FormHelperText>Shape pattern for well scanning</FormHelperText>
+            </FormControl>
+          </Box>
+        </Box>
+      )}
 
       <InfoPopup ref={infoPopupRef}/>
     </div>

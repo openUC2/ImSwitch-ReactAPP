@@ -4,7 +4,6 @@ import ZarrTileViewController from "./ZarrTileView";
 import GenericTabBar from "./GenericTabBar";
 import WellSelectorComponent from "./WellSelectorComponent";
 import PointListEditorComponent from "./PointListEditorComponent";
-import PointListShapeEditorComponent from "./PointListShapeEditorComponent";
 import WebSocketComponent from "./WebSocketComponent";
 import PositionViewComponent from "./PositionViewComponent";
 import ParameterEditorWrapper from "./ParameterEditorWrapper";
@@ -46,7 +45,6 @@ const AxonTabComponent = () => {
               "Live View",
               "Tile View",
               "Points",
-              "Shape",
               "Parameter",
               "Objective"
             ]}
@@ -54,7 +52,6 @@ const AxonTabComponent = () => {
             <LiveViewControlWrapper />
             <ZarrTileViewController/>
             <PointListEditorComponent />
-            <PointListShapeEditorComponent />
             <ParameterEditorWrapper />
             {/*<ExperimentComponent />*/}
             <ObjectiveSwitcher />
