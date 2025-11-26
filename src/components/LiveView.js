@@ -13,7 +13,7 @@ import {
   Select,
   MenuItem,
 } from "@mui/material";
-import ImprovedAxisControl from "./AxisControl.jsx";
+import AxisControl from "./AxisControl.jsx";
 import JoystickControl from "./JoystickControl.jsx";
 import AutofocusController from "./AutofocusController";
 import DetectorParameters from "./DetectorParameters";
@@ -367,16 +367,7 @@ export default function LiveView({ setFileManagerInitialPath }) {
 
           {/* Multiple Axis View */}
           {stageControlTab === 0 && (
-            <Box
-              sx={{
-                transform: "scale(0.8)",
-                transformOrigin: "top left",
-                width: "125%", // Compensate for scale to maintain container width
-                mb: "-10%", // Reduce bottom margin to account for scaling
-              }}
-            >
-              <ImprovedAxisControl hostIP={hostIP} hostPort={hostPort} />
-            </Box>
+            <AxisControl hostIP={hostIP} hostPort={hostPort} />
           )}
 
           {/* Joystick Control */}

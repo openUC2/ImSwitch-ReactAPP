@@ -44,123 +44,119 @@ const AxisControl = ({
     );
 
   const stopAxis = () =>
-    call(
-      `${base}/stopAxis?positionerName=${positionerName}&axis=${axisLabel}`
-    );
+    call(`${base}/stopAxis?positionerName=${positionerName}&axis=${axisLabel}`);
 
+  return (
+    <Grid container spacing={1}>
+      {/* First row - Relative movement */}
+      <Grid item xs={12}>
+        <Grid container spacing={1} alignItems="center">
+          <Grid item>
+            <TextField
+              label="Current Pos"
+              type="number"
+              size="small"
+              variant="filled"
+              value={mPosition}
+              inputProps={{ readOnly: true, style: { textAlign: "right" } }}
+              sx={txtStyle}
+            />
+          </Grid>
+          <Grid item>
+            <TextField
+              label="Move By (µm)"
+              type="number"
+              size="small"
+              variant="outlined"
+              value={relStep}
+              onChange={(e) => setRelStep(Number(e.target.value))}
+              sx={txtStyle}
+            />
+          </Grid>
+          <Grid item>
+            <TextField
+              label="Speed"
+              type="number"
+              size="small"
+              variant="outlined"
+              value={speed}
+              onChange={(e) => setSpeed(Number(e.target.value))}
+              sx={txtStyle}
+            />
+          </Grid>
+          <Grid item>
+            <Button
+              size="small"
+              variant="contained"
+              sx={{ minWidth: w, px: 1, py: 0.5 }}
+              onClick={() => moveRel(+relStep)}
+            >
+              +
+            </Button>
+          </Grid>
+          <Grid item>
+            <Button
+              size="small"
+              variant="contained"
+              sx={{ minWidth: w, px: 1, py: 0.5 }}
+              onClick={() => moveRel(-relStep)}
+            >
+              -
+            </Button>
+          </Grid>
+        </Grid>
+      </Grid>
 
-
-return (
-  <Grid container spacing={1}>
-    {/* First row - Relative movement */}
-    <Grid item xs={12}>
-      <Grid container spacing={1} alignItems="center">
-        <Grid item>
-          <TextField
-            label="Current Pos"
-            type="number"
-            size="small"
-            variant="filled"
-            value={mPosition}
-            inputProps={{ readOnly: true, style: { textAlign: "right" } }}
-            sx={txtStyle}
-          />
-        </Grid>
-        <Grid item>
-          <TextField
-            label="Move By (µm)"
-            type="number"
-            size="small"
-            variant="outlined"
-            value={relStep}
-            onChange={(e) => setRelStep(Number(e.target.value))}
-            sx={txtStyle}
-          />
-        </Grid>
-        <Grid item>
-          <TextField
-            label="Speed"
-            type="number"
-            size="small"
-            variant="outlined"
-            value={speed}
-            onChange={(e) => setSpeed(Number(e.target.value))}
-            sx={txtStyle}
-          />
-        </Grid>
-        <Grid item>
-          <Button
-            size="small"
-            variant="contained"
-            sx={{ minWidth: w, px: 1, py: 0.5 }}
-            onClick={() => moveRel(+relStep)}
-          >
-            +
-          </Button>
-        </Grid>
-        <Grid item>
-          <Button
-            size="small"
-            variant="contained"
-            sx={{ minWidth: w, px: 1, py: 0.5 }}
-            onClick={() => moveRel(-relStep)}
-          >
-            -
-          </Button>
+      {/* Second row - Absolute movement */}
+      <Grid item xs={12}>
+        <Grid container spacing={1} alignItems="center">
+          <Grid item sx={{ width: "120px" }} /> {/* Spacer */}
+          <Grid item>
+            <TextField
+              label="Move To (µm)"
+              type="number"
+              size="small"
+              variant="outlined"
+              value={absTarget}
+              onChange={(e) => setAbsTarget(Number(e.target.value))}
+              sx={txtStyle}
+            />
+          </Grid>
+          <Grid item>
+            <Button
+              size="small"
+              variant="contained"
+              sx={{ minWidth: w, px: 1, py: 0.5 }}
+              onClick={moveAbs}
+            >
+              Go
+            </Button>
+          </Grid>
+          <Grid item>
+            <Button
+              size="small"
+              variant="contained"
+              color="secondary"
+              sx={{ minWidth: w, px: 1, py: 0.5 }}
+              onClick={homeAxis}
+            >
+              Home
+            </Button>
+          </Grid>
+          <Grid item>
+            <Button
+              size="small"
+              variant="contained"
+              color="error"
+              sx={{ minWidth: w, px: 1, py: 0.5 }}
+              onClick={stopAxis}
+            >
+              Stop
+            </Button>
+          </Grid>
         </Grid>
       </Grid>
     </Grid>
-
-    {/* Second row - Absolute movement */}
-    <Grid item xs={12}>
-      <Grid container spacing={1} alignItems="center">
-        <Grid item sx={{ width: "120px" }} /> {/* Spacer */}
-        <Grid item>
-          <TextField
-            label="Move To (µm)"
-            type="number"
-            size="small"
-            variant="outlined"
-            value={absTarget}
-            onChange={(e) => setAbsTarget(Number(e.target.value))}
-            sx={txtStyle}
-          />
-        </Grid>
-        <Grid item>
-          <Button
-            size="small"
-            variant="contained"
-            sx={{ minWidth: w, px: 1, py: 0.5 }}
-            onClick={moveAbs}
-          >
-            Go
-          </Button>
-        </Grid>
-        <Grid item>
-          <Button
-            size="small"
-            variant="contained"
-            color="secondary"
-            sx={{ minWidth: w, px: 1, py: 0.5 }}
-            onClick={homeAxis}
-          >
-            Home
-          </Button>
-        </Grid>
-        <Grid item>
-          <Button
-            size="small"
-            variant="contained"
-            color="error"
-            sx={{ minWidth: w, px: 1, py: 0.5 }}
-            onClick={stopAxis}
-          >
-            Stop
-          </Button>
-        </Grid>
-      </Grid>
-    </Grid>
-  </Grid>
-);
+  );
 };
 export default AxisControl;
