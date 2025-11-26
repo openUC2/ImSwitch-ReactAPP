@@ -17,7 +17,7 @@ import {
   MenuItem,
   Grid,
 } from "@mui/material";
-import ImprovedAxisControl from "./ImprovedAxisControl";
+import ImprovedAxisControl from "./AxisControl.jsx";
 import AutofocusController from "./AutofocusController";
 import DetectorParameters from "./DetectorParameters";
 import StreamControls from "./StreamControls";

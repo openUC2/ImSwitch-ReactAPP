@@ -147,10 +147,6 @@ const ImprovedAxisControl = ({ hostIP, hostPort }) => {
   return (
     <Card>
       <CardContent>
-        <Typography variant="h6" gutterBottom>
-          Multi-Axis Position Control
-        </Typography>
-
         {/* Consolidated Position Display with Multi-Purpose Editing */}
         <Paper
           sx={{
