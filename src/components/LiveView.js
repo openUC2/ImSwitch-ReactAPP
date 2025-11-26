@@ -17,7 +17,7 @@ import {
   MenuItem,
   Grid,
 } from "@mui/material";
-import XYZControls from "./XYZControls";
+import ImprovedAxisControl from "./ImprovedAxisControl";
 import AutofocusController from "./AutofocusController";
 import DetectorParameters from "./DetectorParameters";
 import StreamControls from "./StreamControls";
@@ -65,10 +65,10 @@ export default function LiveView({ setFileManagerInitialPath }) {
 
   // Debug log to verify persisted stream format
   useEffect(() => {
-    console.log('[LiveView] Mounted with stream state:', {
+    console.log("[LiveView] Mounted with stream state:", {
       imageFormat: liveStreamState.imageFormat,
       streamSettings: liveStreamState.streamSettings,
-      isStreamRunning: liveViewState.isStreamRunning
+      isStreamRunning: liveViewState.isStreamRunning,
     });
   }, []);
 
@@ -227,10 +227,12 @@ export default function LiveView({ setFileManagerInitialPath }) {
       if (shouldStart) {
         // Determine protocol from current stream settings
         // Use imageFormat from Redux state - supports binary, jpeg, and webrtc
-        const protocol = liveStreamState.imageFormat || 'jpeg'; // Default to JPEG
-        
-        console.log(`Starting ${protocol} stream (imageFormat: ${liveStreamState.imageFormat})`);
-        
+        const protocol = liveStreamState.imageFormat || "jpeg"; // Default to JPEG
+
+        console.log(
+          `Starting ${protocol} stream (imageFormat: ${liveStreamState.imageFormat})`
+        );
+
         // Start stream with current protocol (binary, jpeg, or webrtc)
         await apiLiveViewControllerStartLiveView(null, protocol);
         console.log(`Started ${protocol} stream`);
@@ -451,7 +453,16 @@ export default function LiveView({ setFileManagerInitialPath }) {
 
           {/* Multiple Axis View */}
           {stageControlTab === 0 && (
-            <XYZControls hostIP={hostIP} hostPort={hostPort} />
+            <Box
+              sx={{
+                transform: "scale(0.8)",
+                transformOrigin: "top left",
+                width: "125%", // Compensate for scale to maintain container width
+                mb: "-10%", // Reduce bottom margin to account for scaling
+              }}
+            >
+              <ImprovedAxisControl hostIP={hostIP} hostPort={hostPort} />
+            </Box>
           )}
 
           {/* Joystick Control */}

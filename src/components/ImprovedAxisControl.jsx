@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Card,
   CardContent,
@@ -24,20 +24,43 @@ import {
   Check,
   Close,
 } from "@mui/icons-material";
+import * as positionSlice from "../state/slices/PositionSlice.js";
+import { useSelector } from "react-redux";
 
 /**
  * ImprovedAxisControl - Consolidated position display with multi-purpose editing
- * Combines the best of both approaches
  */
-const ImprovedAxisControl = ({
-  hostIP,
-  hostPort,
-  positionerName,
-  positions, // {X: val, Y: val, Z: val, A: val}
-}) => {
+const ImprovedAxisControl = ({ hostIP, hostPort }) => {
+  const [positionerName, setPositionerName] = useState("");
   const [globalSpeed, setGlobalSpeed] = useState(20000);
   const [editingAxis, setEditingAxis] = useState(null); // Which axis position is being edited
   const [tempPositions, setTempPositions] = useState({}); // Temporary values during editing
+
+  // Get positions from Redux instead of local state
+  const positionState = useSelector(positionSlice.getPositionState);
+
+  // Map Redux state to positions object (x, y, z, a -> X, Y, Z, A)
+  const positions = {
+    X: positionState.x,
+    Y: positionState.y,
+    Z: positionState.z,
+    A: positionState.a,
+  };
+
+  /* --- initial fetch for positioner name --- */
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch(
+          `${hostIP}:${hostPort}/PositionerController/getPositionerNames`
+        );
+        const d = await r.json();
+        setPositionerName(d[0]);
+      } catch (e) {
+        console.error(e);
+      }
+    })();
+  }, [hostIP, hostPort]);
 
   // Step sizes per axis (can be individual)
   const [stepSizes, setStepSizes] = useState({
