@@ -264,6 +264,20 @@ export default function LiveView({ setFileManagerInitialPath }) {
           paddingTop: 1,
           flexDirection: "column",
           boxSizing: "border-box",
+          overflowY: "auto",
+          "&::-webkit-scrollbar": {
+            width: "8px",
+          },
+          "&::-webkit-scrollbar-track": {
+            background: "transparent",
+          },
+          "&::-webkit-scrollbar-thumb": {
+            background: "rgba(128, 128, 128, 0.3)",
+            borderRadius: "4px",
+          },
+          "&::-webkit-scrollbar-thumb:hover": {
+            background: "rgba(128, 128, 128, 0.5)",
+          },
         }}
       >
         {/* Snap controls with editable file name and save format dropdown */}
@@ -351,7 +365,27 @@ export default function LiveView({ setFileManagerInitialPath }) {
       </Box>
 
       {/* RIGHT */}
-      <Box sx={{ width: "40%", height: "100%", overflowY: "auto", p: 2 }}>
+      <Box
+        sx={{
+          width: "40%",
+          height: "100%",
+          overflowY: "auto",
+          p: 2,
+          "&::-webkit-scrollbar": {
+            width: "8px",
+          },
+          "&::-webkit-scrollbar-track": {
+            background: "transparent",
+          },
+          "&::-webkit-scrollbar-thumb": {
+            background: "rgba(128, 128, 128, 0.3)",
+            borderRadius: "4px",
+          },
+          "&::-webkit-scrollbar-thumb:hover": {
+            background: "rgba(128, 128, 128, 0.5)",
+          },
+        }}
+      >
         <Box mb={3}>
           <Typography variant="h6">Stage Control</Typography>
 
