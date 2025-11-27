@@ -145,7 +145,7 @@ const ImprovedAxisControl = ({ hostIP, hostPort }) => {
   };
 
   return (
-    <Card>
+    <Card sx={{ minWidth: 300 }}>
       <CardContent>
         {/* Consolidated Position Display with Multi-Purpose Editing */}
         <Paper
