@@ -129,7 +129,7 @@ export default function LiveView({ setFileManagerInitialPath }) {
         setHistogramActive(false);
       }
     })();
-  }, [hostIP, hostPort, dispatch]);
+  }, [hostIP, hostPort]);
 
   /* min/max - disabled auto-windowing to allow manual control via slider */
   // Commented out to prevent overriding manual slider settings
