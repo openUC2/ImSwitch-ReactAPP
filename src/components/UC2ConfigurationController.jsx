@@ -51,6 +51,7 @@ import {
   createConfigurationPreview,
   validateConfiguration,
   validateJsonString,
+  validateFileName,
 } from "../utils/configValidation";
 import ConfigurationPreviewDialog from "./ConfigurationPreviewDialog";
 import ConfigurationWizard from "./ConfigurationWizard";
@@ -400,6 +401,18 @@ const UC2ConfigurationController = () => {
         setNotification({
           message: "Please provide a filename",
           type: "warning",
+        })
+      );
+      return;
+    }
+
+    // Validate filename before processing
+    const fileNameValidation = validateFileName(newFileName);
+    if (!fileNameValidation.isValid) {
+      dispatch(
+        setNotification({
+          message: fileNameValidation.error,
+          type: "error",
         })
       );
       return;
