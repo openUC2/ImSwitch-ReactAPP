@@ -51,11 +51,12 @@ const StreamControlOverlay = ({
   isWebGL,
   imageSize,
   viewTransform,
+  forceExpanded = false,
 }) => {
   const theme = useTheme();
   const dispatch = useDispatch();
   const liveStreamState = useSelector(getLiveStreamState);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(forceExpanded);
   const [activeTab, setActiveTab] = useState(0); // 0 = Controls, 1 = Settings, 2 = Info
 
   const connectionSettingsState = useSelector(
@@ -348,35 +349,39 @@ const StreamControlOverlay = ({
 
   return (
     <Paper
-      elevation={3}
+      elevation={forceExpanded ? 0 : 3}
       sx={{
         position: "relative",
-        width: isExpanded ? 400 : 48,
-        height: isExpanded ? "auto" : 48,
-        maxHeight: isExpanded ? "80vh" : 48,
-        backgroundColor: theme.palette.background.paper,
+        width: isExpanded || forceExpanded ? "100%" : 48,
+        height: isExpanded || forceExpanded ? "auto" : 48,
+        maxHeight: isExpanded || forceExpanded ? "none" : 48,
+        backgroundColor: forceExpanded
+          ? "transparent"
+          : theme.palette.background.paper,
         color: theme.palette.text.primary,
-        border: `1px solid ${theme.palette.divider}`,
-        borderRadius: 2,
-        zIndex: 1000,
-        transition: "all 0.3s ease-in-out",
-        cursor: isExpanded ? "default" : "pointer",
-        overflow: isExpanded ? "auto" : "hidden",
+        border: forceExpanded ? "none" : `1px solid ${theme.palette.divider}`,
+        borderRadius: forceExpanded ? 0 : 2,
+        zIndex: forceExpanded ? "auto" : 1000,
+        transition: forceExpanded ? "none" : "all 0.3s ease-in-out",
+        cursor: isExpanded || forceExpanded ? "default" : "pointer",
+        overflow: forceExpanded ? "visible" : isExpanded ? "auto" : "hidden",
         display: "flex",
         flexDirection: "column",
       }}
-      onClick={!isExpanded ? () => setIsExpanded(true) : undefined}
+      onClick={
+        !isExpanded && !forceExpanded ? () => setIsExpanded(true) : undefined
+      }
     >
       {/* Header */}
       <Box
         sx={{
-          p: isExpanded ? 2 : 0,
-          pb: isExpanded ? 1 : 0,
+          p: isExpanded || forceExpanded ? 2 : 0,
+          pb: isExpanded || forceExpanded ? 1 : 0,
           flexShrink: 0,
-          height: isExpanded ? "auto" : 48,
+          height: isExpanded || forceExpanded ? "auto" : 48,
         }}
       >
-        {!isExpanded ? (
+        {!isExpanded && !forceExpanded ? (
           <Box
             sx={{
               display: "flex",
@@ -389,30 +394,39 @@ const StreamControlOverlay = ({
           </Box>
         ) : (
           <>
+            {!forceExpanded && (
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  mb: 1,
+                }}
+              >
+                <Typography
+                  variant="h6"
+                  sx={{ fontWeight: "bold", fontSize: "1rem" }}
+                >
+                  Stream Controls
+                </Typography>
+                <IconButton
+                  size="small"
+                  onClick={() => setIsExpanded(false)}
+                  sx={{ ml: "auto" }}
+                >
+                  <ExpandLessIcon />
+                </IconButton>
+              </Box>
+            )}
+
             <Box
               sx={{
                 display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                mb: 1,
+                gap: 1,
+                flexWrap: "wrap",
+                mb: forceExpanded ? 2 : 0,
               }}
             >
-              <Typography
-                variant="h6"
-                sx={{ fontWeight: "bold", fontSize: "1rem" }}
-              >
-                Stream Controls
-              </Typography>
-              <IconButton
-                size="small"
-                onClick={() => setIsExpanded(false)}
-                sx={{ ml: "auto" }}
-              >
-                <ExpandLessIcon />
-              </IconButton>
-            </Box>
-
-            <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
               <Chip
                 label={`Format: ${formatLabel}`}
                 size="small"
@@ -441,7 +455,10 @@ const StreamControlOverlay = ({
       </Box>
 
       {/* Body */}
-      <Collapse in={isExpanded} sx={{ flex: 1, minHeight: 0, display: "flex" }}>
+      <Collapse
+        in={isExpanded || forceExpanded}
+        sx={{ flex: 1, minHeight: 0, display: "flex" }}
+      >
         <Box
           sx={{
             display: "flex",

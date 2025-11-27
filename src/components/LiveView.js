@@ -8,10 +8,6 @@ import {
   Tabs,
   Tab,
   Typography,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
 } from "@mui/material";
 import AxisControl from "./AxisControl.jsx";
 import JoystickControl from "./JoystickControl.jsx";
@@ -78,18 +74,6 @@ export default function LiveView({ setFileManagerInitialPath }) {
   // Keep some local state for now (these may need their own slices later)
   const [isRecording, setIsRecording] = useState(false);
   const [histogramActive, setHistogramActive] = useState(false);
-  // Save format state for recording and snap
-  const [saveFormat, setSaveFormat] = useState(4); // Default: MP4
-  // Editable file name for snap
-  const [snapFileName, setSnapFileName] = useState("openUC2_snapshot");
-  const saveFormatOptions = [
-    { value: 1, label: "TIFF" },
-    { value: 2, label: "HDF5" },
-    { value: 3, label: "ZARR" },
-    { value: 4, label: "MP4" },
-    { value: 5, label: "PNG" },
-    { value: 6, label: "JPG" },
-  ];
 
   // Stage control tabs state
   const [stageControlTab, setStageControlTab] = useState(0); // 0 = Multiple Axis View, 1 = Joystick Control
@@ -219,10 +203,10 @@ export default function LiveView({ setFileManagerInitialPath }) {
       dispatch(liveViewSlice.setIsStreamRunning(shouldStart));
     }
   };
-  async function snap() {
+  async function snap(fileName, format) {
     // English comment: Example fetch for snapping an image with editable fileName
     const response = await fetch(
-      `${hostIP}:${hostPort}/RecordingController/snapImageToPath?fileName=${snapFileName}&mSaveFormat=${saveFormat}`
+      `${hostIP}:${hostPort}/RecordingController/snapImageToPath?fileName=${fileName}&mSaveFormat=${format}`
     );
     const data = await response.json();
     // data.relativePath might be "recordings/2025_05_20-11-12-44_PM"
@@ -234,10 +218,10 @@ export default function LiveView({ setFileManagerInitialPath }) {
       setFileManagerInitialPath(lastSnapPath);
     }
   }
-  const startRec = async () => {
+  const startRec = async (format) => {
     setIsRecording(true);
     fetch(
-      `${hostIP}:${hostPort}/RecordingController/startRecording?mSaveFormat=${saveFormat}`
+      `${hostIP}:${hostPort}/RecordingController/startRecording?mSaveFormat=${format}`
     ).catch(() => {});
   };
   const stopRec = async () => {
@@ -280,41 +264,6 @@ export default function LiveView({ setFileManagerInitialPath }) {
           },
         }}
       >
-        {/* Snap controls with editable file name and save format dropdown */}
-        <Box sx={{ display: "flex", gap: 1, mb: 2, alignItems: "center" }}>
-          <FormControl size="small" sx={{ minWidth: 120 }}>
-            <InputLabel id="save-format-label">Save Format</InputLabel>
-            <Select
-              labelId="save-format-label"
-              id="save-format-select"
-              value={saveFormat}
-              label="Save Format"
-              onChange={(e) => setSaveFormat(e.target.value)}
-            >
-              {saveFormatOptions.map((opt) => (
-                <MenuItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          {/* Keep StreamControls for other controls */}
-          <StreamControls
-            isStreamRunning={isStreamRunning}
-            onToggleStream={toggleStream}
-            onSnap={snap}
-            isRecording={isRecording}
-            onStartRecord={startRec}
-            onStopRecord={stopRec}
-            onGoToImage={handleGoToImage}
-            lastSnapPath={lastSnapPath}
-            snapFileName={snapFileName}
-            setSnapFileName={setSnapFileName}
-          />
-        </Box>
-
-        <DetectorParameters hostIP={hostIP} hostPort={hostPort} />
-
         {histogramActive && (
           <FormControlLabel
             control={
@@ -339,28 +288,32 @@ export default function LiveView({ setFileManagerInitialPath }) {
           ))}
         </Tabs>
 
-        {/* Live View Container - Fixed Height // TODO: This does not look really nice..  */}
+        {/* Live View Container */}
         <Box
           sx={{
-            height: "60%",
+            flex: "0 0 auto",
             mb: 2,
             position: "relative",
+            minHeight: 0,
           }}
         >
           <LiveViewControlWrapper />
         </Box>
 
-        {/* Controls Panel - Scrollable */}
-        <Box
-          sx={{
-            flex: 1,
-            overflowY: "auto",
-            p: 2,
-            maxHeight: "calc(40vh)",
-          }}
-        >
-          {/* Note: Window/Level Controls moved to StreamControlOverlay */}
-          <Box sx={{ mb: 2 }}></Box>
+        {/* Stream, Record and Detector Controls */}
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 2 }}>
+          <StreamControls
+            isStreamRunning={isStreamRunning}
+            onToggleStream={toggleStream}
+            onSnap={snap}
+            isRecording={isRecording}
+            onStartRecord={startRec}
+            onStopRecord={stopRec}
+            onGoToImage={handleGoToImage}
+            lastSnapPath={lastSnapPath}
+          />
+
+          <DetectorParameters hostIP={hostIP} hostPort={hostPort} />
         </Box>
       </Box>
 
