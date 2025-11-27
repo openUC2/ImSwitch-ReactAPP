@@ -405,6 +405,14 @@ const UC2ConfigurationController = () => {
       return;
     }
 
+    // Ensure filename ends with .json
+    let finalFileName = newFileName.trim();
+    if (!finalFileName.toLowerCase().endsWith(".json")) {
+      finalFileName = finalFileName + ".json";
+      // Update the state with the corrected filename
+      dispatch(uc2Slice.setNewFileName(finalFileName));
+    }
+
     let finalJson = null;
     if (useAceEditor) {
       if (!editorJsonText.trim()) {
@@ -450,7 +458,7 @@ const UC2ConfigurationController = () => {
     );
 
     const url = `${hostIP}:${hostPort}/UC2ConfigController/writeNewSetupFile?setupFileName=${encodeURIComponent(
-      newFileName
+      finalFileName
     )}&setAsCurrentConfig=${setAsCurrentConfig}&restart=${restartAfterSave}&overwrite=${overwriteFile}`;
 
     fetch(url, {
@@ -458,7 +466,33 @@ const UC2ConfigurationController = () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(finalJson),
     })
-      .then((response) => response.json())
+      .then(async (response) => {
+        if (!response.ok) {
+          // Try to get error message from response
+          let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+          try {
+            const text = await response.text();
+            // Check if it's JSON error
+            try {
+              const errorData = JSON.parse(text);
+              errorMessage =
+                errorData.message || errorData.error || errorMessage;
+            } catch {
+              // Not JSON, might be HTML error page
+              if (text.includes("Internal Server Error")) {
+                errorMessage =
+                  "Backend Internal Server Error - Check backend logs for details";
+              } else if (text.length < 200) {
+                errorMessage = text;
+              }
+            }
+          } catch {
+            // Ignore text parsing errors
+          }
+          throw new Error(errorMessage);
+        }
+        return response.json();
+      })
       .then((data) => {
         console.log("File saved:", data);
         dispatch(
@@ -487,7 +521,7 @@ const UC2ConfigurationController = () => {
         console.error("Error saving file:", error);
         dispatch(
           setNotification({
-            message: "Failed to save configuration file",
+            message: `Failed to save configuration: ${error.message}`,
             type: "error",
           })
         );
@@ -694,7 +728,8 @@ const UC2ConfigurationController = () => {
               </Box>
 
               <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Update firmware on CAN-connected devices (motors, lasers, LEDs) via Over-The-Air (OTA) updates
+                Update firmware on CAN-connected devices (motors, lasers, LEDs)
+                via Over-The-Air (OTA) updates
               </Typography>
 
               <Button
@@ -908,6 +943,7 @@ const UC2ConfigurationController = () => {
                   sx={{ mb: 3 }}
                   disabled={isLoadingFile || isSavingFile}
                   placeholder="my_configuration.json"
+                  helperText=".json extension will be added automatically if missing"
                 />
 
                 <Grid container spacing={2} sx={{ mb: 3 }}>
