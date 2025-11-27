@@ -67,7 +67,7 @@ export default function LiveView({ setFileManagerInitialPath }) {
       streamSettings: liveStreamState.streamSettings,
       isStreamRunning: liveViewState.isStreamRunning,
     });
-  }, []);
+  }, [liveStreamState, liveViewState]);
 
   // Use Redux state instead of local state
   const detectors = liveViewState.detectors;
