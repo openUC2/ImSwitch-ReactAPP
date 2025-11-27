@@ -281,8 +281,72 @@ const ImprovedAxisControl = ({ hostIP, hostPort }) => {
                     {axis} Axis
                   </Typography>
 
+                  {/* Relative Movement */}
+                  <Stack direction="row" spacing={0.5} sx={{ mb: 1 }}>
+                    <Tooltip title={`-${stepSizes[axis]}µm`}>
+                      <IconButton
+                        color="error"
+                        size="small"
+                        onClick={() => moveAxis(axis, -stepSizes[axis])}
+                        sx={{
+                          flex: 1,
+                          border: 1,
+                          borderColor: "error.main",
+                          borderRadius: 1,
+                          "&:hover": { bgcolor: "error.light" },
+                        }}
+                      >
+                        <Remove fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title={`+${stepSizes[axis]}µm`}>
+                      <IconButton
+                        color="success"
+                        size="small"
+                        onClick={() => moveAxis(axis, +stepSizes[axis])}
+                        sx={{
+                          flex: 1,
+                          border: 1,
+                          borderColor: "success.main",
+                          borderRadius: 1,
+                          "&:hover": { bgcolor: "success.light" },
+                        }}
+                      >
+                        <Add fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </Stack>
+
+                  {/* Control Buttons */}
+                  <Stack direction="column" spacing={0.5} sx={{ mb: 1 }}>
+                    <Tooltip title="Home axis">
+                      <Button
+                        variant="outlined"
+                        color="secondary"
+                        size="small"
+                        onClick={() => homeAxis(axis)}
+                        sx={{ fontSize: "0.6rem", py: 0.5 }}
+                        startIcon={<Home sx={{ fontSize: "0.9rem" }} />}
+                      >
+                        HOME
+                      </Button>
+                    </Tooltip>
+                    <Tooltip title="Stop axis">
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        size="small"
+                        onClick={() => stopAxis(axis)}
+                        sx={{ fontSize: "0.6rem", py: 0.5 }}
+                        startIcon={<Stop sx={{ fontSize: "0.9rem" }} />}
+                      >
+                        STOP
+                      </Button>
+                    </Tooltip>
+                  </Stack>
+
                   {/* Step Size Selection */}
-                  <Box sx={{ mb: 1 }}>
+                  <Box>
                     <Typography
                       variant="caption"
                       sx={{ mb: 0.5, display: "block" }}
@@ -330,56 +394,6 @@ const ImprovedAxisControl = ({ hostIP, hostPort }) => {
                       }}
                     />
                   </Box>
-
-                  {/* Relative Movement */}
-                  <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
-                    <Button
-                      variant="contained"
-                      color="error"
-                      size="small"
-                      onClick={() => moveAxis(axis, -stepSizes[axis])}
-                      sx={{ flex: 1, fontSize: "0.7rem" }}
-                    >
-                      -{stepSizes[axis]}
-                    </Button>
-                    <Button
-                      variant="contained"
-                      color="success"
-                      size="small"
-                      onClick={() => moveAxis(axis, +stepSizes[axis])}
-                      sx={{ flex: 1, fontSize: "0.7rem" }}
-                    >
-                      +{stepSizes[axis]}
-                    </Button>
-                  </Stack>
-
-                  {/* Control Buttons */}
-                  <Stack direction="row" spacing={0.5}>
-                    <Tooltip title="Home axis">
-                      <Button
-                        variant="outlined"
-                        color="secondary"
-                        size="small"
-                        onClick={() => homeAxis(axis)}
-                        sx={{ flex: 1, fontSize: "0.6rem" }}
-                        startIcon={<Home fontSize="small" />}
-                      >
-                        HOME
-                      </Button>
-                    </Tooltip>
-                    <Tooltip title="Stop axis">
-                      <Button
-                        variant="outlined"
-                        color="error"
-                        size="small"
-                        onClick={() => stopAxis(axis)}
-                        sx={{ flex: 1, fontSize: "0.6rem" }}
-                        startIcon={<Stop fontSize="small" />}
-                      >
-                        STOP
-                      </Button>
-                    </Tooltip>
-                  </Stack>
                 </Paper>
               </Grid>
             ))}
