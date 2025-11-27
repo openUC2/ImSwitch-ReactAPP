@@ -55,7 +55,7 @@ const WebSocketHandler = () => {
       }
 
       try {
-        console.log(`Checking UC2 connection to ${ip}:${port}`);
+        console.debug(`Checking UC2 connection to ${ip}:${port}`);
 
         // Use cross-browser compatible fetch with timeout
         const response = await fetchWithTimeout(
@@ -68,7 +68,7 @@ const WebSocketHandler = () => {
           const data = await response.json();
           const hardwareConnected = data === true;
 
-          console.log(
+          console.debug(
             `Backend API: Connected, Hardware: ${
               hardwareConnected ? "Connected" : "Disconnected"
             }`
@@ -80,16 +80,16 @@ const WebSocketHandler = () => {
 
           return hardwareConnected; // Return hardware status for compatibility
         } else {
-          console.log(`UC2 connection check: HTTP ${response.status}`);
+          console.debug(`UC2 connection check: HTTP ${response.status}`);
           dispatch(uc2Slice.setBackendConnected(false));
           dispatch(uc2Slice.setUc2Connected(false));
           return false;
         }
       } catch (error) {
         if (error.name === "AbortError") {
-          console.log("UC2 connection check: Request timeout");
+          console.debug("UC2 connection check: Request timeout");
         } else {
-          console.log("UC2 connection check: Network error", error.message);
+          console.debug("UC2 connection check: Network error", error.message);
         }
         dispatch(uc2Slice.setBackendConnected(false));
         dispatch(uc2Slice.setUc2Connected(false));
@@ -653,14 +653,14 @@ const WebSocketHandler = () => {
         try {
           // Expected format: dataJson.args.p0 = { canId, status, statusMsg, ip, hostname, success }
           const otaStatus = dataJson.args?.p0;
-          
+
           if (otaStatus && otaStatus.canId !== undefined) {
             const { canId, status, statusMsg, success } = otaStatus;
-            
+
             // Determine status string and progress
             let statusString = "unknown";
             let progress = 0;
-            
+
             if (status === 0) {
               statusString = "completed";
               progress = 100;
@@ -674,31 +674,40 @@ const WebSocketHandler = () => {
               statusString = success ? "completed" : "failed";
               progress = success ? 100 : 0;
             }
-            
+
             // Update Redux state with OTA progress
-            dispatch(canOtaSlice.setUpdateProgress({
-              canId: canId,
-              status: statusString,
-              message: statusMsg || "Status update received",
-              progress: progress,
-              timestamp: new Date().toISOString(),
-            }));
-            
+            dispatch(
+              canOtaSlice.setUpdateProgress({
+                canId: canId,
+                status: statusString,
+                message: statusMsg || "Status update received",
+                progress: progress,
+                timestamp: new Date().toISOString(),
+              })
+            );
+
             // If update is completed or failed, check if all updates are done
-            if (statusString === "completed" || statusString === "failed" || statusString === "wifi_failed" || statusString === "ota_failed") {
+            if (
+              statusString === "completed" ||
+              statusString === "failed" ||
+              statusString === "wifi_failed" ||
+              statusString === "ota_failed"
+            ) {
               const state = store.getState();
               const canOtaState = state.canOtaState;
               const totalDevices = canOtaState.selectedDeviceIds.length;
               const completedCount = canOtaState.completedUpdateCount;
               const failedCount = canOtaState.failedUpdateCount;
-              
+
               // If all devices are done, stop updating state
               if (completedCount + failedCount >= totalDevices) {
                 dispatch(canOtaSlice.setIsUpdating(false));
               }
             }
-            
-            console.log(`OTA update for device ${canId}: ${statusString} - ${statusMsg}`);
+
+            console.log(
+              `OTA update for device ${canId}: ${statusString} - ${statusMsg}`
+            );
           }
         } catch (error) {
           console.error("Error in sigOTAStatusUpdate handler:", error);
