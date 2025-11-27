@@ -3,6 +3,83 @@
  */
 
 /**
+ * Validates a filename for cross-platform compatibility
+ * @param {string} filename - The filename to validate (without .json extension)
+ * @returns {object} - { isValid: boolean, error: string }
+ */
+export const validateFileName = (filename) => {
+  // Check for empty or whitespace-only
+  if (!filename || !filename.trim()) {
+    return { isValid: false, error: "Filename cannot be empty" };
+  }
+
+  const trimmed = filename.trim();
+
+  // Check length (255 is typical max, but we'll be conservative)
+  // Subtract 5 for ".json" extension
+  if (trimmed.length > 250) {
+    return {
+      isValid: false,
+      error: "Filename is too long (max 250 characters)",
+    };
+  }
+
+  // Invalid characters for Windows/Linux/macOS
+  // eslint-disable-next-line no-control-regex
+  const invalidChars = /[<>:"/\\|?*\x00-\x1F]/;
+  if (invalidChars.test(trimmed)) {
+    return {
+      isValid: false,
+      error: 'Filename contains invalid characters (< > : " / \\ | ? *)',
+    };
+  }
+
+  // Reserved names on Windows (case-insensitive)
+  const reservedNames = [
+    "CON",
+    "PRN",
+    "AUX",
+    "NUL",
+    "COM1",
+    "COM2",
+    "COM3",
+    "COM4",
+    "COM5",
+    "COM6",
+    "COM7",
+    "COM8",
+    "COM9",
+    "LPT1",
+    "LPT2",
+    "LPT3",
+    "LPT4",
+    "LPT5",
+    "LPT6",
+    "LPT7",
+    "LPT8",
+    "LPT9",
+  ];
+
+  const nameWithoutExtension = trimmed.replace(/\.json$/i, "");
+  if (reservedNames.includes(nameWithoutExtension.toUpperCase())) {
+    return {
+      isValid: false,
+      error: `"${nameWithoutExtension}" is a reserved system filename`,
+    };
+  }
+
+  // Check for names ending with dot or space (not allowed on Windows)
+  if (/[. ]$/.test(trimmed)) {
+    return {
+      isValid: false,
+      error: "Filename cannot end with a dot or space",
+    };
+  }
+
+  return { isValid: true, error: null };
+};
+
+/**
  * Validates JSON configuration structure and content
  * @param {object} config - The configuration object to validate
  * @returns {object} - { isValid: boolean, errors: array, warnings: array }

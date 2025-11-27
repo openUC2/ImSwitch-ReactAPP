@@ -7,6 +7,7 @@ import {
   Box,
   Typography,
 } from "@mui/material";
+import { Camera } from "@mui/icons-material";
 
 /**
  * This component fetches and updates the detector parameters from:
@@ -39,7 +40,9 @@ export default function DetectorParameters({ hostIP, hostPort }) {
   useEffect(() => {
     async function fetchParams() {
       try {
-        const resp = await fetch(`${hostIP}:${hostPort}/SettingsController/getDetectorParameters`);
+        const resp = await fetch(
+          `${hostIP}:${hostPort}/SettingsController/getDetectorParameters`
+        );
         if (resp.ok) {
           const data = await resp.json();
           setDetectorParams({
@@ -66,26 +69,38 @@ export default function DetectorParameters({ hostIP, hostPort }) {
     try {
       switch (field) {
         case "exposure":
-          await fetch(`${hostIP}:${hostPort}/SettingsController/setDetectorExposureTime?exposureTime=${value}`);
+          await fetch(
+            `${hostIP}:${hostPort}/SettingsController/setDetectorExposureTime?exposureTime=${value}`
+          );
           break;
         case "gain":
-          await fetch(`${hostIP}:${hostPort}/SettingsController/setDetectorGain?gain=${value}`);
+          await fetch(
+            `${hostIP}:${hostPort}/SettingsController/setDetectorGain?gain=${value}`
+          );
           break;
         case "binning":
-          await fetch(`${hostIP}:${hostPort}/SettingsController/setDetectorBinning?binning=${value}`);
+          await fetch(
+            `${hostIP}:${hostPort}/SettingsController/setDetectorBinning?binning=${value}`
+          );
           break;
         case "blacklevel":
-          await fetch(`${hostIP}:${hostPort}/SettingsController/setDetectorBlackLevel?blacklevel=${value}`);
+          await fetch(
+            `${hostIP}:${hostPort}/SettingsController/setDetectorBlackLevel?blacklevel=${value}`
+          );
           break;
         case "isRGB": {
           const intVal = value ? 1 : 0;
-          await fetch(`${hostIP}:${hostPort}/SettingsController/setDetectorIsRGB?isRGB=${intVal}`);
+          await fetch(
+            `${hostIP}:${hostPort}/SettingsController/setDetectorIsRGB?isRGB=${intVal}`
+          );
           break;
         }
         case "mode": {
           // If the API expects e.g. `isAuto=true` for "auto" mode:
           const isAuto = value === "auto";
-          await fetch(`${hostIP}:${hostPort}/SettingsController/setDetectorMode?isAuto=${isAuto}`);
+          await fetch(
+            `${hostIP}:${hostPort}/SettingsController/setDetectorMode?isAuto=${isAuto}`
+          );
           break;
         }
         // pixelSize may or may not have its own setter in your API
@@ -99,8 +114,32 @@ export default function DetectorParameters({ hostIP, hostPort }) {
   };
 
   return (
-    <Box>
-      <Typography variant="h6">Detector Parameters</Typography>
+    <Box
+      component="fieldset"
+      sx={{
+        border: 1,
+        borderColor: "divider",
+        borderRadius: 1,
+        p: 2,
+        display: "flex",
+        flexDirection: "column",
+        gap: 1,
+      }}
+    >
+      <Box
+        component="legend"
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 0.5,
+          px: 1,
+        }}
+      >
+        <Camera fontSize="small" sx={{ color: "text.secondary" }} />
+        <Typography variant="subtitle1" sx={{ fontWeight: "medium" }}>
+          Detector Parameters
+        </Typography>
+      </Box>
 
       <TextField
         label="Exposure"
@@ -118,7 +157,7 @@ export default function DetectorParameters({ hostIP, hostPort }) {
         size="small"
         margin="dense"
       />
-      
+
       <TextField
         label="Black Level"
         type="number"
@@ -139,7 +178,6 @@ export default function DetectorParameters({ hostIP, hostPort }) {
         <MenuItem value="manual">Manual</MenuItem>
         <MenuItem value="auto">Auto</MenuItem>
       </TextField>
-
     </Box>
   );
 }
