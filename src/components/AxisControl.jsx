@@ -249,156 +249,149 @@ const ImprovedAxisControl = ({ hostIP, hostPort }) => {
           </Grid>
         </Paper>
 
-        <Box
-          sx={{
-            transform: "scale(0.8)",
-            transformOrigin: "top left",
-            width: "125%", // Compensate for scale to maintain container width
-            mb: "-20%", // Reduce bottom margin to account for scaling
-          }}
-        >
-          {/* Axis Controls without redundant position display */}
-          <Grid container spacing={2}>
-            {Object.keys(positions).map((axis) => (
-              <Grid item xs={12} sm={6} md={3} key={axis}>
-                <Paper
+        <Grid container spacing={1.5}>
+          {Object.keys(positions).map((axis) => (
+            <Grid item xs={6} sm={6} md={6} lg={6} xl={3} key={axis}>
+              <Paper
+                sx={{
+                  p: 1.5,
+                  bgcolor: "background.paper",
+                  border: 1,
+                  borderColor: "divider",
+                }}
+              >
+                <Typography
+                  variant="subtitle2"
                   sx={{
-                    p: 1.5,
-                    bgcolor: "background.paper",
-                    border: 1,
-                    borderColor: "divider",
+                    textAlign: "center",
+                    fontWeight: "bold",
+                    mb: 1,
+                    color: "primary.main",
                   }}
                 >
-                  <Typography
-                    variant="subtitle1"
-                    sx={{
-                      textAlign: "center",
-                      fontWeight: "bold",
-                      mb: 1,
-                      color: "primary.main",
-                    }}
-                  >
-                    {axis} Axis
-                  </Typography>
+                  {axis} Axis
+                </Typography>
 
-                  {/* Relative Movement */}
-                  <Stack direction="row" spacing={0.5} sx={{ mb: 1 }}>
-                    <Tooltip title={`-${stepSizes[axis]}µm`}>
-                      <IconButton
-                        color="error"
-                        size="small"
-                        onClick={() => moveAxis(axis, -stepSizes[axis])}
-                        sx={{
-                          flex: 1,
-                          border: 1,
-                          borderColor: "error.main",
-                          borderRadius: 1,
-                          "&:hover": { bgcolor: "error.light" },
-                        }}
-                      >
-                        <Remove fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title={`+${stepSizes[axis]}µm`}>
-                      <IconButton
-                        color="success"
-                        size="small"
-                        onClick={() => moveAxis(axis, +stepSizes[axis])}
-                        sx={{
-                          flex: 1,
-                          border: 1,
-                          borderColor: "success.main",
-                          borderRadius: 1,
-                          "&:hover": { bgcolor: "success.light" },
-                        }}
-                      >
-                        <Add fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </Stack>
-
-                  {/* Control Buttons */}
-                  <Stack direction="column" spacing={0.5} sx={{ mb: 1 }}>
-                    <Tooltip title="Home axis">
-                      <Button
-                        variant="outlined"
-                        color="secondary"
-                        size="small"
-                        onClick={() => homeAxis(axis)}
-                        sx={{ fontSize: "0.6rem", py: 0.5 }}
-                        startIcon={<Home sx={{ fontSize: "0.9rem" }} />}
-                      >
-                        HOME
-                      </Button>
-                    </Tooltip>
-                    <Tooltip title="Stop axis">
-                      <Button
-                        variant="outlined"
-                        color="error"
-                        size="small"
-                        onClick={() => stopAxis(axis)}
-                        sx={{ fontSize: "0.6rem", py: 0.5 }}
-                        startIcon={<Stop sx={{ fontSize: "0.9rem" }} />}
-                      >
-                        STOP
-                      </Button>
-                    </Tooltip>
-                  </Stack>
-
-                  {/* Step Size Selection */}
-                  <Box>
-                    <Typography
-                      variant="caption"
-                      sx={{ mb: 0.5, display: "block" }}
-                    >
-                      Step Size:
-                    </Typography>
-                    <Stack
-                      direction="row"
-                      spacing={0.5}
-                      sx={{ flexWrap: "wrap", gap: 0.5 }}
-                    >
-                      {stepOptions.slice(0, 4).map((option) => (
-                        <Chip
-                          key={option.value}
-                          label={option.label}
-                          size="small"
-                          color={
-                            stepSizes[axis] === option.value
-                              ? option.color
-                              : "default"
-                          }
-                          variant={
-                            stepSizes[axis] === option.value
-                              ? "filled"
-                              : "outlined"
-                          }
-                          onClick={() => setStepSize(axis, option.value)}
-                          sx={{ cursor: "pointer", fontSize: "0.7rem" }}
-                        />
-                      ))}
-                    </Stack>
-                    <TextField
+                {/* Relative Movement */}
+                <Stack direction="row" spacing={0.5} sx={{ mb: 1 }}>
+                  <Tooltip title={`-${stepSizes[axis]}µm`}>
+                    <IconButton
+                      color="error"
                       size="small"
-                      type="number"
-                      value={stepSizes[axis]}
-                      onChange={(e) =>
-                        setStepSize(axis, Number(e.target.value))
-                      }
-                      sx={{ width: "100%", mt: 0.5 }}
-                      InputProps={{
-                        style: { fontSize: "0.7rem" },
-                        endAdornment: (
-                          <Typography variant="caption">µm</Typography>
-                        ),
+                      onClick={() => moveAxis(axis, -stepSizes[axis])}
+                      sx={{
+                        flex: 1,
+                        border: 1,
+                        borderColor: "error.main",
+                        borderRadius: 1,
+                        "&:hover": { bgcolor: "error.light" },
                       }}
-                    />
-                  </Box>
-                </Paper>
-              </Grid>
-            ))}
-          </Grid>
-        </Box>
+                    >
+                      <Remove fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title={`+${stepSizes[axis]}µm`}>
+                    <IconButton
+                      color="success"
+                      size="small"
+                      onClick={() => moveAxis(axis, +stepSizes[axis])}
+                      sx={{
+                        flex: 1,
+                        border: 1,
+                        borderColor: "success.main",
+                        borderRadius: 1,
+                        "&:hover": { bgcolor: "success.light" },
+                      }}
+                    >
+                      <Add fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </Stack>
+
+                {/* Control Buttons */}
+                <Stack direction="column" spacing={0.5} sx={{ mb: 1 }}>
+                  <Tooltip title="Home axis">
+                    <Button
+                      variant="outlined"
+                      color="secondary"
+                      size="small"
+                      onClick={() => homeAxis(axis)}
+                      sx={{ fontSize: "0.7rem", py: 0.5, minHeight: 28 }}
+                      startIcon={<Home sx={{ fontSize: "1rem" }} />}
+                    >
+                      HOME
+                    </Button>
+                  </Tooltip>
+                  <Tooltip title="Stop axis">
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      size="small"
+                      onClick={() => stopAxis(axis)}
+                      sx={{ fontSize: "0.7rem", py: 0.5, minHeight: 28 }}
+                      startIcon={<Stop sx={{ fontSize: "1rem" }} />}
+                    >
+                      STOP
+                    </Button>
+                  </Tooltip>
+                </Stack>
+
+                {/* Step Size Selection */}
+                <Box>
+                  <Typography
+                    variant="caption"
+                    sx={{ mb: 0.5, display: "block", fontSize: "0.7rem" }}
+                  >
+                    Step Size:
+                  </Typography>
+                  <Stack
+                    direction="row"
+                    spacing={0.5}
+                    sx={{ flexWrap: "wrap", gap: 0.5 }}
+                  >
+                    {stepOptions.slice(0, 4).map((option) => (
+                      <Chip
+                        key={option.value}
+                        label={option.label}
+                        size="small"
+                        color={
+                          stepSizes[axis] === option.value
+                            ? option.color
+                            : "default"
+                        }
+                        variant={
+                          stepSizes[axis] === option.value
+                            ? "filled"
+                            : "outlined"
+                        }
+                        onClick={() => setStepSize(axis, option.value)}
+                        sx={{
+                          cursor: "pointer",
+                          fontSize: "0.65rem",
+                          height: 22,
+                        }}
+                      />
+                    ))}
+                  </Stack>
+                  <TextField
+                    size="small"
+                    type="number"
+                    value={stepSizes[axis]}
+                    onChange={(e) => setStepSize(axis, Number(e.target.value))}
+                    sx={{ width: "100%", mt: 0.5 }}
+                    InputProps={{
+                      style: { fontSize: "0.75rem", height: 32 },
+                      endAdornment: (
+                        <Typography variant="caption">µm</Typography>
+                      ),
+                    }}
+                  />
+                </Box>
+              </Paper>
+            </Grid>
+          ))}
+        </Grid>
+
         <Divider sx={{ my: 2 }} />
 
         {/* Global Controls */}
