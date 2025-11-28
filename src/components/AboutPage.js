@@ -139,7 +139,7 @@ const AboutPage = () => {
                 <ListItemText
                   primary="Frontend Version"
                   secondary={`Version: ${
-                    process.env.REACT_APP_VERSION || "Unknown"
+                    process.env.REACT_APP_VERSION || "1.1.0"
                   }`}
                 />
               </ListItem>
