@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { getConnectionSettingsState } from "../state/slices/ConnectionSettingsSlice";
 import * as uc2Slice from "../state/slices/UC2Slice.js"; // Add UC2 state for connection status
-import packageJson from "../../package.json"; // Import version from package.json
 import {
   Box,
   Typography,
@@ -139,7 +138,9 @@ const AboutPage = () => {
                 </ListItemIcon>
                 <ListItemText
                   primary="Frontend Version"
-                  secondary={`Version: ${packageJson.version}`}
+                  secondary={`Version: ${
+                    process.env.REACT_APP_VERSION || "1.1.0"
+                  }`}
                 />
               </ListItem>
 
