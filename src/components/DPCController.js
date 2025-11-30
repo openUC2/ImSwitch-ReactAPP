@@ -30,8 +30,8 @@ import SaveIcon from "@mui/icons-material/Save";
 
 // Redux slice
 import * as dpcSlice from "../state/slices/dpcSlice";
-import * as connectionSettingsSlice from "../state/slices/connectionSettingsSlice";
-import * as liveStreamSlice from "../state/slices/liveStreamSlice";
+import * as connectionSettingsSlice from "../state/slices/ConnectionSettingsSlice";
+import * as liveStreamSlice from "../state/slices/LiveStreamSlice";
 
 // API imports
 import {
@@ -390,12 +390,48 @@ const DPCController = () => {
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                   <Box>
                     <Typography gutterBottom>
-                      LED Intensity: {localParams.led_intensity ?? dpcState.led_intensity}
+                      LED Intensity Red: {localParams.led_intensity_r ?? dpcState.led_intensity_r}
                     </Typography>
                     <Slider
-                      value={localParams.led_intensity ?? dpcState.led_intensity}
+                      value={localParams.led_intensity_r ?? dpcState.led_intensity_r}
                       onChange={(e, value) =>
-                        handleParamChange("led_intensity", value)
+                        handleParamChange("led_intensity_r", value)
+                      }
+                      min={0}
+                      max={255}
+                      step={1}
+                      marks={[
+                        { value: 0, label: "0" },
+                        { value: 255, label: "255" },
+                      ]}
+                    />
+                  </Box>
+                  <Box>
+                    <Typography gutterBottom>
+                      LED Intensity Green: {localParams.led_intensity_g ?? dpcState.led_intensity_g}
+                    </Typography>
+                    <Slider
+                      value={localParams.led_intensity_g ?? dpcState.led_intensity_g}
+                      onChange={(e, value) =>
+                        handleParamChange("led_intensity_g", value)
+                      }
+                      min={0}
+                      max={255}
+                      step={1}
+                      marks={[
+                        { value: 0, label: "0" },
+                        { value: 255, label: "255" },
+                      ]}
+                    />
+                  </Box>
+                  <Box>
+                    <Typography gutterBottom>
+                      LED Intensity Blue: {localParams.led_intensity_b ?? dpcState.led_intensity_b}
+                    </Typography>
+                    <Slider
+                      value={localParams.led_intensity_b ?? dpcState.led_intensity_b}
+                      onChange={(e, value) =>
+                        handleParamChange("led_intensity_b", value)
                       }
                       min={0}
                       max={255}
@@ -417,6 +453,18 @@ const DPCController = () => {
                     size="small"
                     fullWidth
                     helperText="Time between LED pattern changes"
+                  />
+                  <TextField
+                    label="Frame Sync"
+                    type="number"
+                    value={localParams.frame_sync ?? dpcState.frame_sync}
+                    onChange={(e) =>
+                      handleParamChange("frame_sync", parseInt(e.target.value))
+                    }
+                    inputProps={{ step: 1, min: 1, max: 10 }}
+                    size="small"
+                    fullWidth
+                    helperText="Number of frames to wait for fresh frame"
                   />
                 </Box>
               </AccordionDetails>
