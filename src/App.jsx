@@ -12,6 +12,7 @@ import ExtendedLEDMatrixController from "./components/ExtendedLEDMatrixControlle
 import FlowStopController from "./components/FlowStopController.js";
 import FocusLockController from "./components/FocusLockController.js";
 import HoloController from "./components/HoloController.js";
+import DPCController from "./components/DPCController.js";
 import ImJoyView from "./components/ImJoyView.js";
 import JupyterExecutor from "./components/JupyterExecutor.js";
 import LepMonController from "./components/LepmonController.js";
@@ -434,6 +435,7 @@ function App() {
           {selectedPlugin === "Stresstest" && <StresstestController />}
           {selectedPlugin === "FocusLock" && <FocusLockController />}
           {selectedPlugin === "HoloController" && <HoloController />}
+          {selectedPlugin === "DPCController" && <DPCController />}
           {selectedPlugin === "JupyterNotebook" && (
             <JupyterProvider>
               <JupyterExecutor />

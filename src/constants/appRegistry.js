@@ -322,6 +322,19 @@ export const APP_REGISTRY = {
     pluginId: "HoloController",
   },
 
+  dpcController: {
+    id: "dpcController",
+    name: "DPC Imaging",
+    description:
+      "Differential Phase Contrast imaging with 4-pattern LED matrix illumination. Real-time phase gradient reconstruction for label-free imaging.",
+    category: APP_CATEGORIES.APPS,
+    icon: VisibilityIcon,
+    enabled: false,
+    essential: false,
+    keywords: ["dpc", "differential", "phase", "contrast", "gradient", "led", "matrix", "illumination", "label-free"],
+    pluginId: "DPCController",
+  },
+
   serialDebug: {
     id: "serialDebug",
     name: "Serial Debug",
