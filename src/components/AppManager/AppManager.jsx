@@ -346,7 +346,7 @@ const AppManager = ({ onNavigateToApp }) => {
   }, [enabledApps]);
 
   return (
-    <Box sx={{ height: "100vh", display: "flex", flexDirection: "column" }}>
+    <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       {/* Header with explanation */}
       <AppBar position="static" elevation={1}>
         <Toolbar>
@@ -516,9 +516,7 @@ const AppManager = ({ onNavigateToApp }) => {
       </Paper>
 
       {/* App Grid */}
-      <Box
-        sx={{ flexGrow: 1, overflow: "auto", bgcolor: "background.default" }}
-      >
+      <Box sx={{ flexGrow: 1, bgcolor: "background.default" }}>
         <Container maxWidth="lg" sx={{ py: 3 }}>
           {filteredApps.length === 0 ? (
             <Paper sx={{ p: 4, textAlign: "center" }}>

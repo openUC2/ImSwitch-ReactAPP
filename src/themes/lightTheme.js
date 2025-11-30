@@ -12,8 +12,51 @@ export const lightTheme = createTheme({
   typography: {
     fontFamily: "Roboto",
     fontWeightBold: 700,
+    // Scale down all text by 10% for better density
+    fontSize: 14,
   },
+  spacing: 7, // Default is 8px, reduce to 7px for tighter layout
   components: {
+    // Scale down buttons and form elements
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          fontSize: "0.8rem",
+          padding: "6px 14px", // Slightly smaller padding
+        },
+      },
+    },
+    MuiTextField: {
+      styleOverrides: {
+        root: {
+          "& .MuiInputBase-root": {
+            fontSize: "0.85rem",
+          },
+        },
+      },
+    },
+    MuiTypography: {
+      styleOverrides: {
+        root: {
+          fontSize: "0.9em", // Scale down all typography
+        },
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          padding: "14px", // Slightly smaller card padding
+        },
+      },
+    },
+    MuiTab: {
+      styleOverrides: {
+        root: {
+          fontSize: "0.8rem",
+          minHeight: 42, // Slightly smaller tabs
+        },
+      },
+    },
     MuiCssBaseline: {
       styleOverrides: `
         @font-face {

@@ -1,23 +1,36 @@
+/**
+ * @deprecated This slice is no longer used as of November 2025.
+ * WiFiController has been refactored to display the device-admin panel
+ * via iframe instead of implementing WiFi controls directly.
+ *
+ * The WiFiController component now only uses ConnectionSettingsSlice
+ * to get the hostIP and displays the admin panel at:
+ * ${hostIP}/admin/panel/internet
+ *
+ * This file is kept for reference but can be safely deleted.
+ * It has been removed from src/state/store.js
+ */
+
 import { createSlice } from "@reduxjs/toolkit";
 
 // Define the initial state for WiFi controller
 const initialWiFiState = {
   tabIndex: 0,
-  
+
   // Available networks from scan
   availableNetworks: [],
-  
+
   // Current connection status
   currentSSID: null,
   currentIfname: null,
   isConnected: false,
-  
+
   // Connection form data
   selectedSSID: "",
   password: "",
   ifname: "",
   showPassword: false,
-  
+
   // Access Point form data
   apSSID: "",
   apPassword: "",
@@ -26,17 +39,17 @@ const initialWiFiState = {
   apConName: "imswitch-hotspot",
   apBand: "bg",
   apChannel: null,
-  
+
   // Status states
   isScanning: false,
   isConnecting: false,
   isCreatingAP: false,
   isAPActive: false,
-  
+
   // Connection info
   connectionInfo: {},
   apInfo: {},
-  
+
   // Error handling
   lastError: null,
 };
@@ -50,7 +63,7 @@ const wifiSlice = createSlice({
     setTabIndex: (state, action) => {
       state.tabIndex = action.payload;
     },
-    
+
     // Network scanning
     setIsScanning: (state, action) => {
       state.isScanning = action.payload;
@@ -58,7 +71,7 @@ const wifiSlice = createSlice({
     setAvailableNetworks: (state, action) => {
       state.availableNetworks = action.payload;
     },
-    
+
     // Current connection
     setCurrentSSID: (state, action) => {
       state.currentSSID = action.payload;
@@ -72,7 +85,7 @@ const wifiSlice = createSlice({
     setConnectionInfo: (state, action) => {
       state.connectionInfo = action.payload;
     },
-    
+
     // Connection form
     setSelectedSSID: (state, action) => {
       state.selectedSSID = action.payload;
@@ -89,7 +102,7 @@ const wifiSlice = createSlice({
     setIsConnecting: (state, action) => {
       state.isConnecting = action.payload;
     },
-    
+
     // Access Point form
     setApSSID: (state, action) => {
       state.apSSID = action.payload;
@@ -121,7 +134,7 @@ const wifiSlice = createSlice({
     setApInfo: (state, action) => {
       state.apInfo = action.payload;
     },
-    
+
     // Error handling
     setLastError: (state, action) => {
       state.lastError = action.payload;
@@ -129,7 +142,7 @@ const wifiSlice = createSlice({
     clearError: (state) => {
       state.lastError = null;
     },
-    
+
     // Reset state
     resetState: () => {
       return { ...initialWiFiState };

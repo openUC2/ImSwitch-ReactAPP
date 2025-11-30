@@ -1,12 +1,27 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 
-import { Box, IconButton, TextField, Typography, Button } from "@mui/material";
+import {
+  Box,
+  TextField,
+  Typography,
+  Button,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+} from "@mui/material";
 import {
   PlayArrow,
   Stop,
   CameraAlt,
   FiberManualRecord,
   Stop as StopIcon,
+  Videocam,
+  VideoLibrary,
+  Settings,
 } from "@mui/icons-material";
 import StreamControlOverlay from "../components/StreamControlOverlay";
 import apiViewControllerGetLiveViewActive from "../backendapi/apiViewControllerGetLiveViewActive";
@@ -22,18 +37,29 @@ export default function StreamControls({
   isRecording,
   onStartRecord,
   onStopRecord,
-  snapFileName,
-  setSnapFileName,
   onGoToImage,
   lastSnapPath,
 }) {
-
   const dispatch = useDispatch();
-  
+
+  // Internal state for save format and file name
+  const [saveFormat, setSaveFormat] = useState(4); // Default: MP4
+  const [snapFileName, setSnapFileName] = useState("openUC2_snapshot");
+  const [overlayOpen, setOverlayOpen] = useState(false);
+
+  const saveFormatOptions = [
+    { value: 1, label: "TIFF" },
+    { value: 2, label: "HDF5" },
+    { value: 3, label: "ZARR" },
+    { value: 4, label: "MP4" },
+    { value: 5, label: "PNG" },
+    { value: 6, label: "JPG" },
+  ];
+
   // Get stream stats from Redux (includes fps which indicates active frames)
   const liveStreamState = useSelector(liveStreamSlice.getLiveStreamState);
   const liveViewState = useSelector(liveViewSlice.getLiveViewState);
-  
+
   // Use Redux state as source of truth for stream status
   const isLiveViewActive = liveViewState.isStreamRunning;
 
@@ -43,17 +69,17 @@ export default function StreamControls({
     featureSupport: { webgl2: false, lz4: false },
     isWebGL: false,
     imageSize: { width: 0, height: 0 },
-    viewTransform: { scale: 1, translateX: 0, translateY: 0 }
+    viewTransform: { scale: 1, translateX: 0, translateY: 0 },
   });
 
   // Sync hudData stats with Redux stats for overlay display
   useEffect(() => {
-    setHudData(prevData => ({
+    setHudData((prevData) => ({
       ...prevData,
       stats: {
         fps: liveStreamState.stats.fps || 0,
-        bps: liveStreamState.stats.bps || 0
-      }
+        bps: liveStreamState.stats.bps || 0,
+      },
     }));
   }, [liveStreamState.stats.fps, liveStreamState.stats.bps]);
 
@@ -62,14 +88,16 @@ export default function StreamControls({
   const checkLiveViewStatus = useCallback(async () => {
     try {
       const active = await apiViewControllerGetLiveViewActive();
-      
+
       // Only update Redux if state differs from backend
       if (active !== liveViewState.isStreamRunning) {
-        console.log(`[StreamControls] Backend status mismatch detected. Backend: ${active}, Frontend: ${liveViewState.isStreamRunning}`);
+        console.log(
+          `[StreamControls] Backend status mismatch detected. Backend: ${active}, Frontend: ${liveViewState.isStreamRunning}`
+        );
         dispatch(liveViewSlice.setIsStreamRunning(active));
       }
     } catch (error) {
-      console.warn('[StreamControls] Failed to check live view status:', error);
+      console.warn("[StreamControls] Failed to check live view status:", error);
     }
   }, [liveViewState.isStreamRunning, dispatch]);
 
@@ -79,7 +107,6 @@ export default function StreamControls({
     return () => clearInterval(interval);
   }, [checkLiveViewStatus]);
 
- 
   // Move Z-axis handler
   const moveZAxis = useCallback((distance) => {
     apiPositionerControllerMovePositioner({
@@ -99,28 +126,39 @@ export default function StreamControls({
   useEffect(() => {
     const handleKeyDown = (event) => {
       // Only handle if not typing in an input field
-      if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+      if (
+        event.target.tagName === "INPUT" ||
+        event.target.tagName === "TEXTAREA"
+      ) {
         return;
       }
 
+      // Don't intercept browser zoom shortcuts (Cmd/Ctrl + Plus/Minus)
+      if (
+        (event.metaKey || event.ctrlKey) &&
+        (event.key === "+" || event.key === "-" || event.key === "=")
+      ) {
+        return; // Let browser handle zoom
+      }
+
       switch (event.key) {
-        case '+':
-        case '=': // Also handle = key (same physical key as + without shift)
+        case "+":
+        case "=": // Also handle = key (same physical key as + without shift)
           event.preventDefault();
           moveZAxis(10); // Move up 10 steps
           break;
-        case '-':
-        case '_': // Also handle _ key (same physical key as - with shift)
+        case "-":
+        case "_": // Also handle _ key (same physical key as - with shift)
           event.preventDefault();
           moveZAxis(-10); // Move down 10 steps
           break;
-        case '.':
-        case '>': // Also handle > key (same physical key as . with shift)
+        case ".":
+        case ">": // Also handle > key (same physical key as . with shift)
           event.preventDefault();
           moveZAxis(100); // Move up 100 steps
           break;
-        case ',':
-        case '<': // Also handle < key (same physical key as , with shift)
+        case ",":
+        case "<": // Also handle < key (same physical key as , with shift)
           event.preventDefault();
           moveZAxis(-100); // Move down 100 steps
           break;
@@ -129,13 +167,12 @@ export default function StreamControls({
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener("keydown", handleKeyDown);
     };
   }, [moveZAxis]);
-
 
   // Handle start stream
   const handleStartStream = useCallback(async () => {
@@ -155,83 +192,199 @@ export default function StreamControls({
 
   // Render stream controls with editable image name and icon buttons
   return (
-    <Box sx={{ display: "flex", gap: 1, alignItems: "center", position: "relative" }}>
-      {/* Stream control buttons */}
-      <Typography variant="h6">Stream</Typography>
-      
-      {/* Start button - green when stream is OFF (can start), gray when ON */}
-      <IconButton
-        onClick={handleStartStream}
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 2,
+        width: "100%",
+      }}
+    >
+      {/* Stream Control Section */}
+      <Box
+        component="fieldset"
         sx={{
-          color: !isLiveViewActive ? 'success.main' : 'action.disabled',
-          '&:hover': {
-            backgroundColor: !isLiveViewActive ? 'success.light' : 'transparent',
-            opacity: !isLiveViewActive ? 0.8 : 0.5
-          }
+          border: 1,
+          borderColor: "divider",
+          borderRadius: 1,
+          p: 2,
+          display: "flex",
+          gap: 1,
+          alignItems: "center",
+          flexWrap: "wrap",
         }}
       >
-        <PlayArrow />
-      </IconButton>
-
-      {/* Stop button - red when stream is ON (can stop), gray when OFF */}
-      <IconButton
-        onClick={handleStopStream}
-        sx={{
-          color: isLiveViewActive ? 'error.main' : 'action.disabled',
-          '&:hover': {
-            backgroundColor: isLiveViewActive ? 'error.light' : 'transparent',
-            opacity: isLiveViewActive ? 0.8 : 0.5
-          }
-        }}
-      >
-        <Stop />
-      </IconButton>
-
-      {/* Editable image name field */}
-      <TextField
-        label="Image Name"
-        size="small"
-        value={snapFileName}
-        onChange={(e) => setSnapFileName(e.target.value)}
-        sx={{ width: 180 }}
-      />
-      {/* Snap icon button */}
-      <IconButton color="primary" onClick={onSnap}>
-        <CameraAlt />
-      </IconButton>
-      <Button variant="outlined" disabled={!lastSnapPath} onClick={onGoToImage}>
-        Go to image
-      </Button>
-      {/* Record icon buttons */}
-      {!isRecording ? (
-        <IconButton
-          color="secondary"
-          onClick={onStartRecord}
+        <Box
+          component="legend"
           sx={{
-            animation: isRecording ? "blinker 1s linear infinite" : "none",
-            "@keyframes blinker": {
-              "50%": { opacity: 0 },
-            },
+            display: "flex",
+            alignItems: "center",
+            gap: 0.5,
+            px: 1,
           }}
         >
-          <FiberManualRecord />
-        </IconButton>
-      ) : (
-        <IconButton color="error" onClick={onStopRecord}>
-          <StopIcon />
-        </IconButton>
-      )}
+          <VideoLibrary fontSize="small" sx={{ color: "text.secondary" }} />
+          <Typography variant="subtitle1" sx={{ fontWeight: "medium" }}>
+            Stream
+          </Typography>
+        </Box>
 
-      {/* Stream Control Overlay - positioned absolutely to not affect layout */}
-      <Box sx={{ position: "absolute", top: -10, right: -100, zIndex: 1001 }}> {/* FIXME: Adjust position as needed */}
-        <StreamControlOverlay
-          stats={hudData.stats}
-          featureSupport={hudData.featureSupport}
-          isWebGL={hudData.isWebGL}
-          imageSize={hudData.imageSize}
-          viewTransform={hudData.viewTransform}
-        />
+        <Button
+          variant="contained"
+          color="success"
+          size="small"
+          onClick={handleStartStream}
+          disabled={isLiveViewActive}
+          startIcon={<PlayArrow />}
+        >
+          Start
+        </Button>
+
+        <Button
+          variant="contained"
+          color="error"
+          size="small"
+          onClick={handleStopStream}
+          disabled={!isLiveViewActive}
+          startIcon={<Stop />}
+        >
+          Stop
+        </Button>
+
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={() => setOverlayOpen(true)}
+          sx={{ ml: "auto" }}
+          startIcon={<Settings />}
+        >
+          Settings
+        </Button>
       </Box>
+
+      {/* Recording Controls Section */}
+      <Box
+        component="fieldset"
+        sx={{
+          border: 1,
+          borderColor: "divider",
+          borderRadius: 1,
+          p: 2,
+          display: "flex",
+          gap: 1.5,
+          alignItems: "center",
+          flexWrap: "wrap",
+        }}
+      >
+        <Box
+          component="legend"
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 0.5,
+            px: 1,
+          }}
+        >
+          <Videocam fontSize="small" sx={{ color: "text.secondary" }} />
+          <Typography variant="subtitle1" sx={{ fontWeight: "medium" }}>
+            Record
+          </Typography>
+        </Box>
+
+        {/* Format and Name inputs */}
+        <FormControl size="small" sx={{ minWidth: 120 }}>
+          <InputLabel id="save-format-label">Format</InputLabel>
+          <Select
+            labelId="save-format-label"
+            id="save-format-select"
+            value={saveFormat}
+            label="Format"
+            onChange={(e) => setSaveFormat(e.target.value)}
+          >
+            {saveFormatOptions.map((opt) => (
+              <MenuItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <TextField
+          label="Image Name"
+          size="small"
+          value={snapFileName}
+          onChange={(e) => setSnapFileName(e.target.value)}
+          sx={{ minWidth: 200, flex: 1 }}
+        />
+
+        {/* Action buttons */}
+        <Button
+          variant="contained"
+          color="primary"
+          size="small"
+          onClick={() => onSnap(snapFileName, saveFormat)}
+          startIcon={<CameraAlt />}
+        >
+          Snap
+        </Button>
+
+        <Button
+          variant="outlined"
+          size="small"
+          disabled={!lastSnapPath}
+          onClick={onGoToImage}
+        >
+          Go to image
+        </Button>
+
+        {!isRecording ? (
+          <Button
+            variant="contained"
+            color="secondary"
+            size="small"
+            onClick={() => onStartRecord(saveFormat)}
+            startIcon={<FiberManualRecord />}
+          >
+            Record
+          </Button>
+        ) : (
+          <Button
+            variant="contained"
+            color="error"
+            size="small"
+            onClick={onStopRecord}
+            startIcon={<StopIcon />}
+            sx={{
+              animation: "blinker 1.5s linear infinite",
+              "@keyframes blinker": {
+                "50%": { opacity: 0.6 },
+              },
+            }}
+          >
+            Stop
+          </Button>
+        )}
+      </Box>
+
+      {/* Stream Control Overlay as Dialog */}
+      <Dialog
+        open={overlayOpen}
+        onClose={() => setOverlayOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Stream Settings</DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
+          <StreamControlOverlay
+            stats={hudData.stats}
+            featureSupport={hudData.featureSupport}
+            isWebGL={hudData.isWebGL}
+            imageSize={hudData.imageSize}
+            viewTransform={hudData.viewTransform}
+            forceExpanded={true}
+          />
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 }

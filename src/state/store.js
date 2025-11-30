@@ -32,7 +32,6 @@ import stresstestReducer from "./slices/StresstestSlice";
 import workflowReducer from "./slices/WorkflowSlice";
 import stormReducer from "./slices/STORMSlice";
 import focusLockReducer from "./slices/FocusLockSlice";
-import wifiReducer from "./slices/WiFiSlice";
 import demoReducer from "./slices/DemoSlice";
 import mazeGameReducer from "./slices/MazeGameSlice";
 import themeReducer from "./slices/ThemeSlice";
@@ -90,7 +89,6 @@ const rootReducer = combineReducers({
   workflowState: workflowReducer,
   storm: stormReducer,
   focusLockState: focusLockReducer,
-  wifiState: wifiReducer,
   demoState: demoReducer,
   mazeGameState: mazeGameReducer,
   themeState: themeReducer,
