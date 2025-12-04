@@ -9,6 +9,7 @@ const initialLiveViewState = {
   pixelSize: null,
   isStreamRunning: false,
   lastSnapPath: null, // Store the last snapped image path
+  showPositionController: false, // Persistent toggle for position controller visibility
 };
 
 // Create slice
@@ -37,6 +38,9 @@ const liveViewSlice = createSlice({
     setLastSnapPath: (state, action) => {
       state.lastSnapPath = action.payload;
     },
+    setShowPositionController: (state, action) => {
+      state.showPositionController = action.payload;
+    },
     resetState: (state) => {
       return initialLiveViewState;
     },
@@ -52,6 +56,7 @@ export const {
   setPixelSize,
   setIsStreamRunning,
   setLastSnapPath,
+  setShowPositionController,
   resetState,
 } = liveViewSlice.actions;
 

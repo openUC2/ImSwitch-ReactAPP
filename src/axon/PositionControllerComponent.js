@@ -48,16 +48,16 @@ const PositionControllerComponent = () => {
           movePositioner("Z", zoomDistance);
           break;
         case "up":
-          movePositioner("Y", moveDistance);
-          break;
-        case "down":
           movePositioner("Y", -moveDistance);
           break;
+        case "down":
+          movePositioner("Y", moveDistance);
+          break;
         case "left":
-          movePositioner("X", moveDistance);
+          movePositioner("X", -moveDistance);
           break;
         case "right":
-          movePositioner("X", -moveDistance);
+          movePositioner("X", moveDistance);
           break;
         default:
           console.log("ERROR unhandled action:", action);
@@ -255,123 +255,102 @@ const PositionControllerComponent = () => {
   }, []); // Empty dependency array means this effect runs once on mount
 
   //##################################################################################
+  const buttonSize = isMobile ? 60 : 48;
+  const buttonStyle = {
+    minHeight: buttonSize,
+    minWidth: buttonSize,
+    maxHeight: buttonSize,
+    maxWidth: buttonSize,
+    fontSize: isMobile ? "1.2rem" : "0.9rem",
+    touchAction: "manipulation",
+    userSelect: "none",
+    padding: 0,
+  };
+
   return (
     <div
       className="arrow-container"
       style={{
         padding: isMobile ? "16px" : "10px",
-        display: "flex",
-        flexDirection: "column",
+        display: "grid",
+        gridTemplateColumns: `repeat(3, ${buttonSize}px)`,
+        gridTemplateRows: `repeat(2, ${buttonSize}px)`,
         gap: isMobile ? "8px" : "4px",
+        width: "fit-content",
       }}
     >
-      <div style={{ display: "flex", gap: isMobile ? "8px" : "4px" }}>
-        <Button
-          variant="contained"
-          onMouseDown={() => startPeriodicRequest("minus")}
-          onMouseUp={stopPeriodicRequest}
-          onMouseLeave={stopPeriodicRequest}
-          onTouchStart={() => startPeriodicRequest("minus")}
-          onTouchEnd={stopPeriodicRequest}
-          sx={{
-            minHeight: isMobile ? 60 : 48,
-            minWidth: isMobile ? 60 : 48,
-            fontSize: isMobile ? "1.2rem" : "1rem",
-            touchAction: "manipulation",
-            userSelect: "none",
-          }}
-        >
-          -
-        </Button>
-        <Button
-          variant="contained"
-          onMouseDown={() => startPeriodicRequest("up")}
-          onMouseUp={stopPeriodicRequest}
-          onMouseLeave={stopPeriodicRequest}
-          onTouchStart={() => startPeriodicRequest("up")}
-          onTouchEnd={stopPeriodicRequest}
-          sx={{
-            minHeight: isMobile ? 60 : 48,
-            minWidth: isMobile ? 60 : 48,
-            fontSize: isMobile ? "1.2rem" : "1rem",
-            touchAction: "manipulation",
-            userSelect: "none",
-          }}
-        >
-          ↑
-        </Button>
-        <Button
-          variant="contained"
-          onMouseDown={() => startPeriodicRequest("plus")}
-          onMouseUp={stopPeriodicRequest}
-          onMouseLeave={stopPeriodicRequest}
-          onTouchStart={() => startPeriodicRequest("plus")}
-          onTouchEnd={stopPeriodicRequest}
-          sx={{
-            minHeight: isMobile ? 60 : 48,
-            minWidth: isMobile ? 60 : 48,
-            fontSize: isMobile ? "1.2rem" : "1rem",
-            touchAction: "manipulation",
-            userSelect: "none",
-          }}
-        >
-          +
-        </Button>
-      </div>
-
-      <div style={{ display: "flex", gap: isMobile ? "8px" : "4px" }}>
-        <Button
-          variant="contained"
-          onMouseDown={() => startPeriodicRequest("left")}
-          onMouseUp={stopPeriodicRequest}
-          onMouseLeave={stopPeriodicRequest}
-          onTouchStart={() => startPeriodicRequest("left")}
-          onTouchEnd={stopPeriodicRequest}
-          sx={{
-            minHeight: isMobile ? 60 : 48,
-            minWidth: isMobile ? 60 : 48,
-            fontSize: isMobile ? "1.2rem" : "1rem",
-            touchAction: "manipulation",
-            userSelect: "none",
-          }}
-        >
-          ←
-        </Button>
-        <Button
-          variant="contained"
-          onMouseDown={() => startPeriodicRequest("down")}
-          onMouseUp={stopPeriodicRequest}
-          onMouseLeave={stopPeriodicRequest}
-          onTouchStart={() => startPeriodicRequest("down")}
-          onTouchEnd={stopPeriodicRequest}
-          sx={{
-            minHeight: isMobile ? 60 : 48,
-            minWidth: isMobile ? 60 : 48,
-            fontSize: isMobile ? "1.2rem" : "1rem",
-            touchAction: "manipulation",
-            userSelect: "none",
-          }}
-        >
-          ↓
-        </Button>
-        <Button
-          variant="contained"
-          onMouseDown={() => startPeriodicRequest("right")}
-          onMouseUp={stopPeriodicRequest}
-          onMouseLeave={stopPeriodicRequest}
-          onTouchStart={() => startPeriodicRequest("right")}
-          onTouchEnd={stopPeriodicRequest}
-          sx={{
-            minHeight: isMobile ? 60 : 48,
-            minWidth: isMobile ? 60 : 48,
-            fontSize: isMobile ? "1.2rem" : "1rem",
-            touchAction: "manipulation",
-            userSelect: "none",
-          }}
-        >
-          →
-        </Button>
-      </div>
+      <Button
+        variant="contained"
+        onMouseDown={() => startPeriodicRequest("minus")}
+        onMouseUp={stopPeriodicRequest}
+        onMouseLeave={stopPeriodicRequest}
+        onTouchStart={() => startPeriodicRequest("minus")}
+        onTouchEnd={stopPeriodicRequest}
+        onTouchCancel={stopPeriodicRequest}
+        sx={buttonStyle}
+      >
+        Z-
+      </Button>
+      <Button
+        variant="contained"
+        onMouseDown={() => startPeriodicRequest("up")}
+        onMouseUp={stopPeriodicRequest}
+        onMouseLeave={stopPeriodicRequest}
+        onTouchStart={() => startPeriodicRequest("up")}
+        onTouchEnd={stopPeriodicRequest}
+        onTouchCancel={stopPeriodicRequest}
+        sx={buttonStyle}
+      >
+        Y↑
+      </Button>
+      <Button
+        variant="contained"
+        onMouseDown={() => startPeriodicRequest("plus")}
+        onMouseUp={stopPeriodicRequest}
+        onMouseLeave={stopPeriodicRequest}
+        onTouchStart={() => startPeriodicRequest("plus")}
+        onTouchEnd={stopPeriodicRequest}
+        onTouchCancel={stopPeriodicRequest}
+        sx={buttonStyle}
+      >
+        Z+
+      </Button>
+      <Button
+        variant="contained"
+        onMouseDown={() => startPeriodicRequest("left")}
+        onMouseUp={stopPeriodicRequest}
+        onMouseLeave={stopPeriodicRequest}
+        onTouchStart={() => startPeriodicRequest("left")}
+        onTouchEnd={stopPeriodicRequest}
+        onTouchCancel={stopPeriodicRequest}
+        sx={buttonStyle}
+      >
+        X←
+      </Button>
+      <Button
+        variant="contained"
+        onMouseDown={() => startPeriodicRequest("down")}
+        onMouseUp={stopPeriodicRequest}
+        onMouseLeave={stopPeriodicRequest}
+        onTouchStart={() => startPeriodicRequest("down")}
+        onTouchEnd={stopPeriodicRequest}
+        onTouchCancel={stopPeriodicRequest}
+        sx={buttonStyle}
+      >
+        Y↓
+      </Button>
+      <Button
+        variant="contained"
+        onMouseDown={() => startPeriodicRequest("right")}
+        onMouseUp={stopPeriodicRequest}
+        onMouseLeave={stopPeriodicRequest}
+        onTouchStart={() => startPeriodicRequest("right")}
+        onTouchEnd={stopPeriodicRequest}
+        onTouchCancel={stopPeriodicRequest}
+        sx={buttonStyle}
+      >
+        X→
+      </Button>
     </div>
   );
 };

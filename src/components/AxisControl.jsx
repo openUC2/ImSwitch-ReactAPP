@@ -25,18 +25,19 @@ import {
   Close,
 } from "@mui/icons-material";
 import * as positionSlice from "../state/slices/PositionSlice.js";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 
 /**
  * ImprovedAxisControl - Consolidated position display with multi-purpose editing
  */
 const ImprovedAxisControl = ({ hostIP, hostPort }) => {
+  const dispatch = useDispatch();
   const [positionerName, setPositionerName] = useState("");
   const [globalSpeed, setGlobalSpeed] = useState(20000);
   const [editingAxis, setEditingAxis] = useState(null); // Which axis position is being edited
   const [tempPositions, setTempPositions] = useState({}); // Temporary values during editing
 
-  // Get positions from Redux instead of local state
+  // Get positions and step sizes from Redux
   const positionState = useSelector(positionSlice.getPositionState);
 
   // Map Redux state to positions object (x, y, z, a -> X, Y, Z, A)
@@ -45,6 +46,14 @@ const ImprovedAxisControl = ({ hostIP, hostPort }) => {
     Y: positionState.y,
     Z: positionState.z,
     A: positionState.a,
+  };
+
+  // Get step sizes from Redux (persisted)
+  const stepSizes = positionState.stepSizes || {
+    X: 100,
+    Y: 100,
+    Z: 10,
+    A: 10,
   };
 
   /* --- initial fetch for positioner name --- */
@@ -62,14 +71,6 @@ const ImprovedAxisControl = ({ hostIP, hostPort }) => {
     })();
   }, [hostIP, hostPort]);
 
-  // Step sizes per axis (can be individual)
-  const [stepSizes, setStepSizes] = useState({
-    X: 100,
-    Y: 100,
-    Z: 10,
-    A: 1,
-  });
-
   // Quick step sizes options
   const stepOptions = [
     { value: 10, label: "10µm", color: "primary" },
@@ -77,6 +78,11 @@ const ImprovedAxisControl = ({ hostIP, hostPort }) => {
     { value: 1000, label: "1000µm", color: "success" },
     { value: 10000, label: "10000µm", color: "warning" },
   ];
+
+  // Update step size for a specific axis (persisted in Redux)
+  const setStepSize = (axis, value) => {
+    dispatch(positionSlice.setStepSize({ axis, value }));
+  };
 
   const call = async (url) => {
     try {
@@ -138,10 +144,6 @@ const ImprovedAxisControl = ({ hostIP, hostPort }) => {
 
   const updateTempPosition = (axis, value) => {
     setTempPositions({ ...tempPositions, [axis]: value });
-  };
-
-  const setStepSize = (axis, size) => {
-    setStepSizes({ ...stepSizes, [axis]: size });
   };
 
   return (
