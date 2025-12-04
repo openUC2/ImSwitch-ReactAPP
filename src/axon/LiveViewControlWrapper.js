@@ -195,7 +195,8 @@ const LiveViewControlWrapper = ({ useFastMode = true }) => {
       </div>
 
       {/* Position controller - shown on hover OR when toggled on */}
-      {(showPositionController || isHovering) && (
+      {(showPositionController ||
+        (isHovering && window.matchMedia("(hover: hover)").matches)) && (
         <div
           style={{
             position: "absolute",
