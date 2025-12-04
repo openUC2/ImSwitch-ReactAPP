@@ -53,12 +53,12 @@ const WizardStep3 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
     };
     fetchPos();
     
-    // Auto-move to slot 2 if X2 position is known
-    if (objectiveState.posX2 !== null && objectiveState.posX2 !== undefined) {
+    // Auto-move to slot 2 if X1 position is known
+    if (objectiveState.posX1 !== null && objectiveState.posX1 !== undefined) {
       const moveToSlot2 = () => {
         apiPositionerControllerMovePositioner({
           axis: "A",
-          dist: objectiveState.posX2,
+          dist: objectiveState.posX1,
           isAbsolute: true,
           isBlocking: false,
         })
@@ -72,7 +72,7 @@ const WizardStep3 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
       };
       moveToSlot2();
     }
-  }, [dispatch, objectiveState.posX2]);
+  }, [dispatch, objectiveState.posX1]);
 
 
 
@@ -94,11 +94,11 @@ const WizardStep3 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
 
   const handleMoveToSlot2 = () => {
     setIsMovedToSlot2(false); // Reset state for movement feedback
-    if (objectiveState.posX2 !== null && objectiveState.posX2 !== undefined) {
-      // Move to existing X2 position
+    if (objectiveState.posX1 !== null && objectiveState.posX1 !== undefined) {
+      // Move to existing X1 position
       apiPositionerControllerMovePositioner({
         axis: "A",
-        dist: objectiveState.posX2,
+        dist: objectiveState.posX1,
         isAbsolute: true,
         isBlocking: false,
       })
@@ -110,7 +110,7 @@ const WizardStep3 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
           console.error("Error moving to slot 2:", err);
         });
     } else {
-      // No X2 position set, just mark as moved to slot 2
+      // No X1 position set, just mark as moved to slot 2
       setIsMovedToSlot2(true);
     }
   };
@@ -132,19 +132,19 @@ const WizardStep3 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
       });
   };
 
-  const handleSaveX2Position = () => {
+  const handleSaveX1Position = () => {
     if (currentPosition !== null) {
-      // Save current position as X2 using the proper API
+      // Save current position as X1 using the proper API
       apiObjectiveControllerSetPositions({
-        x2: currentPosition,
+        x1: currentPosition,
         isBlocking: false,
       })
         .then((data) => {
-          dispatch(objectiveSlice.setPosX2(currentPosition));
-          alert(`X2 position set to: ${currentPosition}`);
+          dispatch(objectiveSlice.setPosX1(currentPosition));
+          alert(`X1 position set to: ${currentPosition}`);
         })
         .catch((err) => {
-          console.error("Error setting X2:", err);
+          console.error("Error setting X1:", err);
         });
     }
   };
@@ -158,7 +158,7 @@ const WizardStep3 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
 
   const commitObjectiveInfo = () => {
     // Update Redux state with new objective 2 info
-    dispatch(objectiveSlice.setmagnification2(parseFloat(objectiveInfo.magnification) || 0));
+    dispatch(objectiveSlice.setmagnification1(parseFloat(objectiveInfo.magnification) || 0));
     alert("Objective 2 information updated");
   };
 
@@ -187,12 +187,12 @@ const WizardStep3 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
   return (
     <Box sx={{ p: 2 }}>
       <Typography variant="h5" gutterBottom>
-        Step 3: Calibrate Slot 2 (X2 Position)
+        Step 3: Calibrate Slot 2 (X1 Position)
       </Typography>
       
       <Alert severity="info" sx={{ mb: 3 }}>
         The objective will now move to slot 2 position. Adjust the position to center 
-        the beam spot with the crosshair center, then save the X2 position.
+        the beam spot with the crosshair center, then save the X1 position.
       </Alert>
 
       <Grid container spacing={3}>
@@ -274,16 +274,16 @@ const WizardStep3 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
           <Paper elevation={2} sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
               <SaveIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-              3. Save X2 Position
+              3. Save X1 Position
             </Typography>
             <Button
               variant="contained"
               color="success"
-              onClick={handleSaveX2Position}
+              onClick={handleSaveX1Position}
               disabled={!currentPosition}
               startIcon={<SaveIcon />}
             >
-              Save Current Position as X2
+              Save Current Position as X1
             </Button>
           </Paper>
         </Grid>

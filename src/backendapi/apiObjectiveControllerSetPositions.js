@@ -1,29 +1,29 @@
 import createAxiosInstance from "./createAxiosInstance";
 
 // Function to set positions with optional parameters in an object
-const apiObjectiveControllerSetPositions = async ({ x1, x2, z1, z2, isBlocking = false }) => {
+const apiObjectiveControllerSetPositions = async ({ x0, x1, z0, z1, isBlocking = false }) => {
   try {
     // Start the query string with the base URL
     let query = "/ObjectiveController/setPositions?";
+    
+    // Include x0 if it's provided
+    if (x0 !== undefined) {
+      query += `x0=${x0}&`;
+    }
     
     // Include x1 if it's provided
     if (x1 !== undefined) {
       query += `x1=${x1}&`;
     }
-    
-    // Include x2 if it's provided
-    if (x2 !== undefined) {
-      query += `x2=${x2}&`;
+
+    // include z0 if it's provided
+    if (z0 !== undefined) {
+      query += `z0=${z0}&`;
     }
 
     // include z1 if it's provided
     if (z1 !== undefined) {
       query += `z1=${z1}&`;
-    }
-
-    // include z2 if it's provided
-    if (z2 !== undefined) {
-      query += `z2=${z2}&`;
     }
     
     // Include isBlocking, defaulting to false if not provided
@@ -54,8 +54,8 @@ const setPositions = (positionParams) => {
 };
 
 // Example of calling the function
-setPositions({ x1: 100, x2: 200, isBlocking: true });
-setPositions({ x2: 200 });  // Only x2, isBlocking will be default false
+setPositions({ x0: 100, x1: 200, isBlocking: true });
+setPositions({ x1: 200 });  // Only x1, isBlocking will be default false
 setPositions({ isBlocking: true });  // Only isBlocking
-setPositions({ x1: 100 });  // Only x1
+setPositions({ x0: 100 });  // Only x0
 */

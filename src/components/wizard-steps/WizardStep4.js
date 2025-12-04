@@ -117,19 +117,19 @@ const WizardStep4 = ({
       });
   };
 
-  const handleSaveZ1Position = () => {
+  const handleSaveZ0Position = () => {
     if (currentPositions.Z !== null) {
-      // Save current Z position as Z1 using the proper API
+      // Save current Z position as Z0 using the proper API
       apiObjectiveControllerSetPositions({
-        z1: currentPositions.Z,
+        z0: currentPositions.Z,
         isBlocking: false,
       })
         .then((data) => {
-          dispatch(objectiveSlice.setPosZ1(currentPositions.Z));
-          alert(`Z1 position set to: ${currentPositions.Z}`);
+          dispatch(objectiveSlice.setPosZ0(currentPositions.Z));
+          alert(`Z0 position set to: ${currentPositions.Z}`);
         })
         .catch((err) => {
-          console.error("Error setting Z1:", err);
+          console.error("Error setting Z0:", err);
         });
     }
   };
@@ -137,12 +137,12 @@ const WizardStep4 = ({
   return (
     <Box sx={{ p: 2 }}>
       <Typography variant="h5" gutterBottom>
-        Step 4: Calibrate Focus Position Z1
+        Step 4: Calibrate Focus Position Z0
       </Typography>
 
       <Alert severity="info" sx={{ mb: 3 }}>
         Insert objectives into slots 1 and 2, add a sample, switch to objective
-        1, find a feature to focus on, and save the Z1 focus position.
+        1, find a feature to focus on, and save the Z0 focus position.
       </Alert>
 
       <Grid container spacing={3}>
@@ -239,7 +239,7 @@ const WizardStep4 = ({
           <Paper elevation={2} sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
               <SaveIcon sx={{ mr: 1, verticalAlign: "middle" }} />
-              4. Save Z1 Focus Position
+              4. Save Z0 Focus Position
             </Typography>
             <Typography variant="body2" sx={{ mb: 2 }}>
               Current Positions:
@@ -255,11 +255,11 @@ const WizardStep4 = ({
             <Button
               variant="contained"
               color="success"
-              onClick={handleSaveZ1Position}
+              onClick={handleSaveZ0Position}
               disabled={!movedToObjective1 || currentPositions.Z === null}
               startIcon={<SaveIcon />}
             >
-              Save Current Z as Z1
+              Save Current Z as Z0
             </Button>
           </Paper>
         </Grid>
@@ -267,7 +267,7 @@ const WizardStep4 = ({
 
       <Alert severity="success" sx={{ mt: 3 }}>
         <strong>Tip:</strong> Once you have a sharp focus on a feature, click
-        "Save Current Z as Z1" to store this focus position for objective 1.
+        "Save Current Z as Z0" to store this focus position for objective 1.
       </Alert>
     </Box>
   );

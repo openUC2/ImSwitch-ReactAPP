@@ -5,23 +5,24 @@ import * as objectiveSlice from "../state/slices/ObjectiveSlice.js";
 const fetchObjectiveControllerGetStatus = (dispatch) => {
   // Request to fetch objective status
   apiObjectiveControllerGetStatus()
-    .then((data) => {
-      console.log("fetchObjectiveControllerGetStatus", data);
+    .then((config) => {
+      console.log("fetchObjectiveControllerGetStatus", config);
       // TODO: THIS IS CALLED TOO OFTEN! 
       // Update Redux with the fetched status
-      dispatch(objectiveSlice.setFovX(data.FOV[0]*1)); //* 1000)); //TODO remove fov dummy data correction factor
-      dispatch(objectiveSlice.setFovY(data.FOV[1]*1));// * 1000)); //TODO remove fov dummy data correction factor
+      dispatch(objectiveSlice.setFovX(config.FOV[0]*1)); //* 1000)); //TODO remove fov dummy config correction factor
+      dispatch(objectiveSlice.setFovY(config.FOV[1]*1));// * 1000)); //TODO remove fov dummy config correction factor
 
       //TODO check if field exists
-      dispatch(objectiveSlice.setPosX1(data.x1));
-      dispatch(objectiveSlice.setPosX2(data.x2)); 
-      dispatch(objectiveSlice.setPixelSize(data.pixelsize)); 
-      dispatch(objectiveSlice.setPosZ1(data.z1));
-      dispatch(objectiveSlice.setPosZ2(data.z2));
-      dispatch(objectiveSlice.setMagnification(data.magnification))
-      dispatch(objectiveSlice.setNA(data.NA))
-      dispatch(objectiveSlice.setmagnification1(data.availableObjectivesNames[0]))
-      dispatch(objectiveSlice.setmagnification2(data.availableObjectivesNames[1]))
+      // Backend returns x0, x1, z0, z1 (not x1, x2, z1, z2)
+      dispatch(objectiveSlice.setPosX0(config.x0));
+      dispatch(objectiveSlice.setPosX1(config.x1)); 
+      dispatch(objectiveSlice.setPixelSize(config.pixelsize)); 
+      dispatch(objectiveSlice.setPosZ0(config.z0));
+      dispatch(objectiveSlice.setPosZ1(config.z1));
+      dispatch(objectiveSlice.setMagnification(config.magnification))
+      dispatch(objectiveSlice.setNA(config.NA))
+      dispatch(objectiveSlice.setmagnification1(config.availableObjectivesNames[0]))
+      dispatch(objectiveSlice.setmagnification2(config.availableObjectivesNames[1]))
   
       //TODO add more objective results
       /*reposne: 

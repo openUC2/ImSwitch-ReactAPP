@@ -23,10 +23,10 @@ const WizardStep6 = ({ hostIP, hostPort, onNext, onBack, onComplete, activeStep,
   const objectiveState = useSelector(objectiveSlice.getObjectiveState);
 
   const calibrationComplete = 
+    objectiveState.posX0 !== null && 
     objectiveState.posX1 !== null && 
-    objectiveState.posX2 !== null && 
-    objectiveState.posZ1 !== null && 
-    objectiveState.posZ2 !== null;
+    objectiveState.posZ0 !== null && 
+    objectiveState.posZ1 !== null;
 
   const handleRestartCalibration = () => {
     // Reset to step 1
@@ -70,21 +70,31 @@ const WizardStep6 = ({ hostIP, hostPort, onNext, onBack, onComplete, activeStep,
             <List>
               <ListItem>
                 <ListItemIcon>
+                  <CheckIcon color={objectiveState.posX0 !== null ? "success" : "disabled"} />
+                </ListItemIcon>
+                <ListItemText 
+                  primary="X0 Position (Objective Slot 1)"
+                  secondary={`Value: ${objectiveState.posX0 !== null ? objectiveState.posX0 : "Not calibrated"}`}
+                />
+              </ListItem>
+              
+              <ListItem>
+                <ListItemIcon>
                   <CheckIcon color={objectiveState.posX1 !== null ? "success" : "disabled"} />
                 </ListItemIcon>
                 <ListItemText 
-                  primary="X1 Position (Objective Slot 1)"
+                  primary="X1 Position (Objective Slot 2)"
                   secondary={`Value: ${objectiveState.posX1 !== null ? objectiveState.posX1 : "Not calibrated"}`}
                 />
               </ListItem>
               
               <ListItem>
                 <ListItemIcon>
-                  <CheckIcon color={objectiveState.posX2 !== null ? "success" : "disabled"} />
+                  <CheckIcon color={objectiveState.posZ0 !== null ? "success" : "disabled"} />
                 </ListItemIcon>
                 <ListItemText 
-                  primary="X2 Position (Objective Slot 2)"
-                  secondary={`Value: ${objectiveState.posX2 !== null ? objectiveState.posX2 : "Not calibrated"}`}
+                  primary="Z0 Position (Focus for Objective 1)"
+                  secondary={`Value: ${objectiveState.posZ0 !== null ? objectiveState.posZ0 : "Not calibrated"}`}
                 />
               </ListItem>
               
@@ -93,18 +103,8 @@ const WizardStep6 = ({ hostIP, hostPort, onNext, onBack, onComplete, activeStep,
                   <CheckIcon color={objectiveState.posZ1 !== null ? "success" : "disabled"} />
                 </ListItemIcon>
                 <ListItemText 
-                  primary="Z1 Position (Focus for Objective 1)"
+                  primary="Z1 Position (Focus for Objective 2)"
                   secondary={`Value: ${objectiveState.posZ1 !== null ? objectiveState.posZ1 : "Not calibrated"}`}
-                />
-              </ListItem>
-              
-              <ListItem>
-                <ListItemIcon>
-                  <CheckIcon color={objectiveState.posZ2 !== null ? "success" : "disabled"} />
-                </ListItemIcon>
-                <ListItemText 
-                  primary="Z2 Position (Focus for Objective 2)"
-                  secondary={`Value: ${objectiveState.posZ2 !== null ? objectiveState.posZ2 : "Not calibrated"}`}
                 />
               </ListItem>
             </List>

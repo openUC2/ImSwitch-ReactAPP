@@ -250,13 +250,13 @@ const ObjectiveControllerTab = () => {
             <Divider sx={{ my: 2 }} />
             
             <Typography variant="body2" color="text.secondary">
-              <strong>Position X1:</strong>{' '}
-              {objectiveState.posX1 !== null ? objectiveState.posX1 : 'Unknown'}
+              <strong>Position X0:</strong>{' '}
+              {objectiveState.posX0 !== null ? objectiveState.posX0 : 'Unknown'}
             </Typography>
             
             <Typography variant="body2" color="text.secondary">
-              <strong>Position X2:</strong>{' '}
-              {objectiveState.posX2 !== null ? objectiveState.posX2 : 'Unknown'}
+              <strong>Position X1:</strong>{' '}
+              {objectiveState.posX1 !== null ? objectiveState.posX1 : 'Unknown'}
             </Typography>
             
             <Button 

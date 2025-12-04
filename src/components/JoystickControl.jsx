@@ -223,7 +223,7 @@ export default function JoystickControl({ hostIP, hostPort }) {
             <g fill="#c0c0c0" transform="translate(10, 10)">
               <g
                 transform="translate(120 120)"
-                onClick={() => handleJoystickClick("Y+", stepSizeXY)}
+                onClick={() => handleJoystickClick("Y-", stepSizeXY)}
               >
                 <path
                   className="joyStd"
@@ -241,7 +241,7 @@ export default function JoystickControl({ hostIP, hostPort }) {
               </g>
               <g
                 transform="translate(120 120)"
-                onClick={() => handleJoystickClick("Y-", stepSizeXY)}
+                onClick={() => handleJoystickClick("Y+", stepSizeXY)}
               >
                 <path
                   className="joyStd"
@@ -263,7 +263,7 @@ export default function JoystickControl({ hostIP, hostPort }) {
             <g fill="#d0d0d0" transform="translate(10, 10)">
               <g
                 transform="translate(120 120)"
-                onClick={() => handleJoystickClick("Y+", stepSizeXY / 10)}
+                onClick={() => handleJoystickClick("Y-", stepSizeXY / 10)}
               >
                 <path
                   className="joyStd"
@@ -281,7 +281,7 @@ export default function JoystickControl({ hostIP, hostPort }) {
               </g>
               <g
                 transform="translate(120 120)"
-                onClick={() => handleJoystickClick("Y-", stepSizeXY / 10)}
+                onClick={() => handleJoystickClick("Y+", stepSizeXY / 10)}
               >
                 <path
                   className="joyStd"
@@ -303,7 +303,7 @@ export default function JoystickControl({ hostIP, hostPort }) {
             <g fill="#e0e0e0" transform="translate(10, 10)">
               <g
                 transform="translate(120 120)"
-                onClick={() => handleJoystickClick("Y+", stepSizeXY / 100)}
+                onClick={() => handleJoystickClick("Y-", stepSizeXY / 100)}
               >
                 <path
                   className="joyStd"
@@ -321,7 +321,7 @@ export default function JoystickControl({ hostIP, hostPort }) {
               </g>
               <g
                 transform="translate(120 120)"
-                onClick={() => handleJoystickClick("Y-", stepSizeXY / 100)}
+                onClick={() => handleJoystickClick("Y+", stepSizeXY / 100)}
               >
                 <path
                   className="joyStd"
@@ -501,11 +501,11 @@ export default function JoystickControl({ hostIP, hostPort }) {
               />
               <text x="123" y="47" fill="black">
                 {" "}
-                +Y
+                -Y
               </text>
               <text x="123" y="232" fill="black">
                 {" "}
-                -Y
+                +Y
               </text>
               <text x="37" y="134" fill="black">
                 {" "}

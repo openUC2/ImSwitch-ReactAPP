@@ -38,10 +38,8 @@ const ExtendedObjectiveController = () => {
   const currentZ = objectiveState.currentZ;
   const imageUrls = objectiveState.imageUrls;
   const detectors = objectiveState.detectors;
-  const manualX1 = objectiveState.manualX1;
-  const manualX2 = objectiveState.manualX2;
+  const manualZ0 = objectiveState.manualZ0;
   const manualZ1 = objectiveState.manualZ1;
-  const manualZ2 = objectiveState.manualZ2;
 
   // Local state for wizard
   const [wizardOpen, setWizardOpen] = useState(false);
@@ -75,7 +73,7 @@ const ExtendedObjectiveController = () => {
       });
   }, [hostIP, hostPort]); // on host ip/port change
 
-  // Fetch objective status (x1 and x2) from backend
+  // Fetch objective status (x0 and x1) from backend
   const refreshStatus = () => {
     //request fetch status
     fetchObjectiveControllerGetStatus(dispatch);
@@ -95,7 +93,7 @@ const ExtendedObjectiveController = () => {
       });
   };
 
-  // Switch objective (slot should be 1 or 2)
+  // Switch objective (slot should be 0 or 1)
   const handleSwitchObjective = (slot) => {
     apiObjectiveControllerMoveToObjective(slot)
       .then((data) => {
@@ -123,7 +121,28 @@ const ExtendedObjectiveController = () => {
       });
   };
 
-  // Set objective positions (x1 or x2) manually via backend
+  // Set objective positions (x0 or x1) manually via backend
+  const handleSetX0 = (value) => {
+    //handle value
+    const numericValue = Number(value);
+    if (isNaN(numericValue)) {
+      console.error("Error X0 must be a number");
+      return;
+    }
+    //api request
+    apiObjectiveControllerSetPositions({
+      x0: numericValue,
+      isBlocking: false,
+    })
+      .then((data) => {
+        //refresh
+        refreshStatus();
+      })
+      .catch((err) => {
+        console.error("Api eror setting X0:", err);
+      });
+  };
+
   const handleSetX1 = (value) => {
     //handle value
     const numericValue = Number(value);
@@ -145,16 +164,16 @@ const ExtendedObjectiveController = () => {
       });
   };
 
-  const handleSetX2 = (value) => {
+  const handleSetZ0 = (value) => {
     //handle value
     const numericValue = Number(value);
     if (isNaN(numericValue)) {
-      console.error("Error X2 must be a number");
+      console.error("Error Z0 must be a number");
       return;
     }
     //api request
     apiObjectiveControllerSetPositions({
-      x2: numericValue,
+      z0: numericValue,
       isBlocking: false,
     })
       .then((data) => {
@@ -162,7 +181,7 @@ const ExtendedObjectiveController = () => {
         refreshStatus();
       })
       .catch((err) => {
-        console.error("Api eror setting X2:", err);
+        console.error("Api eror setting Z0:", err);
       });
   };
 
@@ -187,47 +206,32 @@ const ExtendedObjectiveController = () => {
       });
   };
 
-  const handleSetZ2 = (value) => {
-    //handle value
-    const numericValue = Number(value);
-    if (isNaN(numericValue)) {
-      console.error("Error Z2 must be a number");
-      return;
-    }
-    //api request
-    apiObjectiveControllerSetPositions({
-      z2: numericValue,
-      isBlocking: false,
-    })
-      .then((data) => {
-        //refresh
-        refreshStatus();
-      })
-      .catch((err) => {
-        console.error("Api eror setting Z2:", err);
-      });
-  };
-
-  // Read current position from PositionerController and set as X1 or X2
+  // Read current position from PositionerController and set as X0 or X1
   const handleSetCurrentAs = async (which) => {
     apiPositionerControllerGetPositions()
       .then((data) => {
         // Handle success response
+        let posA, posZ;
         if (data.ESP32Stage) {
-          dispatch(objectiveSlice.setCurrentZ(data.ESP32Stage.Z));
-          dispatch(objectiveSlice.setCurrentA(data.ESP32Stage.A));
+          posZ = data.ESP32Stage.Z;
+          posA = data.ESP32Stage.A;
+          dispatch(objectiveSlice.setCurrentZ(posZ));
+          dispatch(objectiveSlice.setCurrentA(posA));
         } else if (data.VirtualStage) {
-          dispatch(objectiveSlice.setCurrentZ(data.VirtualStage.Z));
-          dispatch(objectiveSlice.setCurrentA(data.VirtualStage.A));
+          posZ = data.VirtualStage.Z;
+          posA = data.VirtualStage.A;
+          dispatch(objectiveSlice.setCurrentZ(posZ));
+          dispatch(objectiveSlice.setCurrentA(posA));
         }
-        if (which === "x1") {
-          handleSetX1(currentA);
-        } else if (which === "x2") {
-          handleSetX2(currentA);
+        // Use the freshly fetched values, not stale Redux state
+        if (which === "x0") {
+          handleSetX0(posA);
+        } else if (which === "x1") {
+          handleSetX1(posA);
+        } else if (which === "z0") {
+          handleSetZ0(posZ);
         } else if (which === "z1") {
-          handleSetZ1(currentZ);
-        } else if (which === "z2") {
-          handleSetZ2(currentZ);
+          handleSetZ1(posZ);
         }
       })
       .catch((err) => {
@@ -389,12 +393,59 @@ const ExtendedObjectiveController = () => {
           </Grid>
         </Grid>
 
-        {/* Objective Positions (X1, X2, Z1, Z2) */}
+        {/* Objective Positions (X0, X1, Z0, Z1) */}
         <Grid item xs={12}>
           <Typography variant="subtitle1" gutterBottom>
             Objective Positions
           </Typography>
           <Grid container spacing={2}>
+            {/* X0 */}
+            <Grid item xs={12} md={6} lg={3}>
+              <Box
+                sx={{ border: "1px solid #eee", borderRadius: 2, p: 2, mb: 2 }}
+              >
+                <Typography variant="body1">
+                  <b>X0:</b>{" "}
+                  {objectiveState.posX0 !== null
+                    ? objectiveState.posX0
+                    : "Unknown"}
+                </Typography>
+                <TextField
+                  label="Set X0"
+                  value={objectiveState.manualX0}
+                  onChange={(e) =>
+                    dispatch(objectiveSlice.setManualX0(e.target.value))
+                  }
+                  size="small"
+                  fullWidth
+                  sx={{ my: 1 }}
+                />
+                <Button
+                  variant="contained"
+                  onClick={() => handleSetX0(objectiveState.manualX0)}
+                  fullWidth
+                  sx={{ mb: 1 }}
+                >
+                  Set X0
+                </Button>
+                <Button
+                  variant="outlined"
+                  onClick={() => handleSetCurrentAs("x0")}
+                  fullWidth
+                  sx={{ mb: 1 }}
+                >
+                  Set Current as X0
+                </Button>
+                <Button
+                  variant="outlined"
+                  color="secondary"
+                  onClick={() => handleSwitchObjective(0)}
+                  fullWidth
+                >
+                  Switch to Objective 1
+                </Button>
+              </Box>
+            </Grid>
             {/* X1 */}
             <Grid item xs={12} md={6} lg={3}>
               <Box
@@ -408,7 +459,7 @@ const ExtendedObjectiveController = () => {
                 </Typography>
                 <TextField
                   label="Set X1"
-                  value={manualX1}
+                  value={objectiveState.manualX1}
                   onChange={(e) =>
                     dispatch(objectiveSlice.setManualX1(e.target.value))
                   }
@@ -418,7 +469,7 @@ const ExtendedObjectiveController = () => {
                 />
                 <Button
                   variant="contained"
-                  onClick={() => handleSetX1(manualX1)}
+                  onClick={() => handleSetX1(objectiveState.manualX1)}
                   fullWidth
                   sx={{ mb: 1 }}
                 >
@@ -438,26 +489,26 @@ const ExtendedObjectiveController = () => {
                   onClick={() => handleSwitchObjective(1)}
                   fullWidth
                 >
-                  Switch to Objective 1
+                  Switch to Objective 2
                 </Button>
               </Box>
             </Grid>
-            {/* X2 */}
+            {/* Z0 */}
             <Grid item xs={12} md={6} lg={3}>
               <Box
                 sx={{ border: "1px solid #eee", borderRadius: 2, p: 2, mb: 2 }}
               >
                 <Typography variant="body1">
-                  <b>X2:</b>{" "}
-                  {objectiveState.posX2 !== null
-                    ? objectiveState.posX2
+                  <b>Z0:</b>{" "}
+                  {objectiveState.posZ0 !== null
+                    ? objectiveState.posZ0
                     : "Unknown"}
                 </Typography>
                 <TextField
-                  label="Set X2"
-                  value={manualX2}
+                  label="Set Z0"
+                  value={manualZ0}
                   onChange={(e) =>
-                    dispatch(objectiveSlice.setManualX2(e.target.value))
+                    dispatch(objectiveSlice.setManualZ0(e.target.value))
                   }
                   size="small"
                   fullWidth
@@ -465,27 +516,18 @@ const ExtendedObjectiveController = () => {
                 />
                 <Button
                   variant="contained"
-                  onClick={() => handleSetX2(manualX2)}
+                  onClick={() => handleSetZ0(manualZ0)}
                   fullWidth
                   sx={{ mb: 1 }}
                 >
-                  Set X2
+                  Set Z0
                 </Button>
                 <Button
                   variant="outlined"
-                  onClick={() => handleSetCurrentAs("x2")}
-                  fullWidth
-                  sx={{ mb: 1 }}
-                >
-                  Set Current as X2
-                </Button>
-                <Button
-                  variant="outlined"
-                  color="secondary"
-                  onClick={() => handleSwitchObjective(2)}
+                  onClick={() => handleSetCurrentAs("z0")}
                   fullWidth
                 >
-                  Switch to Objective 2
+                  Set Current as Z0
                 </Button>
               </Box>
             </Grid>
@@ -524,44 +566,6 @@ const ExtendedObjectiveController = () => {
                   fullWidth
                 >
                   Set Current as Z1
-                </Button>
-              </Box>
-            </Grid>
-            {/* Z2 */}
-            <Grid item xs={12} md={6} lg={3}>
-              <Box
-                sx={{ border: "1px solid #eee", borderRadius: 2, p: 2, mb: 2 }}
-              >
-                <Typography variant="body1">
-                  <b>Z2:</b>{" "}
-                  {objectiveState.posZ2 !== null
-                    ? objectiveState.posZ2
-                    : "Unknown"}
-                </Typography>
-                <TextField
-                  label="Set Z2"
-                  value={manualZ2}
-                  onChange={(e) =>
-                    dispatch(objectiveSlice.setManualZ2(e.target.value))
-                  }
-                  size="small"
-                  fullWidth
-                  sx={{ my: 1 }}
-                />
-                <Button
-                  variant="contained"
-                  onClick={() => handleSetZ2(manualZ2)}
-                  fullWidth
-                  sx={{ mb: 1 }}
-                >
-                  Set Z2
-                </Button>
-                <Button
-                  variant="outlined"
-                  onClick={() => handleSetCurrentAs("z2")}
-                  fullWidth
-                >
-                  Set Current as Z2
                 </Button>
               </Box>
             </Grid>
