@@ -158,10 +158,19 @@ const LiveViewControlWrapper = ({ useFastMode = true }) => {
           />
         )}
       </div>
-      {/*<div style={{ position: "absolute", bottom: "10px", left: "0px", zIndex: 2, opacity: 0.8 }}>
-        <PositionControllerComponent />
+      {
+        <div
+          style={{
+            position: "absolute",
+            bottom: "10px",
+            left: "0px",
+            zIndex: 2,
+            opacity: 0.8,
+          }}
+        >
+          <PositionControllerComponent />
         </div>
-        */}
+      }
     </div>
   );
 };
