@@ -286,6 +286,7 @@ const PositionControllerComponent = () => {
         onMouseLeave={stopPeriodicRequest}
         onTouchStart={() => startPeriodicRequest("minus")}
         onTouchEnd={stopPeriodicRequest}
+        onTouchCancel={stopPeriodicRequest}
         sx={buttonStyle}
       >
         Z-
@@ -297,6 +298,7 @@ const PositionControllerComponent = () => {
         onMouseLeave={stopPeriodicRequest}
         onTouchStart={() => startPeriodicRequest("up")}
         onTouchEnd={stopPeriodicRequest}
+        onTouchCancel={stopPeriodicRequest}
         sx={buttonStyle}
       >
         Y↑
@@ -308,6 +310,7 @@ const PositionControllerComponent = () => {
         onMouseLeave={stopPeriodicRequest}
         onTouchStart={() => startPeriodicRequest("plus")}
         onTouchEnd={stopPeriodicRequest}
+        onTouchCancel={stopPeriodicRequest}
         sx={buttonStyle}
       >
         Z+
@@ -319,6 +322,7 @@ const PositionControllerComponent = () => {
         onMouseLeave={stopPeriodicRequest}
         onTouchStart={() => startPeriodicRequest("left")}
         onTouchEnd={stopPeriodicRequest}
+        onTouchCancel={stopPeriodicRequest}
         sx={buttonStyle}
       >
         X←
@@ -330,6 +334,7 @@ const PositionControllerComponent = () => {
         onMouseLeave={stopPeriodicRequest}
         onTouchStart={() => startPeriodicRequest("down")}
         onTouchEnd={stopPeriodicRequest}
+        onTouchCancel={stopPeriodicRequest}
         sx={buttonStyle}
       >
         Y↓
@@ -341,6 +346,7 @@ const PositionControllerComponent = () => {
         onMouseLeave={stopPeriodicRequest}
         onTouchStart={() => startPeriodicRequest("right")}
         onTouchEnd={stopPeriodicRequest}
+        onTouchCancel={stopPeriodicRequest}
         sx={buttonStyle}
       >
         X→
