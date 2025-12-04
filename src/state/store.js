@@ -117,6 +117,7 @@ const persistConfig = {
     "themeState",
     "mazeGameState",
     "appManager", // Persist user's app preferences
+    "liveViewState", // Persist position controller visibility
     // liveStreamState uses nested persist config above
   ],
   //blacklist: ['webSocketState'],  // Do not persist these
