@@ -112,7 +112,7 @@ const persistConfig = {
     "parameterRangeState",
     "experimentState",
     "wellSelectorState",
-    "positionState",
+    "position", // Persist step sizes
     "workflowState",
     "themeState",
     "mazeGameState",
