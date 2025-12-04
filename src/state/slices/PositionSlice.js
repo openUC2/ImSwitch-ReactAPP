@@ -44,7 +44,11 @@ const positionSlice = createSlice({
     },
     setStepSize: (state, action) => {
       const { axis, value } = action.payload;
-      if (state.stepSizes[axis] !== undefined) {
+      if (
+        state.stepSizes[axis] !== undefined &&
+        typeof value === "number" &&
+        value > 0
+      ) {
         state.stepSizes[axis] = value;
       }
     },
