@@ -56,14 +56,15 @@ export default function LiveView({ setFileManagerInitialPath }) {
   const liveViewState = useSelector(liveViewSlice.getLiveViewState);
   const liveStreamState = useSelector(liveStreamSlice.getLiveStreamState);
 
-  // Debug log to verify persisted stream format
+  // Debug log to verify persisted stream format (only on mount)
   useEffect(() => {
     console.log("[LiveView] Mounted with stream state:", {
       imageFormat: liveStreamState.imageFormat,
       streamSettings: liveStreamState.streamSettings,
       isStreamRunning: liveViewState.isStreamRunning,
     });
-  }, [liveStreamState, liveViewState]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array = only run once on mount
 
   // Use Redux state instead of local state
   const detectors = liveViewState.detectors;
