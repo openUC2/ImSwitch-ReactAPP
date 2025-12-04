@@ -23,10 +23,10 @@ import WizardStep6 from "./wizard-steps/WizardStep6";
 
 const steps = [
   "Setup Instructions",
-  "Calibrate Slot 1 (X1)",
-  "Calibrate Slot 2 (X2)",
+  "Calibrate Slot 1 (X0)",
+  "Calibrate Slot 2 (X1)",
+  "Calibrate Focus Z0",
   "Calibrate Focus Z1",
-  "Calibrate Focus Z2",
   "Complete"
 ];
 

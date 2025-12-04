@@ -45,6 +45,12 @@ const initialFocusLockState = {
   currentFocusMotorPosition: 0.0, // Add current motor position
   setPointSignal: 0.0,
   
+  // One-step autofocus
+  storedTargetSetpoint: null, // Stored focus value for one-step AF
+  lastAutofocusResult: null, // Last autofocus result
+  isPerformingAutofocus: false,
+  calibrationRange: null, // [min, max] focus values from calibration
+  
   // UI state
   selectedCropRegion: null,
   showImageSelector: false,
@@ -162,6 +168,20 @@ const focusLockSlice = createSlice({
       state.currentFocusMotorPosition = action.payload;
     },
     
+    // One-step autofocus
+    setStoredTargetSetpoint: (state, action) => {
+      state.storedTargetSetpoint = action.payload;
+    },
+    setLastAutofocusResult: (state, action) => {
+      state.lastAutofocusResult = action.payload;
+    },
+    setIsPerformingAutofocus: (state, action) => {
+      state.isPerformingAutofocus = action.payload;
+    },
+    setCalibrationRange: (state, action) => {
+      state.calibrationRange = action.payload;
+    },
+    
     // UI state
     setSelectedCropRegion: (state, action) => {
       state.selectedCropRegion = action.payload;
@@ -213,6 +233,10 @@ export const {
   clearFocusHistory,
   setCurrentFocusValue,
   setCurrentFocusMotorPosition,
+  setStoredTargetSetpoint,
+  setLastAutofocusResult,
+  setIsPerformingAutofocus,
+  setCalibrationRange,
   setSelectedCropRegion,
   setShowImageSelector,
   setIsLoadingImage,

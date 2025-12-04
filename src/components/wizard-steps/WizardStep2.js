@@ -89,11 +89,11 @@ const WizardStep2 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
 
   const handleMoveToSlot1 = () => {
     setIsMovedToSlot1(false); // Reset state for movement feedback
-    if (objectiveState.posX1 !== null && objectiveState.posX1 !== undefined) {
-      // Move to existing X1 position
-      apiPositionerControllerMovePositioner({ // TODO use /ObjectiveController/moveToObjective?slot=1 instead 
+    if (objectiveState.posX0 !== null && objectiveState.posX0 !== undefined) {
+      // Move to existing X0 position
+      apiPositionerControllerMovePositioner({ // TODO use /ObjectiveController/moveToObjective?slot=0 instead 
         axis: "A",
-        dist: objectiveState.posX1,
+        dist: objectiveState.posX0,
         isAbsolute: true,
         isBlocking: false,
       })
@@ -105,7 +105,7 @@ const WizardStep2 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
           console.error("Error moving to slot 1:", err);
         });
     } else {
-      // No X1 position set, just mark as moved to slot 1
+      // No X0 position set, just mark as moved to slot 1
       setIsMovedToSlot1(true);
     }
   };
@@ -127,19 +127,19 @@ const WizardStep2 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
       });
   };
 
-  const handleSaveX1Position = () => {
+  const handleSaveX0Position = () => {
     if (currentPosition !== null) {
-      // Save current position as X1 using the proper API
+      // Save current position as X0 using the proper API
       apiObjectiveControllerSetPositions({
-        x1: currentPosition,
+        x0: currentPosition,
         isBlocking: false,
       })
         .then((data) => {
-          dispatch(objectiveSlice.setPosX1(currentPosition));
-          alert(`X1 position set to: ${currentPosition}`);
+          dispatch(objectiveSlice.setPosX0(currentPosition));
+          alert(`X0 position set to: ${currentPosition}`);
         })
         .catch((err) => {
-          console.error("Error setting X1:", err);
+          console.error("Error setting X0:", err);
         });
     }
   };
@@ -183,12 +183,12 @@ const WizardStep2 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
   return (
     <Box sx={{ p: 2 }}>
       <Typography variant="h5" gutterBottom>
-        Step 2: Calibrate Slot 1 (X1 Position)
+        Step 2: Calibrate Slot 1 (X0 Position)
       </Typography>
       
       <Alert severity="info" sx={{ mb: 3 }}>
         Home the objective lens and then move to slot 1 position. Adjust the position to center 
-        the beam spot with the crosshair center, then save the X1 position.
+        the beam spot with the crosshair center, then save the X0 position.
       </Alert>
 
       <Grid container spacing={3}>
@@ -287,16 +287,16 @@ const WizardStep2 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
           <Paper elevation={2} sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
               <SaveIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-              4. Save X1 Position
+              4. Save X0 Position
             </Typography>
             <Button
               variant="contained"
               color="success"
-              onClick={handleSaveX1Position}
+              onClick={handleSaveX0Position}
               disabled={!currentPosition}
               startIcon={<SaveIcon />}
             >
-              Save Current Position as X1
+              Save Current Position as X0
             </Button>
           </Paper>
         </Grid>

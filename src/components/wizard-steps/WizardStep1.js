@@ -36,7 +36,7 @@ const WizardStep1 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
       
       <Alert severity="info" sx={{ mb: 3 }}>
         This wizard will guide you through calibrating the objective positions for slots 1 and 2,
-        including both the switching positions (X1, X2) and focus positions (Z1, Z2).
+        including both the switching positions (X0, X1) and focus positions (Z0, Z1).
       </Alert>
 
       <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
@@ -103,10 +103,10 @@ const WizardStep1 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
         </Typography>
         
         <Typography variant="body2" paragraph>
-          • <strong>Steps 2-3:</strong> Calibrate the X1 and X2 positions (objective switching positions)
+          • <strong>Steps 2-3:</strong> Calibrate the X0 and X1 positions (objective switching positions)
         </Typography>
         <Typography variant="body2" paragraph>
-          • <strong>Steps 4-5:</strong> Calibrate the Z1 and Z2 positions (focus positions for each objective)
+          • <strong>Steps 4-5:</strong> Calibrate the Z0 and Z1 positions (focus positions for each objective)
         </Typography>
         <Typography variant="body2">
           • <strong>Step 6:</strong> Complete the calibration and return to normal operation

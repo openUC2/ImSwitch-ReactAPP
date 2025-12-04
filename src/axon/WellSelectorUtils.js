@@ -651,10 +651,10 @@ export function generateWellLayout384({
   rows = 16,
   pitch = 4500, // ~9 mm spacing (adjust if needed)
   radius = 2000,       // 3 mm radius
-  startX = 29490.625,
-  startY = 30688.125,
-  width = 170000,
-  height = 120000,
+  startX = 12000,
+  startY = 9000,
+  width = 127000,
+  height = 84000,
   offsetX = 0,  // Global offset in X direction (micrometers)
   offsetY = 0,  // Global offset in Y direction (micrometers)
 } = {}) {

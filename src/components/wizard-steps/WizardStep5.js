@@ -105,19 +105,19 @@ const WizardStep5 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
       });
   };
 
-  const handleSaveZ2Position = () => {
+  const handleSaveZ1Position = () => {
     if (currentPositions.Z !== null) {
-      // Save current Z position as Z2 using the proper API
+      // Save current Z position as Z1 using the proper API
       apiObjectiveControllerSetPositions({
-        z2: currentPositions.Z,
+        z1: currentPositions.Z,
         isBlocking: false,
       })
         .then((data) => {
-          dispatch(objectiveSlice.setPosZ2(currentPositions.Z));
-          alert(`Z2 position set to: ${currentPositions.Z}`);
+          dispatch(objectiveSlice.setPosZ1(currentPositions.Z));
+          alert(`Z1 position set to: ${currentPositions.Z}`);
         })
         .catch((err) => {
-          console.error("Error setting Z2:", err);
+          console.error("Error setting Z1:", err);
         });
     }
   };
@@ -125,12 +125,12 @@ const WizardStep5 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
   return (
     <Box sx={{ p: 2 }}>
       <Typography variant="h5" gutterBottom>
-        Step 5: Calibrate Focus Position Z2
+        Step 5: Calibrate Focus Position Z1
       </Typography>
       
       <Alert severity="info" sx={{ mb: 3 }}>
         Switch to objective 2, find the same feature (or a similar one), 
-        achieve sharp focus, and save the Z2 focus position.
+        achieve sharp focus, and save the Z1 focus position.
       </Alert>
 
       <Grid container spacing={3}>
@@ -178,7 +178,7 @@ const WizardStep5 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
               Use the XYZ joystick controls to:
             </Typography>
             <Typography variant="body2" sx={{ mb: 1 }}>
-              • Navigate to the same feature you used for Z1 calibration (or a similar feature)
+              • Navigate to the same feature you used for Z0 calibration (or a similar feature)
             </Typography>
             <Typography variant="body2" sx={{ mb: 1 }}>
               • Adjust the Z position to achieve sharp focus with objective 2
@@ -191,7 +191,7 @@ const WizardStep5 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
           <Paper elevation={2} sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
               <SaveIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-              3. Save Z2 Focus Position
+              3. Save Z1 Focus Position
             </Typography>
             <Typography variant="body2" sx={{ mb: 2 }}>
               Current Positions:
@@ -207,11 +207,11 @@ const WizardStep5 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
             <Button
               variant="contained"
               color="success"
-              onClick={handleSaveZ2Position}
+              onClick={handleSaveZ1Position}
               disabled={!movedToObjective2 || currentPositions.Z === null}
               startIcon={<SaveIcon />}
             >
-              Save Current Z as Z2
+              Save Current Z as Z1
             </Button>
           </Paper>
 
@@ -221,23 +221,23 @@ const WizardStep5 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
               Calibration Summary
             </Typography>
             <Typography variant="body2" sx={{ mb: 1 }}>
-              X1 (Slot 1): <strong>{objectiveState.posX1 || "Not set"}</strong>
+              X0 (Slot 1): <strong>{objectiveState.posX0 || "Not set"}</strong>
             </Typography>
             <Typography variant="body2" sx={{ mb: 1 }}>
-              X2 (Slot 2): <strong>{objectiveState.posX2 || "Not set"}</strong>
+              X1 (Slot 2): <strong>{objectiveState.posX1 || "Not set"}</strong>
             </Typography>
             <Typography variant="body2" sx={{ mb: 1 }}>
-              Z1 (Focus 1): <strong>{objectiveState.posZ1 || "Not set"}</strong>
+              Z0 (Focus 1): <strong>{objectiveState.posZ0 || "Not set"}</strong>
             </Typography>
             <Typography variant="body2">
-              Z2 (Focus 2): <strong>{objectiveState.posZ2 || "Not set"}</strong>
+              Z1 (Focus 2): <strong>{objectiveState.posZ1 || "Not set"}</strong>
             </Typography>
           </Paper>
         </Grid>
       </Grid>
 
       <Alert severity="success" sx={{ mt: 3 }}>
-        <strong>Almost Done!</strong> Once you save the Z2 position, 
+        <strong>Almost Done!</strong> Once you save the Z1 position, 
         you'll have completed the full objective calibration process.
       </Alert>
     </Box>
