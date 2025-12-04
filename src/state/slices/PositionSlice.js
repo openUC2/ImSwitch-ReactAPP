@@ -2,7 +2,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 // Define initial state for position
-const initialPositionState = {
+const initialPosition = {
   x: 0,
   y: 0,
   z: 0,
@@ -17,8 +17,8 @@ const initialPositionState = {
 
 // Create position slice
 const positionSlice = createSlice({
-  name: "positionState",
-  initialState: initialPositionState,
+  name: "position",
+  initialState: initialPosition,
   reducers: {
     setPosition: (state, action) => {
       console.log(
