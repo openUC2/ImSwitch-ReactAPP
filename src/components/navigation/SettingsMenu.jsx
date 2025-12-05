@@ -27,6 +27,7 @@ import {
   SystemUpdate,
   Storage,
   Build,
+  GridView,
 } from "@mui/icons-material";
 import { formatDiskUsage } from "../../utils/formatUtils";
 import { useDeveloperMode } from "../../utils/useDeveloperMode";
@@ -320,6 +321,19 @@ const SettingsMenu = ({ onNavigate }) => {
             onChange={handleThemeToggle}
             size="small"
             onClick={(e) => e.stopPropagation()}
+          />
+        </MenuItem>
+
+        <Divider />
+
+        {/* App Manager - Customize workspace */}
+        <MenuItem onClick={() => handleNavigationClick("AppManager")}>
+          <ListItemIcon>
+            <GridView fontSize="small" />
+          </ListItemIcon>
+          <ListItemText
+            primary="App Manager"
+            secondary="Customize your workspace"
           />
         </MenuItem>
 
