@@ -10,6 +10,7 @@ import {
   Extension as ExtensionIcon,
   Folder as FolderIcon,
   GridOn as GridOnIcon,
+  GridView as GridViewIcon,
   Lock as LockIcon,
   SportsEsports as SportsEsportsIcon,
   ThreeDRotation as ThreeDRotationIcon,
@@ -79,6 +80,19 @@ export const APP_REGISTRY = {
     essential: true,
     keywords: ["files", "data", "browse", "upload", "download", "organize"],
     pluginId: "FileManager",
+  },
+
+  appManager: {
+    id: "appManager",
+    name: "App Manager",
+    description:
+      "Customize your workspace by enabling or disabling apps in the navigation drawer. Tailor ImSwitch to your specific workflow needs.",
+    category: APP_CATEGORIES.ESSENTIALS,
+    icon: GridViewIcon,
+    enabled: true,
+    essential: true,
+    keywords: ["apps", "manage", "customize", "workspace", "enable", "disable", "navigation"],
+    pluginId: "AppManager",
   },
 
   // === APPS - Optional microscopy applications ===
