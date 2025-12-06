@@ -16,6 +16,7 @@ import * as socketDebugSlice from "../state/slices/SocketDebugSlice.js";
 import * as uc2Slice from "../state/slices/UC2Slice.js";
 import * as liveViewSlice from "../state/slices/LiveViewSlice.js";
 import * as canOtaSlice from "../state/slices/canOtaSlice.js";
+import * as laserSlice from "../state/slices/LaserSlice.js";
 
 import { io } from "socket.io-client";
 
@@ -61,7 +62,7 @@ const WebSocketHandler = () => {
         const response = await fetchWithTimeout(
           `${ip}:${port}/UC2ConfigController/is_connected`,
           { method: "GET" },
-          8000
+          10000
         );
 
         if (response.ok) {
@@ -645,6 +646,21 @@ const WebSocketHandler = () => {
           }
         } catch (error) {
           console.error("Error in sigUpdateMotorPosition handler:", error);
+        }
+        //----------------------------------------------
+      } else if (dataJson.name === "sigUpdateLaserPower") {
+        // Handle laser power/enabled state updates from backend
+        // Signal format: { "p0": { "635": { "power": 10000, "enabled": true }, ... } }
+        console.log("sigUpdateLaserPower received:", dataJson);
+        try {
+          const laserData = dataJson.args?.p0;
+          
+          if (laserData && typeof laserData === 'object') {
+            // Batch update all lasers in the signal
+            dispatch(laserSlice.setLasersState(laserData));
+          }
+        } catch (error) {
+          console.error("Error in sigUpdateLaserPower handler:", error);
         }
         //----------------------------------------------
       } else if (dataJson.name === "sigOTAStatusUpdate") {

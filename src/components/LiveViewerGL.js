@@ -8,8 +8,14 @@ import { processUC2FPacket, processUC2FPacketWithMetadata, checkFeatureSupport }
  * WebGL2-based 16-bit image viewer with window/level controls and zoom/pan
  * Receives binary UC2F packets via window events and renders via WebGL2 R16UI textures
  * Falls back to Canvas2D for unsupported browsers
+ * 
+ * @param {function} onClick - Callback for single click: (pixelX, pixelY, imageWidth, imageHeight, displayInfo)
+ * @param {function} onDoubleClick - Callback for double click: (pixelX, pixelY, imageWidth, imageHeight)
+ * @param {function} onImageLoad - Callback when image dimensions change: (width, height)
+ * @param {function} onHudDataUpdate - Callback for HUD data updates
+ * @param {React.ReactNode} overlayContent - Optional overlay content to render on top of the canvas
  */
-const LiveViewerGL = ({ onDoubleClick, onImageLoad, onHudDataUpdate }) => {
+const LiveViewerGL = ({ onClick, onDoubleClick, onImageLoad, onHudDataUpdate, overlayContent }) => {
   const dispatch = useDispatch();
   const liveStreamState = useSelector(liveStreamSlice.getLiveStreamState);
   
@@ -846,6 +852,52 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad, onHudDataUpdate }) => {
     onDoubleClick(pixelX, pixelY, imageSize.width, imageSize.height);
   }, [viewTransform, imageSize, onDoubleClick]);
 
+  // Handle single click for ROI selection etc.
+  const handleClick = useCallback((event) => {
+    const canvas = canvasRef.current;
+    if (!canvas || !onClick) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    
+    // Convert screen coordinates to image coordinates
+    const { scale, translateX, translateY } = viewTransform;
+    
+    // Normalize to [-1, 1] range based on displayed size
+    const normX = (x / rect.width) * 2 - 1;
+    const normY = 1 - (y / rect.height) * 2;
+    
+    // Apply inverse transform to get original image coordinates
+    const imageX = (normX - translateX) / scale;
+    const imageY = (normY - translateY) / scale;
+    
+    // Convert to image pixel coordinates
+    // Note: imageSize contains actual image dimensions (width, height)
+    const pixelX = ((imageX + 1) / 2) * imageSize.width;
+    const pixelY = ((1 - imageY) / 2) * imageSize.height;
+    
+    // Provide display info for overlays
+    const displayInfo = {
+      displayWidth: rect.width,
+      displayHeight: rect.height,
+      scale: scale,
+      translateX: translateX,
+      translateY: translateY
+    };
+    
+    console.log('LiveViewerGL click:', {
+      screenClick: [x, y],
+      normalized: [normX, normY],
+      imageCoords: [imageX, imageY],
+      pixelCoords: [pixelX, pixelY],
+      imageSize: [imageSize.width, imageSize.height],
+      displayInfo
+    });
+    
+    onClick(pixelX, pixelY, imageSize.width, imageSize.height, displayInfo);
+  }, [viewTransform, imageSize, onClick]);
+
   const resetView = useCallback(() => {
     setViewTransform({ scale: 1, translateX: 0, translateY: 0 });
   }, []);
@@ -942,7 +994,7 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad, onHudDataUpdate }) => {
         width={imageSize.width || 800}
         height={imageSize.height || 600}
         style={{
-          cursor: isDragging ? 'grabbing' : 'grab',
+          cursor: isDragging ? 'grabbing' : (onClick ? 'crosshair' : 'grab'),
           border: '2px solid red',
           zIndex: 1,
           display: 'block',
@@ -952,12 +1004,31 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad, onHudDataUpdate }) => {
           maxHeight: '100%'
         }}
         onWheel={handleWheel}
+        onClick={handleClick}
         onDoubleClick={handleDoubleClick}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
       />
+      
+      {/* Overlay content (e.g., ROI rectangle) rendered on top of the canvas */}
+      {overlayContent && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: displayDimensions.width,
+            height: displayDimensions.height,
+            pointerEvents: 'none',
+            zIndex: 2
+          }}
+        >
+          {overlayContent}
+        </Box>
+      )}
       
       {/* Reset view button */}
       <Box 
@@ -974,7 +1045,7 @@ const LiveViewerGL = ({ onDoubleClick, onImageLoad, onHudDataUpdate }) => {
           py: 1,
           borderRadius: 1,
           boxShadow: 2, 
-          zIndex: 2,
+          zIndex: 3,
 
         }}
         onClick={resetView}

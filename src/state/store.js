@@ -42,6 +42,7 @@ import appManagerReducer from "./slices/appManagerSlice";
 import canOtaReducer from "./slices/canOtaSlice";
 import holoReducer from "./slices/HoloSlice";
 import dpcReducer from "./slices/dpcSlice";
+import laserReducer from "./slices/LaserSlice";
 
 //#####################################################################################
 // Nested persist config for liveStreamState
@@ -99,6 +100,7 @@ const rootReducer = combineReducers({
   canOtaState: canOtaReducer,
   holoState: holoReducer,
   dpc: dpcReducer,
+  laserState: laserReducer,
 });
 
 //#####################################################################################
