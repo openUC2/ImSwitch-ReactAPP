@@ -41,8 +41,6 @@ import { NavigationDrawer, TopBar } from "./components/navigation";
 import AppManagerPage from "./components/AppManagerPage.jsx";
 
 import { MCTProvider } from "./context/MCTContext.js";
-// REMOVED: import { WebSocketProvider } from "./context/WebSocketContext.js"; - duplicate socket connection
-import { setApiPort, setIp } from "./state/slices/ConnectionSettingsSlice.js";
 
 //axon
 import AxonTabComponent from "./axon/AxonTabComponent.js";
@@ -200,60 +198,6 @@ function App() {
     setSelectedPlugin("ImJoy");
   };
 
-  useEffect(() => {
-    const currentHostname = window.location.hostname;
-    const portsToCheck = [8001, 8002, 443];
-
-    // Try both http and https for each port, and use the first working combination
-    const findValidPort = async () => {
-      try {
-        let found = false;
-        for (const protocol of ["https://", "http://"]) {
-          for (const port of portsToCheck) {
-            try {
-              const url = `${protocol}${currentHostname}:${port}/plugins`;
-              const response = await fetch(url, { method: "HEAD" });
-              if (response.ok) {
-                dispatch(setIp(`${protocol}${currentHostname}`));
-                dispatch(setApiPort(port));
-                found = true;
-                break;
-              }
-            } catch (err) {
-              // Ignore fetch errors and try next combination
-            }
-          }
-          if (found) break;
-        }
-        if (!found) {
-          throw new Error("No valid API port found.");
-        }
-      } catch (error) {
-        console.error("No valid API port found.");
-      }
-    };
-
-    if (!currentHostname.startsWith("youseetoo.github.io")) {
-      findValidPort();
-    }
-  }, [dispatch]);
-
-  /*
-  const checkPortsForApi = async (hostname, ports) => {
-    for (const port of ports) {
-      try {
-        const url = `https://${hostname}:${port}/openapi.json`;
-        const response = await axios.get(url, { timeout: 3000 });
-        if (response.status === 200) {
-          return port;
-        }
-      } catch (error) {
-        console.error(`Failed to retrieve API from ${hostname}:${port}`);
-      }
-    }
-    throw new Error("No valid port found for API.");
-  };*/
-
   // change API url/port and update filelist
   useEffect(() => {
     api.defaults.baseURL = `${hostIP}:${apiPort}/FileManager`;
@@ -366,8 +310,6 @@ function App() {
   return (
     <ThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
       <WebSocketHandler />
-      {/* headless */}
-      {/* REMOVED: WebSocketProvider - duplicate socket connection */}
       <CssBaseline />
 
       {/* Global Status/Notification Message */}
@@ -514,7 +456,6 @@ function App() {
           {selectedPlugin === "Connections" && <ConnectionSettings />}
         </Box>
       </Box>
-      {/* REMOVED: Closing WebSocketProvider tag - duplicate socket connection */}
     </ThemeProvider>
   );
 }
