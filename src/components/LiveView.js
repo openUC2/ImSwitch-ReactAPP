@@ -22,6 +22,7 @@ import DetectorTriggerController from "./DetectorTriggerController";
 import * as liveViewSlice from "../state/slices/LiveViewSlice.js";
 import * as liveStreamSlice from "../state/slices/LiveStreamSlice.js";
 import LiveViewControlWrapper from "../axon/LiveViewControlWrapper.js";
+import ExtendedLEDMatrixController from "./ExtendedLEDMatrixController.jsx"; 
 
 /*
 <ImageViewport
@@ -376,6 +377,11 @@ export default function LiveView({ setFileManagerInitialPath }) {
         <Box mb={3}>
           <Typography variant="h6">Objective</Typography>
           <ObjectiveSwitcher hostIP={hostIP} hostPort={hostPort} />
+        </Box>
+
+        <Box mb={3}>
+          <Typography variant="h6">Extended LED Matrix</Typography>
+          <ExtendedLEDMatrixController hostIP={hostIP} hostPort={hostPort} />
         </Box>
 
         <Box mb={3}>

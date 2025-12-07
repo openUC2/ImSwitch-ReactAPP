@@ -74,16 +74,34 @@ const HoloController = () => {
   const liveStreamState = useSelector(liveStreamSlice.getLiveStreamState);
 
   // Local state for ROI selection
+  // Note: size is stored in BACKEND pixels (after scaling), not preview pixels
+  // This is the actual size that will be processed by the hologram controller
   const [roiSelection, setRoiSelection] = useState({
     isSelecting: false,
-    centerX: 0,
-    centerY: 0,
-    size: 256,
+    centerX: 0,  // Relative to preview image center
+    centerY: 0,  // Relative to preview image center  
+    size: 256,   // Backend pixels (max 1024)
   });
 
   // State for image dimensions from the stream viewer
   const [imageSize, setImageSize] = useState({ width: 1920, height: 1080 });
   const [displayInfo, setDisplayInfo] = useState(null);
+
+  // Compute the total scaling factor: subsampling (from stream) × binning (from holo processing)
+  // This factor converts between preview pixels and backend/sensor pixels
+  const totalScalingFactor = useMemo(() => {
+    const streamSubsampling = liveStreamState.streamSettings?.jpeg?.subsampling?.factor || 
+                              liveStreamState.streamSettings?.jpeg?.subsampling_factor ||
+                              liveStreamState.streamSettings?.binary?.subsampling?.factor || 1;
+    const binningFactor = holoState.binning || 1;
+    return streamSubsampling * binningFactor;
+  }, [liveStreamState.streamSettings, holoState.binning]);
+
+  // ROI size in preview pixels (for overlay display)
+  // roiSelection.size stores backend pixels, divide by scaling to get preview pixels
+  const roiSizeInPreview = useMemo(() => {
+    return roiSelection.size / totalScalingFactor;
+  }, [roiSelection.size, totalScalingFactor]);
 
   // Ref for processed stream image
   const processedImageRef = useRef(null);
@@ -252,22 +270,16 @@ const HoloController = () => {
   // Backend expects absolute pixel coordinates in the FULL sensor resolution
   const handleApplyRoi = useCallback(async () => {
     try {
-      // Get subsampling factor from stream settings
-      // This is the factor by which the streamed image is scaled down from the full sensor
-      // Check both possible paths: jpeg.subsampling.factor (UI format) and jpeg.subsampling_factor (backend format)
-      const subsamplingFactor = liveStreamState.streamSettings?.jpeg?.subsampling?.factor || 
+      // Get stream subsampling factor (for coordinate scaling)
+      const streamSubsampling = liveStreamState.streamSettings?.jpeg?.subsampling?.factor || 
                                 liveStreamState.streamSettings?.jpeg?.subsampling_factor ||
                                 liveStreamState.streamSettings?.binary?.subsampling?.factor || 1;
       
-      // Use imageSize from LiveViewerGL (this is the streamed/displayed image size)
+      // Use imageSize from viewer (this is the streamed/displayed image size)
       const streamedWidth = imageSize.width;
       const streamedHeight = imageSize.height;
       
-      // Calculate full sensor size by applying subsampling factor
-      const fullSensorWidth = streamedWidth * subsamplingFactor;
-      const fullSensorHeight = streamedHeight * subsamplingFactor;
-      
-      // roiSelection.centerX/Y are relative to the STREAMED image center
+      // roiSelection.centerX/Y are relative to the STREAMED image center (in preview pixels)
       // Convert to absolute pixel coordinates in the STREAMED image space
       const streamedCenterX = streamedWidth / 2;
       const streamedCenterY = streamedHeight / 2;
@@ -275,26 +287,32 @@ const HoloController = () => {
       const absoluteXInStream = streamedCenterX + roiSelection.centerX;
       const absoluteYInStream = streamedCenterY + roiSelection.centerY;
       
-      // Scale up to full sensor coordinates
-      const absoluteXFullSensor = Math.round(absoluteXInStream * subsamplingFactor);
-      const absoluteYFullSensor = Math.round(absoluteYInStream * subsamplingFactor);
-      const scaledSize = Math.round(roiSelection.size * subsamplingFactor);
+      // Scale up coordinates to full sensor space (using stream subsampling only, not binning)
+      const absoluteXFullSensor = Math.round(absoluteXInStream * streamSubsampling);
+      const absoluteYFullSensor = Math.round(absoluteYInStream * streamSubsampling);
+      
+      // roiSelection.size is already in backend pixels (includes binning consideration)
+      // Just clamp to max 1024
+      const finalSize = Math.min(roiSelection.size, 1024);
       
       console.log('ROI Parameters:', {
         relativeCenter: [roiSelection.centerX, roiSelection.centerY],
         streamedImageSize: [streamedWidth, streamedHeight],
         absoluteInStream: [absoluteXInStream, absoluteYInStream],
-        subsamplingFactor,
-        fullSensorSize: [fullSensorWidth, fullSensorHeight],
+        streamSubsampling,
+        binning: holoState.binning,
+        totalScalingFactor,
         absoluteFullSensor: [absoluteXFullSensor, absoluteYFullSensor],
-        scaledSize
+        roiSizeBackend: finalSize,
+        roiSizePreview: roiSizeInPreview
       });
       
       // Backend API expects: center_x, center_y (absolute pixel coords in full sensor space)
+      // and size in backend pixels
       const roiParams = {
         center_x: absoluteXFullSensor,
         center_y: absoluteYFullSensor,
-        size: scaledSize,
+        size: finalSize,
       };
       
       await apiInLineHoloControllerSetRoi(roiParams);
@@ -303,39 +321,41 @@ const HoloController = () => {
     } catch (error) {
       console.error("Failed to apply ROI:", error);
     }
-  }, [dispatch, roiSelection, liveStreamState.streamSettings, imageSize]);
+  }, [dispatch, roiSelection, liveStreamState.streamSettings, imageSize, holoState.binning, totalScalingFactor, roiSizeInPreview]);
 
   // Reset ROI to center
   const handleResetRoi = useCallback(async () => {
     try {
-      // Get subsampling factor from stream settings (check UI format first, then backend format)
-      const subsamplingFactor = liveStreamState.streamSettings?.jpeg?.subsampling?.factor || 
+      // Get stream subsampling factor for coordinate conversion
+      const streamSubsampling = liveStreamState.streamSettings?.jpeg?.subsampling?.factor || 
                                 liveStreamState.streamSettings?.jpeg?.subsampling_factor ||
                                 liveStreamState.streamSettings?.binary?.subsampling?.factor || 1;
       
-      // Use imageSize from LiveViewerGL
+      // Use imageSize from viewer
       const streamedWidth = imageSize.width;
       const streamedHeight = imageSize.height;
       
-      // Calculate full sensor center
-      const fullSensorCenterX = Math.round((streamedWidth / 2) * subsamplingFactor);
-      const fullSensorCenterY = Math.round((streamedHeight / 2) * subsamplingFactor);
-      const scaledSize = Math.round(256 * subsamplingFactor);
+      // Calculate full sensor center (using stream subsampling for coordinate conversion)
+      const fullSensorCenterX = Math.round((streamedWidth / 2) * streamSubsampling);
+      const fullSensorCenterY = Math.round((streamedHeight / 2) * streamSubsampling);
+      
+      // Reset to 256 backend pixels
+      const defaultSize = 256;
       
       const roiParams = {
         center_x: fullSensorCenterX,
         center_y: fullSensorCenterY,
-        size: scaledSize,
+        size: defaultSize,
       };
       
       await apiInLineHoloControllerSetRoi(roiParams);
       dispatch(holoSlice.setRoiCenter([0, 0]));
-      dispatch(holoSlice.setRoiSize(256));
+      dispatch(holoSlice.setRoiSize(defaultSize));
       setRoiSelection({
         ...roiSelection,
         centerX: 0,
         centerY: 0,
-        size: 256,
+        size: defaultSize,  // Backend pixels
       });
     } catch (error) {
       console.error("Failed to reset ROI:", error);
@@ -479,7 +499,8 @@ const HoloController = () => {
     // We need to apply with the new values directly since state update is async
     (async () => {
       try {
-        const subsamplingFactor = liveStreamState.streamSettings?.jpeg?.subsampling?.factor || 
+        // Get stream subsampling for coordinate conversion only
+        const streamSubsampling = liveStreamState.streamSettings?.jpeg?.subsampling?.factor || 
                                   liveStreamState.streamSettings?.jpeg?.subsampling_factor ||
                                   liveStreamState.streamSettings?.binary?.subsampling?.factor || 1;
         
@@ -489,23 +510,25 @@ const HoloController = () => {
         const absoluteXInStream = streamedCenterX + newCenterX;
         const absoluteYInStream = streamedCenterY + newCenterY;
         
-        const absoluteXFullSensor = Math.round(absoluteXInStream * subsamplingFactor);
-        const absoluteYFullSensor = Math.round(absoluteYInStream * subsamplingFactor);
-        // Use current size from state
+        const absoluteXFullSensor = Math.round(absoluteXInStream * streamSubsampling);
+        const absoluteYFullSensor = Math.round(absoluteYInStream * streamSubsampling);
+        
+        // roiSelection.size is already in backend pixels, just clamp to 1024
         const currentSize = roiSelection.size || 256;
-        const scaledSize = Math.round(currentSize * subsamplingFactor);
+        const finalSize = Math.min(currentSize, 1024);
         
         console.log('Auto-applying ROI on click:', {
           newCenter: [newCenterX, newCenterY],
           absoluteFullSensor: [absoluteXFullSensor, absoluteYFullSensor],
-          subsamplingFactor,
-          scaledSize
+          streamSubsampling,
+          binning: holoState.binning,
+          roiSizeBackend: finalSize
         });
         
         await apiInLineHoloControllerSetRoi({
           center_x: absoluteXFullSensor,
           center_y: absoluteYFullSensor,
-          size: scaledSize,
+          size: finalSize,
         });
       } catch (error) {
         console.error('Failed to auto-apply ROI:', error);
@@ -515,14 +538,16 @@ const HoloController = () => {
 
   // Generate ROI overlay SVG for the stream viewer
   // This renders on top of the canvas to show the selected ROI
+  // Uses roiSizeInPreview which is the size in preview pixels (backend size / totalScalingFactor)
   const roiOverlay = useMemo(() => {
     if (!imageSize.width || !imageSize.height) return null;
     
     // Calculate ROI position in relative coordinates (0-1 range from top-left)
     const centerXRel = (roiSelection.centerX + imageSize.width / 2) / imageSize.width;
     const centerYRel = (roiSelection.centerY + imageSize.height / 2) / imageSize.height;
-    const sizeXRel = roiSelection.size / imageSize.width;
-    const sizeYRel = roiSelection.size / imageSize.height;
+    // Use preview size for overlay (roiSizeInPreview = backend size / scaling factor)
+    const sizeXRel = roiSizeInPreview / imageSize.width;
+    const sizeYRel = roiSizeInPreview / imageSize.height;
     
     return (
       <svg
@@ -562,7 +587,7 @@ const HoloController = () => {
         />
       </svg>
     );
-  }, [imageSize, roiSelection]);
+  }, [imageSize, roiSelection, roiSizeInPreview]);
 
   return (
     <Box sx={{ p: { xs: 1, sm: 2, md: 3 }, maxWidth: "100%" }}>
@@ -692,8 +717,8 @@ const HoloController = () => {
                   />
                 </Box>
               </Box>
-              <Typography variant="caption" color="text.secondary" mt={1}>
-                Click to set ROI center (auto-applies). Size: {imageSize.width}x{imageSize.height} | Subsampling: {liveStreamState.streamSettings?.jpeg?.subsampling?.factor || liveStreamState.streamSettings?.jpeg?.subsampling_factor || 1}x
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                Click to set ROI center (auto-applies). Preview: {imageSize.width}×{imageSize.height}px | ROI: {roiSelection.size}px → {Math.round(roiSizeInPreview)}px preview
               </Typography>
             </CardContent>
           </Card>
@@ -824,21 +849,25 @@ const HoloController = () => {
             />
           </Grid>
 
-          {/* Size - dynamic max based on smallest image dimension */}
+          {/* Size - ROI size in backend pixels (max 1024) */}
+          {/* Preview shows scaled version: backend_size / (subsampling × binning) */}
           <Grid item xs={12} sm={4}>
-            <Typography gutterBottom>ROI Size (pixels): {roiSelection.size}</Typography>
+            <Typography gutterBottom>
+              ROI Size: {roiSelection.size}px (backend) / {Math.round(roiSizeInPreview)}px (preview)
+            </Typography>
             <Slider
               value={roiSelection.size}
               onChange={handleRoiSizeChange}
-              min={32}
-              max={Math.max(512, Math.min(imageSize.width, imageSize.height))}
-              step={32}
+              min={64}
+              max={1024}
+              step={64}
               valueLabelDisplay="auto"
+              valueLabelFormat={(v) => `${v}px`}
               marks={[
-                { value: 32, label: "32" },
-                { value: 128, label: "128" },
+                { value: 64, label: "64" },
                 { value: 256, label: "256" },
                 { value: 512, label: "512" },
+                { value: 1024, label: "1024" },
               ]}
               sx={{
                 "& .MuiSlider-thumb": {
@@ -847,6 +876,9 @@ const HoloController = () => {
                 },
               }}
             />
+            <Typography variant="caption" color="text.secondary">
+              Scaling: {totalScalingFactor}× (subsampling: {liveStreamState.streamSettings?.jpeg?.subsampling?.factor || 1}, binning: {holoState.binning || 1})
+            </Typography>
           </Grid>
         </Grid>
 
