@@ -45,6 +45,9 @@ import * as holoSlice from "../state/slices/HoloSlice";
 import * as connectionSettingsSlice from "../state/slices/ConnectionSettingsSlice";
 import * as liveStreamSlice from "../state/slices/LiveStreamSlice";
 
+// Components - use LiveViewControlWrapper for automatic format selection (JPEG/Binary/WebRTC)
+import LiveViewControlWrapper from "../axon/LiveViewControlWrapper";
+
 // API imports
 import apiInLineHoloControllerGetParams from "../backendapi/apiInLineHoloControllerGetParams";
 import apiInLineHoloControllerSetParams from "../backendapi/apiInLineHoloControllerSetParams";
@@ -71,23 +74,40 @@ const HoloController = () => {
   const liveStreamState = useSelector(liveStreamSlice.getLiveStreamState);
 
   // Local state for ROI selection
+  // Note: size is stored in BACKEND pixels (after scaling), not preview pixels
+  // This is the actual size that will be processed by the hologram controller
   const [roiSelection, setRoiSelection] = useState({
     isSelecting: false,
-    centerX: 0,
-    centerY: 0,
-    size: 256,
+    centerX: 0,  // Relative to preview image center
+    centerY: 0,  // Relative to preview image center  
+    size: 256,   // Backend pixels (max 1024)
   });
 
-  // Refs for canvas interaction
-  const rawCanvasRef = useRef(null);
-  const processedCanvasRef = useRef(null);
-  const rawImageRef = useRef(null);
+  // State for image dimensions from the stream viewer
+  const [imageSize, setImageSize] = useState({ width: 1920, height: 1080 });
+  const [displayInfo, setDisplayInfo] = useState(null);
+
+  // Compute the total scaling factor: subsampling (from stream) × binning (from holo processing)
+  // This factor converts between preview pixels and backend/sensor pixels
+  const totalScalingFactor = useMemo(() => {
+    const streamSubsampling = liveStreamState.streamSettings?.jpeg?.subsampling?.factor || 
+                              liveStreamState.streamSettings?.jpeg?.subsampling_factor ||
+                              liveStreamState.streamSettings?.binary?.subsampling?.factor || 1;
+    const binningFactor = holoState.binning || 1;
+    return streamSubsampling * binningFactor;
+  }, [liveStreamState.streamSettings, holoState.binning]);
+
+  // ROI size in preview pixels (for overlay display)
+  // roiSelection.size stores backend pixels, divide by scaling to get preview pixels
+  const roiSizeInPreview = useMemo(() => {
+    return roiSelection.size / totalScalingFactor;
+  }, [roiSelection.size, totalScalingFactor]);
+
+  // Ref for processed stream image
   const processedImageRef = useRef(null);
-  const actualFrameSizeRef = useRef([1920, 1080]); // Store actual camera frame size
 
   // Build stream URLs
   const baseUrl = `${connectionSettings.ip}:${connectionSettings.apiPort}`;
-  const rawStreamUrl = `${baseUrl}/RecordingController/video_feeder`;
   const processedStreamUrl = `${baseUrl}/InLineHoloController/mjpeg_stream_inlineholo?startStream=true&jpeg_quality=85`;
 
   // Load initial parameters and state on mount
@@ -96,7 +116,6 @@ const HoloController = () => {
     loadState();
     
     // Set stream URLs
-    dispatch(holoSlice.setRawStreamUrl(rawStreamUrl));
     dispatch(holoSlice.setProcessedStreamUrl(processedStreamUrl));
     
     // Poll state periodically
@@ -247,40 +266,53 @@ const HoloController = () => {
   }, []);
 
   // Apply ROI changes to backend
+  // ROI coordinates are relative to image center (0,0 = center)
+  // Backend expects absolute pixel coordinates in the FULL sensor resolution
   const handleApplyRoi = useCallback(async () => {
     try {
-      // Get subsampling factor from stream settings
-      const subsamplingFactor = liveStreamState.streamSettings?.jpeg?.subsampling_factor || 1;
+      // Get stream subsampling factor (for coordinate scaling)
+      const streamSubsampling = liveStreamState.streamSettings?.jpeg?.subsampling?.factor || 
+                                liveStreamState.streamSettings?.jpeg?.subsampling_factor ||
+                                liveStreamState.streamSettings?.binary?.subsampling?.factor || 1;
       
-      // Get actual image dimensions from the loaded image
-      const imgWidth = actualFrameSizeRef.current[0];
-      const imgHeight = actualFrameSizeRef.current[1];
+      // Use imageSize from viewer (this is the streamed/displayed image size)
+      const streamedWidth = imageSize.width;
+      const streamedHeight = imageSize.height;
       
-      // Convert relative coordinates (offset from center) to absolute pixel coordinates
-      const imageCenterX = imgWidth / 2;
-      const imageCenterY = imgHeight / 2;
+      // roiSelection.centerX/Y are relative to the STREAMED image center (in preview pixels)
+      // Convert to absolute pixel coordinates in the STREAMED image space
+      const streamedCenterX = streamedWidth / 2;
+      const streamedCenterY = streamedHeight / 2;
       
-      const absoluteX = imageCenterX + roiSelection.centerX;
-      const absoluteY = imageCenterY + roiSelection.centerY;
+      const absoluteXInStream = streamedCenterX + roiSelection.centerX;
+      const absoluteYInStream = streamedCenterY + roiSelection.centerY;
       
-      // Apply subsampling factor to absolute coordinates
-      const scaledX = Math.round(absoluteX * subsamplingFactor);
-      const scaledY = Math.round(absoluteY * subsamplingFactor);
-      const scaledSize = Math.round(roiSelection.size * subsamplingFactor);
+      // Scale up coordinates to full sensor space (using stream subsampling only, not binning)
+      const absoluteXFullSensor = Math.round(absoluteXInStream * streamSubsampling);
+      const absoluteYFullSensor = Math.round(absoluteYInStream * streamSubsampling);
+      
+      // roiSelection.size is already in backend pixels (includes binning consideration)
+      // Just clamp to max 1024
+      const finalSize = Math.min(roiSelection.size, 1024);
       
       console.log('ROI Parameters:', {
         relativeCenter: [roiSelection.centerX, roiSelection.centerY],
-        frameSize: [imgWidth, imgHeight],
-        absoluteCenter: [absoluteX, absoluteY],
-        subsamplingFactor,
-        scaledCenter: [scaledX, scaledY],
-        scaledSize
+        streamedImageSize: [streamedWidth, streamedHeight],
+        absoluteInStream: [absoluteXInStream, absoluteYInStream],
+        streamSubsampling,
+        binning: holoState.binning,
+        totalScalingFactor,
+        absoluteFullSensor: [absoluteXFullSensor, absoluteYFullSensor],
+        roiSizeBackend: finalSize,
+        roiSizePreview: roiSizeInPreview
       });
       
+      // Backend API expects: center_x, center_y (absolute pixel coords in full sensor space)
+      // and size in backend pixels
       const roiParams = {
-        center_x: scaledX,
-        center_y: scaledY,
-        size: scaledSize,
+        center_x: absoluteXFullSensor,
+        center_y: absoluteYFullSensor,
+        size: finalSize,
       };
       
       await apiInLineHoloControllerSetRoi(roiParams);
@@ -289,46 +321,46 @@ const HoloController = () => {
     } catch (error) {
       console.error("Failed to apply ROI:", error);
     }
-  }, [dispatch, roiSelection, liveStreamState.streamSettings]);
+  }, [dispatch, roiSelection, liveStreamState.streamSettings, imageSize, holoState.binning, totalScalingFactor, roiSizeInPreview]);
 
   // Reset ROI to center
   const handleResetRoi = useCallback(async () => {
     try {
-      // Get subsampling factor from stream settings
-      const subsamplingFactor = liveStreamState.streamSettings?.jpeg?.subsampling_factor || 1;
+      // Get stream subsampling factor for coordinate conversion
+      const streamSubsampling = liveStreamState.streamSettings?.jpeg?.subsampling?.factor || 
+                                liveStreamState.streamSettings?.jpeg?.subsampling_factor ||
+                                liveStreamState.streamSettings?.binary?.subsampling?.factor || 1;
       
-      // Get actual image dimensions
-      const imgWidth = actualFrameSizeRef.current[0];
-      const imgHeight = actualFrameSizeRef.current[1];
+      // Use imageSize from viewer
+      const streamedWidth = imageSize.width;
+      const streamedHeight = imageSize.height;
       
-      // Center coordinates in absolute pixels (image center)
-      const imageCenterX = imgWidth / 2;
-      const imageCenterY = imgHeight / 2;
+      // Calculate full sensor center (using stream subsampling for coordinate conversion)
+      const fullSensorCenterX = Math.round((streamedWidth / 2) * streamSubsampling);
+      const fullSensorCenterY = Math.round((streamedHeight / 2) * streamSubsampling);
       
-      // Apply subsampling factor
-      const scaledCenterX = Math.round(imageCenterX * subsamplingFactor);
-      const scaledCenterY = Math.round(imageCenterY * subsamplingFactor);
-      const scaledSize = Math.round(256 * subsamplingFactor);
+      // Reset to 256 backend pixels
+      const defaultSize = 256;
       
       const roiParams = {
-        center_x: scaledCenterX,
-        center_y: scaledCenterY,
-        size: scaledSize,
+        center_x: fullSensorCenterX,
+        center_y: fullSensorCenterY,
+        size: defaultSize,
       };
       
       await apiInLineHoloControllerSetRoi(roiParams);
       dispatch(holoSlice.setRoiCenter([0, 0]));
-      dispatch(holoSlice.setRoiSize(256));
+      dispatch(holoSlice.setRoiSize(defaultSize));
       setRoiSelection({
         ...roiSelection,
         centerX: 0,
         centerY: 0,
-        size: 256,
+        size: defaultSize,  // Backend pixels
       });
     } catch (error) {
       console.error("Failed to reset ROI:", error);
     }
-  }, [dispatch, roiSelection, liveStreamState.streamSettings]);
+  }, [dispatch, roiSelection, liveStreamState.streamSettings, imageSize]);
 
   // Update developer parameters
   const handleUpdateParameter = useCallback(
@@ -391,131 +423,171 @@ const HoloController = () => {
     [dispatch]
   );
 
-  // Draw ROI overlay on canvas
-  const drawRoiOverlay = useCallback((canvas, image, centerX, centerY, size) => {
-    if (!canvas || !image) return;
-    
-    const ctx = canvas.getContext("2d");
-    const imgWidth = image.naturalWidth || image.width;
-    const imgHeight = image.naturalHeight || image.height;
-    
-    // Clear the entire canvas first
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Calculate canvas display size
-    const canvasDisplayWidth = canvas.clientWidth;
-    const canvasDisplayHeight = canvas.clientHeight;
-    
-    // Use uniform scaling (same for X and Y) to maintain square ROI
-    const scale = Math.min(canvasDisplayWidth / imgWidth, canvasDisplayHeight / imgHeight);
-    
-    // Calculate actual displayed image size
-    const displayedWidth = imgWidth * scale;
-    const displayedHeight = imgHeight * scale;
-    
-    // Calculate offset if image is centered in canvas
-    const offsetX = (canvasDisplayWidth - displayedWidth) / 2;
-    const offsetY = (canvasDisplayHeight - displayedHeight) / 2;
-    
-    // Convert ROI center from image coordinates to canvas coordinates
-    // Center is relative to image center (0,0 = image center)
-    const imageCenterX = imgWidth / 2;
-    const imageCenterY = imgHeight / 2;
-    
-    const roiAbsX = imageCenterX + centerX;
-    const roiAbsY = imageCenterY + centerY;
-    
-    const canvasX = offsetX + roiAbsX * scale;
-    const canvasY = offsetY + roiAbsY * scale;
-    const canvasSize = size * scale;
-    
-    // Draw red rectangle overlay (square)
-    ctx.strokeStyle = "rgba(255, 0, 0, 0.8)";
-    ctx.lineWidth = 2;
-    ctx.strokeRect(
-      canvasX - canvasSize / 2,
-      canvasY - canvasSize / 2,
-      canvasSize,
-      canvasSize
-    );
-    
-    // Draw crosshair at center
-    ctx.beginPath();
-    ctx.moveTo(canvasX - 10, canvasY);
-    ctx.lineTo(canvasX + 10, canvasY);
-    ctx.moveTo(canvasX, canvasY - 10);
-    ctx.lineTo(canvasX, canvasY + 10);
-    ctx.stroke();
+  // Handle image load from viewer - updates imageSize state
+  const handleImageLoad = useCallback((width, height) => {
+    console.log('HoloController: Image loaded with dimensions:', width, height);
+    setImageSize({ width, height });
   }, []);
 
-  // Handle canvas click for ROI selection
-  const handleCanvasClick = useCallback((event, canvasRef, imageRef) => {
-    if (!canvasRef.current || !imageRef.current) return;
+  // Handle click from LiveViewControlWrapper for ROI selection
+  // Viewer provides pixel coordinates in the actual image space
+  // We need to account for flipX, flipY, rotation transforms applied to the viewer
+  const handleLiveViewClick = useCallback((pixelX, pixelY, imgWidth, imgHeight, displayInfoData) => {
+    // pixelX, pixelY are in the STREAMED image coordinate space (0 to imgWidth, 0 to imgHeight)
+    // The CSS transform (flipX, flipY, rotation) is applied to the viewer container,
+    // but the click coordinates come from the viewer which doesn't know about the CSS transform.
+    // We need to reverse the CSS transform to get the coordinates in the backend's coordinate space.
     
-    const canvas = canvasRef.current;
-    const image = imageRef.current;
-    const rect = canvas.getBoundingClientRect();
+    let adjustedX = pixelX;
+    let adjustedY = pixelY;
     
-    // Get click position relative to canvas
-    const clickX = event.clientX - rect.left;
-    const clickY = event.clientY - rect.top;
+    // Apply inverse transforms in reverse order (CSS does: scaleX, scaleY, rotate)
+    // So we need to: un-rotate, then un-flip
     
-    // Get image dimensions
-    const imgWidth = image.naturalWidth || image.width;
-    const imgHeight = image.naturalHeight || image.height;
+    // First, handle rotation (counter-rotate)
+    const rotation = holoState.rotation || 0;
+    if (rotation !== 0) {
+      // Rotate around center
+      const centerX = imgWidth / 2;
+      const centerY = imgHeight / 2;
+      const rad = -rotation * Math.PI / 180; // Negative for inverse
+      const dx = adjustedX - centerX;
+      const dy = adjustedY - centerY;
+      adjustedX = centerX + dx * Math.cos(rad) - dy * Math.sin(rad);
+      adjustedY = centerY + dx * Math.sin(rad) + dy * Math.cos(rad);
+    }
     
-    // Store actual frame size
-    actualFrameSizeRef.current = [imgWidth, imgHeight];
-    
-    // Use uniform scaling to match drawRoiOverlay
-    const canvasDisplayWidth = canvas.clientWidth;
-    const canvasDisplayHeight = canvas.clientHeight;
-    const scale = Math.min(canvasDisplayWidth / imgWidth, canvasDisplayHeight / imgHeight);
-    
-    // Calculate actual displayed image size and offset
-    const displayedWidth = imgWidth * scale;
-    const displayedHeight = imgHeight * scale;
-    const offsetX = (canvasDisplayWidth - displayedWidth) / 2;
-    const offsetY = (canvasDisplayHeight - displayedHeight) / 2;
-    
-    // Convert click position to image coordinates
-    const imageX = (clickX - offsetX) / scale;
-    const imageY = (clickY - offsetY) / scale;
+    // Then handle flips
+    if (holoState.flipX) {
+      adjustedX = imgWidth - adjustedX;
+    }
+    if (holoState.flipY) {
+      adjustedY = imgHeight - adjustedY;
+    }
     
     // Convert to relative coordinates (center = 0,0)
     const imageCenterX = imgWidth / 2;
     const imageCenterY = imgHeight / 2;
     
-    const relativeX = imageX - imageCenterX;
-    const relativeY = imageY - imageCenterY;
+    const relativeX = adjustedX - imageCenterX;
+    const relativeY = adjustedY - imageCenterY;
     
-    console.log('Click:', {
-      canvasClick: [clickX, clickY],
+    console.log('HoloController: LiveView click:', {
+      rawPixelCoords: [pixelX, pixelY],
+      adjustedPixelCoords: [adjustedX, adjustedY],
+      transforms: { flipX: holoState.flipX, flipY: holoState.flipY, rotation: holoState.rotation },
       imageSize: [imgWidth, imgHeight],
-      imageCoords: [imageX, imageY],
       relativeCoords: [relativeX, relativeY]
     });
     
-    // Update ROI selection
+    // Store display info for overlay rendering
+    if (displayInfoData) {
+      setDisplayInfo(displayInfoData);
+    }
+    
+    // Update ROI selection with relative coordinates and auto-apply
+    const newCenterX = Math.round(relativeX);
+    const newCenterY = Math.round(relativeY);
+    
     setRoiSelection((prev) => ({
       ...prev,
-      centerX: Math.round(relativeX),
-      centerY: Math.round(relativeY),
+      centerX: newCenterX,
+      centerY: newCenterY,
     }));
-  }, []);
+    
+    // Auto-apply ROI when clicking on canvas for convenience
+    // We need to apply with the new values directly since state update is async
+    (async () => {
+      try {
+        // Get stream subsampling for coordinate conversion only
+        const streamSubsampling = liveStreamState.streamSettings?.jpeg?.subsampling?.factor || 
+                                  liveStreamState.streamSettings?.jpeg?.subsampling_factor ||
+                                  liveStreamState.streamSettings?.binary?.subsampling?.factor || 1;
+        
+        const streamedCenterX = imgWidth / 2;
+        const streamedCenterY = imgHeight / 2;
+        
+        const absoluteXInStream = streamedCenterX + newCenterX;
+        const absoluteYInStream = streamedCenterY + newCenterY;
+        
+        const absoluteXFullSensor = Math.round(absoluteXInStream * streamSubsampling);
+        const absoluteYFullSensor = Math.round(absoluteYInStream * streamSubsampling);
+        
+        // roiSelection.size is already in backend pixels, just clamp to 1024
+        const currentSize = roiSelection.size || 256;
+        const finalSize = Math.min(currentSize, 1024);
+        
+        console.log('Auto-applying ROI on click:', {
+          newCenter: [newCenterX, newCenterY],
+          absoluteFullSensor: [absoluteXFullSensor, absoluteYFullSensor],
+          streamSubsampling,
+          binning: holoState.binning,
+          roiSizeBackend: finalSize
+        });
+        
+        await apiInLineHoloControllerSetRoi({
+          center_x: absoluteXFullSensor,
+          center_y: absoluteYFullSensor,
+          size: finalSize,
+        });
+      } catch (error) {
+        console.error('Failed to auto-apply ROI:', error);
+      }
+    })();
+  }, [liveStreamState.streamSettings, roiSelection.size, holoState.flipX, holoState.flipY, holoState.rotation]);
 
-  // Update canvas overlay when ROI changes
-  useEffect(() => {
-    if (rawCanvasRef.current && rawImageRef.current) {
-      drawRoiOverlay(
-        rawCanvasRef.current,
-        rawImageRef.current,
-        roiSelection.centerX,
-        roiSelection.centerY,
-        roiSelection.size
-      );
-    }
-  }, [roiSelection, drawRoiOverlay]);
+  // Generate ROI overlay SVG for the stream viewer
+  // This renders on top of the canvas to show the selected ROI
+  // Uses roiSizeInPreview which is the size in preview pixels (backend size / totalScalingFactor)
+  const roiOverlay = useMemo(() => {
+    if (!imageSize.width || !imageSize.height) return null;
+    
+    // Calculate ROI position in relative coordinates (0-1 range from top-left)
+    const centerXRel = (roiSelection.centerX + imageSize.width / 2) / imageSize.width;
+    const centerYRel = (roiSelection.centerY + imageSize.height / 2) / imageSize.height;
+    // Use preview size for overlay (roiSizeInPreview = backend size / scaling factor)
+    const sizeXRel = roiSizeInPreview / imageSize.width;
+    const sizeYRel = roiSizeInPreview / imageSize.height;
+    
+    return (
+      <svg
+        width="100%"
+        height="100%"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}
+      >
+        {/* ROI rectangle */}
+        <rect
+          x={(centerXRel - sizeXRel / 2) * 100}
+          y={(centerYRel - sizeYRel / 2) * 100}
+          width={sizeXRel * 100}
+          height={sizeYRel * 100}
+          fill="none"
+          stroke="red"
+          strokeWidth="0.5"
+          opacity="0.8"
+        />
+        {/* Center crosshair */}
+        <line
+          x1={(centerXRel - 0.02) * 100}
+          y1={centerYRel * 100}
+          x2={(centerXRel + 0.02) * 100}
+          y2={centerYRel * 100}
+          stroke="red"
+          strokeWidth="0.3"
+        />
+        <line
+          x1={centerXRel * 100}
+          y1={(centerYRel - 0.02) * 100}
+          x2={centerXRel * 100}
+          y2={(centerYRel + 0.02) * 100}
+          stroke="red"
+          strokeWidth="0.3"
+        />
+      </svg>
+    );
+  }, [imageSize, roiSelection, roiSizeInPreview]);
 
   return (
     <Box sx={{ p: { xs: 1, sm: 2, md: 3 }, maxWidth: "100%" }}>
@@ -618,60 +690,35 @@ const HoloController = () => {
                 sx={{
                   position: "relative",
                   width: "100%",
-                  paddingTop: "75%", // 4:3 aspect ratio
+                  paddingTop: "75%", // 4:3 aspect ratio for larger display
                   backgroundColor: "#000",
                   borderRadius: 1,
                   overflow: "hidden",
-                  cursor: "crosshair",
                 }}
-                onClick={(e) => handleCanvasClick(e, rawCanvasRef, rawImageRef)}
               >
-                <img
-                  ref={rawImageRef}
-                  src={rawStreamUrl}
-                  alt="Raw Camera Stream"
-                  style={{
+                {/* Container for transform (flip/rotation) */}
+                <Box
+                  sx={{
                     position: "absolute",
                     top: 0,
                     left: 0,
                     width: "100%",
                     height: "100%",
-                    objectFit: "contain",
+                    transform: `scaleX(${holoState.flipX ? -1 : 1}) scaleY(${holoState.flipY ? -1 : 1}) rotate(${holoState.rotation || 0}deg)`,
                   }}
-                  onLoad={() => {
-                    if (rawCanvasRef.current && rawImageRef.current) {
-                      const canvas = rawCanvasRef.current;
-                      const img = rawImageRef.current;
-                      canvas.width = img.naturalWidth;
-                      canvas.height = img.naturalHeight;
-                      
-                      // Store actual frame size
-                      actualFrameSizeRef.current = [img.naturalWidth, img.naturalHeight];
-                      
-                      drawRoiOverlay(
-                        canvas,
-                        img,
-                        roiSelection.centerX,
-                        roiSelection.centerY,
-                        roiSelection.size
-                      );
-                    }
-                  }}
-                />
-                <canvas
-                  ref={rawCanvasRef}
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: "100%",
-                    pointerEvents: "none",
-                  }}
-                />
+                >
+                  {/* Use LiveViewControlWrapper for the camera stream with ROI overlay */}
+                  {/* Auto-selects JPEG/Binary/WebRTC viewer based on stream format */}
+                  <LiveViewControlWrapper
+                    onClick={handleLiveViewClick}
+                    onImageLoad={handleImageLoad}
+                    overlayContent={roiOverlay}
+                    enableStageMovement={false} // We handle our own click logic for ROI
+                  />
+                </Box>
               </Box>
-              <Typography variant="caption" color="text.secondary" mt={1}>
-                Click to set ROI center
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                Click to set ROI center (auto-applies). Preview: {imageSize.width}×{imageSize.height}px | ROI: {roiSelection.size}px → {Math.round(roiSizeInPreview)}px preview
               </Typography>
             </CardContent>
           </Card>
@@ -688,7 +735,7 @@ const HoloController = () => {
                 sx={{
                   position: "relative",
                   width: "100%",
-                  paddingTop: "75%", // 4:3 aspect ratio
+                  paddingTop: "75%", // 4:3 aspect ratio - matches raw stream
                   backgroundColor: "#000",
                   borderRadius: 1,
                   overflow: "hidden",
@@ -754,20 +801,20 @@ const HoloController = () => {
         </Box>
 
         <Grid container spacing={2}>
-          {/* Center X */}
+          {/* Center X - dynamic range based on image width */}
           <Grid item xs={12} sm={4}>
-            <Typography gutterBottom>Center X</Typography>
+            <Typography gutterBottom>Center X (relative to center)</Typography>
             <Slider
               value={roiSelection.centerX}
               onChange={handleRoiCenterXChange}
-              min={-960}
-              max={960}
+              min={-Math.floor(imageSize.width / 2)}
+              max={Math.floor(imageSize.width / 2)}
               step={1}
               valueLabelDisplay="auto"
               marks={[
-                { value: -960, label: "-960" },
+                { value: -Math.floor(imageSize.width / 2), label: `${-Math.floor(imageSize.width / 2)}` },
                 { value: 0, label: "0" },
-                { value: 960, label: "960" },
+                { value: Math.floor(imageSize.width / 2), label: `${Math.floor(imageSize.width / 2)}` },
               ]}
               sx={{
                 "& .MuiSlider-thumb": {
@@ -778,20 +825,20 @@ const HoloController = () => {
             />
           </Grid>
 
-          {/* Center Y */}
+          {/* Center Y - dynamic range based on image height */}
           <Grid item xs={12} sm={4}>
-            <Typography gutterBottom>Center Y</Typography>
+            <Typography gutterBottom>Center Y (relative to center)</Typography>
             <Slider
               value={roiSelection.centerY}
               onChange={handleRoiCenterYChange}
-              min={-540}
-              max={540}
+              min={-Math.floor(imageSize.height / 2)}
+              max={Math.floor(imageSize.height / 2)}
               step={1}
               valueLabelDisplay="auto"
               marks={[
-                { value: -540, label: "-540" },
+                { value: -Math.floor(imageSize.height / 2), label: `${-Math.floor(imageSize.height / 2)}` },
                 { value: 0, label: "0" },
-                { value: 540, label: "540" },
+                { value: Math.floor(imageSize.height / 2), label: `${Math.floor(imageSize.height / 2)}` },
               ]}
               sx={{
                 "& .MuiSlider-thumb": {
@@ -802,9 +849,12 @@ const HoloController = () => {
             />
           </Grid>
 
-          {/* Size */}
+          {/* Size - ROI size in backend pixels (max 1024) */}
+          {/* Preview shows scaled version: backend_size / (subsampling × binning) */}
           <Grid item xs={12} sm={4}>
-            <Typography gutterBottom>Size</Typography>
+            <Typography gutterBottom>
+              ROI Size: {roiSelection.size}px (backend) / {Math.round(roiSizeInPreview)}px (preview)
+            </Typography>
             <Slider
               value={roiSelection.size}
               onChange={handleRoiSizeChange}
@@ -812,6 +862,7 @@ const HoloController = () => {
               max={1024}
               step={64}
               valueLabelDisplay="auto"
+              valueLabelFormat={(v) => `${v}px`}
               marks={[
                 { value: 64, label: "64" },
                 { value: 256, label: "256" },
@@ -825,6 +876,9 @@ const HoloController = () => {
                 },
               }}
             />
+            <Typography variant="caption" color="text.secondary">
+              Scaling: {totalScalingFactor}× (subsampling: {liveStreamState.streamSettings?.jpeg?.subsampling?.factor || 1}, binning: {holoState.binning || 1})
+            </Typography>
           </Grid>
         </Grid>
 

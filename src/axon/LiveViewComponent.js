@@ -32,8 +32,12 @@ ChartJS.register(
  * This provides linear intensity mapping: [minVal, maxVal] → [0, 255]
  * 
  * @param {boolean} useFastMode - Use optimized processing for better performance (default: true)
+ * @param {function} onClick - Callback for single click: (pixelX, pixelY, imageWidth, imageHeight, displayInfo)
+ * @param {function} onDoubleClick - Callback for double click: (pixelX, pixelY, imageWidth, imageHeight)
+ * @param {function} onImageLoad - Callback when image dimensions change: (width, height)
+ * @param {React.ReactNode} overlayContent - Optional overlay content to render on top of the canvas
  */
-const LiveViewComponent = ({ useFastMode = true, onDoubleClick }) => {
+const LiveViewComponent = ({ useFastMode = true, onClick, onDoubleClick, onImageLoad, overlayContent }) => {
     // redux dispatcher
     const dispatch = useDispatch();
 
@@ -176,7 +180,12 @@ const LiveViewComponent = ({ useFastMode = true, onDoubleClick }) => {
         margin: '20px auto', // Center the canvas horizontally
         objectFit: 'contain'
       });
-    }, [applyIntensityWindowing, getDisplayDimensions, liveStreamState.minVal, liveStreamState.maxVal, containerSize]);
+      
+      // Notify parent of image dimensions
+      if (onImageLoad) {
+        onImageLoad(image.width, image.height);
+      }
+    }, [applyIntensityWindowing, getDisplayDimensions, liveStreamState.minVal, liveStreamState.maxVal, containerSize, onImageLoad]);
 
     // Load and process image when it changes
     useEffect(() => {
@@ -295,6 +304,32 @@ const LiveViewComponent = ({ useFastMode = true, onDoubleClick }) => {
       return objectiveState.fovX / canvas.width;
     }, [objectiveState.fovX]);
 
+    // Handle single click for ROI selection etc.
+    const handleCanvasClick = useCallback((event) => {
+      const canvas = canvasRef.current;
+      
+      if (!canvas || !onClick) return;
+
+      // Get click position relative to canvas
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      
+      const clickX = (event.clientX - rect.left) * scaleX;
+      const clickY = (event.clientY - rect.top) * scaleY;
+
+      // Provide display info
+      const displayInfo = {
+        displayWidth: rect.width,
+        displayHeight: rect.height,
+        scale: 1, // No zoom/pan in LiveViewComponent
+        translateX: 0,
+        translateY: 0
+      };
+
+      onClick(clickX, clickY, canvas.width, canvas.height, displayInfo);
+    }, [onClick]);
+
     // Handle double-click to move to position
     const handleCanvasDoubleClick = useCallback((event) => {
       const canvas = canvasRef.current;
@@ -393,6 +428,7 @@ const LiveViewComponent = ({ useFastMode = true, onDoubleClick }) => {
             display: imageLoaded ? canvasStyle.display : 'none',
             cursor: adaptivePixelSize ? 'crosshair' : 'default'
           }}
+          onClick={handleCanvasClick}
           onDoubleClick={handleCanvasDoubleClick}
         />
       ) : (
@@ -400,6 +436,9 @@ const LiveViewComponent = ({ useFastMode = true, onDoubleClick }) => {
           <Typography>Loading image...</Typography>
         </Box>
       )}
+      
+      {/* External overlay content (e.g., ROI overlays) */}
+      {overlayContent}
 
       {/* Scale bar */}
       {scaleBarMicrons && (

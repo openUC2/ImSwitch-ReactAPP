@@ -189,7 +189,7 @@ const UC2ConfigurationController = () => {
     };
 
     // Start checking after 5 seconds
-    setTimeout(checkStatus, 5000);
+    setTimeout(checkStatus, 10000);
   }, [hostIP, hostPort, dispatch]);
 
   useEffect(() => {

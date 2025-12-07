@@ -11,7 +11,23 @@ import * as objectiveSlice from "../state/slices/ObjectiveSlice.js";
 import * as liveStreamSlice from "../state/slices/LiveStreamSlice.js";
 import * as liveViewSlice from "../state/slices/LiveViewSlice.js";
 
-const LiveViewControlWrapper = ({ useFastMode = true }) => {
+/**
+ * LiveViewControlWrapper - Unified wrapper for different stream viewers
+ * Automatically selects the appropriate viewer based on stream format (WebRTC, Binary/WebGL, JPEG)
+ * 
+ * @param {boolean} useFastMode - Use optimized processing for better performance
+ * @param {function} onClick - Callback for single click: (pixelX, pixelY, imageWidth, imageHeight, displayInfo)
+ * @param {function} onImageLoad - Callback when image dimensions change: (width, height)
+ * @param {React.ReactNode} overlayContent - Optional overlay content to render on top of the viewer
+ * @param {boolean} enableStageMovement - Enable default double-click stage movement behavior (default: true)
+ */
+const LiveViewControlWrapper = ({ 
+  useFastMode = true, 
+  onClick, 
+  onImageLoad, 
+  overlayContent,
+  enableStageMovement = true 
+}) => {
   const dispatch = useDispatch();
   const objectiveState = useSelector(objectiveSlice.getObjectiveState);
   const liveStreamState = useSelector(liveStreamSlice.getLiveStreamState);
@@ -48,6 +64,8 @@ const LiveViewControlWrapper = ({ useFastMode = true }) => {
     imageWidth,
     imageHeight
   ) => {
+    if (!enableStageMovement) return;
+    
     try {
       // Calculate real-world position from pixel coordinates
       // Use the actual image dimensions and center coordinates properly
@@ -116,6 +134,13 @@ const LiveViewControlWrapper = ({ useFastMode = true }) => {
     });
   }, []);
 
+  // Handle image load - forward to parent if callback provided
+  const handleImageLoadInternal = useCallback((width, height) => {
+    if (onImageLoad) {
+      onImageLoad(width, height);
+    }
+  }, [onImageLoad]);
+
   return (
     <div
       style={{
@@ -170,26 +195,26 @@ const LiveViewControlWrapper = ({ useFastMode = true }) => {
         {useWebRTC && liveViewState.isStreamRunning ? (
           <WebRTCViewer
             key="webrtc-viewer" // Force new instance on remount
+            onClick={onClick}
             onDoubleClick={handleImageDoubleClick}
-            onImageLoad={(width, height) => {
-              // Optional: handle image load events
-              //console.log(`WebRTC video loaded: ${width}x${height}`);
-            }}
+            onImageLoad={handleImageLoadInternal}
             onHudDataUpdate={handleHudDataUpdate}
           />
         ) : useWebGL ? (
           <LiveViewerGL
+            onClick={onClick}
             onDoubleClick={handleImageDoubleClick}
-            onImageLoad={(width, height) => {
-              // Optional: handle image load events
-              //console.log(`Image loaded: ${width}x${height}`);
-            }}
+            onImageLoad={handleImageLoadInternal}
             onHudDataUpdate={handleHudDataUpdate}
+            overlayContent={overlayContent}
           />
         ) : (
           <LiveViewComponent
             useFastMode={useFastMode}
+            onClick={onClick}
             onDoubleClick={handleImageDoubleClick}
+            onImageLoad={handleImageLoadInternal}
+            overlayContent={overlayContent}
           />
         )}
       </div>
