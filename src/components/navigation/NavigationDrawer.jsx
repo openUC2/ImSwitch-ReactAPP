@@ -166,37 +166,6 @@ const NavigationDrawer = ({
           msOverflowStyle: "none", // Hide scrollbar for IE/Edge
         }}
       >
-        {/* App Manager - Meta controller for managing all other apps */}
-        <DrawerEntry
-          icon={<GridViewIcon />}
-          label={sidebarVisible ? "App Manager" : "Apps"}
-          selected={selectedPlugin === "AppManager"}
-          onClick={() => handlePluginChange("AppManager")}
-          tooltip="📱 Customize Your Workspace: Choose which apps appear in your navigation drawer. Add or remove tools based on your workflow needs."
-          color="#9c27b0" // Purple color for special emphasis
-          collapsed={!sidebarVisible}
-          nested={false}
-          sx={{
-            backgroundColor: (theme) =>
-              selectedPlugin === "AppManager"
-                ? theme.palette.mode === "dark"
-                  ? "rgba(156, 39, 176, 0.2)"
-                  : "rgba(156, 39, 176, 0.1)"
-                : "transparent",
-            borderLeft:
-              selectedPlugin === "AppManager"
-                ? "4px solid #9c27b0"
-                : "4px solid transparent",
-            marginBottom: "8px", // Space between App Manager and Essentials
-            "&:hover": {
-              backgroundColor: (theme) =>
-                theme.palette.mode === "dark"
-                  ? "rgba(156, 39, 176, 0.15)"
-                  : "rgba(156, 39, 176, 0.08)",
-            },
-          }}
-        />
-
         {/* Essentials Group - Core microscopy components */}
         <DrawerEntry
           icon={<StarIcon />}
@@ -227,6 +196,18 @@ const NavigationDrawer = ({
             selected={selectedPlugin === "FileManager"}
             onClick={() => handlePluginChange("FileManager")}
             tooltip="File Manager - Microscopy data management"
+            color={SIDEBAR_COLORS.essentials}
+            collapsed={!sidebarVisible}
+            nested={true}
+          />
+
+          {/* App Manager - Customize workspace - Always show as it's essential */}
+          <DrawerEntry
+            icon={<GridViewIcon />}
+            label="App Manager"
+            selected={selectedPlugin === "AppManager"}
+            onClick={() => handlePluginChange("AppManager")}
+            tooltip="App Manager - Customize your workspace"
             color={SIDEBAR_COLORS.essentials}
             collapsed={!sidebarVisible}
             nested={true}
