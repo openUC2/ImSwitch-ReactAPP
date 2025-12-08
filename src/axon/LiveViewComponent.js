@@ -1,29 +1,9 @@
 import React, { useRef, useEffect, useState, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Box, Slider, Typography } from "@mui/material";
-import { Bar } from "react-chartjs-2";
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-} from "chart.js";
 import * as liveViewSlice from "../state/slices/LiveStreamSlice.js";
 import * as objectiveSlice from "../state/slices/ObjectiveSlice.js";
 import apiPositionerControllerMovePositioner from "../backendapi/apiPositionerControllerMovePositioner.js";
-
-// Register Chart.js components
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend
-);
 
 /**
  * LiveViewComponent - Unified image viewer with intensity scaling
