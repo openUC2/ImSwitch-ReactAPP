@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { getConnectionSettingsState } from "../state/slices/ConnectionSettingsSlice";
 import {
   Box,
-  Checkbox,
+  Switch,
   FormControlLabel,
   Tabs,
   Tab,
@@ -22,7 +22,7 @@ import DetectorTriggerController from "./DetectorTriggerController";
 import * as liveViewSlice from "../state/slices/LiveViewSlice.js";
 import * as liveStreamSlice from "../state/slices/LiveStreamSlice.js";
 import LiveViewControlWrapper from "../axon/LiveViewControlWrapper.js";
-import ExtendedLEDMatrixController from "./ExtendedLEDMatrixController.jsx"; 
+import ExtendedLEDMatrixController from "./ExtendedLEDMatrixController.jsx";
 
 /*
 <ImageViewport
@@ -75,7 +75,6 @@ export default function LiveView({ setFileManagerInitialPath }) {
 
   // Keep some local state for now (these may need their own slices later)
   const [isRecording, setIsRecording] = useState(false);
-  const [histogramActive, setHistogramActive] = useState(false);
 
   // Stage control tabs state
   const [stageControlTab, setStageControlTab] = useState(0); // 0 = Multiple Axis View, 1 = Joystick Control
@@ -102,20 +101,6 @@ export default function LiveView({ setFileManagerInitialPath }) {
       }
     })();
   }, [hostIP, hostPort, dispatch]);
-
-  /* histogram availability */
-  useEffect(() => {
-    (async () => {
-      try {
-        const r = await fetch(
-          `${hostIP}:${hostPort}/HistogrammController/histogrammActive`
-        );
-        setHistogramActive(r.status !== 404);
-      } catch {
-        setHistogramActive(false);
-      }
-    })();
-  }, [hostIP, hostPort]);
 
   /* min/max - disabled auto-windowing to allow manual control via slider */
   // Commented out to prevent overriding manual slider settings
@@ -266,20 +251,6 @@ export default function LiveView({ setFileManagerInitialPath }) {
           },
         }}
       >
-        {histogramActive && (
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={liveStreamState.showHistogram}
-                onChange={(e) =>
-                  dispatch(liveStreamSlice.setShowHistogram(e.target.checked))
-                }
-              />
-            }
-            label="Show Histogram Overlay"
-          />
-        )}
-
         <Tabs
           value={activeTab}
           onChange={(_, v) => dispatch(liveViewSlice.setActiveTab(v))}

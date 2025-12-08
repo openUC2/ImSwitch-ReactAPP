@@ -12,6 +12,8 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  Switch,
+  FormControlLabel,
 } from "@mui/material";
 import {
   PlayArrow,
@@ -250,6 +252,23 @@ export default function StreamControls({
         >
           Stop
         </Button>
+
+        <FormControlLabel
+          control={
+            <Switch
+              checked={useSelector(
+                (state) => state.liveStreamState.showHistogram
+              )}
+              onChange={(e) =>
+                dispatch(liveStreamSlice.setShowHistogram(e.target.checked))
+              }
+              size="small"
+              color="success"
+            />
+          }
+          label="Histogram"
+          sx={{ ml: 1 }}
+        />
 
         <Button
           variant="outlined"

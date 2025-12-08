@@ -5,6 +5,7 @@ import LiveViewComponent from "./LiveViewComponent";
 import LiveViewerGL from "../components/LiveViewerGL";
 import WebRTCViewer from "./WebRTCViewer";
 import PositionControllerComponent from "./PositionControllerComponent";
+import HistogramOverlay from "../components/HistogramOverlay";
 import apiPositionerControllerMovePositioner from "../backendapi/apiPositionerControllerMovePositioner";
 import { useSelector, useDispatch } from "react-redux";
 import * as objectiveSlice from "../state/slices/ObjectiveSlice.js";
@@ -14,19 +15,19 @@ import * as liveViewSlice from "../state/slices/LiveViewSlice.js";
 /**
  * LiveViewControlWrapper - Unified wrapper for different stream viewers
  * Automatically selects the appropriate viewer based on stream format (WebRTC, Binary/WebGL, JPEG)
- * 
+ *
  * @param {boolean} useFastMode - Use optimized processing for better performance
  * @param {function} onClick - Callback for single click: (pixelX, pixelY, imageWidth, imageHeight, displayInfo)
  * @param {function} onImageLoad - Callback when image dimensions change: (width, height)
  * @param {React.ReactNode} overlayContent - Optional overlay content to render on top of the viewer
  * @param {boolean} enableStageMovement - Enable default double-click stage movement behavior (default: true)
  */
-const LiveViewControlWrapper = ({ 
-  useFastMode = true, 
-  onClick, 
-  onImageLoad, 
+const LiveViewControlWrapper = ({
+  useFastMode = true,
+  onClick,
+  onImageLoad,
   overlayContent,
-  enableStageMovement = true 
+  enableStageMovement = true,
 }) => {
   const dispatch = useDispatch();
   const objectiveState = useSelector(objectiveSlice.getObjectiveState);
@@ -36,15 +37,6 @@ const LiveViewControlWrapper = ({
   // Get persistent position controller visibility from Redux
   const showPositionController = liveViewState.showPositionController || false;
   const [isHovering, setIsHovering] = useState(false);
-
-  // State for HUD data from LiveViewerGL
-  const [hudData, setHudData] = useState({
-    stats: { fps: 0, bps: 0 },
-    featureSupport: { webgl2: false, lz4: false },
-    isWebGL: false,
-    imageSize: { width: 0, height: 0 },
-    viewTransform: { scale: 1, translateX: 0, translateY: 0 },
-  });
 
   // Determine which viewer to use based on stream format
   // - WebRTC: Use WebRTCViewer for real-time low-latency streaming
@@ -65,7 +57,7 @@ const LiveViewControlWrapper = ({
     imageHeight
   ) => {
     if (!enableStageMovement) return;
-    
+
     try {
       // Calculate real-world position from pixel coordinates
       // Use the actual image dimensions and center coordinates properly
@@ -112,34 +104,15 @@ const LiveViewControlWrapper = ({
     }
   };
 
-  // Handle HUD data updates from LiveViewerGL
-  const handleHudDataUpdate = useCallback((data) => {
-    setHudData((prevData) => {
-      // Only update if data has actually changed to prevent unnecessary re-renders
-      if (!prevData) return data;
-
-      const hasChanged =
-        prevData.stats?.fps !== data.stats?.fps ||
-        prevData.stats?.bps !== data.stats?.bps ||
-        prevData.imageSize?.width !== data.imageSize?.width ||
-        prevData.imageSize?.height !== data.imageSize?.height ||
-        prevData.viewTransform?.scale !== data.viewTransform?.scale ||
-        prevData.viewTransform?.translateX !== data.viewTransform?.translateX ||
-        prevData.viewTransform?.translateY !== data.viewTransform?.translateY ||
-        prevData.isWebGL !== data.isWebGL ||
-        JSON.stringify(prevData.featureSupport) !==
-          JSON.stringify(data.featureSupport);
-
-      return hasChanged ? data : prevData;
-    });
-  }, []);
-
   // Handle image load - forward to parent if callback provided
-  const handleImageLoadInternal = useCallback((width, height) => {
-    if (onImageLoad) {
-      onImageLoad(width, height);
-    }
-  }, [onImageLoad]);
+  const handleImageLoadInternal = useCallback(
+    (width, height) => {
+      if (onImageLoad) {
+        onImageLoad(width, height);
+      }
+    },
+    [onImageLoad]
+  );
 
   return (
     <div
@@ -190,6 +163,62 @@ const LiveViewControlWrapper = ({
           justifyContent: "center",
         }}
       >
+        {/* Histogram overlay */}
+        <HistogramOverlay
+          active={true}
+          visible={liveStreamState.showHistogram}
+          x={liveStreamState.histogramX || []}
+          y={liveStreamState.histogramY || []}
+          dataObj={{
+            labels: (liveStreamState.histogramX || []).map((v, i) =>
+              // Show every 100th label for 16-bit, every 10th for 8-bit
+              i % (liveStreamState.histogramX?.length > 500 ? 100 : 10) === 0
+                ? v
+                : ""
+            ),
+            datasets: [
+              {
+                label: "Histogram",
+                data: liveStreamState.histogramY || [],
+                backgroundColor: "rgba(75, 192, 192, 0.6)",
+                barPercentage: 1.0,
+                categoryPercentage: 1.0,
+              },
+            ],
+          }}
+          options={{
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            scales: {
+              x: {
+                display: true,
+                grid: { display: false },
+                ticks: {
+                  maxRotation: 0,
+                  autoSkip: true,
+                  maxTicksLimit: 8,
+                  color: "#fff",
+                  font: { size: 9 },
+                },
+              },
+              y: {
+                beginAtZero: true,
+                display: true,
+                grid: { color: "rgba(255,255,255,0.1)" },
+                ticks: {
+                  color: "#fff",
+                  font: { size: 9 },
+                },
+              },
+            },
+            plugins: {
+              legend: { display: false },
+              tooltip: { enabled: false },
+            },
+          }}
+        />
+
         {/* Select appropriate viewer based on stream format */}
         {/* WebRTC: Only render when stream is running to force remount on start/stop */}
         {useWebRTC && liveViewState.isStreamRunning ? (
@@ -198,14 +227,12 @@ const LiveViewControlWrapper = ({
             onClick={onClick}
             onDoubleClick={handleImageDoubleClick}
             onImageLoad={handleImageLoadInternal}
-            onHudDataUpdate={handleHudDataUpdate}
           />
         ) : useWebGL ? (
           <LiveViewerGL
             onClick={onClick}
             onDoubleClick={handleImageDoubleClick}
             onImageLoad={handleImageLoadInternal}
-            onHudDataUpdate={handleHudDataUpdate}
             overlayContent={overlayContent}
           />
         ) : (
