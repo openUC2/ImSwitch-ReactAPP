@@ -862,7 +862,6 @@ const LiveViewerGL = ({
 
     return () => {
       window.removeEventListener("uc2:frame", handleFrameEvent);
-      window.removeEventListener("uc2:frame", handleFrameEvent);
     };
   }, [handleFrameEvent]);
 
