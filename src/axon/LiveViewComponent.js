@@ -34,6 +34,7 @@ const LiveViewComponent = ({
     const canvasRef = useRef(null);
     const containerRef = useRef(null);
     const prevDimensionsRef = useRef({ width: 0, height: 0 }); // Track dimensions to avoid redundant callbacks
+    const histogramCounterRef = useRef(0); // Counter for throttling histogram computation
     const [imageLoaded, setImageLoaded] = useState(false);
     const [containerSize, setContainerSize] = useState({ width: 800, height: 600 });
     const [displayScale, setDisplayScale] = useState(1);
