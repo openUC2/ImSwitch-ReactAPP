@@ -174,8 +174,17 @@ syncStateAcrossTabs();
 
 //#####################################################################################
 // Create the Redux store with the sync logic
+// Disable expensive development middlewares for high-frequency WebSocket updates
 const store = configureStore({
   reducer: rootReducerWithSync, // Use rootReducerWithSync to manage the state
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      // Disable serializable check - our state contains some non-serializable data
+      // and this check is very slow with frequent WebSocket dispatches
+      serializableCheck: false,
+      // Disable immutable check - this is also slow with large state updates
+      immutableCheck: false,
+    }),
 });
 
 //#####################################################################################

@@ -25,6 +25,7 @@ const LiveViewerGL = ({ onClick, onDoubleClick, onImageLoad, onHudDataUpdate, ov
   const programRef = useRef(null);
   const textureRef = useRef(null);
   const vaoRef = useRef(null);
+  const prevDimensionsRef = useRef({ width: 0, height: 0 }); // Track dimensions to avoid redundant callbacks
   
   // View state
   const [imageSize, setImageSize] = useState({ width: 100, height: 100 });
@@ -708,7 +709,11 @@ const LiveViewerGL = ({ onClick, onDoubleClick, onImageLoad, onHudDataUpdate, ov
         // No auto-windowing - manual window/level control only
       }
       
-      if (onImageLoad) {
+      // Notify parent of image dimensions only if they changed
+      if (onImageLoad && 
+          (packet.width !== prevDimensionsRef.current.width || 
+           packet.height !== prevDimensionsRef.current.height)) {
+        prevDimensionsRef.current = { width: packet.width, height: packet.height };
         onImageLoad(packet.width, packet.height);
       }
       

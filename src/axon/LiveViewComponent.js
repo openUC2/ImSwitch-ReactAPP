@@ -47,6 +47,7 @@ const LiveViewComponent = ({ useFastMode = true, onClick, onDoubleClick, onImage
 
     const canvasRef = useRef(null);
     const containerRef = useRef(null);
+    const prevDimensionsRef = useRef({ width: 0, height: 0 }); // Track dimensions to avoid redundant callbacks
     const [imageLoaded, setImageLoaded] = useState(false);
     const [containerSize, setContainerSize] = useState({ width: 800, height: 600 });
     const [displayScale, setDisplayScale] = useState(1);
@@ -181,8 +182,11 @@ const LiveViewComponent = ({ useFastMode = true, onClick, onDoubleClick, onImage
         objectFit: 'contain'
       });
       
-      // Notify parent of image dimensions
-      if (onImageLoad) {
+      // Notify parent of image dimensions only if they changed
+      if (onImageLoad && 
+          (image.width !== prevDimensionsRef.current.width || 
+           image.height !== prevDimensionsRef.current.height)) {
+        prevDimensionsRef.current = { width: image.width, height: image.height };
         onImageLoad(image.width, image.height);
       }
     }, [applyIntensityWindowing, getDisplayDimensions, liveStreamState.minVal, liveStreamState.maxVal, containerSize, onImageLoad]);
