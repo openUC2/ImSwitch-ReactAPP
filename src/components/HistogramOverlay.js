@@ -1,25 +1,7 @@
 import React from "react";
 import { Box, Typography } from "@mui/material";
 import { Bar } from "react-chartjs-2";
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-} from "chart.js";
-
-// Register Chart.js components
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend
-);
+import "../utils/chartSetup"; // Global Chart.js registration
 
 export default function HistogramOverlay({
   active,
