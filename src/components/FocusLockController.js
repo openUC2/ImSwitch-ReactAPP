@@ -29,16 +29,7 @@ import { useTheme } from "@mui/material/styles";
 import { useWebSocket } from "../context/WebSocketContext";
 import "chartjs-adapter-date-fns";
 import { Line } from "react-chartjs-2";
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-} from "chart.js";
+import "../utils/chartSetup"; // Global Chart.js registration
 
 // Import updated API functions
 import apiFocusLockControllerFocusCalibrationStart from "../backendapi/apiFocusLockControllerFocusCalibrationStart.js";
@@ -66,17 +57,6 @@ import apiFocusLockControllerGetExposureTime from "../backendapi/apiFocusLockCon
 import apiFocusLockControllerGetGain from "../backendapi/apiFocusLockControllerGetGain.js";
 import apiFocusLockControllerGetCurrentFocusValue from "../backendapi/apiFocusLockControllerGetCurrentFocusValue.js";
 import apiFocusLockControllerPerformOneStepAutofocus from "../backendapi/apiFocusLockControllerPerformOneStepAutofocus.js";
-
-// Register Chart.js components
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-);
 
 // TabPanel component for PI parameters
 const TabPanel = (props) => {
@@ -117,10 +97,10 @@ const FocusLockController = () => {
   const [scanRangeUm, setScanRangeUm] = useState(200);
   const [numSteps, setNumSteps] = useState(20);
   const [settleTime, setSettleTime] = useState(0.5);
-  
+
   // Manual target setpoint input
   const [manualTargetSetpoint, setManualTargetSetpoint] = useState("");
-  
+
   // Calibration results display
   const [calibrationResults, setCalibrationResults] = useState(null);
 
@@ -385,13 +365,15 @@ const FocusLockController = () => {
         if (parsedData.sigOneStepAutofocusProgress) {
           const progressData = parsedData.sigOneStepAutofocusProgress;
           console.log("One-step autofocus progress:", progressData);
-          
+
           if (progressData.event === "autofocus_started") {
             dispatch(focusLockSlice.setIsPerformingAutofocus(true));
           } else if (progressData.event === "autofocus_completed") {
             dispatch(focusLockSlice.setIsPerformingAutofocus(false));
             if (progressData.result) {
-              dispatch(focusLockSlice.setLastAutofocusResult(progressData.result));
+              dispatch(
+                focusLockSlice.setLastAutofocusResult(progressData.result)
+              );
             }
           }
           return;
@@ -401,11 +383,18 @@ const FocusLockController = () => {
         if (parsedData.sigCalibrationProgress) {
           const calibData = parsedData.sigCalibrationProgress;
           console.log("Calibration progress:", calibData);
-          
+
           if (calibData.event === "calibration_completed") {
             dispatch(focusLockSlice.setIsCalibrating(false));
-            if (calibData.calibration_data && calibData.calibration_data.linear_range) {
-              dispatch(focusLockSlice.setCalibrationRange(calibData.calibration_data.linear_range));
+            if (
+              calibData.calibration_data &&
+              calibData.calibration_data.linear_range
+            ) {
+              dispatch(
+                focusLockSlice.setCalibrationRange(
+                  calibData.calibration_data.linear_range
+                )
+              );
             }
             // Store calibration results for display
             setCalibrationResults({
@@ -482,7 +471,9 @@ const FocusLockController = () => {
     try {
       const params = await apiFocusLockControllerGetParamsAstigmatism();
       if (params) {
-        dispatch(focusLockSlice.setgaussian_sigma(params.gaussian_sigma || 1.0));
+        dispatch(
+          focusLockSlice.setgaussian_sigma(params.gaussian_sigma || 1.0)
+        );
         dispatch(
           focusLockSlice.setBackgroundThreshold(
             params.background_threshold || 100.0
@@ -795,44 +786,53 @@ const FocusLockController = () => {
   }, [dispatch]);
 
   // Perform one-step autofocus - memoized
-  const performOneStepAutofocus = useCallback(async (useManualSetpoint = false) => {
-    try {
-      dispatch(focusLockSlice.setIsPerformingAutofocus(true));
-      
-      const params = {
-        move_to_focus: true,
-        max_attempts: 3,
-        threshold_um: 0.5,
-      };
-      
-      // Use manual setpoint if provided and requested, otherwise use stored setpoint
-      if (useManualSetpoint && manualTargetSetpoint !== "") {
-        const manualValue = parseFloat(manualTargetSetpoint);
-        if (!isNaN(manualValue)) {
-          params.target_focus_setpoint = manualValue;
+  const performOneStepAutofocus = useCallback(
+    async (useManualSetpoint = false) => {
+      try {
+        dispatch(focusLockSlice.setIsPerformingAutofocus(true));
+
+        const params = {
+          move_to_focus: true,
+          max_attempts: 3,
+          threshold_um: 0.5,
+        };
+
+        // Use manual setpoint if provided and requested, otherwise use stored setpoint
+        if (useManualSetpoint && manualTargetSetpoint !== "") {
+          const manualValue = parseFloat(manualTargetSetpoint);
+          if (!isNaN(manualValue)) {
+            params.target_focus_setpoint = manualValue;
+          }
+        } else if (focusLockUI.storedTargetSetpoint !== null) {
+          params.target_focus_setpoint = focusLockUI.storedTargetSetpoint;
         }
-      } else if (focusLockUI.storedTargetSetpoint !== null) {
-        params.target_focus_setpoint = focusLockUI.storedTargetSetpoint;
+
+        const result = await apiFocusLockControllerPerformOneStepAutofocus(
+          params
+        );
+
+        dispatch(focusLockSlice.setLastAutofocusResult(result));
+        if (result.calibration_range) {
+          dispatch(
+            focusLockSlice.setCalibrationRange(result.calibration_range)
+          );
+        }
+
+        console.log("One-step autofocus result:", result);
+      } catch (error) {
+        console.error("Failed to perform one-step autofocus:", error);
+        dispatch(
+          focusLockSlice.setLastAutofocusResult({
+            success: false,
+            error: error.message || "Unknown error",
+          })
+        );
+      } finally {
+        dispatch(focusLockSlice.setIsPerformingAutofocus(false));
       }
-      
-      const result = await apiFocusLockControllerPerformOneStepAutofocus(params);
-      
-      dispatch(focusLockSlice.setLastAutofocusResult(result));
-      if (result.calibration_range) {
-        dispatch(focusLockSlice.setCalibrationRange(result.calibration_range));
-      }
-      
-      console.log("One-step autofocus result:", result);
-    } catch (error) {
-      console.error("Failed to perform one-step autofocus:", error);
-      dispatch(focusLockSlice.setLastAutofocusResult({
-        success: false,
-        error: error.message || "Unknown error",
-      }));
-    } finally {
-      dispatch(focusLockSlice.setIsPerformingAutofocus(false));
-    }
-  }, [dispatch, focusLockUI.storedTargetSetpoint, manualTargetSetpoint]);
+    },
+    [dispatch, focusLockUI.storedTargetSetpoint, manualTargetSetpoint]
+  );
 
   // Z-axis movement functions - memoized
   const moveZAxis = useCallback(async (distance) => {
@@ -1074,24 +1074,36 @@ const FocusLockController = () => {
                       ? "Calibrating..."
                       : "Start Calibration"}
                   </Button>
-                  
+
                   {calibrationResults && (
                     <Alert severity="info" size="small" sx={{ mt: 1 }}>
-                      <Typography variant="caption" display="block" fontWeight="bold">
+                      <Typography
+                        variant="caption"
+                        display="block"
+                        fontWeight="bold"
+                      >
                         Calibration Results:
                       </Typography>
                       <Typography variant="caption" display="block">
                         R²: {calibrationResults.r_squared?.toFixed(4)}
                       </Typography>
                       <Typography variant="caption" display="block">
-                        Sensitivity: {calibrationResults.sensitivity_nm_per_px?.toFixed(1)} nm/unit
+                        Sensitivity:{" "}
+                        {calibrationResults.sensitivity_nm_per_px?.toFixed(1)}{" "}
+                        nm/unit
                       </Typography>
                       <Typography variant="caption" display="block">
-                        Monotone Failures: {calibrationResults.monotone_failures}/{calibrationResults.total_points}
+                        Monotone Failures:{" "}
+                        {calibrationResults.monotone_failures}/
+                        {calibrationResults.total_points}
                       </Typography>
                       {calibrationResults.coefficients && (
                         <Typography variant="caption" display="block">
-                          Coefficients: [{calibrationResults.coefficients.map(c => c.toFixed(4)).join(', ')}]
+                          Coefficients: [
+                          {calibrationResults.coefficients
+                            .map((c) => c.toFixed(4))
+                            .join(", ")}
+                          ]
                         </Typography>
                       )}
                     </Alert>
@@ -1105,13 +1117,16 @@ const FocusLockController = () => {
                   >
                     Unlock Focus
                   </Button>
-                  
+
                   <Divider sx={{ my: 1 }} />
-                  
-                  <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
+
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ fontWeight: "bold", mb: 1 }}
+                  >
                     One-Step Autofocus
                   </Typography>
-                  
+
                   <Button
                     variant="contained"
                     color="secondary"
@@ -1122,13 +1137,14 @@ const FocusLockController = () => {
                   >
                     Store Current Focus as Setpoint
                   </Button>
-                  
+
                   {focusLockUI.storedTargetSetpoint !== null && (
                     <Typography variant="caption" color="textSecondary">
-                      Stored Setpoint: {focusLockUI.storedTargetSetpoint.toFixed(2)}
+                      Stored Setpoint:{" "}
+                      {focusLockUI.storedTargetSetpoint.toFixed(2)}
                     </Typography>
                   )}
-                  
+
                   <TextField
                     label="Manual Target Setpoint"
                     type="number"
@@ -1139,60 +1155,92 @@ const FocusLockController = () => {
                     helperText="Enter target focus value manually (optional)"
                     sx={{ mt: 1 }}
                   />
-                  
-                  <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+
+                  <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
                     <Button
                       variant="contained"
                       color="success"
                       onClick={() => performOneStepAutofocus(false)}
-                      disabled={focusLockUI.isPerformingAutofocus || focusLockUI.storedTargetSetpoint === null}
+                      disabled={
+                        focusLockUI.isPerformingAutofocus ||
+                        focusLockUI.storedTargetSetpoint === null
+                      }
                       fullWidth
                       size="small"
                     >
-                      {focusLockUI.isPerformingAutofocus ? "Focusing..." : "Use Stored"}
+                      {focusLockUI.isPerformingAutofocus
+                        ? "Focusing..."
+                        : "Use Stored"}
                     </Button>
-                    
+
                     <Button
                       variant="contained"
                       color="info"
                       onClick={() => performOneStepAutofocus(true)}
-                      disabled={focusLockUI.isPerformingAutofocus || manualTargetSetpoint === ""}
+                      disabled={
+                        focusLockUI.isPerformingAutofocus ||
+                        manualTargetSetpoint === ""
+                      }
                       fullWidth
                       size="small"
                     >
-                      {focusLockUI.isPerformingAutofocus ? "Focusing..." : "Use Manual"}
+                      {focusLockUI.isPerformingAutofocus
+                        ? "Focusing..."
+                        : "Use Manual"}
                     </Button>
                   </Box>
-                  
+
                   {focusLockUI.lastAutofocusResult && (
-                    <Alert 
-                      severity={focusLockUI.lastAutofocusResult.success ? "success" : "error"}
+                    <Alert
+                      severity={
+                        focusLockUI.lastAutofocusResult.success
+                          ? "success"
+                          : "error"
+                      }
                       size="small"
                       sx={{ mt: 1 }}
                     >
                       {focusLockUI.lastAutofocusResult.success ? (
                         <Box>
                           <Typography variant="caption" display="block">
-                            ✓ Autofocus successful after {focusLockUI.lastAutofocusResult.num_attempts} attempts
+                            ✓ Autofocus successful after{" "}
+                            {focusLockUI.lastAutofocusResult.num_attempts}{" "}
+                            attempts
                           </Typography>
                           <Typography variant="caption" display="block">
-                            Error: {focusLockUI.lastAutofocusResult.final_error_um?.toFixed(2)} µm
+                            Error:{" "}
+                            {focusLockUI.lastAutofocusResult.final_error_um?.toFixed(
+                              2
+                            )}{" "}
+                            µm
                           </Typography>
                           <Typography variant="caption" display="block">
-                            Z Offset: {focusLockUI.lastAutofocusResult.z_offset?.toFixed(2)} µm
+                            Z Offset:{" "}
+                            {focusLockUI.lastAutofocusResult.z_offset?.toFixed(
+                              2
+                            )}{" "}
+                            µm
                           </Typography>
                         </Box>
                       ) : (
                         <Typography variant="caption">
-                          {focusLockUI.lastAutofocusResult.error || "Autofocus failed"}
+                          {focusLockUI.lastAutofocusResult.error ||
+                            "Autofocus failed"}
                         </Typography>
                       )}
                     </Alert>
                   )}
-                  
+
                   {focusLockUI.calibrationRange && (
-                    <Typography variant="caption" color="textSecondary" display="block" sx={{ mt: 1 }}>
-                      Calibration Range: [{focusLockUI.calibrationRange[0]?.toFixed(1)}, {focusLockUI.calibrationRange[1]?.toFixed(1)}]
+                    <Typography
+                      variant="caption"
+                      color="textSecondary"
+                      display="block"
+                      sx={{ mt: 1 }}
+                    >
+                      Calibration Range: [
+                      {focusLockUI.calibrationRange[0]?.toFixed(1)},{" "}
+                      {focusLockUI.calibrationRange[1]?.toFixed(1)}]
                     </Typography>
                   )}
                 </Box>
