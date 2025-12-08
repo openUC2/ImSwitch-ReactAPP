@@ -44,6 +44,11 @@ export default function StreamControls({
 }) {
   const dispatch = useDispatch();
 
+  // Redux state
+  const showHistogram = useSelector(
+    (state) => state.liveStreamState.showHistogram
+  );
+
   // Internal state for save format and file name
   const [saveFormat, setSaveFormat] = useState(4); // Default: MP4
   const [snapFileName, setSnapFileName] = useState("openUC2_snapshot");
@@ -256,9 +261,7 @@ export default function StreamControls({
         <FormControlLabel
           control={
             <Switch
-              checked={useSelector(
-                (state) => state.liveStreamState.showHistogram
-              )}
+              checked={showHistogram}
               onChange={(e) =>
                 dispatch(liveStreamSlice.setShowHistogram(e.target.checked))
               }
