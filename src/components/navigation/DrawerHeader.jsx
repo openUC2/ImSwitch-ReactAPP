@@ -1,7 +1,6 @@
 import { Box, IconButton, Typography, Avatar } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import MenuOpen from "@mui/icons-material/MenuOpen";
-import uc2Logo from "../../assets/ouc2_logo_quadratic.png";
 
 function DrawerHeader({ sidebarVisible, setSidebarVisible, isMobile }) {
   const theme = useTheme();
@@ -20,7 +19,10 @@ function DrawerHeader({ sidebarVisible, setSidebarVisible, isMobile }) {
       }}
     >
       <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-        <Avatar src={uc2Logo} sx={{ width: 36, height: 36 }} />
+        <Avatar
+          src={`${process.env.PUBLIC_URL}/logo192.png`}
+          sx={{ width: 36, height: 36 }}
+        />
         {sidebarVisible && (
           <Typography
             variant="h6"

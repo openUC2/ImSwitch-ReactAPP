@@ -12,6 +12,8 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  Switch,
+  FormControlLabel,
 } from "@mui/material";
 import {
   PlayArrow,
@@ -41,6 +43,11 @@ export default function StreamControls({
   lastSnapPath,
 }) {
   const dispatch = useDispatch();
+
+  // Redux state
+  const showHistogram = useSelector(
+    (state) => state.liveStreamState.showHistogram
+  );
 
   // Internal state for save format and file name
   const [saveFormat, setSaveFormat] = useState(4); // Default: MP4
@@ -250,6 +257,21 @@ export default function StreamControls({
         >
           Stop
         </Button>
+
+        <FormControlLabel
+          control={
+            <Switch
+              checked={showHistogram}
+              onChange={(e) =>
+                dispatch(liveStreamSlice.setShowHistogram(e.target.checked))
+              }
+              size="small"
+              color="success"
+            />
+          }
+          label="Histogram"
+          sx={{ ml: 1 }}
+        />
 
         <Button
           variant="outlined"
