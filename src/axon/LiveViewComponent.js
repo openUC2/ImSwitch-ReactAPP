@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Box, Slider, Typography } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import * as liveViewSlice from "../state/slices/LiveStreamSlice.js";
 import * as objectiveSlice from "../state/slices/ObjectiveSlice.js";
 import apiPositionerControllerMovePositioner from "../backendapi/apiPositionerControllerMovePositioner.js";
