@@ -131,7 +131,7 @@ const AutofocusController = ({ hostIP, hostPort }) => {
   const handleStartLiveMonitoring = async () => {
     try {
       const result = await apiAutofocusControllerStartLiveMonitoring(liveMonitoringPeriod, liveMonitoringMethod, liveMonitoringCropsize);
-      if (result.status === "started") {
+      if (result.status === "started" || result.status === "already_running") {
         dispatch(autofocusSlice.setIsLiveMonitoring(true));
       }
     } catch (error) {
@@ -434,7 +434,7 @@ const AutofocusController = ({ hostIP, hostPort }) => {
               elevation={3} 
               style={{ 
                 padding: "20px", 
-                backgroundColor: "#f5f5f5",
+                backgroundColor: "primary.main",
                 textAlign: "center"
               }}
             >

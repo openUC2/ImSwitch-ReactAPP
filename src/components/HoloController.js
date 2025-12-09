@@ -771,13 +771,13 @@ const HoloController = () => {
             onChange={handleDzChange}
             onChangeCommitted={handleDzCommit}
             min={0}
-            max={5000e-6}
+            max={15000e-6}
             step={1e-6}
             valueLabelDisplay="on"
             valueLabelFormat={(value) => `${(value * 1e6).toFixed(1)} µm`}
             marks={[
               { value: 0, label: "0 µm" },
-              { value: 5000e-6, label: "5000 µm" },
+              { value: 15000e-6, label: "15000 µm" },
             ]}
             sx={{
               "& .MuiSlider-thumb": {
