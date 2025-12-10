@@ -14,7 +14,7 @@
 
   .drag-move-tooltip {
     background-color: white;
-    font-size: .78em;
+    font-size: 0.78em;
     position: fixed;
     text-wrap: nowrap;
     border: 1px dashed black;
@@ -37,7 +37,7 @@
       position: absolute !important;
       top: -1000px;
       left: -1000px;
-      z-Index: -1;
+      z-index: -1;
       border-radius: 4px;
       position: relative;
       color: white;
@@ -145,7 +145,7 @@
     padding: 4px 0 4px 5px;
     position: sticky;
     top: 0;
-    background-color: #f5f5f5;
+    background-color: #424242;
     z-index: 1;
 
     .file-select-all {
