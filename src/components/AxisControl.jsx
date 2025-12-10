@@ -165,7 +165,9 @@ const ImprovedAxisControl = ({ hostIP, hostPort }) => {
             sx={{
               mb: 1,
               color: (theme) =>
-                theme.palette.mode === "dark" ? "success.light" : "success.dark",
+                theme.palette.mode === "dark"
+                  ? "success.light"
+                  : "success.dark",
             }}
           >
             POSITION CONTROL (µm) - Click to Edit Target
@@ -178,7 +180,9 @@ const ImprovedAxisControl = ({ hostIP, hostPort }) => {
                     variant="caption"
                     sx={{
                       color: (theme) =>
-                        theme.palette.mode === "dark" ? "grey.400" : "text.secondary",
+                        theme.palette.mode === "dark"
+                          ? "grey.400"
+                          : "text.secondary",
                       mb: 1,
                       display: "block",
                     }}
