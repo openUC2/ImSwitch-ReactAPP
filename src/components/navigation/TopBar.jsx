@@ -11,8 +11,8 @@ const TopBar = ({
   sidebarVisible,
   setSidebarVisible,
   selectedPlugin,
-  drawerWidth,
   onSettingsNavigate,
+  onFileManagerRefresh,
 }) => {
   return (
     <Box
@@ -55,7 +55,7 @@ const TopBar = ({
           {isMobile ? selectedPlugin : `ImSwitch UI - ${selectedPlugin}`}
         </Typography>
 
-        <StorageButton />
+        <StorageButton onFileManagerRefresh={onFileManagerRefresh} />
         <SettingsMenu onNavigate={onSettingsNavigate} />
       </Toolbar>
     </Box>

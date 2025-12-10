@@ -335,8 +335,8 @@ function App() {
           sidebarVisible={sidebarVisible}
           setSidebarVisible={setSidebarVisible}
           selectedPlugin={selectedPlugin}
-          drawerWidth={drawerWidth}
           onSettingsNavigate={handlePluginChange} // Pass existing navigation handler
+          onFileManagerRefresh={handleRefresh}
         />
 
         <Box

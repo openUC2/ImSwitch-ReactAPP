@@ -4,6 +4,7 @@ import NavigationPane from "./NavigationPane/NavigationPane";
 import BreadCrumb from "./BreadCrumb/BreadCrumb";
 import FileList from "./FileList/FileList";
 import Actions from "./Actions/Actions";
+import ActiveStorageInfo from "../../components/ActiveStorageInfo";
 import { FilesProvider } from "../contexts/FilesContext";
 import { FileNavigationProvider } from "../contexts/FileNavigationContext";
 import { SelectionProvider } from "../contexts/SelectionContext";
@@ -12,7 +13,10 @@ import { LayoutProvider } from "../contexts/LayoutContext";
 import { useTriggerAction } from "../hooks/useTriggerAction";
 import { useColumnResize } from "../hooks/useColumnResize";
 import PropTypes from "prop-types";
-import { dateStringValidator, urlValidator } from "../validators/propValidators";
+import {
+  dateStringValidator,
+  urlValidator,
+} from "../validators/propValidators";
 import "./FileManager.scss";
 
 const FileManager = ({
@@ -40,8 +44,14 @@ const FileManager = ({
   initialPath = "/",
 }) => {
   const triggerAction = useTriggerAction();
-  const { containerRef, colSizes, isDragging, handleMouseMove, handleMouseUp, handleMouseDown } =
-    useColumnResize(20, 80);
+  const {
+    containerRef,
+    colSizes,
+    isDragging,
+    handleMouseMove,
+    handleMouseUp,
+    handleMouseDown,
+  } = useColumnResize(20, 80);
 
   return (
     <main
@@ -68,15 +78,24 @@ const FileManager = ({
                   onMouseUp={handleMouseUp}
                   className="files-container"
                 >
-                  <div className="navigation-pane" style={{ width: colSizes.col1 + "%" }}>
+                  <div
+                    className="navigation-pane"
+                    style={{ width: colSizes.col1 + "%" }}
+                  >
                     <NavigationPane />
                     <div
-                      className={`sidebar-resize ${isDragging ? "sidebar-dragging" : ""}`}
+                      className={`sidebar-resize ${
+                        isDragging ? "sidebar-dragging" : ""
+                      }`}
                       onMouseDown={handleMouseDown}
                     />
                   </div>
 
-                  <div className="folders-preview" style={{ width: colSizes.col2 + "%" }}>
+                  <div
+                    className="folders-preview"
+                    style={{ width: colSizes.col2 + "%" }}
+                  >
+                    <ActiveStorageInfo onRefresh={onRefresh} />
                     <BreadCrumb />
                     <FileList
                       onCreateFolder={onCreateFolder}

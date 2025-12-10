@@ -36,7 +36,11 @@ import apiStorageControllerSetActivePath from "../backendapi/apiStorageControlle
  * @param {function} onStorageChange - Callback when storage location changes
  * @param {number} scanInterval - Interval for background scanning in ms (default: 10000)
  */
-const StorageButton = ({ onStorageChange, scanInterval = 10000 }) => {
+const StorageButton = ({
+  onStorageChange,
+  onFileManagerRefresh,
+  scanInterval = 10000,
+}) => {
   const dispatch = useDispatch();
   const [anchorEl, setAnchorEl] = useState(null);
   const [externalDrives, setExternalDrives] = useState([]);
@@ -135,6 +139,11 @@ const StorageButton = ({ onStorageChange, scanInterval = 10000 }) => {
           type: "success",
         })
       );
+
+      // Trigger FileManager refresh if callback provided
+      if (onFileManagerRefresh) {
+        onFileManagerRefresh();
+      }
     } catch (err) {
       console.error("Failed to mount drive:", err);
       setError(`Failed to mount drive: ${err.message}`);
@@ -332,9 +341,74 @@ const StorageButton = ({ onStorageChange, scanInterval = 10000 }) => {
                   return (
                     <ListItem
                       key={index}
-                      disablePadding
-                      sx={{ mb: 1 }}
-                      secondaryAction={
+                      sx={{
+                        mb: 1,
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: 1,
+                        p: 1,
+                        bgcolor: isActive ? "action.selected" : "transparent",
+                        borderRadius: 1,
+                      }}
+                    >
+                      <ListItemIcon sx={{ minWidth: 40, mt: 0.5 }}>
+                        <SdStorageIcon
+                          color={isActive ? "success" : "action"}
+                        />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={drive.label || drive.path}
+                        secondary={
+                          <>
+                            <Typography
+                              variant="caption"
+                              component="span"
+                              sx={{ display: "block" }}
+                            >
+                              {drive.path}
+                            </Typography>
+                            <Box
+                              component="span"
+                              sx={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 0.5,
+                                flexWrap: "wrap",
+                                mt: 0.5,
+                              }}
+                            >
+                              {(drive.free_space_gb ||
+                                drive.total_space_gb) && (
+                                <Chip
+                                  label={`${
+                                    drive.free_space_gb?.toFixed(1) || "?"
+                                  } / ${
+                                    drive.total_space_gb?.toFixed(1) || "?"
+                                  } GB`}
+                                  size="small"
+                                  variant="outlined"
+                                />
+                              )}
+                              {drive.filesystem && (
+                                <Chip
+                                  label={drive.filesystem}
+                                  size="small"
+                                  variant="outlined"
+                                />
+                              )}
+                            </Box>
+                          </>
+                        }
+                        secondaryTypographyProps={{ component: "div" }}
+                        sx={{ flex: 1, pr: 1 }}
+                      />
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          minWidth: 100,
+                        }}
+                      >
                         <Button
                           variant={isActive ? "outlined" : "contained"}
                           color={isActive ? "success" : "primary"}
@@ -344,71 +418,15 @@ const StorageButton = ({ onStorageChange, scanInterval = 10000 }) => {
                           startIcon={
                             isMounting ? <CircularProgress size={12} /> : null
                           }
+                          fullWidth
                         >
                           {isActive
-                            ? "Active"
+                            ? "ACTIVE"
                             : isMounting
                             ? "Mounting..."
-                            : "Mount"}
+                            : "MOUNT"}
                         </Button>
-                      }
-                    >
-                      <ListItemButton
-                        disabled={isActive}
-                        sx={{ borderRadius: 1 }}
-                      >
-                        <ListItemIcon>
-                          <SdStorageIcon
-                            color={isActive ? "success" : "action"}
-                          />
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={drive.label || drive.path}
-                          secondary={
-                            <>
-                              <Typography
-                                variant="caption"
-                                component="span"
-                                sx={{ display: "block" }}
-                              >
-                                {drive.path}
-                              </Typography>
-                              <Box
-                                component="span"
-                                sx={{
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: 0.5,
-                                  flexWrap: "wrap",
-                                  mt: 0.5,
-                                }}
-                              >
-                                {(drive.free_space_gb ||
-                                  drive.total_space_gb) && (
-                                  <Chip
-                                    label={`${
-                                      drive.free_space_gb?.toFixed(1) || "?"
-                                    } / ${
-                                      drive.total_space_gb?.toFixed(1) || "?"
-                                    } GB`}
-                                    size="small"
-                                    variant="outlined"
-                                  />
-                                )}
-                                {drive.filesystem && (
-                                  <Chip
-                                    label={drive.filesystem}
-                                    size="small"
-                                    variant="outlined"
-                                  />
-                                )}
-                              </Box>
-                            </>
-                          }
-                          secondaryTypographyProps={{ component: "div" }}
-                        />
-                        />
-                      </ListItemButton>
+                      </Box>
                     </ListItem>
                   );
                 })}
