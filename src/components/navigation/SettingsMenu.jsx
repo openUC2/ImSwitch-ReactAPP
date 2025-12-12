@@ -203,7 +203,7 @@ const SettingsMenu = ({ onNavigate }) => {
         transformOrigin={{ horizontal: "right", vertical: "top" }}
         anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
       >
-        {/* Enhanced Connection Status Header with Disk Usage */}
+        {/* Enhanced Connection Status Header */}
         <Box sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: "divider" }}>
           <Typography variant="body2" color="text.secondary" gutterBottom>
             ImSwitch Backend
@@ -258,50 +258,6 @@ const SettingsMenu = ({ onNavigate }) => {
             >
               Click "Backend Connection" to configure
             </Typography>
-          )}
-
-          {/* Disk Usage - Only show when backend is connected */}
-          {isBackendConnected && (
-            <Box sx={{ mt: 1 }}>
-              <Box
-                sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}
-              >
-                <Storage fontSize="small" sx={{ color: "text.secondary" }} />
-                <Typography variant="caption" color="text.secondary">
-                  Disk Usage
-                </Typography>
-                <Chip
-                  label={diskUsage ?? "Loading..."}
-                  color={getDiskUsageColor(diskUsage)}
-                  size="small"
-                  variant="outlined"
-                  sx={{
-                    height: 20,
-                    fontSize: "0.75rem",
-                    "& .MuiChip-label": { px: 1 },
-                  }}
-                />
-              </Box>
-
-              {/* Progress bar for disk usage */}
-              {diskUsage &&
-                !diskUsage.includes("Error") &&
-                !diskUsage.includes("Loading") && (
-                  <LinearProgress
-                    variant="determinate"
-                    value={parseFloat(diskUsage.replace("%", ""))}
-                    color={getDiskUsageColor(diskUsage)}
-                    sx={{
-                      height: 4,
-                      borderRadius: 2,
-                      bgcolor: "action.hover",
-                      "& .MuiLinearProgress-bar": {
-                        borderRadius: 2,
-                      },
-                    }}
-                  />
-                )}
-            </Box>
           )}
         </Box>
 

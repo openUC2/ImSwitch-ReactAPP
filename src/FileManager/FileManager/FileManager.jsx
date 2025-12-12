@@ -4,7 +4,6 @@ import NavigationPane from "./NavigationPane/NavigationPane";
 import BreadCrumb from "./BreadCrumb/BreadCrumb";
 import FileList from "./FileList/FileList";
 import Actions from "./Actions/Actions";
-import ActiveStorageInfo from "../../components/ActiveStorageInfo";
 import { FilesProvider } from "../contexts/FilesContext";
 import { FileNavigationProvider } from "../contexts/FileNavigationContext";
 import { SelectionProvider } from "../contexts/SelectionContext";
@@ -95,7 +94,6 @@ const FileManager = ({
                     className="folders-preview"
                     style={{ width: colSizes.col2 + "%" }}
                   >
-                    <ActiveStorageInfo onRefresh={onRefresh} />
                     <BreadCrumb />
                     <FileList
                       onCreateFolder={onCreateFolder}

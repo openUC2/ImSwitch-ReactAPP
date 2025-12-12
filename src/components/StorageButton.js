@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import {
   IconButton,
   Badge,
@@ -8,32 +8,39 @@ import {
   Typography,
   List,
   ListItem,
-  ListItemButton,
   ListItemIcon,
-  ListItemText,
   Button,
   Chip,
   CircularProgress,
   Divider,
+  LinearProgress,
 } from "@mui/material";
 import {
   SdStorage as SdStorageIcon,
   CheckCircle as CheckCircleIcon,
   Refresh as RefreshIcon,
   Close as CloseIcon,
+  Eject as EjectIcon,
+  OpenInNew as OpenInNewIcon,
+  Folder as FolderIcon,
 } from "@mui/icons-material";
 import { setNotification } from "../state/slices/NotificationSlice";
+import { getConnectionSettingsState } from "../state/slices/ConnectionSettingsSlice";
 import apiStorageControllerListExternalDrives from "../backendapi/apiStorageControllerListExternalDrives";
 import apiStorageControllerGetStorageStatus from "../backendapi/apiStorageControllerGetStorageStatus";
 import apiStorageControllerSetActivePath from "../backendapi/apiStorageControllerSetActivePath";
+import apiStorageControllerGetConfigPaths from "../backendapi/apiStorageControllerGetConfigPaths";
+import apiUC2ConfigControllerGetDiskUsage from "../backendapi/apiUC2ConfigControllerGetDiskUsage";
 
 /**
  * StorageButton Component
  *
  * Top bar button with auto-detection of external drives.
- * Shows badge with number of available drives and opens popover for management.
+ * Shows badge with number of available drives and allows switching between them.
+ * Note: Drives are automatically mounted by the OS. Use the admin panel for unmounting.
  *
  * @param {function} onStorageChange - Callback when storage location changes
+ * @param {function} onFileManagerRefresh - Callback to refresh FileManager
  * @param {number} scanInterval - Interval for background scanning in ms (default: 10000)
  */
 const StorageButton = ({
@@ -42,12 +49,15 @@ const StorageButton = ({
   scanInterval = 10000,
 }) => {
   const dispatch = useDispatch();
+  const connectionSettings = useSelector(getConnectionSettingsState);
   const [anchorEl, setAnchorEl] = useState(null);
   const [externalDrives, setExternalDrives] = useState([]);
   const [storageStatus, setStorageStatus] = useState(null);
+  const [defaultPath, setDefaultPath] = useState(null);
+  const [internalDiskUsage, setInternalDiskUsage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [mounting, setMounting] = useState(null);
+  const [switching, setSwitching] = useState(null);
   const [previousDriveCount, setPreviousDriveCount] = useState(0);
 
   const open = Boolean(anchorEl);
@@ -77,6 +87,27 @@ const StorageButton = ({
         const status = await apiStorageControllerGetStorageStatus();
         console.log("StorageButton: Storage status:", status);
         setStorageStatus(status);
+
+        // Get default path if not already loaded
+        if (!defaultPath) {
+          const configPaths = await apiStorageControllerGetConfigPaths();
+          setDefaultPath(configPaths.data_path);
+        }
+
+        // Get disk usage for internal storage from UC2ConfigController
+        try {
+          const diskUsageData = await apiUC2ConfigControllerGetDiskUsage();
+          console.log("Internal disk usage:", diskUsageData);
+
+          // API now returns {raw, formatted, percent}
+          setInternalDiskUsage({
+            percent: diskUsageData.percent,
+            formatted: diskUsageData.formatted,
+          });
+        } catch (err) {
+          console.error("Failed to fetch internal disk usage:", err);
+          // Keep old value or set null
+        }
 
         // Get list of external drives
         console.log("StorageButton: Fetching external drives...");
@@ -112,12 +143,12 @@ const StorageButton = ({
         if (showLoading) setLoading(false);
       }
     },
-    [previousDriveCount]
+    [previousDriveCount, dispatch]
   );
 
-  // Mount/activate a drive
-  const handleMountDrive = async (drivePath, persist = true) => {
-    setMounting(drivePath);
+  // Select/switch to a drive
+  const handleSelectDrive = async (drivePath, persist = true) => {
+    setSwitching(drivePath);
     setError(null);
 
     try {
@@ -135,7 +166,7 @@ const StorageButton = ({
 
       dispatch(
         setNotification({
-          message: result.message || `Storage mounted successfully`,
+          message: result.message || `Switched to external storage`,
           type: "success",
         })
       );
@@ -145,10 +176,10 @@ const StorageButton = ({
         onFileManagerRefresh();
       }
     } catch (err) {
-      console.error("Failed to mount drive:", err);
-      setError(`Failed to mount drive: ${err.message}`);
+      console.error("Failed to switch drive:", err);
+      setError(`Failed to switch drive: ${err.message}`);
     } finally {
-      setMounting(null);
+      setSwitching(null);
     }
   };
 
@@ -225,7 +256,7 @@ const StorageButton = ({
               variant="h6"
               sx={{ display: "flex", alignItems: "center", gap: 1 }}
             >
-              <SdStorageIcon /> Storage
+              <SdStorageIcon /> Select Storage
             </Typography>
             <Box>
               <IconButton
@@ -277,7 +308,7 @@ const StorageButton = ({
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <CheckCircleIcon fontSize="small" />
                 <Typography variant="subtitle2" component="div">
-                  Active Location
+                  FileManager Base Directory
                 </Typography>
               </Box>
               <Typography
@@ -316,7 +347,206 @@ const StorageButton = ({
 
           {/* External Drives */}
           <Box sx={{ p: 2 }}>
+            {/* Unmount Warning */}
+            <Box
+              sx={{
+                mb: 2,
+                p: 1,
+                bgcolor: (theme) =>
+                  theme.palette.mode === "dark"
+                    ? "rgba(255, 152, 0, 0.15)"
+                    : "#fff3e0",
+                borderRadius: 1,
+                border: 1,
+                borderColor: "warning.main",
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+              }}
+            >
+              <EjectIcon sx={{ color: "warning.main", fontSize: 20 }} />
+              <Box sx={{ flex: 1 }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    fontWeight: "bold",
+                    color: (theme) =>
+                      theme.palette.mode === "dark" ? "#ffa726" : "#e65100",
+                    display: "block",
+                    mb: 0.25,
+                  }}
+                >
+                  Before removing a drive:
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: (theme) =>
+                      theme.palette.mode === "dark"
+                        ? "text.secondary"
+                        : "#bf360c",
+                    fontSize: "0.7rem",
+                  }}
+                >
+                  Unmount it in the Admin Panel first
+                </Typography>
+              </Box>
+              <Button
+                size="small"
+                variant="contained"
+                color="warning"
+                onClick={() => {
+                  const ip = connectionSettings.ip || "localhost";
+                  const cleanIp = ip.replace(/^https?:\/\//, "");
+                  window.open(
+                    `http://${cleanIp}/admin/panel/storage/`,
+                    "_blank"
+                  );
+                }}
+                startIcon={<OpenInNewIcon fontSize="small" />}
+                sx={{
+                  whiteSpace: "nowrap",
+                  fontSize: "0.75rem",
+                  py: 0.5,
+                  px: 1,
+                }}
+              >
+                Open Panel
+              </Button>
+            </Box>
+
+            {/* Internal Storage */}
             <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: "bold" }}>
+              Internal Storage
+            </Typography>
+
+            {loading ? (
+              <Box sx={{ display: "flex", justifyContent: "center", p: 2 }}>
+                <CircularProgress size={24} />
+              </Box>
+            ) : defaultPath ? (
+              <List dense>
+                <ListItem
+                  sx={{
+                    mb: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    p: 1,
+                    bgcolor: !storageStatus?.active_path?.includes("/media/")
+                      ? "action.selected"
+                      : "transparent",
+                    borderRadius: 1,
+                    border: 1,
+                    borderColor: !storageStatus?.active_path?.includes(
+                      "/media/"
+                    )
+                      ? "success.main"
+                      : "divider",
+                  }}
+                >
+                  <ListItemIcon sx={{ minWidth: 32 }}>
+                    <FolderIcon
+                      fontSize="small"
+                      color={
+                        !storageStatus?.active_path?.includes("/media/")
+                          ? "success"
+                          : "action"
+                      }
+                    />
+                  </ListItemIcon>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        mb: 0.5,
+                      }}
+                    >
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontWeight: !storageStatus?.active_path?.includes(
+                            "/media/"
+                          )
+                            ? "bold"
+                            : "normal",
+                        }}
+                        noWrap
+                      >
+                        Local Storage
+                      </Typography>
+                      {internalDiskUsage?.percent !== undefined && (
+                        <Typography variant="caption" color="text.secondary">
+                          {internalDiskUsage.percent.toFixed(1)}% used
+                        </Typography>
+                      )}
+                    </Box>
+                    {internalDiskUsage?.percent !== undefined && (
+                      <LinearProgress
+                        variant="determinate"
+                        value={internalDiskUsage.percent}
+                        sx={{
+                          height: 6,
+                          borderRadius: 1,
+                          bgcolor: "action.hover",
+                          "& .MuiLinearProgress-bar": {
+                            bgcolor: (theme) => {
+                              const usage = internalDiskUsage.percent;
+                              if (usage > 90) return "error.main";
+                              if (usage > 75) return "warning.main";
+                              return "success.main";
+                            },
+                          },
+                        }}
+                      />
+                    )}
+                    {defaultPath && (
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ mt: 0.25, display: "block" }}
+                      >
+                        {defaultPath}
+                      </Typography>
+                    )}
+                  </Box>
+                  {!storageStatus?.active_path?.includes("/media/") ? (
+                    <Chip
+                      label="ACTIVE"
+                      color="success"
+                      size="small"
+                      icon={<CheckCircleIcon fontSize="small" />}
+                      sx={{ fontWeight: "bold" }}
+                    />
+                  ) : (
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      size="small"
+                      onClick={() => handleSelectDrive(defaultPath, true)}
+                      disabled={switching === defaultPath}
+                      startIcon={
+                        switching === defaultPath ? (
+                          <CircularProgress size={12} />
+                        ) : null
+                      }
+                    >
+                      {switching === defaultPath ? "Switching..." : "SELECT"}
+                    </Button>
+                  )}
+                </ListItem>
+              </List>
+            ) : null}
+
+            <Divider sx={{ my: 2 }} />
+
+            {/* External Drives */}
+            <Typography
+              variant="subtitle2"
+              sx={{ mb: 1.5, fontWeight: "bold" }}
+            >
               External Drives ({externalDrives.length})
             </Typography>
 
@@ -336,97 +566,115 @@ const StorageButton = ({
                   const isActive =
                     storageStatus?.active_path?.startsWith(drive.path) ||
                     drive.is_active;
-                  const isMounting = mounting === drive.path;
+                  const isSwitching = switching === drive.path;
 
                   return (
                     <ListItem
                       key={index}
                       sx={{
-                        mb: 1,
+                        mb: 0.5,
                         display: "flex",
-                        alignItems: "flex-start",
+                        alignItems: "center",
                         gap: 1,
                         p: 1,
                         bgcolor: isActive ? "action.selected" : "transparent",
                         borderRadius: 1,
+                        border: 1,
+                        borderColor: isActive ? "success.main" : "divider",
                       }}
                     >
-                      <ListItemIcon sx={{ minWidth: 40, mt: 0.5 }}>
+                      <ListItemIcon sx={{ minWidth: 32 }}>
                         <SdStorageIcon
+                          fontSize="small"
                           color={isActive ? "success" : "action"}
                         />
                       </ListItemIcon>
-                      <ListItemText
-                        primary={drive.label || drive.path}
-                        secondary={
-                          <>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            mb: 0.5,
+                          }}
+                        >
+                          <Typography
+                            variant="body2"
+                            sx={{ fontWeight: isActive ? "bold" : "normal" }}
+                            noWrap
+                          >
+                            {drive.label || drive.path.split("/").pop()}
+                          </Typography>
+                          {drive.free_space_gb && drive.total_space_gb && (
                             <Typography
                               variant="caption"
-                              component="span"
-                              sx={{ display: "block" }}
+                              color="text.secondary"
                             >
-                              {drive.path}
+                              {(
+                                drive.total_space_gb - drive.free_space_gb
+                              ).toFixed(1)}{" "}
+                              GB / {drive.total_space_gb.toFixed(1)} GB
                             </Typography>
-                            <Box
-                              component="span"
-                              sx={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: 0.5,
-                                flexWrap: "wrap",
-                                mt: 0.5,
-                              }}
-                            >
-                              {(drive.free_space_gb ||
-                                drive.total_space_gb) && (
-                                <Chip
-                                  label={`${
-                                    drive.free_space_gb?.toFixed(1) || "?"
-                                  } / ${
-                                    drive.total_space_gb?.toFixed(1) || "?"
-                                  } GB`}
-                                  size="small"
-                                  variant="outlined"
-                                />
-                              )}
-                              {drive.filesystem && (
-                                <Chip
-                                  label={drive.filesystem}
-                                  size="small"
-                                  variant="outlined"
-                                />
-                              )}
-                            </Box>
-                          </>
-                        }
-                        secondaryTypographyProps={{ component: "div" }}
-                        sx={{ flex: 1, pr: 1 }}
-                      />
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          minWidth: 100,
-                        }}
-                      >
-                        <Button
-                          variant={isActive ? "outlined" : "contained"}
-                          color={isActive ? "success" : "primary"}
-                          size="small"
-                          onClick={() => handleMountDrive(drive.path, true)}
-                          disabled={isActive || isMounting}
-                          startIcon={
-                            isMounting ? <CircularProgress size={12} /> : null
-                          }
-                          fullWidth
-                        >
-                          {isActive
-                            ? "ACTIVE"
-                            : isMounting
-                            ? "Mounting..."
-                            : "MOUNT"}
-                        </Button>
+                          )}
+                        </Box>
+                        {drive.free_space_gb && drive.total_space_gb && (
+                          <LinearProgress
+                            variant="determinate"
+                            value={
+                              (1 - drive.free_space_gb / drive.total_space_gb) *
+                              100
+                            }
+                            sx={{
+                              height: 6,
+                              borderRadius: 1,
+                              bgcolor: "action.hover",
+                              "& .MuiLinearProgress-bar": {
+                                bgcolor: (theme) => {
+                                  const usage =
+                                    (1 -
+                                      drive.free_space_gb /
+                                        drive.total_space_gb) *
+                                    100;
+                                  if (usage > 90) return "error.main";
+                                  if (usage > 75) return "warning.main";
+                                  return "success.main";
+                                },
+                              },
+                            }}
+                          />
+                        )}
+                        {drive.filesystem && (
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ mt: 0.25, display: "block" }}
+                          >
+                            {drive.filesystem}
+                          </Typography>
+                        )}
                       </Box>
+                      {isActive ? (
+                        <Chip
+                          label="ACTIVE"
+                          color="success"
+                          size="small"
+                          icon={<CheckCircleIcon fontSize="small" />}
+                          sx={{ fontWeight: "bold" }}
+                        />
+                      ) : (
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          size="small"
+                          onClick={() => handleSelectDrive(drive.path, true)}
+                          disabled={isSwitching}
+                          startIcon={
+                            isSwitching ? <CircularProgress size={12} /> : null
+                          }
+                        >
+                          {isSwitching ? "Switching..." : "SELECT"}
+                        </Button>
+                      )}
                     </ListItem>
                   );
                 })}

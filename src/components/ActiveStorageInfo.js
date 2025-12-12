@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { Box, Typography, Chip, Button, CircularProgress } from "@mui/material";
 import {
   SdStorage as SdStorageIcon,
   Folder as FolderIcon,
 } from "@mui/icons-material";
 import { setNotification } from "../state/slices/NotificationSlice";
+import { getConnectionSettingsState } from "../state/slices/ConnectionSettingsSlice";
 import apiStorageControllerGetStorageStatus from "../backendapi/apiStorageControllerGetStorageStatus";
 import apiStorageControllerGetConfigPaths from "../backendapi/apiStorageControllerGetConfigPaths";
 import apiStorageControllerSetActivePath from "../backendapi/apiStorageControllerSetActivePath";
@@ -13,9 +14,11 @@ import apiStorageControllerSetActivePath from "../backendapi/apiStorageControlle
 /**
  * ActiveStorageInfo Component
  * Displays the currently active storage location in the FileManager
+ * Provides quick access to switch back to local storage and admin panel for unmounting
  */
 const ActiveStorageInfo = ({ onRefresh }) => {
   const dispatch = useDispatch();
+  const connectionSettings = useSelector(getConnectionSettingsState);
   const [storageStatus, setStorageStatus] = useState(null);
   const [defaultPath, setDefaultPath] = useState(null);
   const [loading, setLoading] = useState(true);
