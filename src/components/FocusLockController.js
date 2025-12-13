@@ -95,7 +95,7 @@ const FocusLockController = () => {
 
   // Calibration parameters exposed to user
   const [scanRangeUm, setScanRangeUm] = useState(200);
-  const [numSteps, setNumSteps] = useState(20);
+  const [numSteps, setNumSteps] = useState(10);
   const [settleTime, setSettleTime] = useState(0.5);
 
   // Manual target setpoint input
@@ -321,7 +321,7 @@ const FocusLockController = () => {
     }
 
     // Only poll when measuring is active, continuous loading is enabled, and no polling errors
-    if (isMeasuring && continuousImageLoading && !pollingError) {
+    if ( continuousImageLoading && !pollingError) {
       // Fix: Only poll when actually measuring AND continuous loading is enabled
       intervalRef.current = setInterval(loadLastImage, 500);
     }
@@ -1037,7 +1037,7 @@ const FocusLockController = () => {
                         setContinuousImageLoading(e.target.checked)
                       }
                       color="info"
-                      disabled={!isMeasuring} // Only enable when measuring is active
+                      //disabled={!isMeasuring} // Only enable when measuring is active
                     />
                   }
                   label={`Continuous Image Loading ${

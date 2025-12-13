@@ -11,6 +11,7 @@ import ExperimentComponent from "./ExperimentComponent";
 import ObjectiveController from "../components/ObjectiveController";
 import ResizablePanel from "./ResizablePanel"; //<ResizablePanel></ResizablePanel> performace issues :/
 import ObjectiveSwitcher from "../components/ObjectiveSwitcher";
+import FocusLockMiniController from "../components/FocusLockMiniController";
 
 const AxonTabComponent = () => {
   return (
@@ -46,7 +47,8 @@ const AxonTabComponent = () => {
               "Tile View",
               "Points",
               "Parameter",
-              "Objective"
+              "Objective", 
+              "Focus Lock"
             ]}
           >
             <LiveViewControlWrapper />
@@ -55,6 +57,7 @@ const AxonTabComponent = () => {
             <ParameterEditorWrapper />
             {/*<ExperimentComponent />*/}
             <ObjectiveSwitcher />
+            <FocusLockMiniController />
           </GenericTabBar>
         </div>
       </div>

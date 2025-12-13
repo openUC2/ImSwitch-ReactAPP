@@ -168,6 +168,17 @@ const WellSelectorComponent = () => {
   };
 
   //##################################################################################
+  const handleCalibrateOffset = () => {
+    // Stage offset calibration is now available via right-click context menu on the canvas.
+    // Right-click on the map and select "We are here (Calibrate Offset)" to set the stage offset.
+    // This uses the clicked position as the known position and transmits it to the backend
+    // via the setStageOffsetAxis API (similar to StageOffsetCalibrationController.jsx).
+    if (infoPopupRef.current) {
+      infoPopupRef.current.showMessage("Right-click on the map where you are and select 'We are here' to calibrate the stage offset.");
+    }
+  }
+
+  //##################################################################################
   const handleLayoutOffsetXChange = (event) => {
     const value = parseFloat(event.target.value);
     dispatch(wellSelectorSlice.setLayoutOffsetX(value));
@@ -414,6 +425,14 @@ const WellSelectorComponent = () => {
             onClick={() => handleAddCurrentPosition()}
           >
             ADD CURRENT POSITION
+          </Button>
+
+          <Button
+            variant="contained"
+            style={{}}
+            onClick={() => handleCalibrateOffset()}
+          >
+            CALIBRATE OFFSET
           </Button>
         </ButtonGroup>
       </div>

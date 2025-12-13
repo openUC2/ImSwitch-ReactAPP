@@ -9,6 +9,7 @@ import * as objectiveSlice from "../state/slices/ObjectiveSlice.js";
 
 import * as wsUtils from "./WellSelectorUtils.js";
 import apiPositionerControllerMovePositioner from "../backendapi/apiPositionerControllerMovePositioner.js";
+import apiPositionerControllerSetStageOffsetAxis from "../backendapi/apiPositionerControllerSetStageOffsetAxis.js";
 
 import fetchObjectiveControllerGetStatus from "../middleware/fetchObjectiveControllerGetStatus.js";
 
@@ -1339,7 +1340,7 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
         }
       });
 
-      // build acton list
+      // build action list
       if (pointIndex != -1) {
         actionList.push({
           label: "Remove Point",
@@ -1363,6 +1364,40 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
         });
       }
     }
+
+    // Add "We are here" calibration option to set stage offset
+    // This uses the clicked position on the canvas/wellplate as the known position
+    // and transmits it to the backend to calibrate the stage offset
+    const clickedPhysicalPosition = calcPxPoint2PhyPoint(menuPositionLocal);
+    actionList.push({
+      label: "📍 We are here (Calibrate Offset)",
+      action: async () => {
+        try {
+          // Set stage offset for X axis using clicked position as known position
+          await apiPositionerControllerSetStageOffsetAxis({
+            knownPosition: clickedPhysicalPosition.x,
+            axis: "X",
+          });
+          console.log(`Stage offset X calibrated to known position: ${clickedPhysicalPosition.x}`);
+
+          // Small delay between API calls to avoid race conditions on the backend
+          await new Promise(resolve => setTimeout(resolve, 100));
+
+          // Set stage offset for Y axis using clicked position as known position
+          await apiPositionerControllerSetStageOffsetAxis({
+            knownPosition: clickedPhysicalPosition.y,
+            axis: "Y",
+          });
+          console.log(`Stage offset Y calibrated to known position: ${clickedPhysicalPosition.y}`);
+
+          console.log(`Stage offset calibrated: X=${clickedPhysicalPosition.x}, Y=${clickedPhysicalPosition.y}`);
+        } catch (error) {
+          console.error("Error calibrating stage offset:", error);
+        }
+        setShowMenu(false);
+      },
+    });
+
     //return list
     return actionList;
   };
