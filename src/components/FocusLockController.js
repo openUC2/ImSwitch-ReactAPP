@@ -50,6 +50,8 @@ import apiFocusLockControllerGetPIParameters from "../backendapi/apiFocusLockCon
 import apiFocusLockControllerGetPIControllerParams from "../backendapi/apiFocusLockControllerGetPIControllerParams.js";
 import apiFocusLockControllerRunFocusCalibrationDynamic from "../backendapi/apiFocusLockControllerRunFocusCalibrationDynamic.js";
 import apiFocusLockControllerGetCalibrationStatus from "../backendapi/apiFocusLockControllerGetCalibrationStatus.js";
+import apiFocusLockControllerGetCalibrationResults from "../backendapi/apiFocusLockControllerGetCalibrationResults.js";
+import apiFocusLockControllerStopFocusCalibration from "../backendapi/apiFocusLockControllerStopFocusCalibration.js";
 import apiPositionerControllerMovePositioner from "../backendapi/apiPositionerControllerMovePositioner.js";
 import apiFocusLockControllerSetExposureTime from "../backendapi/apiFocusLockControllerSetExposureTime.js";
 import apiFocusLockControllerSetGain from "../backendapi/apiFocusLockControllerSetGain.js";
@@ -57,6 +59,9 @@ import apiFocusLockControllerGetExposureTime from "../backendapi/apiFocusLockCon
 import apiFocusLockControllerGetGain from "../backendapi/apiFocusLockControllerGetGain.js";
 import apiFocusLockControllerGetCurrentFocusValue from "../backendapi/apiFocusLockControllerGetCurrentFocusValue.js";
 import apiFocusLockControllerPerformOneStepAutofocus from "../backendapi/apiFocusLockControllerPerformOneStepAutofocus.js";
+
+// Import LiveViewControlWrapper for camera livestream
+import LiveViewControlWrapper from "../axon/LiveViewControlWrapper.js";
 
 // TabPanel component for PI parameters
 const TabPanel = (props) => {
@@ -103,6 +108,10 @@ const FocusLockController = () => {
 
   // Calibration results display
   const [calibrationResults, setCalibrationResults] = useState(null);
+  
+  // Calibration curve display state
+  const [showCalibrationCurve, setShowCalibrationCurve] = useState(false);
+  const [calibrationCurveData, setCalibrationCurveData] = useState(null);
 
   // Access Redux state with specific selectors for better performance
   const isMeasuring = useSelector((state) => state.focusLockState.isMeasuring);
@@ -779,11 +788,45 @@ const FocusLockController = () => {
       const result = await apiFocusLockControllerGetCurrentFocusValue();
       const focusValue = result.focus_value;
       dispatch(focusLockSlice.setStoredTargetSetpoint(focusValue));
+      // Also update the setPoint in Redux to update the yellow curve in the live plot
+      dispatch(focusLockSlice.setSetPoint(focusValue));
       console.log(`Stored focus value as setpoint: ${focusValue}`);
     } catch (error) {
       console.error("Failed to get current focus value:", error);
     }
   }, [dispatch]);
+
+  // Stop focus calibration - memoized
+  const stopCalibration = useCallback(async () => {
+    try {
+      await apiFocusLockControllerStopFocusCalibration();
+      dispatch(focusLockSlice.setIsCalibrating(false));
+      setIsCalibrationPolling(false);
+      if (calibrationPollingRef.current) {
+        clearInterval(calibrationPollingRef.current);
+        calibrationPollingRef.current = null;
+      }
+      if (calibrationTimeoutRef.current) {
+        clearTimeout(calibrationTimeoutRef.current);
+        calibrationTimeoutRef.current = null;
+      }
+      console.log("Focus calibration stopped");
+    } catch (error) {
+      console.error("Failed to stop calibration:", error);
+    }
+  }, [dispatch]);
+
+  // Fetch and display calibration results - memoized
+  const fetchCalibrationResults = useCallback(async () => {
+    try {
+      const results = await apiFocusLockControllerGetCalibrationResults();
+      setCalibrationCurveData(results);
+      setShowCalibrationCurve(true);
+      console.log("Calibration results fetched:", results);
+    } catch (error) {
+      console.error("Failed to fetch calibration results:", error);
+    }
+  }, []);
 
   // Perform one-step autofocus - memoized
   const performOneStepAutofocus = useCallback(
@@ -1075,6 +1118,25 @@ const FocusLockController = () => {
                       : "Start Calibration"}
                   </Button>
 
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    onClick={stopCalibration}
+                    disabled={!focusLockUI.isCalibrating && !isCalibrationPolling}
+                    fullWidth
+                  >
+                    Stop Calibration
+                  </Button>
+
+                  <Button
+                    variant="outlined"
+                    color="info"
+                    onClick={fetchCalibrationResults}
+                    fullWidth
+                  >
+                    Show Calibration Curve
+                  </Button>
+
                   {calibrationResults && (
                     <Alert severity="info" size="small" sx={{ mt: 1 }}>
                       <Typography
@@ -1298,6 +1360,114 @@ const FocusLockController = () => {
               >
                 Reset Graph Data
               </Button>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Calibration Curve Display */}
+        {showCalibrationCurve && calibrationCurveData && (
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardHeader
+                title="Calibration Curve (Position vs Focus)"
+                subheader={`Sensitivity: ${calibrationCurveData.sensitivity_nm_per_px?.toFixed(1)} nm/unit | R²: ${calibrationCurveData.r_squared?.toFixed(4)}`}
+                action={
+                  <Button
+                    size="small"
+                    onClick={() => setShowCalibrationCurve(false)}
+                    variant="outlined"
+                  >
+                    Close
+                  </Button>
+                }
+              />
+              <CardContent>
+                <Box sx={{ height: 300 }}>
+                  <Line
+                    data={{
+                      labels: calibrationCurveData.positionData || [],
+                      datasets: [
+                        {
+                          label: "Focus Signal",
+                          data: (calibrationCurveData.positionData || []).map((pos, idx) => ({
+                            x: pos,
+                            y: (calibrationCurveData.signalData || calibrationCurveData.calibration_data?.focus_data || [])[idx],
+                          })),
+                          borderColor: theme.palette.primary.main,
+                          backgroundColor: theme.palette.primary.light,
+                          pointRadius: 4,
+                          pointHoverRadius: 6,
+                          showLine: true,
+                          tension: 0.1,
+                        },
+                        // Linear fit line
+                        ...(calibrationCurveData.poly ? [{
+                          label: `Linear Fit (slope: ${calibrationCurveData.poly[0]?.toFixed(4)})`,
+                          data: (calibrationCurveData.positionData || []).map((pos) => ({
+                            x: pos,
+                            y: calibrationCurveData.poly[0] * pos + calibrationCurveData.poly[1],
+                          })),
+                          borderColor: theme.palette.secondary.main,
+                          borderDash: [5, 5],
+                          pointRadius: 0,
+                          showLine: true,
+                        }] : []),
+                      ],
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      scales: {
+                        x: {
+                          type: "linear",
+                          title: { display: true, text: "Z Position (µm)" },
+                        },
+                        y: {
+                          type: "linear",
+                          title: { display: true, text: "Focus Signal" },
+                        },
+                      },
+                      plugins: {
+                        legend: { position: "top" },
+                        tooltip: {
+                          callbacks: {
+                            label: (ctx) => `Focus: ${ctx.parsed.y.toFixed(2)} @ Z: ${ctx.parsed.x.toFixed(1)} µm`,
+                          },
+                        },
+                      },
+                    }}
+                  />
+                </Box>
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="body2">
+                    <strong>Polynomial Coefficients:</strong> [{calibrationCurveData.poly?.map(c => c.toFixed(4)).join(", ")}]
+                  </Typography>
+                  <Typography variant="body2">
+                    <strong>Linear Range:</strong> [{calibrationCurveData.calibration_data?.linear_range?.[0]?.toFixed(1)}, {calibrationCurveData.calibration_data?.linear_range?.[1]?.toFixed(1)}]
+                  </Typography>
+                  <Typography variant="body2">
+                    <strong>PID Integration Active:</strong> {calibrationCurveData.pid_integration_active ? "Yes" : "No"}
+                  </Typography>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        )}
+
+        {/* Camera Livestream */}
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardHeader
+              title="Camera Livestream"
+              subheader="Live view from main camera for focus reference"
+            />
+            <CardContent>
+              <Box sx={{ height: 300, position: "relative" }}>
+                <LiveViewControlWrapper
+                  useFastMode={true}
+                  enableStageMovement={false}
+                />
+              </Box>
             </CardContent>
           </Card>
         </Grid>

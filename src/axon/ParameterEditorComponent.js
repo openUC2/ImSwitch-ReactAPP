@@ -256,7 +256,7 @@ const ParameterEditorComponent = () => {
 
           {/* Autofocus */}
           <tr>
-            <td rowSpan="12" style={tdStyle}>
+            <td rowSpan="16" style={tdStyle}>
               Autofocus
             </td>
             <td style={tdStyle}>Enable</td>
@@ -270,6 +270,63 @@ const ParameterEditorComponent = () => {
               />
             </td>
           </tr>
+          <tr>
+            <td style={tdStyle}>
+              Autofocus Mode
+              <Tooltip title="Software: Z-sweep autofocus (scans through Z positions). Hardware: One-shot autofocus using FocusLock controller (requires calibrated FocusLock).">
+                <IconButton size="small">
+                  <InfoIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </td>
+            <td style={tdStyle}>
+              <select
+                value={parameterValue.autoFocusMode || "software"}
+                onChange={(e) =>
+                  dispatch(experimentSlice.setAutoFocusMode(e.target.value))
+                }
+                style={{ width: "100%", padding: 5 }}
+              >
+                <option value="software">Software (Z-Sweep)</option>
+                <option value="hardware">Hardware (FocusLock One-Shot)</option>
+              </select>
+            </td>
+          </tr>
+          {/* Hardware autofocus specific parameters */}
+          {parameterValue.autoFocusMode === "hardware" && (
+            <>
+              <tr>
+                <td style={tdStyle}>Max Attempts</td>
+                <td style={tdStyle}>
+                  <input
+                    type="number"
+                    step="1"
+                    min="1"
+                    max="10"
+                    value={parameterValue.autoFocusMaxAttempts || 3}
+                    onChange={(e) =>
+                      dispatch(experimentSlice.setAutoFocusMaxAttempts(Number(e.target.value)))
+                    }
+                    style={{ width: "100%", padding: 5 }}
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td style={tdStyle}>Target Focus Setpoint</td>
+                <td style={tdStyle}>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={parameterValue.autoFocusTargetSetpoint || 0}
+                    onChange={(e) =>
+                      dispatch(experimentSlice.setAutoFocusTargetSetpoint(Number(e.target.value)))
+                    }
+                    style={{ width: "100%", padding: 5 }}
+                  />
+                </td>
+              </tr>
+            </>
+          )}
           <tr>
             <td style={tdStyle}>Illumination Channel</td>
             <td style={tdStyle}>

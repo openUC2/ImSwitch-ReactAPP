@@ -58,6 +58,10 @@ const initialExperimentState = {
     autoFocusStaticOffset: 0.0, // Static offset to add to final focus position
     autoFocusTwoStage: false, // Enable two-stage autofocus (coarse + fine scan)
     autoFocusAlgorithm: "LAPE", // Focus measurement method (LAPE, GLVA, JPEG)
+    // Hardware autofocus (FocusLock-based one-shot) parameters
+    autoFocusMode: "software", // "software" (Z-sweep) or "hardware" (one-shot using FocusLock)
+    autoFocusMaxAttempts: 3, // Max attempts for hardware autofocus
+    autoFocusTargetSetpoint: 0, // Target focus setpoint for hardware autofocus
     zStack: false,
     zStackMin: 0.0,
     zStackMax: 0.0,
@@ -159,6 +163,18 @@ const experimentSlice = createSlice({
     setAutoFocusAlgorithm: (state, action) => {
       console.log("setAutoFocusAlgorithm");
       state.parameterValue.autoFocusAlgorithm = action.payload;
+    },
+    setAutoFocusMode: (state, action) => {
+      console.log("setAutoFocusMode", action.payload);
+      state.parameterValue.autoFocusMode = action.payload;
+    },
+    setAutoFocusMaxAttempts: (state, action) => {
+      console.log("setAutoFocusMaxAttempts", action.payload);
+      state.parameterValue.autoFocusMaxAttempts = action.payload;
+    },
+    setAutoFocusTargetSetpoint: (state, action) => {
+      console.log("setAutoFocusTargetSetpoint", action.payload);
+      state.parameterValue.autoFocusTargetSetpoint = action.payload;
     },
     setZStack: (state, action) => {
       console.log("setZStack");
@@ -300,6 +316,9 @@ export const {
   setAutoFocusStaticOffset,
   setAutoFocusTwoStage,
   setAutoFocusAlgorithm,
+  setAutoFocusMode,
+  setAutoFocusMaxAttempts,
+  setAutoFocusTargetSetpoint,
   setZStack,
   setZStackMin,
   setZStackMax,
