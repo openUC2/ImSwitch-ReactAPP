@@ -60,8 +60,8 @@ const initialExperimentState = {
     autoFocusAlgorithm: "LAPE", // Focus measurement method (LAPE, GLVA, JPEG)
     // Hardware autofocus (FocusLock-based one-shot) parameters
     autoFocusMode: "software", // "software" (Z-sweep) or "hardware" (one-shot using FocusLock)
-    autoFocusMaxAttempts: 3, // Max attempts for hardware autofocus
-    autoFocusTargetSetpoint: 0, // Target focus setpoint for hardware autofocus
+    autofocus_max_attempts: 3, // Max attempts for hardware autofocus
+    autofocus_target_focus_setpoint: 0, // Target focus setpoint for hardware autofocus
     zStack: false,
     zStackMin: 0.0,
     zStackMax: 0.0,
@@ -170,11 +170,11 @@ const experimentSlice = createSlice({
     },
     setAutoFocusMaxAttempts: (state, action) => {
       console.log("setAutoFocusMaxAttempts", action.payload);
-      state.parameterValue.autoFocusMaxAttempts = action.payload;
+      state.parameterValue.autofocus_max_attempts = action.payload;
     },
     setAutoFocusTargetSetpoint: (state, action) => {
       console.log("setAutoFocusTargetSetpoint", action.payload);
-      state.parameterValue.autoFocusTargetSetpoint = action.payload;
+      state.parameterValue.autofocus_target_focus_setpoint = action.payload;
     },
     setZStack: (state, action) => {
       console.log("setZStack");

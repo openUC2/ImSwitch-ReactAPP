@@ -303,7 +303,7 @@ const ParameterEditorComponent = () => {
                     step="1"
                     min="1"
                     max="10"
-                    value={parameterValue.autoFocusMaxAttempts || 3}
+                    value={parameterValue.autofocus_max_attempts || 3}
                     onChange={(e) =>
                       dispatch(experimentSlice.setAutoFocusMaxAttempts(Number(e.target.value)))
                     }
@@ -317,7 +317,7 @@ const ParameterEditorComponent = () => {
                   <input
                     type="number"
                     step="0.1"
-                    value={parameterValue.autoFocusTargetSetpoint || 0}
+                    value={parameterValue.autofocus_target_focus_setpoint || 0}
                     onChange={(e) =>
                       dispatch(experimentSlice.setAutoFocusTargetSetpoint(Number(e.target.value)))
                     }
