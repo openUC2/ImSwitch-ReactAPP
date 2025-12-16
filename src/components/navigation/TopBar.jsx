@@ -1,6 +1,7 @@
 import { Toolbar, Typography, IconButton, Box } from "@mui/material";
 import MenuOpen from "@mui/icons-material/MenuOpen";
 import SettingsMenu from "./SettingsMenu.jsx";
+import StorageButton from "../StorageButton.js";
 
 /**
  * ImSwitch TopBar Component
@@ -10,8 +11,9 @@ const TopBar = ({
   sidebarVisible,
   setSidebarVisible,
   selectedPlugin,
-  drawerWidth,
   onSettingsNavigate,
+  onFileManagerRefresh,
+  onStorageChange,
 }) => {
   return (
     <Box
@@ -54,6 +56,10 @@ const TopBar = ({
           {isMobile ? selectedPlugin : `ImSwitch UI - ${selectedPlugin}`}
         </Typography>
 
+        <StorageButton
+          onFileManagerRefresh={onFileManagerRefresh}
+          onStorageChange={onStorageChange}
+        />
         <SettingsMenu onNavigate={onSettingsNavigate} />
       </Toolbar>
     </Box>

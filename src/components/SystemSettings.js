@@ -22,7 +22,7 @@ import {
   ErrorOutline,
   Memory,
 } from "@mui/icons-material";
-import { formatDiskUsage } from "../utils/formatUtils";
+import apiUC2ConfigControllerGetDiskUsage from "../backendapi/apiUC2ConfigControllerGetDiskUsage";
 
 export default function SystemSettings() {
   // Get connection settings from Redux
@@ -102,7 +102,7 @@ export default function SystemSettings() {
     return () => clearInterval(intervalId);
   }, [base, isBackendConnected]);
 
-  // Fetch disk usage - fixed to handle the actual API response format
+  // Fetch disk usage using the standardized API
   useEffect(() => {
     // Only fetch if backend is connected
     if (!isBackendConnected) {
@@ -112,20 +112,12 @@ export default function SystemSettings() {
 
     const fetchDiskUsage = async () => {
       try {
-        const response = await fetch(`${base}/getDiskUsage`);
-        if (response.ok) {
-          const data = await response.json();
-          console.log("Full disk usage response:", data);
+        // Use the standardized API wrapper
+        const data = await apiUC2ConfigControllerGetDiskUsage();
+        console.log("Disk usage data:", data);
 
-          // Handle the actual API response format - direct number
-          const usage = formatDiskUsage(data);
-
-          setDiskUsage(usage);
-          console.log("Processed disk usage:", usage);
-        } else {
-          console.error("Failed to fetch disk usage:", response.status);
-          setDiskUsage("Error loading");
-        }
+        // API returns {raw, formatted, percent}
+        setDiskUsage(data.formatted);
       } catch (error) {
         console.error("Error fetching disk usage:", error);
         setDiskUsage("Error loading");
@@ -138,7 +130,7 @@ export default function SystemSettings() {
     // Fetch every 30 seconds (less frequent for disk usage)
     const intervalId = setInterval(fetchDiskUsage, 30000);
     return () => clearInterval(intervalId);
-  }, [base, isBackendConnected]);
+  }, [isBackendConnected]);
 
   // Helper function to get disk usage color based on percentage
   const getDiskUsageColor = (usage) => {
