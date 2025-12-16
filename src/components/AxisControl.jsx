@@ -366,7 +366,7 @@ const ImprovedAxisControl = ({ hostIP, hostPort }) => {
                     spacing={0.5}
                     sx={{ flexWrap: "wrap", gap: 0.5 }}
                   >
-                    {stepOptions.slice(0, 4).map((option) => (
+                    {stepOptions.map((option) => (
                       <Chip
                         key={option.value}
                         label={option.label}
