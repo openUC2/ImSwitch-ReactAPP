@@ -73,6 +73,7 @@ const ImprovedAxisControl = ({ hostIP, hostPort }) => {
 
   // Quick step sizes options
   const stepOptions = [
+    { value: 1, label: "1µm", color: "info" },
     { value: 10, label: "10µm", color: "primary" },
     { value: 100, label: "100µm", color: "secondary" },
     { value: 1000, label: "1000µm", color: "success" },
@@ -365,7 +366,7 @@ const ImprovedAxisControl = ({ hostIP, hostPort }) => {
                     spacing={0.5}
                     sx={{ flexWrap: "wrap", gap: 0.5 }}
                   >
-                    {stepOptions.slice(0, 4).map((option) => (
+                    {stepOptions.map((option) => (
                       <Chip
                         key={option.value}
                         label={option.label}
