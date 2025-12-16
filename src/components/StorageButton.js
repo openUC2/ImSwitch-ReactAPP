@@ -123,13 +123,19 @@ const StorageButton = ({
         const allDrives = drives.drives || [];
         const newDrives = allDrives.filter((drive) => {
           const name = (drive.name || "").toLowerCase();
+          const label = (drive.label || "").toLowerCase();
           const path = (drive.path || "").toLowerCase();
-          // Filter out EFI partitions and system partitions
-          return (
-            !name.includes("efi") &&
-            !path.includes("/boot") &&
-            !name.includes("boot")
-          );
+
+          // Filter out EFI partitions, boot partitions, and system partitions
+          const isSystemPartition =
+            name.includes("efi") ||
+            label.includes("efi") ||
+            path.includes("/boot") ||
+            path.includes("efi") ||
+            name.includes("boot") ||
+            label.includes("boot");
+
+          return !isSystemPartition;
         });
 
         console.log(
