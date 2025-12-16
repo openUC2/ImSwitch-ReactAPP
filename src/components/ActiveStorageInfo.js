@@ -1,24 +1,21 @@
 import React, { useState, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { Box, Typography, Chip, Button, CircularProgress } from "@mui/material";
 import {
   SdStorage as SdStorageIcon,
   Folder as FolderIcon,
 } from "@mui/icons-material";
 import { setNotification } from "../state/slices/NotificationSlice";
-import { getConnectionSettingsState } from "../state/slices/ConnectionSettingsSlice";
 import apiStorageControllerGetStorageStatus from "../backendapi/apiStorageControllerGetStorageStatus";
-import apiStorageControllerGetConfigPaths from "../backendapi/apiStorageControllerGetConfigPaths";
 import apiStorageControllerSetActivePath from "../backendapi/apiStorageControllerSetActivePath";
 
 /**
  * ActiveStorageInfo Component
  * Displays the currently active storage location in the FileManager
- * Provides quick access to switch back to local storage and admin panel for unmounting
+ * Provides quick access to switch back to local storage
  */
-const ActiveStorageInfo = ({ onRefresh }) => {
+const ActiveStorageInfo = ({ onRefresh, onStorageChange }) => {
   const dispatch = useDispatch();
-  const connectionSettings = useSelector(getConnectionSettingsState);
   const [storageStatus, setStorageStatus] = useState(null);
   const [defaultPath, setDefaultPath] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -31,8 +28,9 @@ const ActiveStorageInfo = ({ onRefresh }) => {
 
       // Get default local path
       if (!defaultPath) {
-        const configPaths = await apiStorageControllerGetConfigPaths();
-        setDefaultPath(configPaths.data_path);
+        // Use /home/pi/Datasets as the default local storage path
+        const localPath = "/home/pi/Datasets";
+        setDefaultPath(localPath);
       }
     } catch (error) {
       console.error("Failed to fetch storage status:", error);
@@ -54,8 +52,21 @@ const ActiveStorageInfo = ({ onRefresh }) => {
 
     setSwitching(true);
     try {
-      await apiStorageControllerSetActivePath(defaultPath, true);
+      const result = await apiStorageControllerSetActivePath(defaultPath, true);
+      console.log("ActiveStorageInfo: Switch to local result:", result);
+
       await fetchStatus();
+
+      // Notify parent about storage change (updates FileManager's initialPath)
+      const newActivePath = result.active_path || defaultPath;
+      console.log(
+        "ActiveStorageInfo: Notifying storage change to:",
+        newActivePath
+      );
+
+      if (onStorageChange) {
+        onStorageChange(newActivePath);
+      }
 
       dispatch(
         setNotification({

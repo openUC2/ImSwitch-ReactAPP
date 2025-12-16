@@ -13,6 +13,7 @@ const TopBar = ({
   selectedPlugin,
   onSettingsNavigate,
   onFileManagerRefresh,
+  onStorageChange,
 }) => {
   return (
     <Box
@@ -55,7 +56,10 @@ const TopBar = ({
           {isMobile ? selectedPlugin : `ImSwitch UI - ${selectedPlugin}`}
         </Typography>
 
-        <StorageButton onFileManagerRefresh={onFileManagerRefresh} />
+        <StorageButton
+          onFileManagerRefresh={onFileManagerRefresh}
+          onStorageChange={onStorageChange}
+        />
         <SettingsMenu onNavigate={onSettingsNavigate} />
       </Toolbar>
     </Box>

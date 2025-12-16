@@ -91,7 +91,12 @@ const StorageButton = ({
         // Get default path if not already loaded
         if (!defaultPath) {
           const configPaths = await apiStorageControllerGetConfigPaths();
-          setDefaultPath(configPaths.data_path);
+          console.log("StorageButton: Config paths from backend:", configPaths);
+
+          // Use /home/pi/Datasets as the default local storage path
+          const localPath = "/home/pi/Datasets";
+          console.log("StorageButton: Using local storage path:", localPath);
+          setDefaultPath(localPath);
         }
 
         // Get disk usage for internal storage from UC2ConfigController
@@ -113,10 +118,22 @@ const StorageButton = ({
         console.log("StorageButton: Fetching external drives...");
         const drives = await apiStorageControllerListExternalDrives();
         console.log("StorageButton: Raw API response:", drives);
-        const newDrives = drives.drives || [];
+
+        // Filter out EFI system partitions and other non-user drives
+        const allDrives = drives.drives || [];
+        const newDrives = allDrives.filter((drive) => {
+          const name = (drive.name || "").toLowerCase();
+          const path = (drive.path || "").toLowerCase();
+          // Filter out EFI partitions and system partitions
+          return (
+            !name.includes("efi") &&
+            !path.includes("/boot") &&
+            !name.includes("boot")
+          );
+        });
 
         console.log(
-          "StorageButton: Scanned drives:",
+          "StorageButton: Scanned drives (after filtering):",
           newDrives.length,
           newDrives
         );
@@ -148,33 +165,83 @@ const StorageButton = ({
 
   // Select/switch to a drive
   const handleSelectDrive = async (drivePath, persist = true) => {
+    console.log("StorageButton: Switching to path:", drivePath);
     setSwitching(drivePath);
     setError(null);
 
     try {
-      const result = await apiStorageControllerSetActivePath(
-        drivePath,
-        persist
-      );
+      // Check if this is local storage (not in /media/)
+      const isLocal = !drivePath.includes("/media/");
 
-      // Backend returns success message directly or in result object
-      await fetchStorageInfo(false);
+      if (isLocal) {
+        // For local storage: Backend always creates ImSwitchData subfolder
+        // So we need to pass the parent directory, not the full path with ImSwitchData
+        console.log("StorageButton: Switching to local storage");
 
-      if (onStorageChange) {
-        onStorageChange(result.active_path || drivePath);
+        // Use the local path that was clicked (should be /home/pi/Datasets)
+        // Backend will create /home/pi/Datasets/ImSwitchData automatically
+        console.log("StorageButton: Using local base path:", drivePath);
+
+        const result = await apiStorageControllerSetActivePath(
+          drivePath,
+          persist
+        );
+
+        console.log("StorageButton: Backend response:", result);
+        console.log("StorageButton: Backend created path:", result.active_path);
+
+        await fetchStorageInfo(false);
+
+        // Use the active_path returned by backend (will be drivePath/ImSwitchData)
+        const newActivePath = result.active_path || drivePath;
+        console.log(
+          "StorageButton: Active path after local switch:",
+          newActivePath
+        );
+
+        if (onStorageChange) {
+          onStorageChange(newActivePath);
+        }
+
+        dispatch(
+          setNotification({
+            message: result.message || "Switched to local storage",
+            type: "success",
+          })
+        );
+      } else {
+        // For external drives, use set_active_path
+        const result = await apiStorageControllerSetActivePath(
+          drivePath,
+          persist
+        );
+
+        console.log("StorageButton: Backend response:", result);
+        console.log("StorageButton: result.active_path:", result.active_path);
+
+        // Backend returns success message directly or in result object
+        await fetchStorageInfo(false);
+
+        // Notify parent about storage change (this updates FileManager's initialPath)
+        const newActivePath = result.active_path || drivePath;
+        console.log(
+          "StorageButton: Notifying storage change to:",
+          newActivePath
+        );
+
+        if (onStorageChange) {
+          onStorageChange(newActivePath);
+        }
+
+        dispatch(
+          setNotification({
+            message: result.message || "Switched to external storage",
+            type: "success",
+          })
+        );
       }
 
-      dispatch(
-        setNotification({
-          message: result.message || `Switched to external storage`,
-          type: "success",
-        })
-      );
-
-      // Trigger FileManager refresh if callback provided
-      if (onFileManagerRefresh) {
-        onFileManagerRefresh();
-      }
+      // Don't call onFileManagerRefresh here - App.jsx handles it after path change
     } catch (err) {
       console.error("Failed to switch drive:", err);
       setError(`Failed to switch drive: ${err.message}`);

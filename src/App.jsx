@@ -119,6 +119,7 @@ function App() {
   const [selectedPlugin, setSelectedPlugin] = useState("LiveView"); // Control which plugin to show
   const [sharedImage, setSharedImage] = useState(null);
   const [fileManagerInitialPath, setFileManagerInitialPath] = useState("/");
+  const [storageRefreshKey, setStorageRefreshKey] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [files, setFiles] = useState([]);
 
@@ -187,6 +188,20 @@ function App() {
   };
 
   const handleRefresh = () => getFiles();
+
+  const handleStorageChange = (newPath) => {
+    console.log("App: Storage changed to:", newPath);
+    console.log("App: Previous initialPath was:", fileManagerInitialPath);
+    // Always use "/" as initialPath - let the backend handle the actual storage location
+    setFileManagerInitialPath("/");
+    // Increment key to force FileManager remount
+    setStorageRefreshKey((prev) => prev + 1);
+    // Refresh files after small delay to ensure backend is ready
+    setTimeout(() => {
+      console.log("App: Refreshing FileManager with new path");
+      handleRefresh();
+    }, 200);
+  };
 
   const handleOpenWithImJoy = (file) => {
     const fileUrl = `${hostIP}:${apiPort}/FileManager/download/${file.path}`;
@@ -337,6 +352,7 @@ function App() {
           selectedPlugin={selectedPlugin}
           onSettingsNavigate={handlePluginChange} // Pass existing navigation handler
           onFileManagerRefresh={handleRefresh}
+          onStorageChange={handleStorageChange}
         />
 
         <Box
@@ -400,6 +416,7 @@ function App() {
                 style={{ width: "100%", maxWidth: "100%" }}
               >
                 <FileManager
+                  key={`fm-${storageRefreshKey}`} // Force remount on storage change
                   baseUrl={`${hostIP}:${apiPort}`}
                   files={files}
                   fileUploadConfig={fileUploadConfig}
@@ -418,7 +435,7 @@ function App() {
                   maxFileSize={10485760}
                   filePreviewPath={`${hostIP}:${apiPort}/`}
                   acceptedFileTypes=".txt, .png, .jpg, .jpeg, .pdf, .doc, .docx, .exe, .js, .csv"
-                  initialPath={fileManagerInitialPath} // TODO: THIS IS REALLY HACKY!
+                  initialPath={fileManagerInitialPath}
                 />
               </div>
             </div>
