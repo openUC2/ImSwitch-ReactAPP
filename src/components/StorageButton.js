@@ -166,7 +166,7 @@ const StorageButton = ({
         if (showLoading) setLoading(false);
       }
     },
-    [previousDriveCount, dispatch]
+    [previousDriveCount, dispatch, defaultPath]
   );
 
   // Select/switch to a drive
@@ -575,7 +575,7 @@ const StorageButton = ({
                         }}
                       />
                     )}
-                    {defaultPath && (
+                    {Boolean(defaultPath) && (
                       <Typography
                         variant="caption"
                         color="text.secondary"

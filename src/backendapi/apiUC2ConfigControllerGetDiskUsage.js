@@ -23,15 +23,15 @@ export default async function apiUC2ConfigControllerGetDiskUsage() {
       // If it's a string like "0.687" or "68.7%"
       const cleaned = rawData.replace("%", "");
       const parsed = parseFloat(cleaned);
-      // Check if it's already a percentage (>1) or a decimal (<1)
-      rawValue = parsed > 1 ? parsed / 100 : parsed;
+      // Check if it's already a percentage (>=1) or a decimal (<1)
+      rawValue = parsed >= 1 ? parsed / 100 : parsed;
     } else if (rawData && rawData.disk_usage !== undefined) {
       rawValue =
         typeof rawData.disk_usage === "number"
           ? rawData.disk_usage
           : parseFloat(String(rawData.disk_usage).replace("%", ""));
       // Normalize if already percentage
-      if (rawValue > 1) rawValue = rawValue / 100;
+      if (rawValue >= 1) rawValue = rawValue / 100;
     }
 
     // Return structured data

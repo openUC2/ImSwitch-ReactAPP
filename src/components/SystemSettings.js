@@ -22,6 +22,7 @@ import {
   ErrorOutline,
   Memory,
 } from "@mui/icons-material";
+import apiUC2ConfigControllerGetDiskUsage from "../backendapi/apiUC2ConfigControllerGetDiskUsage";
 
 export default function SystemSettings() {
   // Get connection settings from Redux
@@ -112,9 +113,6 @@ export default function SystemSettings() {
     const fetchDiskUsage = async () => {
       try {
         // Use the standardized API wrapper
-        const { default: apiUC2ConfigControllerGetDiskUsage } = await import(
-          "../backendapi/apiUC2ConfigControllerGetDiskUsage"
-        );
         const data = await apiUC2ConfigControllerGetDiskUsage();
         console.log("Disk usage data:", data);
 

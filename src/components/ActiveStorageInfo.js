@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useDispatch } from "react-redux";
 import { Box, Typography, Chip, Button, CircularProgress } from "@mui/material";
 import {
@@ -21,7 +21,7 @@ const ActiveStorageInfo = ({ onRefresh, onStorageChange }) => {
   const [loading, setLoading] = useState(true);
   const [switching, setSwitching] = useState(false);
 
-  const fetchStatus = async () => {
+  const fetchStatus = useCallback(async () => {
     try {
       const status = await apiStorageControllerGetStorageStatus();
       setStorageStatus(status);
@@ -37,7 +37,7 @@ const ActiveStorageInfo = ({ onRefresh, onStorageChange }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [defaultPath]);
 
   useEffect(() => {
     fetchStatus();
@@ -45,7 +45,7 @@ const ActiveStorageInfo = ({ onRefresh, onStorageChange }) => {
     // Refresh every 10 seconds
     const interval = setInterval(fetchStatus, 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchStatus]);
 
   const handleSwitchToLocal = async () => {
     if (!defaultPath) return;
