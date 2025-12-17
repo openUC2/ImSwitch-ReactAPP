@@ -33,6 +33,35 @@ const LiveViewComponent = ({
 
     const canvasRef = useRef(null);
     const containerRef = useRef(null);
+    
+  // FPS tracking for JPEG stream
+  const fpsCounterRef = useRef({
+    frames: 0,
+    lastTime: performance.now(),
+  });
+    
+  // Track FPS for JPEG stream (triggered on each new frame)
+  useEffect(() => {
+    if (!liveStreamState.liveViewImage) return;
+
+    const counter = fpsCounterRef.current;
+    counter.frames++;
+
+    const now = performance.now();
+    const elapsed = now - counter.lastTime;
+
+    // Update FPS every second
+    if (elapsed >= 1000) {
+      const fps = Math.round((counter.frames * 1000) / elapsed);
+      dispatch(liveViewSlice.setStats({ fps, bps: 0 })); // bps not available for JPEG
+      
+      console.log(`[LiveViewComponent] JPEG FPS: ${fps}`);
+      
+      // Reset counters
+      counter.frames = 0;
+      counter.lastTime = now;
+    }
+  }, [liveStreamState.liveViewImage, dispatch]);
     const prevDimensionsRef = useRef({ width: 0, height: 0 }); // Track dimensions to avoid redundant callbacks
     const histogramCounterRef = useRef(0); // Counter for throttling histogram computation
     const [imageLoaded, setImageLoaded] = useState(false);

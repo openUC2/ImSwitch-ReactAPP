@@ -1,6 +1,10 @@
 import React, { useState, useCallback } from "react";
-import { IconButton, Tooltip } from "@mui/material";
-import { Gamepad, GamepadOutlined } from "@mui/icons-material";
+import { IconButton, Tooltip, Box, Chip, keyframes } from "@mui/material";
+import {
+  Gamepad,
+  GamepadOutlined,
+  FiberManualRecord,
+} from "@mui/icons-material";
 import LiveViewComponent from "./LiveViewComponent";
 import LiveViewerGL from "../components/LiveViewerGL";
 import WebRTCViewer from "./WebRTCViewer";
@@ -11,6 +15,16 @@ import { useSelector, useDispatch } from "react-redux";
 import * as objectiveSlice from "../state/slices/ObjectiveSlice.js";
 import * as liveStreamSlice from "../state/slices/LiveStreamSlice.js";
 import * as liveViewSlice from "../state/slices/LiveViewSlice.js";
+
+// Pulsing animation for LIVE indicator
+const pulse = keyframes`
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+`;
 
 /**
  * LiveViewControlWrapper - Unified wrapper for different stream viewers
@@ -151,6 +165,52 @@ const LiveViewControlWrapper = ({
           {showPositionController ? <Gamepad /> : <GamepadOutlined />}
         </IconButton>
       </Tooltip>
+
+      {/* Live Stream Indicator */}
+      <Box
+        sx={{
+          position: "absolute",
+          top: 10,
+          right: 10,
+          zIndex: 3,
+          display: "flex",
+          gap: 1,
+        }}
+      >
+        {liveViewState.isStreamRunning ? (
+          <Chip
+            icon={
+              <FiberManualRecord
+                sx={{ animation: `${pulse} 1.5s ease-in-out infinite` }}
+              />
+            }
+            label={
+              liveStreamState.stats?.fps > 0
+                ? `LIVE • ${liveStreamState.stats.fps.toFixed(1)} FPS`
+                : "LIVE"
+            }
+            size="small"
+            sx={{
+              backgroundColor: "error.main",
+              color: "white",
+              fontWeight: "bold",
+              "& .MuiChip-icon": {
+                color: "white",
+              },
+            }}
+          />
+        ) : (
+          <Chip
+            label="PAUSED"
+            size="small"
+            sx={{
+              backgroundColor: "rgba(128, 128, 128, 0.8)",
+              color: "white",
+              fontWeight: "bold",
+            }}
+          />
+        )}
+      </Box>
 
       <div
         style={{
