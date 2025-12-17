@@ -1,14 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { getConnectionSettingsState } from "../state/slices/ConnectionSettingsSlice";
-import {
-  Box,
-  Switch,
-  FormControlLabel,
-  Tabs,
-  Tab,
-  Typography,
-} from "@mui/material";
+import { Box, Tabs, Tab, Typography } from "@mui/material";
 import AxisControl from "./AxisControl.jsx";
 import JoystickControl from "./JoystickControl.jsx";
 import AutofocusController from "./AutofocusController";
@@ -17,6 +10,7 @@ import StreamControls from "./StreamControls";
 import IlluminationController from "./IlluminationController";
 import apiLiveViewControllerStartLiveView from "../backendapi/apiLiveViewControllerStartLiveView";
 import apiLiveViewControllerStopLiveView from "../backendapi/apiLiveViewControllerStopLiveView";
+import apiViewControllerGetLiveViewActive from "../backendapi/apiViewControllerGetLiveViewActive";
 import ObjectiveSwitcher from "./ObjectiveSwitcher";
 import DetectorTriggerController from "./DetectorTriggerController";
 import * as liveViewSlice from "../state/slices/LiveViewSlice.js";
@@ -56,6 +50,9 @@ export default function LiveView({ setFileManagerInitialPath }) {
   // Access global Redux state
   const liveViewState = useSelector(liveViewSlice.getLiveViewState);
   const liveStreamState = useSelector(liveStreamSlice.getLiveStreamState);
+
+  // Track if auto-start has been attempted to prevent re-triggering on format changes
+  const autoStartAttemptedRef = React.useRef(false);
 
   // Debug log to verify persisted stream format (only on mount)
   useEffect(() => {
@@ -141,33 +138,39 @@ export default function LiveView({ setFileManagerInitialPath }) {
     }
   }, [activeTab, detectors, hostIP, hostPort, dispatch]);
 
-  /* check if stream is running and auto-start if not active */
+  /* Check if stream is running and auto-start if not active (only on initial mount or connection change) */
   useEffect(() => {
+    // Reset auto-start flag when connection changes
+    autoStartAttemptedRef.current = false;
+  }, [hostIP, hostPort]);
+
+  useEffect(() => {
+    // Skip if auto-start was already attempted
+    if (autoStartAttemptedRef.current) return;
+
     (async () => {
       try {
-        const r = await fetch(
-          // TODO: use apiViewControllerGetLiveViewActive here
-          `${hostIP}:${hostPort}/LiveViewController/getLiveViewActive`
-        );
-        if (r.status === 200) {
-          const data = await r.json();
-          const isActive = data.active;
-          dispatch(liveViewSlice.setIsStreamRunning(isActive));
+        const isActive = await apiViewControllerGetLiveViewActive();
+        dispatch(liveViewSlice.setIsStreamRunning(isActive));
 
-          // Auto-start stream if not already running (improves first-time UX)
-          if (!isActive) {
-            console.log("[LiveView] Stream not active, auto-starting...");
-            try {
-              const protocol = liveStreamState.imageFormat || "jpeg";
-              await apiLiveViewControllerStartLiveView(null, protocol);
-              dispatch(liveViewSlice.setIsStreamRunning(true));
-              console.log(`[LiveView] Auto-started ${protocol} stream`);
-            } catch (error) {
-              console.error("[LiveView] Failed to auto-start stream:", error);
-            }
+        // Auto-start stream if not already running (improves first-time UX)
+        if (!isActive) {
+          console.log("[LiveView] Stream not active, auto-starting...");
+          try {
+            const protocol = liveStreamState.imageFormat || "jpeg";
+            await apiLiveViewControllerStartLiveView(null, protocol);
+            dispatch(liveViewSlice.setIsStreamRunning(true));
+            console.log(`[LiveView] Auto-started ${protocol} stream`);
+          } catch (error) {
+            console.error("[LiveView] Failed to auto-start stream:", error);
           }
         }
-      } catch {}
+
+        // Mark auto-start as attempted (prevents re-triggering on format changes)
+        autoStartAttemptedRef.current = true;
+      } catch (error) {
+        console.error("[LiveView] Failed to check stream status:", error);
+      }
     })();
   }, [hostIP, hostPort, activeTab, dispatch, liveStreamState.imageFormat]);
 

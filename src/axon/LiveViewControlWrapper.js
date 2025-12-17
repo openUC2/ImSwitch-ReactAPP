@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from "react";
-import { IconButton, Tooltip, Box, Chip, keyframes } from "@mui/material";
+import { IconButton, Tooltip, Box, Chip } from "@mui/material";
+import { keyframes } from "@mui/system";
 import {
   Gamepad,
   GamepadOutlined,
