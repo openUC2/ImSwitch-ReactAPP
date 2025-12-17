@@ -293,7 +293,11 @@ const StorageButton = ({
     <>
       <IconButton
         onClick={handleClick}
-        title={disabled ? "Storage Management (Backend not connected)" : "Storage Management"}
+        title={
+          disabled
+            ? "Storage Management (Backend not connected)"
+            : "Storage Management"
+        }
         size="small"
         disabled={disabled}
         sx={{ color: "inherit" }}
