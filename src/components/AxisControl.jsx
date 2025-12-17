@@ -73,6 +73,7 @@ const ImprovedAxisControl = ({ hostIP, hostPort }) => {
 
   // Quick step sizes options
   const stepOptions = [
+    { value: 1, label: "1µm", color: "info" },
     { value: 10, label: "10µm", color: "primary" },
     { value: 100, label: "100µm", color: "secondary" },
     { value: 1000, label: "1000µm", color: "success" },
@@ -155,13 +156,20 @@ const ImprovedAxisControl = ({ hostIP, hostPort }) => {
             p: 2,
             mb: 2,
             bgcolor: (theme) =>
-              theme.palette.mode === "dark" ? "grey.800" : "grey.900",
-            color: "common.white",
+              theme.palette.mode === "dark" ? "grey.800" : "grey.100",
+            color: (theme) =>
+              theme.palette.mode === "dark" ? "common.white" : "text.primary",
           }}
         >
           <Typography
             variant="subtitle2"
-            sx={{ mb: 1, color: "success.light" }}
+            sx={{
+              mb: 1,
+              color: (theme) =>
+                theme.palette.mode === "dark"
+                  ? "success.light"
+                  : "success.dark",
+            }}
           >
             POSITION CONTROL (µm) - Click to Edit Target
           </Typography>
@@ -171,7 +179,14 @@ const ImprovedAxisControl = ({ hostIP, hostPort }) => {
                 <Box sx={{ textAlign: "center" }}>
                   <Typography
                     variant="caption"
-                    sx={{ color: "grey.400", mb: 1, display: "block" }}
+                    sx={{
+                      color: (theme) =>
+                        theme.palette.mode === "dark"
+                          ? "grey.400"
+                          : "text.secondary",
+                      mb: 1,
+                      display: "block",
+                    }}
                   >
                     {axis}-AXIS
                   </Typography>
@@ -351,7 +366,7 @@ const ImprovedAxisControl = ({ hostIP, hostPort }) => {
                     spacing={0.5}
                     sx={{ flexWrap: "wrap", gap: 0.5 }}
                   >
-                    {stepOptions.slice(0, 4).map((option) => (
+                    {stepOptions.map((option) => (
                       <Chip
                         key={option.value}
                         label={option.label}

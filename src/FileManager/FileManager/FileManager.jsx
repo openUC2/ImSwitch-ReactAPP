@@ -12,7 +12,10 @@ import { LayoutProvider } from "../contexts/LayoutContext";
 import { useTriggerAction } from "../hooks/useTriggerAction";
 import { useColumnResize } from "../hooks/useColumnResize";
 import PropTypes from "prop-types";
-import { dateStringValidator, urlValidator } from "../validators/propValidators";
+import {
+  dateStringValidator,
+  urlValidator,
+} from "../validators/propValidators";
 import "./FileManager.scss";
 
 const FileManager = ({
@@ -40,8 +43,14 @@ const FileManager = ({
   initialPath = "/",
 }) => {
   const triggerAction = useTriggerAction();
-  const { containerRef, colSizes, isDragging, handleMouseMove, handleMouseUp, handleMouseDown } =
-    useColumnResize(20, 80);
+  const {
+    containerRef,
+    colSizes,
+    isDragging,
+    handleMouseMove,
+    handleMouseUp,
+    handleMouseDown,
+  } = useColumnResize(20, 80);
 
   return (
     <main
@@ -68,15 +77,23 @@ const FileManager = ({
                   onMouseUp={handleMouseUp}
                   className="files-container"
                 >
-                  <div className="navigation-pane" style={{ width: colSizes.col1 + "%" }}>
+                  <div
+                    className="navigation-pane"
+                    style={{ width: colSizes.col1 + "%" }}
+                  >
                     <NavigationPane />
                     <div
-                      className={`sidebar-resize ${isDragging ? "sidebar-dragging" : ""}`}
+                      className={`sidebar-resize ${
+                        isDragging ? "sidebar-dragging" : ""
+                      }`}
                       onMouseDown={handleMouseDown}
                     />
                   </div>
 
-                  <div className="folders-preview" style={{ width: colSizes.col2 + "%" }}>
+                  <div
+                    className="folders-preview"
+                    style={{ width: colSizes.col2 + "%" }}
+                  >
                     <BreadCrumb />
                     <FileList
                       onCreateFolder={onCreateFolder}
