@@ -31,14 +31,45 @@ const LiveViewComponent = ({
   const liveStreamState = useSelector(liveViewSlice.getLiveStreamState);
   const objectiveState = useSelector(objectiveSlice.getObjectiveState);
 
-    const canvasRef = useRef(null);
-    const containerRef = useRef(null);
-    const prevDimensionsRef = useRef({ width: 0, height: 0 }); // Track dimensions to avoid redundant callbacks
-    const histogramCounterRef = useRef(0); // Counter for throttling histogram computation
-    const [imageLoaded, setImageLoaded] = useState(false);
-    const [containerSize, setContainerSize] = useState({ width: 800, height: 600 });
-    const [displayScale, setDisplayScale] = useState(1);
-    const [canvasStyle, setCanvasStyle] = useState({});
+  const canvasRef = useRef(null);
+  const containerRef = useRef(null);
+
+  // FPS tracking for JPEG stream
+  const fpsCounterRef = useRef({
+    frames: 0,
+    lastTime: performance.now(),
+  });
+
+  // Track FPS for JPEG stream (triggered on each new frame)
+  useEffect(() => {
+    if (!liveStreamState.liveViewImage) return;
+
+    const counter = fpsCounterRef.current;
+    counter.frames++;
+
+    const now = performance.now();
+    const elapsed = now - counter.lastTime;
+
+    // Update FPS every second
+    if (elapsed >= 1000) {
+      const fps = Math.round((counter.frames * 1000) / elapsed);
+      dispatch(liveViewSlice.setStats({ fps, bps: 0 })); // bps not available for JPEG
+
+      console.log(`[LiveViewComponent] JPEG FPS: ${fps}`);
+
+      // Reset counters
+      counter.frames = 0;
+      counter.lastTime = now;
+    }
+  }, [liveStreamState.liveViewImage, dispatch]);
+  const prevDimensionsRef = useRef({ width: 0, height: 0 }); // Track dimensions to avoid redundant callbacks
+  const histogramCounterRef = useRef(0); // Counter for throttling histogram computation
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [containerSize, setContainerSize] = useState({
+    width: 800,
+    height: 600,
+  });
+  const [canvasStyle, setCanvasStyle] = useState({});
 
   // Compute histogram from canvas (for JPEG streams)
   const computeHistogramFromCanvas = useCallback(() => {
@@ -215,12 +246,6 @@ const LiveViewComponent = ({
       const displayDimensions = getDisplayDimensions(image.width, image.height);
 
       // Calculate display scale factor for scale bar based on actual display size
-      const scale =
-        displayDimensions.width > 0 && image.width > 0
-          ? displayDimensions.width / image.width
-          : 1;
-      setDisplayScale(scale);
-
       // Apply proper intensity windowing (scientific image processing)
       applyIntensityWindowing(
         image,
@@ -237,10 +262,15 @@ const LiveViewComponent = ({
       });
 
       // Notify parent of image dimensions only if they changed
-      if (onImageLoad &&
-          (image.width !== prevDimensionsRef.current.width ||
-           image.height !== prevDimensionsRef.current.height)) {
-        prevDimensionsRef.current = { width: image.width, height: image.height };
+      if (
+        onImageLoad &&
+        (image.width !== prevDimensionsRef.current.width ||
+          image.height !== prevDimensionsRef.current.height)
+      ) {
+        prevDimensionsRef.current = {
+          width: image.width,
+          height: image.height,
+        };
         onImageLoad(image.width, image.height);
       }
     },

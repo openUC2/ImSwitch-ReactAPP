@@ -42,11 +42,13 @@ import apiUC2ConfigControllerGetDiskUsage from "../backendapi/apiUC2ConfigContro
  * @param {function} onStorageChange - Callback when storage location changes
  * @param {function} onFileManagerRefresh - Callback to refresh FileManager
  * @param {number} scanInterval - Interval for background scanning in ms (default: 10000)
+ * @param {boolean} disabled - Disable button when backend is not connected
  */
 const StorageButton = ({
   onStorageChange,
   onFileManagerRefresh,
   scanInterval = 10000,
+  disabled = false,
 }) => {
   const dispatch = useDispatch();
   const connectionSettings = useSelector(getConnectionSettingsState);
@@ -291,8 +293,13 @@ const StorageButton = ({
     <>
       <IconButton
         onClick={handleClick}
-        title="Storage Management"
+        title={
+          disabled
+            ? "Storage Management (Backend not connected)"
+            : "Storage Management"
+        }
         size="small"
+        disabled={disabled}
         sx={{ color: "inherit" }}
       >
         <Badge badgeContent={externalDrives.length} color="primary">
