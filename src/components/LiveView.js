@@ -141,7 +141,7 @@ export default function LiveView({ setFileManagerInitialPath }) {
     }
   }, [activeTab, detectors, hostIP, hostPort, dispatch]);
 
-  /* check if stream is running */
+  /* check if stream is running and auto-start if not active */
   useEffect(() => {
     (async () => {
       try {
@@ -151,11 +151,25 @@ export default function LiveView({ setFileManagerInitialPath }) {
         );
         if (r.status === 200) {
           const data = await r.json();
-          dispatch(liveViewSlice.setIsStreamRunning(data.active));
+          const isActive = data.active;
+          dispatch(liveViewSlice.setIsStreamRunning(isActive));
+
+          // Auto-start stream if not already running (improves first-time UX)
+          if (!isActive) {
+            console.log("[LiveView] Stream not active, auto-starting...");
+            try {
+              const protocol = liveStreamState.imageFormat || "jpeg";
+              await apiLiveViewControllerStartLiveView(null, protocol);
+              dispatch(liveViewSlice.setIsStreamRunning(true));
+              console.log(`[LiveView] Auto-started ${protocol} stream`);
+            } catch (error) {
+              console.error("[LiveView] Failed to auto-start stream:", error);
+            }
+          }
         }
       } catch {}
     })();
-  }, [hostIP, hostPort, activeTab, dispatch]);
+  }, [hostIP, hostPort, activeTab, dispatch, liveStreamState.imageFormat]);
 
   /* handlers */
   // Note: Range handling now done directly in Redux dispatch - old handlers removed

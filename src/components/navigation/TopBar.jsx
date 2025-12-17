@@ -1,7 +1,9 @@
 import { Toolbar, Typography, IconButton, Box } from "@mui/material";
 import MenuOpen from "@mui/icons-material/MenuOpen";
+import { useSelector } from "react-redux";
 import SettingsMenu from "./SettingsMenu.jsx";
 import StorageButton from "../StorageButton.js";
+import * as uc2Slice from "../../state/slices/UC2Slice.js";
 
 /**
  * ImSwitch TopBar Component
@@ -15,6 +17,9 @@ const TopBar = ({
   onFileManagerRefresh,
   onStorageChange,
 }) => {
+  // Get backend connection status
+  const uc2State = useSelector(uc2Slice.getUc2State);
+  const isBackendConnected = uc2State.backendConnected;
   return (
     <Box
       sx={(theme) => ({
@@ -59,6 +64,7 @@ const TopBar = ({
         <StorageButton
           onFileManagerRefresh={onFileManagerRefresh}
           onStorageChange={onStorageChange}
+          disabled={!isBackendConnected}
         />
         <SettingsMenu onNavigate={onSettingsNavigate} />
       </Toolbar>
