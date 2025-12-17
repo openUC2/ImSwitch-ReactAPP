@@ -69,7 +69,6 @@ const LiveViewComponent = ({
     width: 800,
     height: 600,
   });
-  const [displayScale, setDisplayScale] = useState(1);
   const [canvasStyle, setCanvasStyle] = useState({});
 
   // Compute histogram from canvas (for JPEG streams)
@@ -247,12 +246,6 @@ const LiveViewComponent = ({
       const displayDimensions = getDisplayDimensions(image.width, image.height);
 
       // Calculate display scale factor for scale bar based on actual display size
-      const scale =
-        displayDimensions.width > 0 && image.width > 0
-          ? displayDimensions.width / image.width
-          : 1;
-      setDisplayScale(scale);
-
       // Apply proper intensity windowing (scientific image processing)
       applyIntensityWindowing(
         image,
