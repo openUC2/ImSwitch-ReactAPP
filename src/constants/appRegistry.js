@@ -331,6 +331,26 @@ export const APP_REGISTRY = {
     pluginId: "FocusLock",
   },
 
+  acceptanceTest: {
+    id: "acceptanceTest",
+    name: "Acceptance Test",
+    description:
+      "Automated acceptance testing suite for system validation. Run predefined tests to verify hardware and software functionality.",
+    category: APP_CATEGORIES.SYSTEM,
+    icon: PsychologyIcon,
+    enabled: false,
+    essential: false,
+    keywords: [
+      "acceptance",
+      "test",
+      "automation",
+      "validation",
+      "hardware",
+      "software",
+    ],
+    pluginId: "AcceptanceTest",
+  },
+  
   holoController: {
     id: "holoController",
     name: "Hologram Processing",
