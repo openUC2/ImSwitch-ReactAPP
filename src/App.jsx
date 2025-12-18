@@ -35,6 +35,7 @@ import SerialDebugController from "./components/SerialDebugController.jsx";
 import WiFiController from "./components/WiFiController.jsx";
 import { JupyterProvider } from "./context/JupyterContext.js";
 import DemoController from "./components/DemoController.js";
+import AcceptanceTestComponent from "./components/AcceptanceTestComponent.jsx";
 
 // ImSwitch Navigation Drawer
 import { NavigationDrawer, TopBar } from "./components/navigation";
@@ -392,6 +393,7 @@ function App() {
           {selectedPlugin === "FRAMESettings" && <FRAMESettingsController />}
           {selectedPlugin === "Stresstest" && <StresstestController />}
           {selectedPlugin === "FocusLock" && <FocusLockController />}
+          {selectedPlugin === "AcceptanceTest" && <AcceptanceTestComponent />}
           {selectedPlugin === "HoloController" && <HoloController />}
           {selectedPlugin === "DPCController" && <DPCController />}
           {selectedPlugin === "JupyterNotebook" && (

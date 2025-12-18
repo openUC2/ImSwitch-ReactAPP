@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { FormControlLabel, Switch, Tooltip, IconButton } from "@mui/material";
+import { FormControlLabel, Switch, Tooltip, IconButton, Button } from "@mui/material";
 import { Info as InfoIcon } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
 
@@ -9,6 +9,7 @@ import * as parameterRangeSlice from "../state/slices/ParameterRangeSlice.js";
 import * as connectionSettingsSlice from "../state/slices/ConnectionSettingsSlice.js";
 import fetchExperimentControllerGetCurrentExperimentParams from "../middleware/fetchExperimentControllerGetCurrentExperimentParams.js";
 import fetchLaserControllerCurrentValues from "../middleware/fetchLaserControllerCurrentValues.js";
+import apiFocusLockControllerGetCurrentFocusValue from "../backendapi/apiFocusLockControllerGetCurrentFocusValue.js";
 
 const ParameterEditorComponent = () => {
   const theme = useTheme();
@@ -111,6 +112,19 @@ const ParameterEditorComponent = () => {
 
   const setPerformanceMode = (mode) => {
     dispatch(experimentSlice.setPerformanceMode(mode));
+  };
+
+  // Function to poll current focus value from FocusLock controller
+  const pollCurrentFocusValue = async () => {
+    try {
+      const result = await apiFocusLockControllerGetCurrentFocusValue();
+      const focusValue = result.focus_value;
+      dispatch(experimentSlice.setAutoFocusTargetSetpoint(focusValue));
+      console.log(`Polled focus value: ${focusValue}, updated target setpoint`);
+    } catch (error) {
+      console.error("Failed to poll current focus value:", error);
+      alert("Failed to get current focus value. Make sure FocusLock measurement is running.");
+    }
   };
 
   const tdStyle = { padding: "6px 8px", verticalAlign: "top" };
@@ -256,7 +270,7 @@ const ParameterEditorComponent = () => {
 
           {/* Autofocus */}
           <tr>
-            <td rowSpan="12" style={tdStyle}>
+            <td rowSpan="16" style={tdStyle}>
               Autofocus
             </td>
             <td style={tdStyle}>Enable</td>
@@ -270,6 +284,80 @@ const ParameterEditorComponent = () => {
               />
             </td>
           </tr>
+          <tr>
+            <td style={tdStyle}>
+              Autofocus Mode
+              <Tooltip title="Software: Z-sweep autofocus (scans through Z positions). Hardware: One-shot autofocus using FocusLock controller (requires calibrated FocusLock).">
+                <IconButton size="small">
+                  <InfoIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </td>
+            <td style={tdStyle}>
+              <select
+                value={parameterValue.autoFocusMode || "software"}
+                onChange={(e) =>
+                  dispatch(experimentSlice.setAutoFocusMode(e.target.value))
+                }
+                style={{ width: "100%", padding: 5 }}
+              >
+                <option value="software">Software (Z-Sweep)</option>
+                <option value="hardware">Hardware (FocusLock One-Shot)</option>
+              </select>
+            </td>
+          </tr>
+          {/* Hardware autofocus specific parameters */}
+          {parameterValue.autoFocusMode === "hardware" && (
+            <>
+              <tr>
+                <td style={tdStyle}>Max Attempts</td>
+                <td style={tdStyle}>
+                  <input
+                    type="number"
+                    step="1"
+                    min="1"
+                    max="10"
+                    value={parameterValue.autofocus_max_attempts || 3}
+                    onChange={(e) =>
+                      dispatch(experimentSlice.setAutoFocusMaxAttempts(Number(e.target.value)))
+                    }
+                    style={{ width: "100%", padding: 5 }}
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td style={tdStyle}>
+                  Target Focus Setpoint
+                  <Tooltip title="Enter the target focus value manually or poll the current value from FocusLock controller">
+                    <IconButton size="small">
+                      <InfoIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </td>
+                <td style={tdStyle}>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={parameterValue.autofocus_target_focus_setpoint || 0}
+                      onChange={(e) =>
+                        dispatch(experimentSlice.setAutoFocusTargetSetpoint(Number(e.target.value)))
+                      }
+                      style={{ flex: 1, padding: 5 }}
+                    />
+                    <Button 
+                      variant="outlined" 
+                      size="small" 
+                      onClick={pollCurrentFocusValue}
+                      style={{ whiteSpace: 'nowrap' }}
+                    >
+                      📊 Poll Current
+                    </Button>
+                  </div>
+                </td>
+              </tr>
+            </>
+          )}
           <tr>
             <td style={tdStyle}>Illumination Channel</td>
             <td style={tdStyle}>

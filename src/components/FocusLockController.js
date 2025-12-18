@@ -23,7 +23,12 @@ import {
   Alert,
   Tabs,
   Tab,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  ButtonGroup,
 } from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import * as focusLockSlice from "../state/slices/FocusLockSlice.js";
 import { useTheme } from "@mui/material/styles";
 import { useWebSocket } from "../context/WebSocketContext";
@@ -50,6 +55,8 @@ import apiFocusLockControllerGetPIParameters from "../backendapi/apiFocusLockCon
 import apiFocusLockControllerGetPIControllerParams from "../backendapi/apiFocusLockControllerGetPIControllerParams.js";
 import apiFocusLockControllerRunFocusCalibrationDynamic from "../backendapi/apiFocusLockControllerRunFocusCalibrationDynamic.js";
 import apiFocusLockControllerGetCalibrationStatus from "../backendapi/apiFocusLockControllerGetCalibrationStatus.js";
+import apiFocusLockControllerGetCalibrationResults from "../backendapi/apiFocusLockControllerGetCalibrationResults.js";
+import apiFocusLockControllerStopFocusCalibration from "../backendapi/apiFocusLockControllerStopFocusCalibration.js";
 import apiPositionerControllerMovePositioner from "../backendapi/apiPositionerControllerMovePositioner.js";
 import apiFocusLockControllerSetExposureTime from "../backendapi/apiFocusLockControllerSetExposureTime.js";
 import apiFocusLockControllerSetGain from "../backendapi/apiFocusLockControllerSetGain.js";
@@ -58,21 +65,10 @@ import apiFocusLockControllerGetGain from "../backendapi/apiFocusLockControllerG
 import apiFocusLockControllerGetCurrentFocusValue from "../backendapi/apiFocusLockControllerGetCurrentFocusValue.js";
 import apiFocusLockControllerPerformOneStepAutofocus from "../backendapi/apiFocusLockControllerPerformOneStepAutofocus.js";
 
-// TabPanel component for PI parameters
-const TabPanel = (props) => {
-  const { children, value, index, ...other } = props;
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`pi-tabpanel-${index}`}
-      aria-labelledby={`pi-tab-${index}`}
-      {...other}
-    >
-      {value === index && <Box sx={{ p: 2 }}>{children}</Box>}
-    </div>
-  );
-};
+// Import LiveViewControlWrapper for camera livestream
+import LiveViewControlWrapper from "../axon/LiveViewControlWrapper.js";
+
+
 
 const FocusLockController = () => {
   // Calibration polling state
@@ -91,11 +87,10 @@ const FocusLockController = () => {
   const maxRetries = 3;
   const [pollingError, setPollingError] = useState(false);
   const [continuousImageLoading, setContinuousImageLoading] = useState(false); // New state for image polling control
-  const [piTabValue, setPiTabValue] = useState(0); // State for PI parameter tabs
 
   // Calibration parameters exposed to user
   const [scanRangeUm, setScanRangeUm] = useState(200);
-  const [numSteps, setNumSteps] = useState(20);
+  const [numSteps, setNumSteps] = useState(10);
   const [settleTime, setSettleTime] = useState(0.5);
 
   // Manual target setpoint input
@@ -103,6 +98,16 @@ const FocusLockController = () => {
 
   // Calibration results display
   const [calibrationResults, setCalibrationResults] = useState(null);
+  
+  // Calibration curve display state
+  const [showCalibrationCurve, setShowCalibrationCurve] = useState(false);
+  const [calibrationCurveData, setCalibrationCurveData] = useState(null);
+  
+  // Main tab state for the controller
+  const [mainTabValue, setMainTabValue] = useState(0); // 0: Calibration, 1: Continuous Lock, 2: One-Step Focus
+  
+  // Developer mode toggle
+  const [devModeOpen, setDevModeOpen] = useState(false);
 
   // Access Redux state with specific selectors for better performance
   const isMeasuring = useSelector((state) => state.focusLockState.isMeasuring);
@@ -321,7 +326,7 @@ const FocusLockController = () => {
     }
 
     // Only poll when measuring is active, continuous loading is enabled, and no polling errors
-    if (isMeasuring && continuousImageLoading && !pollingError) {
+    if ( continuousImageLoading && !pollingError) {
       // Fix: Only poll when actually measuring AND continuous loading is enabled
       intervalRef.current = setInterval(loadLastImage, 500);
     }
@@ -650,22 +655,50 @@ const FocusLockController = () => {
     focusLockUI.cropCenter,
   ]);
 
-  // Handle camera parameter updates - memoized
-  const updateExposureTime = useCallback(async () => {
+  // Handle camera parameter updates - memoized with auto-save
+  const updateExposureTime = useCallback(async (newValue) => {
     try {
-      await apiFocusLockControllerSetExposureTime(focusLockUI.exposureTime);
+      await apiFocusLockControllerSetExposureTime(newValue);
     } catch (error) {
       console.error("Failed to update exposure time:", error);
     }
-  }, [focusLockUI.exposureTime]);
+  }, []);
 
-  const updateGain = useCallback(async () => {
+  const updateGain = useCallback(async (newValue) => {
     try {
-      await apiFocusLockControllerSetGain(focusLockUI.gain);
+      await apiFocusLockControllerSetGain(newValue);
     } catch (error) {
       console.error("Failed to update gain:", error);
     }
-  }, [focusLockUI.gain]);
+  }, []);
+  
+  // Debounced handlers for camera parameters to avoid excessive API calls
+  const exposureTimeoutRef = useRef(null);
+  const gainTimeoutRef = useRef(null);
+  
+  const handleExposureChange = useCallback((newValue) => {
+    dispatch(focusLockSlice.setExposureTime(newValue));
+    // Clear existing timeout
+    if (exposureTimeoutRef.current) {
+      clearTimeout(exposureTimeoutRef.current);
+    }
+    // Set new timeout to update after 500ms
+    exposureTimeoutRef.current = setTimeout(() => {
+      updateExposureTime(newValue);
+    }, 500);
+  }, [dispatch, updateExposureTime]);
+  
+  const handleGainChange = useCallback((newValue) => {
+    dispatch(focusLockSlice.setGain(newValue));
+    // Clear existing timeout
+    if (gainTimeoutRef.current) {
+      clearTimeout(gainTimeoutRef.current);
+    }
+    // Set new timeout to update after 500ms
+    gainTimeoutRef.current = setTimeout(() => {
+      updateGain(newValue);
+    }, 500);
+  }, [dispatch, updateGain]);
 
   // Handle crop frame parameter updates - memoized
   // Always send cropSize as integer to match backend API signature
@@ -779,11 +812,45 @@ const FocusLockController = () => {
       const result = await apiFocusLockControllerGetCurrentFocusValue();
       const focusValue = result.focus_value;
       dispatch(focusLockSlice.setStoredTargetSetpoint(focusValue));
+      // Also update the setPoint in Redux to update the yellow curve in the live plot
+      dispatch(focusLockSlice.setSetPoint(focusValue));
       console.log(`Stored focus value as setpoint: ${focusValue}`);
     } catch (error) {
       console.error("Failed to get current focus value:", error);
     }
   }, [dispatch]);
+
+  // Stop focus calibration - memoized
+  const stopCalibration = useCallback(async () => {
+    try {
+      await apiFocusLockControllerStopFocusCalibration();
+      dispatch(focusLockSlice.setIsCalibrating(false));
+      setIsCalibrationPolling(false);
+      if (calibrationPollingRef.current) {
+        clearInterval(calibrationPollingRef.current);
+        calibrationPollingRef.current = null;
+      }
+      if (calibrationTimeoutRef.current) {
+        clearTimeout(calibrationTimeoutRef.current);
+        calibrationTimeoutRef.current = null;
+      }
+      console.log("Focus calibration stopped");
+    } catch (error) {
+      console.error("Failed to stop calibration:", error);
+    }
+  }, [dispatch]);
+
+  // Fetch and display calibration results - memoized
+  const fetchCalibrationResults = useCallback(async () => {
+    try {
+      const results = await apiFocusLockControllerGetCalibrationResults();
+      setCalibrationCurveData(results);
+      setShowCalibrationCurve(true);
+      console.log("Calibration results fetched:", results);
+    } catch (error) {
+      console.error("Failed to fetch calibration results:", error);
+    }
+  }, []);
 
   // Perform one-step autofocus - memoized
   const performOneStepAutofocus = useCallback(
@@ -958,307 +1025,53 @@ const FocusLockController = () => {
   }, [focusLockUI.lastImage]);
 
   return (
-    <Paper style={{ padding: "24px", maxWidth: 1400, margin: "0 auto" }}>
+    <Paper style={{ padding: "24px", maxWidth: "100%", margin: "0 auto" }}>
       <Grid container spacing={3}>
         {/* Title */}
         <Grid item xs={12}>
           <Typography variant="h5" gutterBottom>
-            Focus Lock Controller (Astigmatism-based)
+            Focus Lock Controller
           </Typography>
           <Typography variant="body2" color="textSecondary">
-            Maintain objective focus using astigmatism-based feedback control
+            Hardware-based autofocus using astigmatism detection
           </Typography>
         </Grid>
-
-        {/* Status and Controls */}
-        <Grid item xs={12} md={4}>
+        
+        {/* Always visible: Focus measurement toggle and live graph */}
+        <Grid item xs={12}>
           <Card>
-            <CardHeader title="Focus Lock Status" />
-            <CardContent>
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                {/* Calibration parameter inputs */}
-                <TextField
-                  label="Scan Range (µm)"
-                  type="number"
-                  value={scanRangeUm}
-                  onChange={(e) => setScanRangeUm(Number(e.target.value))}
-                  size="small"
-                  inputProps={{ step: 1, min: 100, max: 10000 }}
-                  sx={{ mb: 1 }}
-                />
-                <TextField
-                  label="Number of Steps"
-                  type="number"
-                  value={numSteps}
-                  onChange={(e) => setNumSteps(Number(e.target.value))}
-                  size="small"
-                  inputProps={{ step: 1, min: 2, max: 100 }}
-                  sx={{ mb: 1 }}
-                />
-                <TextField
-                  label="Settle Time (s)"
-                  type="number"
-                  value={settleTime}
-                  onChange={(e) => setSettleTime(Number(e.target.value))}
-                  size="small"
-                  inputProps={{ step: 0.1, min: 0.1, max: 10 }}
-                  sx={{ mb: 2 }}
-                />
-
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={focusLockUI.isFocusLocked}
-                      onChange={toggleFocusLock}
-                      color="primary"
-                    />
-                  }
-                  label={`Focus Lock ${
-                    focusLockUI.isFocusLocked ? "Enabled" : "Disabled"
-                  }`}
-                />
-
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={isMeasuring}
-                      onChange={toggleFocusMeasurement}
-                      color="secondary"
-                    />
-                  }
-                  label={`Measurement ${isMeasuring ? "Running" : "Stopped"}`}
-                />
-
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={continuousImageLoading}
-                      onChange={(e) =>
-                        setContinuousImageLoading(e.target.checked)
-                      }
-                      color="info"
-                      disabled={!isMeasuring} // Only enable when measuring is active
-                    />
-                  }
-                  label={`Continuous Image Loading ${
-                    continuousImageLoading ? "Enabled" : "Disabled"
-                  }`}
-                />
-
-                {pollingError && (
-                  <Alert severity="warning" size="small">
-                    Image polling stopped due to connection error. Check backend
-                    connection.
-                  </Alert>
-                )}
-
-                <Typography variant="body2">
-                  Current Focus Value:{" "}
-                  {focusLockUI.currentFocusValue.toFixed(3)}
-                </Typography>
-
-                <Typography variant="body2">
-                  Current Motor Position: 0.000 µm
-                </Typography>
-
-                <Typography variant="body2">Set Point Signal: 0.000</Typography>
-
-                <Box sx={{ display: "flex", gap: 1, flexDirection: "column" }}>
-                  <Button
-                    variant="contained"
-                    onClick={startCalibration}
-                    disabled={focusLockUI.isCalibrating || isCalibrationPolling}
-                    fullWidth
-                  >
-                    {focusLockUI.isCalibrating || isCalibrationPolling
-                      ? "Calibrating..."
-                      : "Start Calibration"}
-                  </Button>
-
-                  {calibrationResults && (
-                    <Alert severity="info" size="small" sx={{ mt: 1 }}>
-                      <Typography
-                        variant="caption"
-                        display="block"
-                        fontWeight="bold"
-                      >
-                        Calibration Results:
-                      </Typography>
-                      <Typography variant="caption" display="block">
-                        R²: {calibrationResults.r_squared?.toFixed(4)}
-                      </Typography>
-                      <Typography variant="caption" display="block">
-                        Sensitivity:{" "}
-                        {calibrationResults.sensitivity_nm_per_px?.toFixed(1)}{" "}
-                        nm/unit
-                      </Typography>
-                      <Typography variant="caption" display="block">
-                        Monotone Failures:{" "}
-                        {calibrationResults.monotone_failures}/
-                        {calibrationResults.total_points}
-                      </Typography>
-                      {calibrationResults.coefficients && (
-                        <Typography variant="caption" display="block">
-                          Coefficients: [
-                          {calibrationResults.coefficients
-                            .map((c) => c.toFixed(4))
-                            .join(", ")}
-                          ]
-                        </Typography>
-                      )}
-                    </Alert>
-                  )}
-
-                  <Button
-                    variant="outlined"
-                    onClick={unlockFocus}
-                    disabled={!focusLockUI.isFocusLocked}
-                    fullWidth
-                  >
-                    Unlock Focus
-                  </Button>
-
-                  <Divider sx={{ my: 1 }} />
-
-                  <Typography
-                    variant="subtitle2"
-                    sx={{ fontWeight: "bold", mb: 1 }}
-                  >
-                    One-Step Autofocus
-                  </Typography>
-
-                  <Button
-                    variant="contained"
-                    color="secondary"
-                    onClick={storeCurrentFocusAsSetpoint}
-                    disabled={!isMeasuring}
-                    fullWidth
-                    size="small"
-                  >
-                    Store Current Focus as Setpoint
-                  </Button>
-
-                  {focusLockUI.storedTargetSetpoint !== null && (
-                    <Typography variant="caption" color="textSecondary">
-                      Stored Setpoint:{" "}
-                      {focusLockUI.storedTargetSetpoint.toFixed(2)}
-                    </Typography>
-                  )}
-
-                  <TextField
-                    label="Manual Target Setpoint"
-                    type="number"
-                    value={manualTargetSetpoint}
-                    onChange={(e) => setManualTargetSetpoint(e.target.value)}
-                    size="small"
-                    fullWidth
-                    helperText="Enter target focus value manually (optional)"
-                    sx={{ mt: 1 }}
+            <CardHeader 
+              title="Live Focus Monitoring" 
+              action={
+                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={isMeasuring}
+                        onChange={toggleFocusMeasurement}
+                        color="primary"
+                      />
+                    }
+                    label={`Measurement ${isMeasuring ? "ON" : "OFF"}`}
                   />
-
-                  <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
-                    <Button
-                      variant="contained"
-                      color="success"
-                      onClick={() => performOneStepAutofocus(false)}
-                      disabled={
-                        focusLockUI.isPerformingAutofocus ||
-                        focusLockUI.storedTargetSetpoint === null
-                      }
-                      fullWidth
-                      size="small"
-                    >
-                      {focusLockUI.isPerformingAutofocus
-                        ? "Focusing..."
-                        : "Use Stored"}
-                    </Button>
-
-                    <Button
-                      variant="contained"
-                      color="info"
-                      onClick={() => performOneStepAutofocus(true)}
-                      disabled={
-                        focusLockUI.isPerformingAutofocus ||
-                        manualTargetSetpoint === ""
-                      }
-                      fullWidth
-                      size="small"
-                    >
-                      {focusLockUI.isPerformingAutofocus
-                        ? "Focusing..."
-                        : "Use Manual"}
-                    </Button>
-                  </Box>
-
-                  {focusLockUI.lastAutofocusResult && (
-                    <Alert
-                      severity={
-                        focusLockUI.lastAutofocusResult.success
-                          ? "success"
-                          : "error"
-                      }
-                      size="small"
-                      sx={{ mt: 1 }}
-                    >
-                      {focusLockUI.lastAutofocusResult.success ? (
-                        <Box>
-                          <Typography variant="caption" display="block">
-                            ✓ Autofocus successful after{" "}
-                            {focusLockUI.lastAutofocusResult.num_attempts}{" "}
-                            attempts
-                          </Typography>
-                          <Typography variant="caption" display="block">
-                            Error:{" "}
-                            {focusLockUI.lastAutofocusResult.final_error_um?.toFixed(
-                              2
-                            )}{" "}
-                            µm
-                          </Typography>
-                          <Typography variant="caption" display="block">
-                            Z Offset:{" "}
-                            {focusLockUI.lastAutofocusResult.z_offset?.toFixed(
-                              2
-                            )}{" "}
-                            µm
-                          </Typography>
-                        </Box>
-                      ) : (
-                        <Typography variant="caption">
-                          {focusLockUI.lastAutofocusResult.error ||
-                            "Autofocus failed"}
-                        </Typography>
-                      )}
-                    </Alert>
-                  )}
-
-                  {focusLockUI.calibrationRange && (
-                    <Typography
-                      variant="caption"
-                      color="textSecondary"
-                      display="block"
-                      sx={{ mt: 1 }}
-                    >
-                      Calibration Range: [
-                      {focusLockUI.calibrationRange[0]?.toFixed(1)},{" "}
-                      {focusLockUI.calibrationRange[1]?.toFixed(1)}]
-                    </Typography>
-                  )}
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={continuousImageLoading}
+                        onChange={(e) => setContinuousImageLoading(e.target.checked)}
+                        color="secondary"
+                      />
+                    }
+                    label={`Image Polling ${continuousImageLoading ? "ON" : "OFF"}`}
+                  />
+                  <Typography variant="body2" sx={{ minWidth: 150 }}>
+                    Focus: {focusLockUI.currentFocusValue.toFixed(3)}
+                  </Typography>
                 </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Focus Value Graph */}
-        <Grid item xs={12} md={8}>
-          <Card>
-            <CardHeader
-              title="Focus Value & Motor Position History"
-              subheader="Chart showing last 50 data points with dual y-axes"
+              }
             />
             <CardContent>
-              <Box sx={{ height: 350, position: "relative" }}>
-                {/* Render chart using Redux slice data */}
+              <Box sx={{ height: 300, position: "relative" }}>
                 <Line data={chartData} options={chartOptions} />
                 {chartDataSource.focusValues.length === 0 && (
                   <Box
@@ -1280,11 +1093,10 @@ const FocusLockController = () => {
                     }}
                   >
                     <Typography variant="h6" color="textSecondary">
-                      Real-time Focus Value & Motor Position Chart
+                      Real-time Focus & Motor Position Chart
                     </Typography>
                     <Typography variant="body2" color="textSecondary">
-                      (Dual-axis chart showing focus value and motor position
-                      for last 50 data points)
+                      Enable measurement to see live data
                     </Typography>
                   </Box>
                 )}
@@ -1296,592 +1108,508 @@ const FocusLockController = () => {
                 variant="outlined"
                 color="secondary"
               >
-                Reset Graph Data
+                Clear Graph Data
               </Button>
             </CardContent>
           </Card>
         </Grid>
 
-        {/* PI Controller Parameters */}
+        {/* Camera streams - always visible side by side */}
         <Grid item xs={12} md={6}>
           <Card>
-            <CardHeader title="PI Controller Parameters" />
+            <CardHeader
+              title="Focus Lock Camera"
+              subheader="Astigmatism detection camera"
+            />
             <CardContent>
-              <Tabs
-                value={piTabValue}
-                onChange={(e, newValue) => setPiTabValue(newValue)}
-                aria-label="PI parameters tabs"
-              >
-                <Tab
-                  label="Basic (Kp, Ki)"
-                  id="pi-tab-0"
-                  aria-controls="pi-tabpanel-0"
-                />
-                <Tab
-                  label="Extended"
-                  id="pi-tab-1"
-                  aria-controls="pi-tabpanel-1"
-                />
-              </Tabs>
-
-              <TabPanel value={piTabValue} index={0}>
-                <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                  <Box>
-                    <Typography gutterBottom>
-                      Kp (Proportional): {focusLockUI.kp}
-                    </Typography>
-                    <Slider
-                      value={focusLockUI.kp}
-                      onChange={(e, value) =>
-                        dispatch(focusLockSlice.setKp(value))
-                      }
-                      min={0}
-                      max={2}
-                      step={0.01}
-                      valueLabelDisplay="auto"
-                    />
-                  </Box>
-
-                  <Box>
-                    <Typography gutterBottom>
-                      Ki (Integral): {focusLockUI.ki}
-                    </Typography>
-                    <Slider
-                      value={focusLockUI.ki}
-                      onChange={(e, value) =>
-                        dispatch(focusLockSlice.setKi(value))
-                      }
-                      min={0}
-                      max={2}
-                      step={0.01}
-                      valueLabelDisplay="auto"
-                    />
-                  </Box>
-
-                  <Button variant="contained" onClick={updatePIParameters}>
-                    Update Basic PI Parameters
-                  </Button>
-                </Box>
-              </TabPanel>
-
-              <TabPanel value={piTabValue} index={1}>
-                <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                  <TextField
-                    label="Set Point"
-                    type="number"
-                    value={focusLockUI.setPoint}
-                    onChange={(e) =>
-                      dispatch(
-                        focusLockSlice.setSetPoint(
-                          parseFloat(e.target.value) || 0
-                        )
-                      )
-                    }
-                    size="small"
-                    inputProps={{ step: 0.1 }}
-                  />
-
-                  <TextField
-                    label="Safety Distance Limit"
-                    type="number"
-                    value={focusLockUI.safetyDistanceLimit}
-                    onChange={(e) =>
-                      dispatch(
-                        focusLockSlice.setSafetyDistanceLimit(
-                          parseFloat(e.target.value) || 0
-                        )
-                      )
-                    }
-                    size="small"
-                    inputProps={{ step: 1, min: 0 }}
-                  />
-
-                  <TextField
-                    label="Safety Move Limit"
-                    type="number"
-                    value={focusLockUI.safetyMoveLimit}
-                    onChange={(e) =>
-                      dispatch(
-                        focusLockSlice.setSafetyMoveLimit(
-                          parseFloat(e.target.value) || 0
-                        )
-                      )
-                    }
-                    size="small"
-                    inputProps={{ step: 0.1, min: 0 }}
-                  />
-
-                  <TextField
-                    label="Min Step Threshold"
-                    type="number"
-                    value={focusLockUI.minStepThreshold}
-                    onChange={(e) =>
-                      dispatch(
-                        focusLockSlice.setMinStepThreshold(
-                          parseFloat(e.target.value) || 0
-                        )
-                      )
-                    }
-                    size="small"
-                    inputProps={{ step: 0.001, min: 0 }}
-                  />
-
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={focusLockUI.safetyMotionActive}
-                        onChange={(e) =>
+              <Box sx={{ position: "relative", minHeight: 300 }}>
+                {currentImage ? (
+                  <Box
+                    sx={{
+                      position: "relative",
+                      display: "inline-block",
+                      width: "100%",
+                    }}
+                  >
+                    <img
+                      ref={imgRef}
+                      src={currentImage}
+                      alt="Focus lock camera view"
+                      style={{
+                        width: "100%",
+                        height: "auto",
+                        maxHeight: "400px",
+                        cursor: "crosshair",
+                        border: "1px solid #ccc",
+                        userSelect: "none",
+                        objectFit: "contain",
+                      }}
+                      draggable={false}
+                      onMouseDown={handleImageMouseDown}
+                      onMouseMove={handleImageMouseMove}
+                      onMouseUp={handleImageMouseUp}
+                      onDragStart={(e) => e.preventDefault()}
+                      onLoad={(e) => {
+                        const img = e.target;
+                        if (img.naturalWidth && img.naturalHeight) {
                           dispatch(
-                            focusLockSlice.setSafetyMotionActive(
-                              e.target.checked
-                            )
-                          )
+                            focusLockSlice.setFrameSize([
+                              img.naturalWidth,
+                              img.naturalHeight,
+                            ])
+                          );
                         }
-                      />
-                    }
-                    label="Safety Motion Active"
-                  />
+                      }}
+                    />
+                    {/* Crop overlays */}
+                    {(() => {
+                      const img = imgRef.current;
+                      if (!img) return null;
+                      const dispW = img.clientWidth || img.width || img.naturalWidth;
+                      const dispH = img.clientHeight || img.height || img.naturalHeight;
+                      const natW = img.naturalWidth;
+                      const natH = img.naturalHeight;
+                      if (!natW || !natH) return null;
+                      const scaleX = dispW / natW;
+                      const scaleY = dispH / natH;
 
-                  <Button
-                    variant="contained"
-                    onClick={updatePIControllerParameters}
+                      const toDisplayX = (x) => x * scaleX;
+                      const toDisplayY = (y) => y * scaleY;
+
+                      let cropOverlay = null;
+                      if (cropSelection.isSelecting) {
+                        const left = toDisplayX(Math.min(cropSelection.startX, cropSelection.endX));
+                        const top = toDisplayY(Math.min(cropSelection.startY, cropSelection.endY));
+                        const width = Math.abs(toDisplayX(cropSelection.endX) - toDisplayX(cropSelection.startX));
+                        const height = Math.abs(toDisplayY(cropSelection.endY) - toDisplayY(cropSelection.startY));
+                        cropOverlay = (
+                          <div
+                            style={{
+                              position: "absolute",
+                              left,
+                              top,
+                              width,
+                              height,
+                              border: "2px dashed red",
+                              backgroundColor: "rgba(255, 0, 0, 0.1)",
+                              pointerEvents: "none",
+                            }}
+                          />
+                        );
+                      }
+
+                      const centerX = toDisplayX(focusLockUI.cropCenter[0]);
+                      const centerY = toDisplayY(focusLockUI.cropCenter[1]);
+                      const cropCenterOverlay = (
+                        <div
+                          style={{
+                            position: "absolute",
+                            left: centerX - 5,
+                            top: centerY - 5,
+                            width: 10,
+                            height: 10,
+                            backgroundColor: "red",
+                            borderRadius: "50%",
+                            pointerEvents: "none",
+                          }}
+                        />
+                      );
+
+                      const cropSize = focusLockUI.cropSize;
+                      const cropSizeOverlay = (
+                        <div
+                          style={{
+                            position: "absolute",
+                            left: centerX - (cropSize * scaleX) / 2,
+                            top: centerY - (cropSize * scaleY) / 2,
+                            width: cropSize * scaleX,
+                            height: cropSize * scaleY,
+                            border: "2px solid blue",
+                            backgroundColor: "rgba(0, 0, 255, 0.1)",
+                            pointerEvents: "none",
+                          }}
+                        />
+                      );
+                      return (
+                        <>
+                          {cropOverlay}
+                          {cropCenterOverlay}
+                          {cropSizeOverlay}
+                        </>
+                      );
+                    })()}
+                  </Box>
+                ) : (
+                  <Box
+                    sx={{
+                      height: 300,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      border: "2px dashed #ccc",
+                      borderRadius: 1,
+                      flexDirection: "column",
+                      gap: 2,
+                    }}
                   >
-                    Update Extended PI Parameters
-                  </Button>
-                </Box>
-              </TabPanel>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Camera Parameters */}
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardHeader title="Camera Parameters" />
-            <CardContent>
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                <TextField
-                  label="Exposure Time (ms)"
-                  type="number"
-                  value={focusLockUI.exposureTime}
-                  onChange={(e) =>
-                    dispatch(
-                      focusLockSlice.setExposureTime(
-                        parseFloat(e.target.value) || 0
-                      )
-                    )
-                  }
-                  size="small"
-                  inputProps={{ step: 1, min: 1, max: 10000 }}
-                  helperText="Camera exposure time in milliseconds"
-                />
-
-                <TextField
-                  label="Gain"
-                  type="number"
-                  value={focusLockUI.gain}
-                  onChange={(e) =>
-                    dispatch(
-                      focusLockSlice.setGain(parseFloat(e.target.value) || 0)
-                    )
-                  }
-                  size="small"
-                  inputProps={{ step: 0.1, min: 0, max: 100 }}
-                  helperText="Camera gain value"
-                />
-
-                <Box sx={{ display: "flex", gap: 1 }}>
-                  <Button
-                    variant="contained"
-                    onClick={updateExposureTime}
-                    sx={{ flex: 1 }}
-                  >
-                    Update Exposure
-                  </Button>
-
-                  <Button
-                    variant="contained"
-                    onClick={updateGain}
-                    sx={{ flex: 1 }}
-                  >
-                    Update Gain
-                  </Button>
-                </Box>
-
+                    <Typography variant="body2" color="textSecondary">
+                      No image loaded
+                    </Typography>
+                    <Button
+                      variant="outlined"
+                      onClick={loadLastImage}
+                      disabled={focusLockUI.isLoadingImage}
+                    >
+                      {focusLockUI.isLoadingImage ? "Loading..." : "Load Image"}
+                    </Button>
+                  </Box>
+                )}
+              </Box>
+              <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
                 <Button
+                  size="small"
                   variant="outlined"
-                  onClick={() => {
-                    updateExposureTime();
-                    updateGain();
-                  }}
+                  onClick={loadLastImage}
+                  disabled={focusLockUI.isLoadingImage}
                   fullWidth
                 >
-                  Update All Camera Parameters
+                  {focusLockUI.isLoadingImage ? "Loading..." : "Refresh Image"}
                 </Button>
               </Box>
             </CardContent>
           </Card>
         </Grid>
 
-        {/* Z-Axis Movement Controls */}
         <Grid item xs={12} md={6}>
-          <Card>
-            <CardHeader title="Z-Axis Stage Movement" />
-            <CardContent>
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <Typography variant="body2" color="textSecondary" gutterBottom>
-                  Manual Z-axis positioning for focus adjustment
-                </Typography>
-
-                {/* Fine movement controls (+/- 10µm) */}
-                <Box>
-                  <Typography variant="subtitle2" gutterBottom>
-                    Fine Movement (±10µm)
-                  </Typography>
-                  <Box
-                    sx={{ display: "flex", gap: 1, justifyContent: "center" }}
-                  >
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      onClick={moveZUp10}
-                      sx={{ minWidth: 100 }}
-                    >
-                      Z +10µm
-                    </Button>
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      onClick={moveZDown10}
-                      sx={{ minWidth: 100 }}
-                    >
-                      Z -10µm
-                    </Button>
-                  </Box>
-                </Box>
-
-                {/* Coarse movement controls (+/- 100µm) */}
-                <Box>
-                  <Typography variant="subtitle2" gutterBottom>
-                    Coarse Movement (±100µm)
-                  </Typography>
-                  <Box
-                    sx={{ display: "flex", gap: 1, justifyContent: "center" }}
-                  >
-                    <Button
-                      variant="contained"
-                      color="secondary"
-                      onClick={moveZUp100}
-                      sx={{ minWidth: 100 }}
-                    >
-                      Z +100µm
-                    </Button>
-                    <Button
-                      variant="contained"
-                      color="secondary"
-                      onClick={moveZDown100}
-                      sx={{ minWidth: 100 }}
-                    >
-                      Z -100µm
-                    </Button>
-                  </Box>
-                </Box>
-
-                <Typography
-                  variant="caption"
-                  color="textSecondary"
-                  textAlign="center"
-                >
-                  Use fine movements for precise adjustments, coarse movements
-                  for larger changes
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Astigmatism Parameters */}
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardHeader title="Astigmatism Parameters" />
-            <CardContent>
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                <TextField
-                  label="Gaussian Sigma"
-                  type="number"
-                  value={focusLockUI.gaussian_sigma}
-                  onChange={(e) =>
-                    dispatch(
-                      focusLockSlice.setgaussian_sigma(
-                        parseFloat(e.target.value)
-                      )
-                    )
-                  }
-                  size="small"
-                  inputProps={{ step: 0.1, min: 0.1, max: 10 }}
-                />
-
-                <TextField
-                  label="Background Threshold"
-                  type="number"
-                  value={focusLockUI.background_threshold}
-                  onChange={(e) =>
-                    dispatch(
-                      focusLockSlice.setBackgroundThreshold(
-                        parseFloat(e.target.value)
-                      )
-                    )
-                  }
-                  size="small"
-                  inputProps={{ step: 1, min: 0, max: 1000 }}
-                />
-
-                <TextField
-                  label="Crop Size"
-                  type="number"
-                  value={focusLockUI.cropSize}
-                  onChange={(e) =>
-                    dispatch(
-                      focusLockSlice.setCropSize(parseInt(e.target.value))
-                    )
-                  }
-                  size="small"
-                  inputProps={{ step: 1, min: 10, max: 500 }}
-                />
-
-                <Typography variant="body2">
-                  Crop Center: [{focusLockUI.cropCenter[0]},{" "}
-                  {focusLockUI.cropCenter[1]}] (image pixels)
-                </Typography>
-
-                <Typography variant="body2" color="textSecondary">
-                  Frame Size: [{focusLockUI.frameSize[0]},{" "}
-                  {focusLockUI.frameSize[1]}] (natural dimensions)
-                </Typography>
-
-                <Box sx={{ display: "flex", gap: 1 }}>
-                  <Button
-                    variant="contained"
-                    onClick={updateAstigmatismParameters}
-                    sx={{ flex: 1 }}
-                  >
-                    Update Astigmatism Parameters
-                  </Button>
-
-                  <Button
-                    variant="outlined"
-                    onClick={resetCropCoordinates}
-                    sx={{ flex: 1 }}
-                  >
-                    Reset Coordinates
-                  </Button>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Image Selection and Crop Region */}
-        <Grid item xs={12}>
           <Card>
             <CardHeader
-              title="Image and Crop Region Selection"
-              action={
-                <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-                  <Button
-                    variant="outlined"
-                    onClick={loadLastImage}
-                    disabled={focusLockUI.isLoadingImage}
-                  >
-                    {focusLockUI.isLoadingImage
-                      ? "Loading..."
-                      : "Load Last Image"}
-                  </Button>
-                </Box>
-              }
+              title="Main Camera"
+              subheader="Microscope imaging camera"
             />
             <CardContent>
-              {currentImage ? (
-                <Box
-                  sx={{
-                    position: "relative",
-                    display: "inline-block",
-                    maxWidth: "100%",
-                  }}
-                >
-                  <img
-                    ref={imgRef}
-                    src={currentImage}
-                    alt="Camera preview for focus analysis"
-                    style={{
-                      maxWidth: "100%",
-                      minHeight: "500px",
-                      maxHeight: "700px",
-                      cursor: "crosshair",
-                      border: "1px solid #ccc",
-                      userSelect: "none",
-                      pointerEvents: "auto",
-                    }}
-                    draggable={false}
-                    onMouseDown={handleImageMouseDown}
-                    onMouseMove={handleImageMouseMove}
-                    onMouseUp={handleImageMouseUp}
-                    onDragStart={(e) => e.preventDefault()}
-                    onLoad={(e) => {
-                      // Update frameSize in Redux with natural image dimensions for coordinate consistency
-                      const img = e.target;
-                      if (img.naturalWidth && img.naturalHeight) {
-                        dispatch(
-                          focusLockSlice.setFrameSize([
-                            img.naturalWidth,
-                            img.naturalHeight,
-                          ])
-                        );
-                      }
-                    }}
-                  />
+              <Box sx={{ height: 300, position: "relative" }}>
+                <LiveViewControlWrapper
+                  useFastMode={true}
+                  enableStageMovement={false}
+                />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
 
-                  {/* Show crop selection overlay */}
-                  {/*
-                    To ensure overlays are correctly positioned and sized regardless of image scaling,
-                    we must map image pixel coordinates to display coordinates using the rendered image size.
-                  */}
-                  {/*
-                    Use clientWidth/clientHeight for overlay scaling to match the rendered image size on all screens.
-                  */}
-                  <img
-                    ref={canvasRef}
-                    src={currentImage}
-                    alt="hidden for overlay calc"
-                    style={{ display: "none" }}
-                    onLoad={() => {
-                      /* trigger re-render for overlay calc */
-                    }}
-                  />
-                  {(() => {
-                    // Get the displayed image element
-                    const img = imgRef.current;
-                    if (!img) return null;
-                    // Use clientWidth/clientHeight for actual rendered size
-                    const dispW =
-                      img.clientWidth || img.width || img.naturalWidth;
-                    const dispH =
-                      img.clientHeight || img.height || img.naturalHeight;
-                    const natW = img.naturalWidth;
-                    const natH = img.naturalHeight;
-                    if (!natW || !natH) return null;
-                    const scaleX = dispW / natW;
-                    const scaleY = dispH / natH;
+        {/* Main Tabbed Controls */}
+        <Grid item xs={12}>
+          <Card>
+            <CardHeader title="Focus Control Modes" />
+            <CardContent>
+              <Tabs
+                value={mainTabValue}
+                onChange={(e, newValue) => setMainTabValue(newValue)}
+                variant="fullWidth"
+                sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}
+              >
+                <Tab label="Calibration" />
+                <Tab label="Continuous Focus Lock" />
+                <Tab label="One-Step Autofocus" />
+              </Tabs>
 
-                    // Helper to map image pixel coordinates to display coordinates
-                    const toDisplayX = (x) => x * scaleX;
-                    const toDisplayY = (y) => y * scaleY;
-
-                    // Crop selection overlay
-                    let cropOverlay = null;
-                    if (cropSelection.isSelecting) {
-                      const left = toDisplayX(
-                        Math.min(cropSelection.startX, cropSelection.endX)
-                      );
-                      const top = toDisplayY(
-                        Math.min(cropSelection.startY, cropSelection.endY)
-                      );
-                      const width = Math.abs(
-                        toDisplayX(cropSelection.endX) -
-                          toDisplayX(cropSelection.startX)
-                      );
-                      const height = Math.abs(
-                        toDisplayY(cropSelection.endY) -
-                          toDisplayY(cropSelection.startY)
-                      );
-                      cropOverlay = (
-                        <div
-                          style={{
-                            position: "absolute",
-                            left,
-                            top,
-                            width,
-                            height,
-                            border: "2px dashed red",
-                            backgroundColor: "rgba(255, 0, 0, 0.1)",
-                            pointerEvents: "none",
-                          }}
-                        />
-                      );
-                    }
-
-                    // Crop center overlay
-                    const centerX = toDisplayX(focusLockUI.cropCenter[0]);
-                    const centerY = toDisplayY(focusLockUI.cropCenter[1]);
-                    const cropCenterOverlay = (
-                      <div
-                        style={{
-                          position: "absolute",
-                          left: centerX - 5,
-                          top: centerY - 5,
-                          width: 10,
-                          height: 10,
-                          backgroundColor: "red",
-                          borderRadius: "50%",
-                          pointerEvents: "none",
-                        }}
+              {/* Tab 0: Calibration */}
+              {mainTabValue === 0 && (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  <Typography variant="body2" color="textSecondary">
+                    Run a Z-scan to calibrate the focus signal vs. position relationship
+                  </Typography>
+                  
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} md={4}>
+                      <TextField
+                        label="Scan Range (µm)"
+                        type="number"
+                        value={scanRangeUm}
+                        onChange={(e) => setScanRangeUm(Number(e.target.value))}
+                        size="small"
+                        fullWidth
+                        inputProps={{ step: 1, min: 100, max: 10000 }}
                       />
-                    );
-
-                    // Crop size preview overlay
-                    const cropSize = focusLockUI.cropSize;
-                    const cropSizeOverlay = (
-                      <div
-                        style={{
-                          position: "absolute",
-                          left: centerX - (cropSize * scaleX) / 2,
-                          top: centerY - (cropSize * scaleY) / 2,
-                          width: cropSize * scaleX,
-                          height: cropSize * scaleY,
-                          border: "2px solid blue",
-                          backgroundColor: "rgba(0, 0, 255, 0.1)",
-                          pointerEvents: "none",
-                        }}
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                      <TextField
+                        label="Number of Steps"
+                        type="number"
+                        value={numSteps}
+                        onChange={(e) => setNumSteps(Number(e.target.value))}
+                        size="small"
+                        fullWidth
+                        inputProps={{ step: 1, min: 2, max: 100 }}
                       />
-                    );
-                    return (
-                      <>
-                        {cropOverlay}
-                        {cropCenterOverlay}
-                        {cropSizeOverlay}
-                      </>
-                    );
-                  })()}
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                      <TextField
+                        label="Settle Time (s)"
+                        type="number"
+                        value={settleTime}
+                        onChange={(e) => setSettleTime(Number(e.target.value))}
+                        size="small"
+                        fullWidth
+                        inputProps={{ step: 0.1, min: 0.1, max: 10 }}
+                      />
+                    </Grid>
+                  </Grid>
+
+                  <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      onClick={startCalibration}
+                      disabled={focusLockUI.isCalibrating || isCalibrationPolling}
+                      sx={{ flex: 1 }}
+                    >
+                      {focusLockUI.isCalibrating || isCalibrationPolling
+                        ? "Calibrating..."
+                        : "Start Calibration"}
+                    </Button>
+
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      onClick={stopCalibration}
+                      disabled={!focusLockUI.isCalibrating && !isCalibrationPolling}
+                      sx={{ flex: 1 }}
+                    >
+                      Stop Calibration
+                    </Button>
+
+                    <Button
+                      variant="outlined"
+                      color="info"
+                      onClick={fetchCalibrationResults}
+                      sx={{ flex: 1 }}
+                    >
+                      Show Calibration Curve
+                    </Button>
+                  </Box>
+
+                  {calibrationResults && (
+                    <Alert severity="info" sx={{ mt: 2 }}>
+                      <Typography variant="subtitle2" fontWeight="bold">
+                        Calibration Results
+                      </Typography>
+                      <Typography variant="body2">
+                        R²: {calibrationResults.r_squared?.toFixed(4)} | 
+                        Sensitivity: {calibrationResults.sensitivity_nm_per_px?.toFixed(1)} nm/unit | 
+                        Monotone Failures: {calibrationResults.monotone_failures}/{calibrationResults.total_points}
+                      </Typography>
+                      {calibrationResults.coefficients && (
+                        <Typography variant="caption">
+                          Coefficients: [{calibrationResults.coefficients.map((c) => c.toFixed(4)).join(", ")}]
+                        </Typography>
+                      )}
+                    </Alert>
+                  )}
                 </Box>
-              ) : (
-                <Box
-                  sx={{
-                    height: 400,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    border: "2px dashed #ccc",
-                    borderRadius: 1,
-                    flexDirection: "column",
-                    gap: 2,
-                  }}
-                >
-                  <Typography variant="h6" color="textSecondary">
-                    📷 Image Display Area
+              )}
+
+              {/* Tab 1: Continuous Focus Lock */}
+              {mainTabValue === 1 && (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                  <Typography variant="body2" color="textSecondary">
+                    Maintain focus continuously using PID controller
                   </Typography>
-                  <Typography
-                    variant="body2"
-                    color="textSecondary"
-                    textAlign="center"
+
+                  <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={focusLockUI.isFocusLocked}
+                          onChange={toggleFocusLock}
+                          color="primary"
+                        />
+                      }
+                      label={`Focus Lock ${focusLockUI.isFocusLocked ? "ENABLED" : "DISABLED"}`}
+                    />
+                    
+                    <Button
+                      variant="outlined"
+                      onClick={unlockFocus}
+                      disabled={!focusLockUI.isFocusLocked}
+                    >
+                      Unlock Focus
+                    </Button>
+                  </Box>
+
+                  <Divider />
+
+                  {/* PID Parameters */}
+                  <Typography variant="subtitle2" fontWeight="bold">
+                    PID Controller Parameters
+                  </Typography>
+                  
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} md={6}>
+                      <Typography gutterBottom>
+                        Kp (Proportional): {focusLockUI.kp.toFixed(2)}
+                      </Typography>
+                      <Slider
+                        value={focusLockUI.kp}
+                        onChange={(e, value) => dispatch(focusLockSlice.setKp(value))}
+                        min={0}
+                        max={2}
+                        step={0.01}
+                        valueLabelDisplay="auto"
+                      />
+                    </Grid>
+
+                    <Grid item xs={12} md={6}>
+                      <Typography gutterBottom>
+                        Ki (Integral): {focusLockUI.ki.toFixed(2)}
+                      </Typography>
+                      <Slider
+                        value={focusLockUI.ki}
+                        onChange={(e, value) => dispatch(focusLockSlice.setKi(value))}
+                        min={0}
+                        max={2}
+                        step={0.01}
+                        valueLabelDisplay="auto"
+                      />
+                    </Grid>
+
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        label="Set Point"
+                        type="number"
+                        value={focusLockUI.setPoint}
+                        onChange={(e) =>
+                          dispatch(focusLockSlice.setSetPoint(parseFloat(e.target.value) || 0))
+                        }
+                        size="small"
+                        fullWidth
+                        inputProps={{ step: 0.1 }}
+                      />
+                    </Grid>
+
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        label="Min Step Threshold"
+                        type="number"
+                        value={focusLockUI.minStepThreshold}
+                        onChange={(e) =>
+                          dispatch(focusLockSlice.setMinStepThreshold(parseFloat(e.target.value) || 0))
+                        }
+                        size="small"
+                        fullWidth
+                        inputProps={{ step: 0.001, min: 0 }}
+                      />
+                    </Grid>
+                  </Grid>
+
+                  <Button
+                    variant="contained"
+                    onClick={updatePIControllerParameters}
+                    sx={{ mt: 2 }}
                   >
-                    Click "Load Last Image" to view and select crop region for
-                    focus analysis
-                    <br />
-                    Interactive crop selection with mouse drag
+                    Update PID Parameters
+                  </Button>
+                </Box>
+              )}
+
+              {/* Tab 2: One-Step Autofocus */}
+              {mainTabValue === 2 && (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  <Typography variant="body2" color="textSecondary">
+                    Move to a stored or manual focus setpoint in one step
                   </Typography>
-                  {isMeasuring && (
-                    <Typography variant="body2" color="primary">
-                      Waiting for camera image...
+
+                  <Button
+                    variant="contained"
+                    color="secondary"
+                    onClick={storeCurrentFocusAsSetpoint}
+                    disabled={!isMeasuring}
+                    startIcon={<span>💾</span>}
+                  >
+                    Store Current Focus Value as Setpoint
+                  </Button>
+
+                  {focusLockUI.storedTargetSetpoint !== null && (
+                    <Alert severity="info">
+                      <Typography variant="body2">
+                        <strong>Stored Setpoint:</strong> {focusLockUI.storedTargetSetpoint.toFixed(3)}
+                      </Typography>
+                    </Alert>
+                  )}
+
+                  <TextField
+                    label="Manual Target Setpoint"
+                    type="number"
+                    value={manualTargetSetpoint}
+                    onChange={(e) => setManualTargetSetpoint(e.target.value)}
+                    size="small"
+                    fullWidth
+                    helperText="Or enter a target focus value manually"
+                  />
+
+                  <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
+                    <Button
+                      variant="contained"
+                      color="success"
+                      onClick={() => performOneStepAutofocus(false)}
+                      disabled={
+                        focusLockUI.isPerformingAutofocus ||
+                        focusLockUI.storedTargetSetpoint === null
+                      }
+                      sx={{ flex: 1 }}
+                    >
+                      {focusLockUI.isPerformingAutofocus
+                        ? "Focusing..."
+                        : "Use Stored Setpoint"}
+                    </Button>
+
+                    <Button
+                      variant="contained"
+                      color="info"
+                      onClick={() => performOneStepAutofocus(true)}
+                      disabled={
+                        focusLockUI.isPerformingAutofocus ||
+                        manualTargetSetpoint === ""
+                      }
+                      sx={{ flex: 1 }}
+                    >
+                      {focusLockUI.isPerformingAutofocus
+                        ? "Focusing..."
+                        : "Use Manual Setpoint"}
+                    </Button>
+                  </Box>
+
+                  {focusLockUI.lastAutofocusResult && (
+                    <Alert
+                      severity={
+                        focusLockUI.lastAutofocusResult.success
+                          ? "success"
+                          : "error"
+                      }
+                      sx={{ mt: 2 }}
+                    >
+                      {focusLockUI.lastAutofocusResult.success ? (
+                        <Box>
+                          <Typography variant="body2" fontWeight="bold">
+                            ✓ Autofocus Successful
+                          </Typography>
+                          <Typography variant="body2">
+                            Attempts: {focusLockUI.lastAutofocusResult.num_attempts} | 
+                            Error: {focusLockUI.lastAutofocusResult.final_error_um?.toFixed(2)} µm | 
+                            Z Offset: {focusLockUI.lastAutofocusResult.z_offset?.toFixed(2)} µm
+                          </Typography>
+                        </Box>
+                      ) : (
+                        <Typography variant="body2">
+                          {focusLockUI.lastAutofocusResult.error || "Autofocus failed"}
+                        </Typography>
+                      )}
+                    </Alert>
+                  )}
+
+                  {focusLockUI.calibrationRange && (
+                    <Typography variant="caption" color="textSecondary">
+                      Calibration Range: [{focusLockUI.calibrationRange[0]?.toFixed(1)}, {focusLockUI.calibrationRange[1]?.toFixed(1)}] µm
                     </Typography>
                   )}
                 </Box>
@@ -1889,6 +1617,310 @@ const FocusLockController = () => {
             </CardContent>
           </Card>
         </Grid>
+
+
+
+        {/* Camera Parameters & Z-Axis Controls */}
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardHeader title="Camera Settings" />
+            <CardContent>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <TextField
+                  label="Exposure Time (ms)"
+                  type="number"
+                  value={focusLockUI.exposureTime}
+                  onChange={(e) => handleExposureChange(parseFloat(e.target.value) || 0)}
+                  size="small"
+                  fullWidth
+                  inputProps={{ step: 1, min: 1, max: 10000 }}
+                  helperText="Auto-saves after typing"
+                />
+
+                <TextField
+                  label="Gain"
+                  type="number"
+                  value={focusLockUI.gain}
+                  onChange={(e) => handleGainChange(parseFloat(e.target.value) || 0)}
+                  size="small"
+                  fullWidth
+                  inputProps={{ step: 0.1, min: 0, max: 100 }}
+                  helperText="Auto-saves after typing"
+                />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardHeader title="Z-Axis Manual Control" />
+            <CardContent>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <Typography variant="body2" color="textSecondary">
+                  Manual focus positioning
+                </Typography>
+
+                <Box>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Fine (±10µm)
+                  </Typography>
+                  <ButtonGroup fullWidth variant="contained">
+                    <Button onClick={moveZDown10} color="primary">
+                      ↓ 10µm
+                    </Button>
+                    <Button onClick={moveZUp10} color="primary">
+                      ↑ 10µm
+                    </Button>
+                  </ButtonGroup>
+                </Box>
+
+                <Box>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Coarse (±100µm)
+                  </Typography>
+                  <ButtonGroup fullWidth variant="contained">
+                    <Button onClick={moveZDown100} color="secondary">
+                      ↓ 100µm
+                    </Button>
+                    <Button onClick={moveZUp100} color="secondary">
+                      ↑ 100µm
+                    </Button>
+                  </ButtonGroup>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Developer Mode - Advanced Parameters */}
+        <Grid item xs={12}>
+          <Accordion expanded={devModeOpen} onChange={() => setDevModeOpen(!devModeOpen)}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="h6">🔧 Developer Mode - Advanced Parameters</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Grid container spacing={3}>
+                {/* Astigmatism Parameters */}
+                <Grid item xs={12} md={6}>
+                  <Card variant="outlined">
+                    <CardHeader title="Astigmatism Detection Parameters" />
+                    <CardContent>
+                      <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                        <TextField
+                          label="Gaussian Sigma"
+                          type="number"
+                          value={focusLockUI.gaussian_sigma}
+                          onChange={(e) =>
+                            dispatch(focusLockSlice.setgaussian_sigma(parseFloat(e.target.value)))
+                          }
+                          size="small"
+                          fullWidth
+                          inputProps={{ step: 0.1, min: 0.1, max: 10 }}
+                        />
+
+                        <TextField
+                          label="Background Threshold"
+                          type="number"
+                          value={focusLockUI.background_threshold}
+                          onChange={(e) =>
+                            dispatch(focusLockSlice.setBackgroundThreshold(parseFloat(e.target.value)))
+                          }
+                          size="small"
+                          fullWidth
+                          inputProps={{ step: 1, min: 0, max: 1000 }}
+                        />
+
+                        <TextField
+                          label="Crop Size (pixels)"
+                          type="number"
+                          value={focusLockUI.cropSize}
+                          onChange={(e) =>
+                            dispatch(focusLockSlice.setCropSize(parseInt(e.target.value)))
+                          }
+                          size="small"
+                          fullWidth
+                          inputProps={{ step: 1, min: 10, max: 500 }}
+                        />
+
+                        <Typography variant="body2">
+                          Crop Center: [{focusLockUI.cropCenter[0]}, {focusLockUI.cropCenter[1]}]
+                        </Typography>
+
+                        <Typography variant="body2" color="textSecondary">
+                          Frame Size: [{focusLockUI.frameSize[0]}, {focusLockUI.frameSize[1]}]
+                        </Typography>
+
+                        <Box sx={{ display: "flex", gap: 1 }}>
+                          <Button
+                            variant="contained"
+                            onClick={updateAstigmatismParameters}
+                            sx={{ flex: 1 }}
+                          >
+                            Update Parameters
+                          </Button>
+
+                          <Button
+                            variant="outlined"
+                            onClick={resetCropCoordinates}
+                            sx={{ flex: 1 }}
+                          >
+                            Reset Crop
+                          </Button>
+                        </Box>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Grid>
+
+                {/* Extended PID Parameters */}
+                <Grid item xs={12} md={6}>
+                  <Card variant="outlined">
+                    <CardHeader title="Extended PID Controller Parameters" />
+                    <CardContent>
+                      <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                        <TextField
+                          label="Safety Distance Limit"
+                          type="number"
+                          value={focusLockUI.safetyDistanceLimit}
+                          onChange={(e) =>
+                            dispatch(focusLockSlice.setSafetyDistanceLimit(parseFloat(e.target.value) || 0))
+                          }
+                          size="small"
+                          fullWidth
+                          inputProps={{ step: 1, min: 0 }}
+                        />
+
+                        <TextField
+                          label="Safety Move Limit"
+                          type="number"
+                          value={focusLockUI.safetyMoveLimit}
+                          onChange={(e) =>
+                            dispatch(focusLockSlice.setSafetyMoveLimit(parseFloat(e.target.value) || 0))
+                          }
+                          size="small"
+                          fullWidth
+                          inputProps={{ step: 0.1, min: 0 }}
+                        />
+
+                        <FormControlLabel
+                          control={
+                            <Switch
+                              checked={focusLockUI.safetyMotionActive}
+                              onChange={(e) =>
+                                dispatch(focusLockSlice.setSafetyMotionActive(e.target.checked))
+                              }
+                            />
+                          }
+                          label="Safety Motion Active"
+                        />
+
+                        <Button
+                          variant="contained"
+                          onClick={updatePIControllerParameters}
+                        >
+                          Update Extended PID Parameters
+                        </Button>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              </Grid>
+            </AccordionDetails>
+          </Accordion>
+        </Grid>
+
+        {/* Calibration Curve Display */}
+        {showCalibrationCurve && calibrationCurveData && (
+          <Grid item xs={12}>
+            <Card>
+              <CardHeader
+                title="Calibration Curve (Position vs Focus)"
+                subheader={`Sensitivity: ${calibrationCurveData.sensitivity_nm_per_px?.toFixed(1)} nm/unit | R²: ${calibrationCurveData.r_squared?.toFixed(4)}`}
+                action={
+                  <Button
+                    size="small"
+                    onClick={() => setShowCalibrationCurve(false)}
+                    variant="outlined"
+                  >
+                    Close
+                  </Button>
+                }
+              />
+              <CardContent>
+                <Box sx={{ height: 300 }}>
+                  <Line
+                    data={{
+                      labels: calibrationCurveData.positionData || [],
+                      datasets: [
+                        {
+                          label: "Focus Signal",
+                          data: (calibrationCurveData.positionData || []).map((pos, idx) => ({
+                            x: pos,
+                            y: (calibrationCurveData.signalData || calibrationCurveData.calibration_data?.focus_data || [])[idx],
+                          })),
+                          borderColor: theme.palette.primary.main,
+                          backgroundColor: theme.palette.primary.light,
+                          pointRadius: 4,
+                          pointHoverRadius: 6,
+                          showLine: true,
+                          tension: 0.1,
+                        },
+                        // Linear fit line
+                        ...(calibrationCurveData.poly ? [{
+                          label: `Linear Fit (slope: ${calibrationCurveData.poly[0]?.toFixed(4)})`,
+                          data: (calibrationCurveData.positionData || []).map((pos) => ({
+                            x: pos,
+                            y: calibrationCurveData.poly[0] * pos + calibrationCurveData.poly[1],
+                          })),
+                          borderColor: theme.palette.secondary.main,
+                          borderDash: [5, 5],
+                          pointRadius: 0,
+                          showLine: true,
+                        }] : []),
+                      ],
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      scales: {
+                        x: {
+                          type: "linear",
+                          title: { display: true, text: "Z Position (µm)" },
+                        },
+                        y: {
+                          type: "linear",
+                          title: { display: true, text: "Focus Signal" },
+                        },
+                      },
+                      plugins: {
+                        legend: { position: "top" },
+                        tooltip: {
+                          callbacks: {
+                            label: (ctx) => `Focus: ${ctx.parsed.y.toFixed(2)} @ Z: ${ctx.parsed.x.toFixed(1)} µm`,
+                          },
+                        },
+                      },
+                    }}
+                  />
+                </Box>
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="body2">
+                    <strong>Polynomial Coefficients:</strong> [{calibrationCurveData.poly?.map(c => c.toFixed(4)).join(", ")}]
+                  </Typography>
+                  <Typography variant="body2">
+                    <strong>Linear Range:</strong> [{calibrationCurveData.calibration_data?.linear_range?.[0]?.toFixed(1)}, {calibrationCurveData.calibration_data?.linear_range?.[1]?.toFixed(1)}]
+                  </Typography>
+                  <Typography variant="body2">
+                    <strong>PID Integration Active:</strong> {calibrationCurveData.pid_integration_active ? "Yes" : "No"}
+                  </Typography>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        )}
+
+
       </Grid>
     </Paper>
   );

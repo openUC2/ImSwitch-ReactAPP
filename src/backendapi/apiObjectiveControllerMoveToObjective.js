@@ -1,15 +1,15 @@
 import createAxiosInstance from "./createAxiosInstance";
 
 // Function to move to a specific objective based on the slot
-const apiObjectiveControllerMoveToObjective = async (slot) => {
+const apiObjectiveControllerMoveToObjective = async (slot, skipZ) => {
   try {
     const axiosInstance = createAxiosInstance(); // Create Axios instance
     // print URL 
     console.log(
       "Request URL:",
-      axiosInstance.defaults.baseURL + `/ObjectiveController/moveToObjective?slot=${slot}`
+      axiosInstance.defaults.baseURL + `/ObjectiveController/moveToObjective?slot=${slot}&skipZ=${skipZ}`
     );
-    const response = await axiosInstance.get(`/ObjectiveController/moveToObjective?slot=${slot}`); // Send GET request with the slot parameter
+    const response = await axiosInstance.get(`/ObjectiveController/moveToObjective?slot=${slot}&skipZ=${skipZ}`); // Send GET request with the slot parameter
     return response.data; // Return the data from the response
   } catch (error) {
     console.error(`Error moving to objective with slot ${slot}:`, error);

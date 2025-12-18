@@ -42,7 +42,7 @@ export default function ObjectiveSwitcher({ hostIP, hostPort }) {
   const switchTo = async (slot) => {
     try {
       setIsSwitching(true);
-      await apiObjectiveControllerMoveToObjective(slot);
+      await apiObjectiveControllerMoveToObjective(slot, 0);
       // When the socket update arrives, it should set objectiveState.currentObjective => triggers useEffect above
     } catch (e) {
       console.error(`Error switching to objective ${slot}`, e);

@@ -94,8 +94,8 @@ const ExtendedObjectiveController = () => {
   };
 
   // Switch objective (slot should be 0 or 1)
-  const handleSwitchObjective = (slot) => {
-    apiObjectiveControllerMoveToObjective(slot)
+  const handleSwitchObjective = (slot, skipZ) => {
+    apiObjectiveControllerMoveToObjective(slot, skipZ)
       .then((data) => {
         dispatch(objectiveSlice.setCurrentObjective(slot)); //setCurrentObjective(slot);
         refreshStatus();
@@ -439,11 +439,19 @@ const ExtendedObjectiveController = () => {
                 <Button
                   variant="outlined"
                   color="secondary"
-                  onClick={() => handleSwitchObjective(0)}
+                  onClick={() => handleSwitchObjective(0, true)}
                   fullWidth
                 >
                   Switch to Objective 1
                 </Button>
+                <Button
+                  variant="outlined"
+                  color="secondary"
+                  onClick={() => handleSwitchObjective(0, false)}
+                  fullWidth
+                >
+                  Switch to Objective 1 (incl. Z)
+                </Button>                
               </Box>
             </Grid>
             {/* X1 */}
@@ -486,11 +494,19 @@ const ExtendedObjectiveController = () => {
                 <Button
                   variant="outlined"
                   color="secondary"
-                  onClick={() => handleSwitchObjective(1)}
+                  onClick={() => handleSwitchObjective(1, true  )}
                   fullWidth
                 >
                   Switch to Objective 2
                 </Button>
+              <Button
+                  variant="outlined"
+                  color="secondary"
+                  onClick={() => handleSwitchObjective(1, false  )}
+                  fullWidth
+                >
+                  Switch to Objective 2 (incl. Z)
+                </Button>                
               </Box>
             </Grid>
             {/* Z0 */}
