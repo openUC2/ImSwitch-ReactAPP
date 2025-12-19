@@ -27,6 +27,7 @@ import {
   SystemUpdate,
   Storage,
   Build,
+  Article,
 } from "@mui/icons-material";
 import { formatDiskUsage } from "../../utils/formatUtils";
 import { useDeveloperMode } from "../../utils/useDeveloperMode";
@@ -321,7 +322,7 @@ const SettingsMenu = ({ onNavigate }) => {
           }}
         >
           <ListItemIcon>
-            <Tune
+            <Storage
               fontSize="small"
               color={allowAccess ? "inherit" : "disabled"}
             />
@@ -366,6 +367,36 @@ const SettingsMenu = ({ onNavigate }) => {
             }
           />
         </MenuItem>
+
+        {/* Logging Interface */}
+        <MenuItem
+          onClick={() => handleNavigationClick("Logging")}
+          disabled={!allowAccess}
+          sx={{
+            opacity: allowAccess ? 1 : 0.5,
+            "&.Mui-disabled": {
+              opacity: 0.5,
+            },
+          }}
+        >
+          <ListItemIcon>
+            <Article
+              fontSize="small"
+              color={allowAccess ? "inherit" : "disabled"}
+            />
+          </ListItemIcon>
+          <ListItemText
+            primary="Logging"
+            secondary={
+              allowAccess
+                ? isDeveloperMode && !isBackendConnected
+                  ? "View & download log files (Developer Mode)"
+                  : "View & download log files"
+                : "Requires backend connection"
+            }
+          />
+        </MenuItem>
+
 
         {/* WiFi Configuration - Requires backend API calls for network management */}
         <MenuItem

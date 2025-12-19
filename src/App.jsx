@@ -33,6 +33,7 @@ import TimelapseController from "./components/TimelapseController.js";
 import UC2ConfigurationController from "./components/UC2ConfigurationController.jsx";
 import SerialDebugController from "./components/SerialDebugController.jsx";
 import WiFiController from "./components/WiFiController.jsx";
+import LoggingController from "./components/LoggingController.jsx";
 import { JupyterProvider } from "./context/JupyterContext.js";
 import DemoController from "./components/DemoController.js";
 import AcceptanceTestComponent from "./components/AcceptanceTestComponent.jsx";
@@ -473,6 +474,7 @@ function App() {
           {selectedPlugin === "SocketView" && <SocketView />}
           {selectedPlugin === "SystemUpdate" && <SystemUpdateController />}
           {selectedPlugin === "Connections" && <ConnectionSettings />}
+          {selectedPlugin === "Logging" && <LoggingController />}
         </Box>
       </Box>
     </ThemeProvider>
