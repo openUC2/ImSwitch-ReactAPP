@@ -4,6 +4,8 @@ import { getConnectionSettingsState } from "../state/slices/ConnectionSettingsSl
 import { Box, Tabs, Tab, Typography } from "@mui/material";
 import AxisControl from "./AxisControl.jsx";
 import JoystickControl from "./JoystickControl.jsx";
+import GamepadSpeedControl from "./GamepadSpeedControl.js";
+import VirtualJoystickControl from "./VirtualJoystickControl.js";
 import AutofocusController from "./AutofocusController";
 import DetectorParameters from "./DetectorParameters";
 import StreamControls from "./StreamControls";
@@ -340,6 +342,7 @@ export default function LiveView({ setFileManagerInitialPath }) {
           >
             <Tab label="Multiple Axis View" />
             <Tab label="Joystick Control" />
+            <Tab label="Virtual Joystick (speed mode)" />
           </Tabs>
 
           {/* Multiple Axis View */}
@@ -350,6 +353,11 @@ export default function LiveView({ setFileManagerInitialPath }) {
           {/* Joystick Control */}
           {stageControlTab === 1 && (
             <JoystickControl hostIP={hostIP} hostPort={hostPort} />
+          )}
+
+          {/* Virtual Joystick Speed Control */}
+          {stageControlTab === 2 && (
+            <VirtualJoystickControl hostIP={hostIP} hostPort={hostPort} />
           )}
         </Box>
 
