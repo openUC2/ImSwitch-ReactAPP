@@ -6,6 +6,7 @@ import {
   Folder as FolderIcon,
   Star as StarIcon,
   GridView as GridViewIcon,
+  ViewInAr as ViewInArIcon,
 } from "@mui/icons-material";
 import { Divider, Drawer, List, useTheme } from "@mui/material";
 import { useState } from "react";
@@ -196,6 +197,18 @@ const NavigationDrawer = ({
             selected={selectedPlugin === "FileManager"}
             onClick={() => handlePluginChange("FileManager")}
             tooltip="File Manager - Microscopy data management"
+            color={SIDEBAR_COLORS.essentials}
+            collapsed={!sidebarVisible}
+            nested={true}
+          />
+
+          {/* OME-Zarr Viewer - Offline Vizarr viewer for microscopy data */}
+          <DrawerEntry
+            icon={<ViewInArIcon />}
+            label="OME-Zarr Viewer"
+            selected={selectedPlugin === "VizarrViewer"}
+            onClick={() => handlePluginChange("VizarrViewer")}
+            tooltip="OME-Zarr Viewer - Offline viewer for multidimensional data"
             color={SIDEBAR_COLORS.essentials}
             collapsed={!sidebarVisible}
             nested={true}

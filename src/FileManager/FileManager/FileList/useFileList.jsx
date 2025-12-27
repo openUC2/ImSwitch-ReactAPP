@@ -2,7 +2,7 @@ import { BiRename, BiSelectMultiple } from "react-icons/bi";
 import { BsCopy, BsFolderPlus, BsGrid, BsScissors } from "react-icons/bs";
 import { FaListUl, FaRegFile, FaRegPaste } from "react-icons/fa6";
 import { FiRefreshCw } from "react-icons/fi";
-import { MdOutlineDelete, MdOutlineFileDownload, MdOutlineFileUpload, MdOpenWith } from "react-icons/md";
+import { MdOutlineDelete, MdOutlineFileDownload, MdOutlineFileUpload, MdOpenWith, MdViewInAr } from "react-icons/md";
 import { PiFolderOpen } from "react-icons/pi";
 import { useClipBoard } from "../../contexts/ClipboardContext";
 import { useEffect, useState } from "react";
@@ -23,7 +23,15 @@ const canOpenWithImJoy = (file) => {
   return imjoyImageExtensions.includes(extension);
 };
 
-const useFileList = (onRefresh, enableFilePreview, triggerAction, onFileOpen) => {
+// Helper function to check if a file/folder can be opened with Vizarr (OME-Zarr)
+const canOpenWithVizarr = (file) => {
+  if (!file) return false;
+  // OME-Zarr files are typically directories ending in .zarr or .ome.zarr
+  const name = file.name?.toLowerCase() || "";
+  return name.endsWith(".zarr") || name.endsWith(".ome.zarr");
+};
+
+const useFileList = (onRefresh, enableFilePreview, triggerAction, onFileOpen, onOpenWithVizarr) => {
   const [selectedFileIndexes, setSelectedFileIndexes] = useState([]);
   const [visible, setVisible] = useState(false);
   const [isSelectionCtx, setIsSelectionCtx] = useState(false);
@@ -51,6 +59,14 @@ const useFileList = (onRefresh, enableFilePreview, triggerAction, onFileOpen) =>
   const handleOpenWithImJoy = () => {
     if (lastSelectedFile && !lastSelectedFile.isDirectory && onFileOpen) {
       onFileOpen(lastSelectedFile);
+    }
+    setVisible(false);
+  };
+
+  // Handler for opening OME-Zarr files with integrated Vizarr viewer
+  const handleOpenWithVizarr = () => {
+    if (lastSelectedFile && canOpenWithVizarr(lastSelectedFile) && onOpenWithVizarr) {
+      onOpenWithVizarr(lastSelectedFile);
     }
     setVisible(false);
   };
@@ -163,6 +179,13 @@ const useFileList = (onRefresh, enableFilePreview, triggerAction, onFileOpen) =>
       icon: <MdOpenWith size={18} />,
       onClick: handleOpenWithImJoy,
       hidden: !canOpenWithImJoy(lastSelectedFile) || selectedFiles.length > 1,
+      divider: !canOpenWithVizarr(lastSelectedFile),
+    },
+    {
+      title: "Open with Vizarr",
+      icon: <MdViewInAr size={18} />,
+      onClick: handleOpenWithVizarr,
+      hidden: !canOpenWithVizarr(lastSelectedFile) || selectedFiles.length > 1 || !onOpenWithVizarr,
       divider: true,
     },
     {

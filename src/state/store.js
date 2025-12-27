@@ -43,6 +43,7 @@ import canOtaReducer from "./slices/canOtaSlice";
 import holoReducer from "./slices/HoloSlice";
 import dpcReducer from "./slices/dpcSlice";
 import laserReducer from "./slices/LaserSlice";
+import vizarrViewerReducer from "./slices/VizarrViewerSlice";
 
 //#####################################################################################
 // Nested persist config for liveStreamState
@@ -101,6 +102,7 @@ const rootReducer = combineReducers({
   holoState: holoReducer,
   dpc: dpcReducer,
   laserState: laserReducer,
+  vizarrViewerState: vizarrViewerReducer,
 });
 
 //#####################################################################################
