@@ -1,7 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { getConnectionSettingsState } from "../state/slices/ConnectionSettingsSlice";
-import { Box, Tabs, Tab, Typography } from "@mui/material";
+import {
+  Box,
+  Tabs,
+  Tab,
+  Typography,
+  IconButton,
+  Drawer,
+  useMediaQuery,
+  useTheme,
+} from "@mui/material";
+import MenuIcon from "@mui/icons-material/Menu";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import AxisControl from "./AxisControl.jsx";
 import JoystickControl from "./JoystickControl.jsx";
 import GamepadSpeedControl from "./GamepadSpeedControl.js";
@@ -77,6 +88,16 @@ export default function LiveView({ setFileManagerInitialPath }) {
 
   // Stage control tabs state
   const [stageControlTab, setStageControlTab] = useState(0); // 0 = Multiple Axis View, 1 = Joystick Control
+
+  // Responsive design: collapsible right panel for mobile
+  const theme = useTheme();
+  const isMobile = useMediaQuery("(max-width:600px)");
+  const [rightPanelOpen, setRightPanelOpen] = useState(!isMobile);
+
+  // Auto-close panel when switching to mobile view
+  useEffect(() => {
+    setRightPanelOpen(!isMobile);
+  }, [isMobile]);
 
   /* detectors */
   useEffect(() => {
@@ -243,18 +264,20 @@ export default function LiveView({ setFileManagerInitialPath }) {
         display: "flex",
         flex: 1,
         overflow: "hidden",
+        position: "relative",
       }}
     >
-      {/* LEFT */}
+      {/* LEFT - Main Content Area */}
       <Box
         sx={{
-          width: "60%",
+          width: isMobile ? "100%" : rightPanelOpen ? "60%" : "100%",
           height: "100%",
           display: "flex",
           paddingTop: 1,
           flexDirection: "column",
           boxSizing: "border-box",
           overflowY: "auto",
+          transition: "width 0.3s ease",
           "&::-webkit-scrollbar": {
             width: "8px",
           },
@@ -270,15 +293,41 @@ export default function LiveView({ setFileManagerInitialPath }) {
           },
         }}
       >
-        <Tabs
-          value={activeTab}
-          onChange={(_, v) => dispatch(liveViewSlice.setActiveTab(v))}
-          sx={{ mt: 2 }}
+        {/* Header with toggle button for controls panel */}
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            px: 1,
+          }}
         >
-          {detectors.map((d) => (
-            <Tab key={d} label={d} />
-          ))}
-        </Tabs>
+          <Tabs
+            value={activeTab}
+            onChange={(_, v) => dispatch(liveViewSlice.setActiveTab(v))}
+            sx={{ mt: 1 }}
+          >
+            {detectors.map((d) => (
+              <Tab key={d} label={d} />
+            ))}
+          </Tabs>
+
+          {/* Toggle button to open/close right panel */}
+          <IconButton
+            onClick={() => setRightPanelOpen(!rightPanelOpen)}
+            sx={{
+              mt: 1,
+              backgroundColor: "primary.main",
+              color: "primary.contrastText",
+              "&:hover": {
+                backgroundColor: "primary.dark",
+              },
+            }}
+            title={rightPanelOpen ? "Hide Controls" : "Show Controls"}
+          >
+            <MenuIcon />
+          </IconButton>
+        </Box>
 
         {/* Live View Container */}
         <Box
@@ -309,83 +358,154 @@ export default function LiveView({ setFileManagerInitialPath }) {
         </Box>
       </Box>
 
-      {/* RIGHT */}
-      <Box
-        sx={{
-          width: "40%",
-          height: "100%",
-          overflowY: "auto",
-          p: 2,
-          "&::-webkit-scrollbar": {
-            width: "8px",
-          },
-          "&::-webkit-scrollbar-track": {
-            background: "transparent",
-          },
-          "&::-webkit-scrollbar-thumb": {
-            background: "rgba(128, 128, 128, 0.3)",
-            borderRadius: "4px",
-          },
-          "&::-webkit-scrollbar-thumb:hover": {
-            background: "rgba(128, 128, 128, 0.5)",
-          },
-        }}
-      >
-        <Box mb={3}>
-          <Typography variant="h6">Stage Control</Typography>
-
-          {/* Stage Control Tabs */}
-          <Tabs
-            value={stageControlTab}
-            onChange={(_, v) => setStageControlTab(v)}
-            sx={{ mb: 2 }}
+      {/* RIGHT - Controls Panel (Drawer on mobile, inline on desktop) */}
+      {isMobile ? (
+        // Mobile: Use Drawer component for slide-in panel
+        <Drawer
+          anchor="right"
+          open={rightPanelOpen}
+          onClose={() => setRightPanelOpen(false)}
+          PaperProps={{
+            sx: {
+              width: "85%",
+              maxWidth: 360,
+              backgroundColor: "background.paper",
+            },
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              p: 1,
+              borderBottom: 1,
+              borderColor: "divider",
+            }}
           >
-            <Tab label="Multiple Axis View" />
-            <Tab label="Joystick Control" />
-            <Tab label="Virtual Joystick (speed mode)" />
-          </Tabs>
-
-          {/* Multiple Axis View */}
-          {stageControlTab === 0 && (
-            <AxisControl hostIP={hostIP} hostPort={hostPort} />
-          )}
-
-          {/* Joystick Control */}
-          {stageControlTab === 1 && (
-            <JoystickControl hostIP={hostIP} hostPort={hostPort} />
-          )}
-
-          {/* Virtual Joystick Speed Control */}
-          {stageControlTab === 2 && (
-            <VirtualJoystickControl hostIP={hostIP} hostPort={hostPort} />
-          )}
-        </Box>
-
-        <Box mb={3}>
-          <Typography variant="h6">Autofocus</Typography>
-          <AutofocusController hostIP={hostIP} hostPort={hostPort} />
-        </Box>
-
-        <Box mb={3}>
-          <Typography variant="h6">Illumination</Typography>
-          <IlluminationController hostIP={hostIP} hostPort={hostPort} />
-        </Box>
-
-        <Box mb={3}>
-          <Typography variant="h6">Objective</Typography>
-          <ObjectiveSwitcher hostIP={hostIP} hostPort={hostPort} />
-        </Box>
-
-        <Box mb={3}>
-          <Typography variant="h6">Extended LED Matrix</Typography>
-          <ExtendedLEDMatrixController hostIP={hostIP} hostPort={hostPort} />
-        </Box>
-
-        <Box mb={3}>
-          <Typography variant="h6">Detector Trigger</Typography>
-          <DetectorTriggerController hostIP={hostIP} hostPort={hostPort} />
-        </Box>
-      </Box>
+            <Typography variant="h6">Controls</Typography>
+            <IconButton onClick={() => setRightPanelOpen(false)}>
+              <ChevronRightIcon />
+            </IconButton>
+          </Box>
+          <Box
+            sx={{
+              p: 2,
+              overflowY: "auto",
+              height: "100%",
+            }}
+          >
+            <RightPanelContent
+              stageControlTab={stageControlTab}
+              setStageControlTab={setStageControlTab}
+              hostIP={hostIP}
+              hostPort={hostPort}
+            />
+          </Box>
+        </Drawer>
+      ) : (
+        // Desktop: Show inline panel when open
+        rightPanelOpen && (
+          <Box
+            sx={{
+              width: "40%",
+              height: "100%",
+              overflowY: "auto",
+              p: 2,
+              transition: "width 0.3s ease",
+              "&::-webkit-scrollbar": {
+                width: "8px",
+              },
+              "&::-webkit-scrollbar-track": {
+                background: "transparent",
+              },
+              "&::-webkit-scrollbar-thumb": {
+                background: "rgba(128, 128, 128, 0.3)",
+                borderRadius: "4px",
+              },
+              "&::-webkit-scrollbar-thumb:hover": {
+                background: "rgba(128, 128, 128, 0.5)",
+              },
+            }}
+          >
+            <RightPanelContent
+              stageControlTab={stageControlTab}
+              setStageControlTab={setStageControlTab}
+              hostIP={hostIP}
+              hostPort={hostPort}
+            />
+          </Box>
+        )
+      )}
     </Box>
+  );
+}
+
+// Extracted right panel content as a separate component for reuse
+function RightPanelContent({
+  stageControlTab,
+  setStageControlTab,
+  hostIP,
+  hostPort,
+}) {
+  return (
+    <>
+      <Box mb={3}>
+        <Typography variant="h6">Stage Control</Typography>
+
+        {/* Stage Control Tabs */}
+        <Tabs
+          value={stageControlTab}
+          onChange={(_, v) => setStageControlTab(v)}
+          sx={{ mb: 2 }}
+          variant="scrollable"
+          scrollButtons="auto"
+        >
+          <Tab label="Multiple Axis View" />
+          <Tab label="Joystick Control" />
+          <Tab label="Virtual Joystick (speed mode)" />
+        </Tabs>
+
+        {/* Multiple Axis View */}
+        {stageControlTab === 0 && (
+          <AxisControl hostIP={hostIP} hostPort={hostPort} />
+        )}
+
+        {/* Joystick Control */}
+        {stageControlTab === 1 && (
+          <JoystickControl hostIP={hostIP} hostPort={hostPort} />
+        )}
+
+        {/* Virtual Joystick Speed Control */}
+        {stageControlTab === 2 && (
+          <VirtualJoystickControl hostIP={hostIP} hostPort={hostPort} />
+        )}
+      </Box>
+
+      <Box mb={3}>
+        <Typography variant="h6">Autofocus</Typography>
+        <AutofocusController hostIP={hostIP} hostPort={hostPort} />
+      </Box>
+
+      <Box mb={3}>
+        <Typography variant="h6">Illumination</Typography>
+        <IlluminationController hostIP={hostIP} hostPort={hostPort} />
+      </Box>
+
+      <Box mb={3}>
+        <Typography variant="h6">Objective</Typography>
+        <ObjectiveSwitcher hostIP={hostIP} hostPort={hostPort} />
+      </Box>
+
+      <Box mb={3}>
+        <Typography variant="h6">Extended LED Matrix</Typography>
+        <ExtendedLEDMatrixController hostIP={hostIP} hostPort={hostPort} />
+      </Box>
+
+      <Box mb={3}>
+        <Typography variant="h6">Detector Trigger</Typography>
+        <DetectorTriggerController hostIP={hostIP} hostPort={hostPort} />
+      </Box>
+    </>
   );
 }
