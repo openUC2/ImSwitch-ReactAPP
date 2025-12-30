@@ -663,6 +663,26 @@ const WebSocketHandler = () => {
           console.error("Error in sigUpdateLaserPower handler:", error);
         }
         //----------------------------------------------
+      } else if (dataJson.name === "sigUC2SerialReadMessage") {
+        // Handle serial read messages from UC2 board
+        console.log("sigUC2SerialReadMessage received:", dataJson);
+        try {
+          const message = dataJson.args?.p0 || "";
+          dispatch(uc2Slice.addSerialLogEntry(`Read: ${message}`));
+        } catch (error) {
+          console.error("Error in sigUC2SerialReadMessage handler:", error);
+        }
+        //----------------------------------------------
+      } else if (dataJson.name === "sigUC2SerialWriteMessage") {
+        // Handle serial write messages from UC2 board
+        console.log("sigUC2SerialWriteMessage received:", dataJson);
+        try {
+          const message = dataJson.args?.p0 || "";
+          dispatch(uc2Slice.addSerialLogEntry(`Write: ${message}`));
+        } catch (error) {
+          console.error("Error in sigUC2SerialWriteMessage handler:", error);
+        }
+        //----------------------------------------------
       } else if (dataJson.name === "sigOTAStatusUpdate") {
         // Handle CAN OTA status updates
         console.log("sigOTAStatusUpdate received:", dataJson);

@@ -1,8 +1,7 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { getConnectionSettingsState } from "../state/slices/ConnectionSettingsSlice";
 import * as uc2Slice from "../state/slices/UC2Slice.js";
-import { useWebSocket } from "../context/WebSocketContext";
 import {
   Box,
   Typography,
@@ -25,7 +24,6 @@ import {
 
 const SerialDebugController = () => {
   const dispatch = useDispatch();
-  const socket = useWebSocket();
 
   // Get connection settings from Redux
   const { ip: hostIP, apiPort: hostPort } = useSelector(
@@ -71,30 +69,8 @@ const SerialDebugController = () => {
     }
   };
 
-  // WebSocket listener for serial communication
-  useEffect(() => {
-    if (!socket) return;
-
-    const handleSignal = (data) => {
-      try {
-        const jdata = JSON.parse(data);
-        if (jdata.name === "sigUC2SerialReadMessage") {
-          dispatch(uc2Slice.addSerialLogEntry(`Read: ${jdata.args?.p0 || ""}`));
-        } else if (jdata.name === "sigUC2SerialWriteMessage") {
-          dispatch(
-            uc2Slice.addSerialLogEntry(`Write: ${jdata.args?.p0 || ""}`)
-          );
-        }
-      } catch (error) {
-        console.error("Error parsing signal data:", error);
-      }
-    };
-
-    socket.on("signal", handleSignal);
-    return () => {
-      socket.off("signal", handleSignal);
-    };
-  }, [socket, dispatch]);
+  // Note: WebSocket signals (sigUC2SerialReadMessage, sigUC2SerialWriteMessage)
+  // are now handled centrally by WebSocketHandler.js and dispatched to Redux
 
   return (
     <Box sx={{ p: 3, maxWidth: 1000, mx: "auto" }}>
