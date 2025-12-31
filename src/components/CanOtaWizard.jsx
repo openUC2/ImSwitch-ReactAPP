@@ -351,8 +351,8 @@ const CanOtaWizard = ({ open, onClose }) => {
             value={canOtaState.firmwareServerUrl}
             onChange={(e) => dispatch(canOtaSlice.setFirmwareServerUrl(e.target.value))}
             margin="normal"
-            placeholder="http://localhost:9000"
-            helperText={`Default: ${canOtaState.defaultFirmwareServerUrl || "http://localhost:9000"}`}
+            placeholder="http://localhost/firmware"
+            helperText={`Default: ${canOtaState.defaultFirmwareServerUrl || "http://localhost/firmware"}`}
           />
 
           {canOtaState.isLoadingFirmwareList && (
