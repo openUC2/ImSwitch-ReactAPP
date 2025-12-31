@@ -4,7 +4,7 @@ This document describes the offline OME-Zarr viewer integration for the ImSwitch
 
 ## Overview
 
-The application now includes an integrated offline OME-Zarr viewer based on the `@hms-dbmi/viv` library (the same library used by the online Vizarr viewer). This allows viewing of multidimensional microscopy data without requiring an internet connection.
+The application now includes an integrated offline OME-Zarr viewer based on the `zarrita` library for loading OME-Zarr data and Canvas-based rendering. This allows viewing of multidimensional microscopy data without requiring an internet connection.
 
 ## Features
 
@@ -47,16 +47,27 @@ The OME-Zarr Viewer is available in the sidebar under **Essentials**:
 
 ### Loading Mechanism
 
-The viewer uses `loadOmeZarr` from `@hms-dbmi/viv` to properly load OME-Zarr data. This is the same approach used by the online vizarr viewer and ensures compatibility with various OME-Zarr formats.
+The viewer uses the `zarrita` library to load OME-Zarr data directly from HTTP endpoints. This approach provides maximum compatibility and avoids dependency conflicts.
 
 ```javascript
-import { loadOmeZarr } from "@hms-dbmi/viv";
+import * as zarr from "zarrita";
 
-// Load the zarr data
-const loaderData = await loadOmeZarr(fullUrl);
-// loaderData.data contains the loader for MultiscaleImageLayer
-// loaderData.metadata contains the zarr metadata
+// Create a fetch-based store for the zarr data
+const store = new zarr.FetchStore(arrayUrl);
+
+// Open the zarr array
+const arr = await zarr.open(store, { kind: "array" });
+
+// Load specific slices using zarr.get
+const result = await zarr.get(arr, selection);
 ```
+
+The implementation:
+- Fetches `.zattrs` or `zarr.json` for OME-Zarr metadata
+- Parses multiscale information and axis labels
+- Uses `zarrita.FetchStore` for HTTP-based data access
+- Loads data on-demand for the current Z/T slice
+- Renders channels using Canvas API for maximum compatibility
 
 ### Redux State Management
 
@@ -116,8 +127,7 @@ Files are detected as OME-Zarr if their name ends with:
 
 ## Dependencies
 
-The viewer uses these existing project dependencies:
-- `@hms-dbmi/viv` - Multiscale image layer rendering
-- `@deck.gl/react` - WebGL-based rendering
-- `@deck.gl/core` - Orthographic view controls
+The viewer uses these project dependencies:
+- `zarrita` - OME-Zarr data loading and access
 - `@mui/material` - UI components
+- Canvas API (built-in) - Image rendering and compositing
