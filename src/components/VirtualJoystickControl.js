@@ -140,7 +140,7 @@ export default function VirtualJoystickControl({ hostIP, hostPort }) {
         setIsMoving(false);
       }
     }
-  }, [joystickPosition, zAxisSpeed, aAxisSpeed, calculateSpeed, isMoving, speedMultiplier, sendMovementCommand]);
+  }, [joystickPosition, zAxisSpeed, aAxisSpeed, calculateSpeed, isMoving, speedMultiplier]);
 
   /**
    * Handle joystick interaction (mouse or touch)
