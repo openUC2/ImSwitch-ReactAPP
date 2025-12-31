@@ -38,6 +38,7 @@ import {
   getLiveStreamState,
   setStreamSettings,
   setImageFormat,
+  setCropSize,
 } from "../state/slices/LiveStreamSlice.js";
 import apiLiveViewControllerSetStreamParameters from "../backendapi/apiLiveViewControllerSetStreamParameters";
 import apiLiveViewControllerGetStreamParameters from "../backendapi/apiLiveViewControllerGetStreamParameters";
@@ -73,7 +74,10 @@ const StreamControlOverlay = ({
   } = liveStreamState;
 
   // Draft mode for settings - initialize from Redux streamSettings
-  const [draftSettings, setDraftSettings] = useState(streamSettings || {});
+  const [draftSettings, setDraftSettings] = useState({
+    ...streamSettings,
+    crop_size: liveStreamState.cropSize || 0
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
@@ -143,6 +147,9 @@ const StreamControlOverlay = ({
             subsampling_factor: allParams.webrtc?.subsampling_factor || 1,
           },
         };
+
+        // Add crop_size from backend response (shared across all protocols)
+        loadedSettings.crop_size = allParams.binary?.crop_size || allParams.jpeg?.crop_size || allParams.webrtc?.crop_size || 0;
 
         setDraftSettings(loadedSettings);
 
@@ -257,6 +264,7 @@ const StreamControlOverlay = ({
           max_width: draftSettings.webrtc?.max_width || 1280,
           throttle_ms: draftSettings.webrtc?.throttle_ms || 33,
           subsampling_factor: draftSettings.webrtc?.subsampling_factor || 1,
+          crop_size: draftSettings.crop_size || 0,
         });
       } else if (isJpegMode) {
         // Set JPEG stream parameters
@@ -264,6 +272,7 @@ const StreamControlOverlay = ({
           jpeg_quality: draftSettings.jpeg?.quality || 85,
           subsampling_factor: draftSettings.jpeg?.subsampling?.factor || 1,
           throttle_ms: draftSettings.jpeg?.throttle_ms || 100,
+          crop_size: draftSettings.crop_size || 0,
         });
       } else {
         // Set binary stream parameters
@@ -273,6 +282,7 @@ const StreamControlOverlay = ({
           compression_level: draftSettings.binary?.compression?.level || 0,
           subsampling_factor: draftSettings.binary?.subsampling?.factor || 4,
           throttle_ms: draftSettings.binary?.throttle_ms || 100,
+          crop_size: draftSettings.crop_size || 0,
         });
       }
 
@@ -330,6 +340,9 @@ const StreamControlOverlay = ({
           webglSupported: !isJpegMode && !isWebRTCMode,
         },
       });
+
+      // Update Redux with new crop_size
+      dispatch(setCropSize(draftSettings.crop_size || 0));
 
       setSubmitSuccess(true);
       setTimeout(() => setSubmitSuccess(false), 3000);
@@ -588,6 +601,55 @@ const StreamControlOverlay = ({
                 >
                   Stream Settings
                 </Typography>
+
+                {/* Crop Control - Shared across all formats */}
+                <Box sx={{ mb: 3 }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      mb: 1,
+                    }}
+                  >
+                    <Typography variant="body2" sx={{ fontWeight: "medium" }}>
+                      Crop Region
+                    </Typography>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() => setDraftSettings(prev => ({ ...prev, crop_size: 0 }))}
+                      disabled={draftSettings.crop_size === 0}
+                      sx={{ ml: "auto", fontSize: "0.75rem", py: 0.25 }}
+                    >
+                      Reset FOV
+                    </Button>
+                  </Box>
+
+                  <Box sx={{ mb: 1 }}>
+                    <Typography variant="caption" color="textSecondary">
+                      Crop Size: {draftSettings.crop_size === 0 ? "Full FOV" : `${draftSettings.crop_size}px`}
+                    </Typography>
+                    <Slider
+                      value={draftSettings.crop_size || 0}
+                      onChange={(_, value) => {
+                        setDraftSettings(prev => ({ ...prev, crop_size: value }));
+                      }}
+                      min={0}
+                      max={Math.max(imageSize?.width || 2048, imageSize?.height || 2048)}
+                      step={16}
+                      valueLabelDisplay="auto"
+                      size="small"
+                    />
+                    <Typography
+                      variant="caption"
+                      color="textSecondary"
+                      sx={{ display: "block", mt: 0.5, fontSize: "0.7rem" }}
+                    >
+                      Crops quadratic region around center (applied before subsampling)
+                    </Typography>
+                  </Box>
+                </Box>
 
                 {/* Stream Format Dropdown */}
                 <Box sx={{ mb: 3 }}>

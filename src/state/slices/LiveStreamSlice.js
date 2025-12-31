@@ -39,6 +39,8 @@ const initialLiveStreamState = {
       subsampling_factor: 1
     }
   },
+  // Crop settings (applied before subsampling, shared across all formats)
+  cropSize: 0, // 0 = no crop (full FOV), >0 = quadratic crop around center
   // Histogram data
   histogramX: [],
   histogramY: [],
@@ -149,6 +151,10 @@ const liveStreamSlice = createSlice({
       state.showHistogram = action.payload;
     },
 
+    setCropSize: (state, action) => {
+      state.cropSize = action.payload;
+    },
+
     resetState: (state) => {
       console.log("resetState");
       return { ...initialLiveStreamState }; // Reset to initial state
@@ -175,6 +181,7 @@ export const {
   setFovY,
   setHistogramData,
   setShowHistogram,
+  setCropSize,
   resetState,
 } = liveStreamSlice.actions;
 

@@ -34,6 +34,7 @@ import UC2ConfigurationController from "./components/UC2ConfigurationController.
 import SerialDebugController from "./components/SerialDebugController.jsx";
 import WiFiController from "./components/WiFiController.jsx";
 import LoggingController from "./components/LoggingController.jsx";
+import VizarrViewer from "./components/VizarrViewer.jsx";
 import { JupyterProvider } from "./context/JupyterContext.js";
 import DemoController from "./components/DemoController.js";
 import AcceptanceTestComponent from "./components/AcceptanceTestComponent.jsx";
@@ -52,6 +53,7 @@ import WebSocketHandler from "./middleware/WebSocketHandler.js";
 import { useDispatch, useSelector } from "react-redux";
 import StatusMessage from "./components/StatusMessage.js";
 import * as connectionSettingsSlice from "./state/slices/ConnectionSettingsSlice.js";
+import * as vizarrViewerSlice from "./state/slices/VizarrViewerSlice.js";
 import {
   clearNotification,
   getNotificationState,
@@ -213,6 +215,33 @@ function App() {
     });
     // Switch to ImJoy tab
     setSelectedPlugin("ImJoy");
+  };
+
+  // Handler to open OME-Zarr files with the integrated Vizarr viewer
+  const handleOpenWithVizarr = (file) => {
+    console.log("[App] Opening file with Vizarr:", file);
+    // Construct the relative path for the Zarr file
+    // The path from FileManager is like "/recordings/experiment.ome.zarr"
+    const zarrPath = file.path || `/${file.name}`;
+    
+    // Open the Vizarr viewer through Redux
+    dispatch(vizarrViewerSlice.openViewer({
+      url: zarrPath,
+      fileName: file.name
+    }));
+    
+    // Switch to the Vizarr viewer tab
+    setSelectedPlugin("VizarrViewer");
+  };
+
+  // Get Vizarr viewer state
+  const vizarrViewerState = useSelector(vizarrViewerSlice.getVizarrViewerState);
+
+  // Handler to close Vizarr viewer
+  const handleCloseVizarr = () => {
+    dispatch(vizarrViewerSlice.closeViewer());
+    // Optionally switch back to FileManager
+    setSelectedPlugin("FileManager");
   };
 
   // change API url/port and update filelist
@@ -431,6 +460,7 @@ function App() {
                   onRename={handleRename}
                   onDownload={handleDownload}
                   onFileOpen={handleOpenWithImJoy}
+                  onOpenWithVizarr={handleOpenWithVizarr}
                   onDelete={handleDelete}
                   onRefresh={handleRefresh}
                   layout="list"
@@ -442,6 +472,16 @@ function App() {
                 />
               </div>
             </div>
+          )}
+          {selectedPlugin === "VizarrViewer" && (
+            <Box sx={{ width: "100%", height: "calc(100vh - 64px)" }}>
+              <VizarrViewer 
+                zarrUrl={vizarrViewerState.currentUrl}
+                onClose={handleCloseVizarr}
+                height="100%"
+                width="100%"
+              />
+            </Box>
           )}
           {selectedPlugin === "AppManager" && (
             <AppManagerPage onNavigateToApp={handlePluginChange} />

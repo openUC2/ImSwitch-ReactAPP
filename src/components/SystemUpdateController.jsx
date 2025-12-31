@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useSelector } from "react-redux";
 import {
   Box,
@@ -16,6 +16,7 @@ import {
   Chip,
   Paper,
   Tooltip,
+
 } from "@mui/material";
 import {
   SystemUpdate,
@@ -26,8 +27,12 @@ import {
   Info,
   Refresh,
   Science,
-  Computer,
+  Computer,  
+  Build,
+  AutoFixHigh as WizardIcon,
 } from "@mui/icons-material";
+
+import CanOtaWizard from "./CanOtaWizard";
 
 // Redux state management
 import * as uc2Slice from "../state/slices/UC2Slice.js";
@@ -41,7 +46,12 @@ const SystemUpdateController = () => {
   const [isUpdating, setIsUpdating] = useState(false);
 
   const uc2State = useSelector(uc2Slice.getUc2State);
+  const uc2Connected = uc2State.uc2Connected; // Hardware connected
   const isBackendConnected = uc2State.backendConnected; // API reachable
+
+    // Wizard state
+    const [showCanOtaWizard, setShowCanOtaWizard] = React.useState(false);
+  
 
   // Mock update check (future API integration via src/backendapi/)
   const handleCheckUpdates = async () => {
@@ -238,6 +248,48 @@ const SystemUpdateController = () => {
           </Tooltip>
         </CardActions>
       </Card>
+
+          {/* CAN OTA Update Card */}
+          <Card sx={{ mt: 3 }}>
+            <CardContent>
+              <Box
+                sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}
+              >
+                <Build color="primary" />
+                <Typography variant="h6">CAN Device Firmware Update</Typography>
+              </Box>
+
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                Update firmware on CAN-connected devices (motors, lasers, LEDs)
+                via Over-The-Air (OTA) updates
+              </Typography>
+
+              <Button
+                variant="contained"
+                color="secondary"
+                onClick={() => setShowCanOtaWizard(true)}
+                startIcon={<WizardIcon />}
+                size="large"
+                fullWidth
+                disabled={!uc2Connected}
+              >
+                Launch CAN OTA Wizard
+              </Button>
+
+              {!uc2Connected && (
+                <Alert severity="warning" sx={{ mt: 2 }}>
+                  UC2 device must be connected to use CAN OTA updates
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+
+
+      {/* CAN OTA Wizard */}
+      <CanOtaWizard
+        open={showCanOtaWizard}
+        onClose={() => setShowCanOtaWizard(false)}
+      />
 
       {/* Future Features */}
       <Card>

@@ -52,7 +52,8 @@
     "uuid": "^13.0.0",
     "vtk.js": "^34.13.1",
     "web-vitals": "^2.1.4",
-    "webpack": "^5.99.7"
+    "webpack": "^5.99.7",
+    "zarrita": "^0.5.4"
   },
   "devDependencies": {
     "@babel/plugin-transform-private-property-in-object": "^7.27.1",

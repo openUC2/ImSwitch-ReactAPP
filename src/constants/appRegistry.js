@@ -26,6 +26,7 @@ import {
   Insights as InsightsIcon,
   PhotoCamera as PhotoCameraIcon,
   Visibility as VisibilityIcon,
+  ViewInAr as ViewInArIcon,
   // Coding-specific icons
   MenuBook as MenuBookIcon,
   Psychology as PsychologyIcon,
@@ -80,6 +81,19 @@ export const APP_REGISTRY = {
     essential: true,
     keywords: ["files", "data", "browse", "upload", "download", "organize"],
     pluginId: "FileManager",
+  },
+
+  vizarrViewer: {
+    id: "vizarrViewer",
+    name: "OME-Zarr Viewer",
+    description:
+      "Offline OME-Zarr viewer for multidimensional microscopy data. View and navigate through large datasets locally without internet connection.",
+    category: APP_CATEGORIES.ESSENTIALS,
+    icon: ViewInArIcon,
+    enabled: true,
+    essential: false,
+    keywords: ["zarr", "omezarr", "viewer", "3d", "multidimensional", "offline", "vizarr"],
+    pluginId: "VizarrViewer",
   },
 
   appManager: {

@@ -22,6 +22,7 @@ import apiExperimentControllerResumeExperiment from "../backendapi/apiExperiment
 import fetchGetExperimentStatus from "../middleware/fetchExperimentControllerGetExperimentStatus.js";
 import { Shape } from "./WellSelectorCanvas.js";
 import * as connectionSettingsSlice from "../state/slices/ConnectionSettingsSlice.js";
+import * as vizarrViewerSlice from "../state/slices/VizarrViewerSlice.js";
 //##################################################################################
 // Enum-like object for status
 const Status = Object.freeze({
@@ -178,6 +179,41 @@ const ExperimentComponent = () => {
         infoPopupRef.current.showMessage(
           "Failed to open last OME-Zarr in viewer"
         );
+      });
+  };
+
+  // Handler to open the integrated (offline) Vizarr viewer
+  const handleOpenOfflineVizarr = () => {
+    console.log("Fetching last OME-Zarr path to open in integrated Vizarr viewer");
+    
+    fetch(
+      `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/ExperimentController/getLastScanAsOMEZARR`
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        // English comment: 'data' should contain the relative path like "/recordings/...ome.zarr"
+        const lastZarrPath = data || "";
+        if (lastZarrPath) {
+          // Open the integrated Vizarr viewer with the path
+          dispatch(vizarrViewerSlice.openViewer({
+            url: lastZarrPath,
+            fileName: lastZarrPath.split("/").pop() || "OME-Zarr"
+          }));
+          
+          if (infoPopupRef.current) {
+            infoPopupRef.current.showMessage("Opening OME-Zarr in integrated viewer");
+          }
+        } else {
+          if (infoPopupRef.current) {
+            infoPopupRef.current.showMessage("No OME-Zarr data available");
+          }
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to fetch the last OME-Zarr path:", err);
+        if (infoPopupRef.current) {
+          infoPopupRef.current.showMessage("Failed to open OME-Zarr in viewer");
+        }
       });
   };
   //##################################################################################
@@ -344,9 +380,18 @@ const ExperimentComponent = () => {
 
         <Button
           variant="contained"
-          onClick={handleOpenVTKViewer}
+          onClick={handleOpenOfflineVizarr}
+          title="Open OME-Zarr in integrated viewer (works offline)"
         >
-          Open VIZARR (external, needs internet)
+          Open Vizarr (offline)
+        </Button>
+
+        <Button
+          variant="outlined"
+          onClick={handleOpenVTKViewer}
+          title="Open OME-Zarr in external vizarr.io viewer (requires internet)"
+        >
+          Open External Vizarr
         </Button>
 
         {/* Display the step name (fixed width) and loading bar with percentage */}
