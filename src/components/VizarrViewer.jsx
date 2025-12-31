@@ -357,10 +357,28 @@ const VizarrViewer = ({
   
   // Reload slice when Z or T changes
   useEffect(() => {
-    if (zarrArrays && !loading) {
-      const { arr, labels, shape } = zarrArrays;
-      loadSlice(arr, labels, shape, currentZ, currentT, dimensions.channels, null);
+    if (!zarrArrays || loading) {
+      return;
     }
+
+    const controller = new AbortController();
+    const { arr, labels, shape } = zarrArrays;
+
+    loadSlice(
+      arr,
+      labels,
+      shape,
+      currentZ,
+      currentT,
+      dimensions.channels,
+      controller.signal
+    );
+
+    // Cancel any in-flight slice load if Z/T or other dependencies change
+    // before this request completes, or when the component unmounts.
+    return () => {
+      controller.abort();
+    };
   }, [currentZ, currentT, zarrArrays, loading, dimensions.channels, loadSlice]);
   
   /**
