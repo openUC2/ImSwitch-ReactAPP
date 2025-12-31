@@ -48,7 +48,7 @@ export default function VirtualJoystickControl({ hostIP, hostPort }) {
   /**
    * Send movement command to API (simultaneous X/Y/A/Z)
    */
-  const sendMovementCommand = async (speeds, isStop = false) => {
+  const sendMovementCommand = useCallback(async (speeds, isStop = false) => {
     try {
       const params = new URLSearchParams({
         speedX: Math.round(speeds.x),
@@ -64,7 +64,7 @@ export default function VirtualJoystickControl({ hostIP, hostPort }) {
     } catch (error) {
       console.error("Error sending movement command:", error);
     }
-  };
+  }, [hostIP, hostPort]);
 
   /**
    * Stop movement on all axes
@@ -76,7 +76,7 @@ export default function VirtualJoystickControl({ hostIP, hostPort }) {
     setJoystickPosition({ x: 0, y: 0 });
     setAAxisSpeed(0);
     setZAxisSpeed(0);
-  }, [hostIP, hostPort]);
+  }, [sendMovementCommand]);
 
   /**
    * Calculate speed from joystick position
