@@ -469,6 +469,48 @@ export const APP_REGISTRY = {
     pluginId: "StageOffsetCalibration",
   },
 
+  // adding CompositeStreamViewer and CompositeAcquisition to registry
+  compositeAcquisition: {
+    id: "compositeAcquisition",
+    name: "Composite Acquisition",
+    description:
+      "Control multi-illumination composite image acquisition. Configure LED patterns and capture fused RGB images.",
+    category: APP_CATEGORIES.APPS,
+    icon: PhotoCameraIcon,
+    enabled: false,
+    essential: false,
+    keywords: [
+      "composite",
+      "acquisition",
+      "multi-illumination",
+      "led",
+      "rgb",
+      "fused",
+    ],
+    pluginId: "CompositeAcquisition",
+  },
+
+  compositeStreamViewer: {
+    id: "compositeStreamViewer",
+    name: "Composite Stream Viewer",
+    description:
+      "View live fused RGB composite images from multi-illumination acquisition. Real-time display of MJPEG stream from backend.",
+    category: APP_CATEGORIES.APPS,
+    icon: ViewModuleIcon,
+    enabled: false,
+    essential: false,
+    keywords: [
+      "composite",
+      "stream",
+      "viewer",
+      "live",
+      "rgb",
+      "mjpeg",
+      "backend",
+    ],
+    pluginId: "CompositeStreamViewer",
+  },
+
   socketView: {
     id: "socketView",
     name: "Socket View Controller",

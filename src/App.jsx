@@ -48,6 +48,8 @@ import { MCTProvider } from "./context/MCTContext.js";
 //axon
 import AxonTabComponent from "./axon/AxonTabComponent.js";
 import WebSocketHandler from "./middleware/WebSocketHandler.js";
+import CompositeAcquisitionComponent from "./axon/CompositeAcquisitionComponent.js";
+import CompositeStreamViewer from "./axon/CompositeStreamViewer.js"
 
 //redux
 import { useDispatch, useSelector } from "react-redux";
@@ -497,6 +499,8 @@ function App() {
               )
           )}
           {selectedPlugin === "DemoController" && <DemoController />}
+          {selectedPlugin === "CompositeAcquisition" && <CompositeAcquisitionComponent />}
+          {selectedPlugin === "CompositeStreamViewer" && <CompositeStreamViewer />}
           {selectedPlugin === "FlowStop" && <FlowStopController />}
           {selectedPlugin === "StageOffsetCalibration" && (
             <StageOffsetCalibration />
