@@ -28,6 +28,7 @@ import { useDispatch, useSelector } from "react-redux";
 import LiveViewControlWrapper from "../axon/LiveViewControlWrapper.js";
 import * as connectionSettingsSlice from "../state/slices/ConnectionSettingsSlice.js";
 import * as lightsheetSlice from "../state/slices/LightsheetSlice.js";
+import * as positionSlice from "../state/slices/PositionSlice.js";
 import ErrorBoundary from "./ErrorBoundary.js";
 import VtkViewer from "./VtkViewer.js";
 import Lightsheet3DViewer from "./Lightsheet3DViewer.jsx";
@@ -214,9 +215,25 @@ const LightsheetController = () => {
     };
 
     fetchPositions();
-    const interval = setInterval(fetchPositions, 2000);
+    const interval = setInterval(fetchPositions, 20000);
     return () => clearInterval(interval);
   }, [hostIP, hostPort, dispatch]);
+
+  // Sync global positionSlice with lightsheet-specific stagePositions
+  // This ensures 3D model updates immediately when position changes via ANY route (buttons, websockets, etc.)
+  const globalPositionState = useSelector(positionSlice.getPositionState);
+  useEffect(() => {
+    const positions = {};
+    ['x', 'y', 'z', 'a'].forEach(axis => {
+      if (typeof globalPositionState[axis] !== 'undefined') {
+        positions[axis] = globalPositionState[axis];
+      }
+    });
+    
+    if (Object.keys(positions).length > 0) {
+      dispatch(lightsheetSlice.setAllStagePositions(positions));
+    }
+  }, [globalPositionState.x, globalPositionState.y, globalPositionState.z, globalPositionState.a, dispatch]);
 
   // Start scanning based on selected mode
   const startScanning = useCallback(async () => {

@@ -407,8 +407,8 @@ const UsbFlashWizard = ({ open, onClose }) => {
                 onChange={(e) => dispatch(usbFlashSlice.setFlashOffset(e.target.value))}
                 label="Flash Offset"
               >
-                <MenuItem value={0x0}>0x0 (merged/factory image)</MenuItem>
                 <MenuItem value={0x10000}>0x10000 (app-only image)</MenuItem>
+                {/*<MenuItem value={0x0}>0x0 (merged/factory image)</MenuItem>*/}
               </Select>
             </FormControl>
 

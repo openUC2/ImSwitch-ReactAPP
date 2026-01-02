@@ -361,7 +361,6 @@ const VizarrViewer = ({
       return;
     }
 
-    const controller = new AbortController();
     const { arr, labels, shape } = zarrArrays;
 
     loadSlice(
@@ -371,15 +370,9 @@ const VizarrViewer = ({
       currentZ,
       currentT,
       dimensions.channels,
-      controller.signal
+      setLoadingProgress  // Pass the correct progress setter function
     );
-
-    // Cancel any in-flight slice load if Z/T or other dependencies change
-    // before this request completes, or when the component unmounts.
-    return () => {
-      controller.abort();
-    };
-  }, [currentZ, currentT, zarrArrays, loading, dimensions.channels, loadSlice]);
+  }, [currentZ, currentT, zarrArrays, loading, dimensions.channels, loadSlice, setLoadingProgress]);
   
   /**
    * Render image data to canvas

@@ -9,7 +9,7 @@ const initialState = {
   maxPos: 500,
   speed: 1000,
   axis: "A",
-  stepSize: 10, // Step size for step-acquire mode (µm)
+  stepSize: 100, // Step size for step-acquire mode (µm)
 
   // Illumination parameters
   illuSource: -1,
