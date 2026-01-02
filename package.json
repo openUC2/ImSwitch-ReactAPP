@@ -49,6 +49,7 @@
     "redux-persist": "^6.0.0",
     "socket.io-client": "^4.8.1",
     "sortablejs": "^1.6.1",
+    "three": "^0.160.1",
     "uuid": "^13.0.0",
     "vtk.js": "^34.13.1",
     "web-vitals": "^2.1.4",

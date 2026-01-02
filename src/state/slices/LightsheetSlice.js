@@ -9,6 +9,7 @@ const initialState = {
   maxPos: 500,
   speed: 1000,
   axis: "A",
+  stepSize: 10, // Step size for step-acquire mode (µm)
 
   // Illumination parameters
   illuSource: -1,
@@ -26,6 +27,32 @@ const initialState = {
   // Imaging state
   vtkImagePrimary: null,
   isRunning: false,
+
+  // Scan mode and storage settings (NEW)
+  scanMode: "continuous", // "continuous" or "step_acquire"
+  storageFormat: "ome_zarr", // "tiff", "ome_zarr", or "both"
+  experimentName: "lightsheet_scan",
+
+  // Scan status (updated via socket) (NEW)
+  scanStatus: {
+    isRunning: false,
+    scanMode: null,
+    currentPosition: 0,
+    totalPositions: 0,
+    currentFrame: 0,
+    progress: 0,
+    zarrPath: null,
+    tiffPath: null,
+    errorMessage: null,
+  },
+
+  // Available options from backend (NEW)
+  availableScanModes: ["continuous", "step_acquire"],
+  availableStorageFormats: ["tiff", "ome_zarr", "both"],
+
+  // Latest zarr path for visualization (NEW)
+  latestZarrPath: null,
+  latestZarrAbsolutePath: null,
 
   // Current stage positions for 3D visualization
   stagePositions: {
@@ -66,6 +93,9 @@ const lightsheetSlice = createSlice({
     setAxis: (state, action) => {
       state.axis = action.payload;
     },
+    setStepSize: (state, action) => {
+      state.stepSize = action.payload;
+    },
 
     // Illumination actions
     setIlluSource: (state, action) => {
@@ -104,6 +134,45 @@ const lightsheetSlice = createSlice({
     },
     setIsRunning: (state, action) => {
       state.isRunning = action.payload;
+    },
+
+    // NEW: Scan mode and storage actions
+    setScanMode: (state, action) => {
+      state.scanMode = action.payload;
+    },
+    setStorageFormat: (state, action) => {
+      state.storageFormat = action.payload;
+    },
+    setExperimentName: (state, action) => {
+      state.experimentName = action.payload;
+    },
+
+    // NEW: Scan status actions (updated via socket)
+    setScanStatus: (state, action) => {
+      state.scanStatus = { ...state.scanStatus, ...action.payload };
+      // Also update isRunning for compatibility
+      if (typeof action.payload.isRunning !== 'undefined') {
+        state.isRunning = action.payload.isRunning;
+      }
+    },
+    updateScanProgress: (state, action) => {
+      state.scanStatus.progress = action.payload.progress;
+      state.scanStatus.currentFrame = action.payload.currentFrame;
+      state.scanStatus.currentPosition = action.payload.currentPosition;
+    },
+
+    // NEW: Available options actions
+    setAvailableScanModes: (state, action) => {
+      state.availableScanModes = action.payload;
+    },
+    setAvailableStorageFormats: (state, action) => {
+      state.availableStorageFormats = action.payload;
+    },
+
+    // NEW: Latest zarr path actions
+    setLatestZarrPath: (state, action) => {
+      state.latestZarrPath = action.payload.zarrPath;
+      state.latestZarrAbsolutePath = action.payload.absolutePath;
     },
 
     // Batch update actions
@@ -164,6 +233,7 @@ const lightsheetSlice = createSlice({
     resetScan: (state) => {
       state.isRunning = false;
       state.vtkImagePrimary = null;
+      state.scanStatus = initialState.scanStatus;
     },
   },
 });
@@ -175,6 +245,7 @@ export const {
   setMaxPos,
   setSpeed,
   setAxis,
+  setStepSize,
   setIlluSource,
   setIlluValue,
   setGalvoChannel,
@@ -186,6 +257,14 @@ export const {
   setGalvoInvert,
   setVtkImagePrimary,
   setIsRunning,
+  setScanMode,
+  setStorageFormat,
+  setExperimentName,
+  setScanStatus,
+  updateScanProgress,
+  setAvailableScanModes,
+  setAvailableStorageFormats,
+  setLatestZarrPath,
   setPositionParameters,
   setIlluminationParameters,
   setGalvoParameters,

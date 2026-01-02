@@ -1,24 +1,51 @@
 // src/components/LightsheetController.js
 import CancelIcon from "@mui/icons-material/Cancel";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import StopIcon from "@mui/icons-material/Stop";
+import ViewInArIcon from "@mui/icons-material/ViewInAr";
+import DownloadIcon from "@mui/icons-material/Download";
 import {
   Box,
   Button,
+  FormControl,
   Grid,
+  InputLabel,
+  LinearProgress,
+  MenuItem,
   Paper,
+  Select,
   Tab,
   Tabs,
   TextField,
   Typography,
+  Alert,
+  Chip,
 } from "@mui/material";
-import { green, red } from "@mui/material/colors";
-import { useEffect } from "react";
+import { green, red, orange } from "@mui/material/colors";
+import { useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import LiveViewControlWrapper from "../axon/LiveViewControlWrapper.js";
 import * as connectionSettingsSlice from "../state/slices/ConnectionSettingsSlice.js";
 import * as lightsheetSlice from "../state/slices/LightsheetSlice.js";
 import ErrorBoundary from "./ErrorBoundary.js";
-import VtkViewer from "./VtkViewer.js"; // Assuming you have a VtkViewer component
+import VtkViewer from "./VtkViewer.js";
+import Lightsheet3DViewer from "./Lightsheet3DViewer.jsx";
+import AxisConfigurationMenu from "./AxisConfigurationMenu.jsx";
+import LightsheetPositionControls from "./LightsheetPositionControls.jsx";
+import VizarrViewer from "./VizarrViewer.jsx";
+import apiPositionerControllerGetPositions from "../backendapi/apiPositionerControllerGetPositions.js";
+import {
+  apiStartStepAcquireScan,
+  apiStartContinuousScanWithZarr,
+  apiGetScanStatus,
+  apiGetAvailableScanModes,
+  apiGetAvailableStorageFormats,
+  apiGetLatestZarrPath,
+} from "../backendapi/apiLightsheetController.js";
+
+// Import Socket.IO client for real-time updates
+import { io } from "socket.io-client";
 
 const TabPanel = (props) => {
   const { children, value, index, ...other } = props;
@@ -40,6 +67,13 @@ const TabPanel = (props) => {
  * ImSwitch Lightsheet Controller Component
  * Manages 3D lightsheet microscopy scanning and visualization
  * Follows Copilot Instructions for Redux state management and API communication
+ * 
+ * Features:
+ * - Continuous scan mode (original fast scan)
+ * - Step-Acquire mode (Go-Stop-Acquire for high-quality Z-stacks)
+ * - OME-Zarr and TIFF storage formats
+ * - Real-time progress updates via Socket.IO
+ * - 3D visualization using VizarrViewer
  */
 const LightsheetController = () => {
   // Access ImSwitch backend connection settings from Redux - following Copilot Instructions
@@ -60,74 +94,204 @@ const LightsheetController = () => {
   const minPos = lightsheetState.minPos;
   const maxPos = lightsheetState.maxPos;
   const speed = lightsheetState.speed;
+  const stepSize = lightsheetState.stepSize;
   const axis = lightsheetState.axis;
   const illuSource = lightsheetState.illuSource;
   const illuValue = lightsheetState.illuValue;
-  //const vtkImagePrimary = lightsheetState.vtkImagePrimary;
   const isRunning = lightsheetState.isRunning;
+  const scanMode = lightsheetState.scanMode;
+  const storageFormat = lightsheetState.storageFormat;
+  const experimentName = lightsheetState.experimentName;
+  const scanStatus = lightsheetState.scanStatus;
+  const availableScanModes = lightsheetState.availableScanModes;
+  const availableStorageFormats = lightsheetState.availableStorageFormats;
+  const latestZarrPath = lightsheetState.latestZarrPath;
 
-  useEffect(() => {
-    const fetchLatestImagePath = async () => {
-      if (!hostIP || !hostPort) return;
+  // Local state for socket connection
+  const [socketConnected, setSocketConnected] = useState(false);
+  const [showZarrViewer, setShowZarrViewer] = useState(false);
 
-      try {
-        const response = await fetch(
-          `${hostIP}:${hostPort}/LightsheetController/returnLastLightsheetStackPath`
-        );
-        const data = await response.json();
-        if (data && data.filepath) {
-          /*
-            const medImgReader = new MedImgReader();
-            const itkImage = await medImgReader.readImage(data.filepath);
-            const vtkImage = await medImgReader.convertToVtkImage(itkImage);
-            dispatch(lightsheetSlice.setVtkImagePrimary(vtkImage));
-            */
-        }
-      } catch (error) {
-        console.error("Error fetching latest image path:", error);
-      }
-    };
-
-    fetchLatestImagePath();
-  }, [hostIP, hostPort, isRunning, dispatch]);
-
-  // Periodically check if the lightsheet is running
+  // Initialize Socket.IO connection for real-time updates
   useEffect(() => {
     if (!hostIP || !hostPort) return;
 
-    const checkIsRunning = async () => {
+    // Build socket URL
+    const socketUrl = `${hostIP}:${hostPort}`;
+    const socket = io(socketUrl, {
+      path: '/socket.io',
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+    });
+
+    socket.on('connect', () => {
+      console.log('Lightsheet Controller: Socket.IO connected');
+      setSocketConnected(true);
+    });
+
+    socket.on('disconnect', () => {
+      console.log('Lightsheet Controller: Socket.IO disconnected');
+      setSocketConnected(false);
+    });
+
+    // Listen for lightsheet status updates from backend
+    socket.on('lightsheet_status', (data) => {
+      console.log('Lightsheet status update:', data);
+      dispatch(lightsheetSlice.setScanStatus(data));
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [hostIP, hostPort, dispatch]);
+
+  // Fetch available scan modes and storage formats on mount
+  useEffect(() => {
+    const fetchOptions = async () => {
       try {
-        const response = await fetch(
-          `${hostIP}:${hostPort}/LightsheetController/getIsLightsheetRunning`
-        );
-        const data = await response.json();
-        dispatch(lightsheetSlice.setIsRunning(data.isRunning)); // Update the isRunning state based on the response
+        const modes = await apiGetAvailableScanModes();
+        if (Array.isArray(modes)) {
+          dispatch(lightsheetSlice.setAvailableScanModes(modes));
+        }
+        
+        const formats = await apiGetAvailableStorageFormats();
+        if (Array.isArray(formats)) {
+          dispatch(lightsheetSlice.setAvailableStorageFormats(formats));
+        }
       } catch (error) {
-        console.error("Error checking lightsheet status:", error);
+        console.error("Error fetching options:", error);
       }
     };
 
-    // Set an interval to check the status every 5 seconds
-    const interval = setInterval(checkIsRunning, 5000);
+    if (hostIP && hostPort) {
+      fetchOptions();
+    }
+  }, [hostIP, hostPort, dispatch]);
 
-    // Cleanup the interval when the component is unmounted
+  // Poll scan status when not using sockets
+  useEffect(() => {
+    if (!hostIP || !hostPort || socketConnected) return;
+
+    const pollStatus = async () => {
+      if (isRunning) {
+        try {
+          const status = await apiGetScanStatus();
+          dispatch(lightsheetSlice.setScanStatus(status));
+        } catch (error) {
+          console.error("Error polling scan status:", error);
+        }
+      }
+    };
+
+    const interval = setInterval(pollStatus, 1000);
+    return () => clearInterval(interval);
+  }, [hostIP, hostPort, isRunning, socketConnected, dispatch]);
+
+  // Poll current positions for 3D visualization
+  useEffect(() => {
+    if (!hostIP || !hostPort) return;
+
+    const fetchPositions = async () => {
+      try {
+        const positionsData = await apiPositionerControllerGetPositions();
+        
+        const positions = {};
+        if (positionsData) {
+          ['X', 'Y', 'Z', 'A'].forEach(axis => {
+            if (typeof positionsData[axis] !== 'undefined') {
+              positions[axis.toLowerCase()] = positionsData[axis];
+            }
+          });
+          
+          if (Object.keys(positions).length > 0) {
+            dispatch(lightsheetSlice.setAllStagePositions(positions));
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching stage positions:", error);
+      }
+    };
+
+    fetchPositions();
+    const interval = setInterval(fetchPositions, 2000);
     return () => clearInterval(interval);
   }, [hostIP, hostPort, dispatch]);
 
-  const startScanning = () => {
-    const url = `${hostIP}:${hostPort}/LightsheetController/performScanningRecording?minPos=${minPos}&maxPos=${maxPos}&speed=${speed}&axis=${axis}&illusource=${illuSource}&illuvalue=${illuValue}`;
+  // Start scanning based on selected mode
+  const startScanning = useCallback(async () => {
+    try {
+      let result;
+      
+      if (scanMode === "step_acquire") {
+        result = await apiStartStepAcquireScan({
+          minPos: parseFloat(minPos),
+          maxPos: parseFloat(maxPos),
+          stepSize: parseFloat(stepSize),
+          axis,
+          illuSource: illuSource.toString(),
+          illuValue: parseFloat(illuValue),
+          storageFormat,
+          experimentName,
+        });
+      } else {
+        result = await apiStartContinuousScanWithZarr({
+          minPos: parseFloat(minPos),
+          maxPos: parseFloat(maxPos),
+          speed: parseFloat(speed),
+          axis,
+          illuSource: illuSource.toString(),
+          illuValue: parseFloat(illuValue),
+          storageFormat,
+          experimentName,
+        });
+      }
 
-    fetch(url, { method: "GET" })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log(data);
+      console.log("Scan started:", result);
+      if (result.success) {
         dispatch(lightsheetSlice.setIsRunning(true));
-      })
-      .catch((error) => console.error("Error:", error));
-  };
+      }
+    } catch (error) {
+      console.error("Error starting scan:", error);
+    }
+  }, [scanMode, minPos, maxPos, stepSize, speed, axis, illuSource, illuValue, storageFormat, experimentName, dispatch]);
+
+  // Fetch and show latest Zarr for visualization
+  const openZarrViewer = useCallback(async () => {
+    try {
+      const zarrInfo = await apiGetLatestZarrPath();
+      if (zarrInfo.exists && zarrInfo.zarrPath) {
+        dispatch(lightsheetSlice.setLatestZarrPath(zarrInfo));
+        setShowZarrViewer(true);
+      } else {
+        alert("No Zarr data available yet. Run a scan first.");
+      }
+    } catch (error) {
+      console.error("Error getting Zarr path:", error);
+    }
+  }, [dispatch]);
 
   const handleTabChange = (event, newValue) => {
     dispatch(lightsheetSlice.setTabIndex(newValue));
+  };
+
+  // Format display labels for scan modes
+  const getScanModeLabel = (mode) => {
+    const labels = {
+      continuous: "Continuous (Fast)",
+      step_acquire: "Step-Acquire (High Quality)",
+    };
+    return labels[mode] || mode;
+  };
+
+  // Format display labels for storage formats
+  const getStorageFormatLabel = (format) => {
+    const labels = {
+      tiff: "TIFF Stack",
+      ome_zarr: "OME-Zarr",
+      both: "Both (TIFF + Zarr)",
+    };
+    return labels[format] || format;
   };
 
   return (
@@ -136,89 +300,228 @@ const LightsheetController = () => {
         value={tabIndex}
         onChange={handleTabChange}
         aria-label="Lightsheet Controller Tabs"
+        variant="scrollable"
+        scrollButtons="auto"
       >
         <Tab label="Scanning Parameters" />
         <Tab label="Galvo Scanner" />
         <Tab label="View Latest Stack" />
+        <Tab label="3D Zarr Viewer" />
         <Tab label="VTK Viewer" />
       </Tabs>
 
       <TabPanel value={tabIndex} index={0}>
         <Grid container spacing={3}>
+          {/* Connection Status */}
           <Grid item xs={12}>
+            <Box display="flex" gap={1} alignItems="center" mb={2}>
+              <Chip
+                label={socketConnected ? "Socket Connected" : "Polling Mode"}
+                color={socketConnected ? "success" : "warning"}
+                size="small"
+              />
+              {scanStatus.scanMode && (
+                <Chip
+                  label={`Mode: ${getScanModeLabel(scanStatus.scanMode)}`}
+                  color="info"
+                  size="small"
+                />
+              )}
+            </Box>
+          </Grid>
+
+          {/* 2D Live View */}
+          <Grid item xs={12} md={6}>
+            <Typography variant="h6" gutterBottom>
+              Live View (2D)
+            </Typography>
             <LiveViewControlWrapper />
           </Grid>
+
+          {/* 3D Visualization */}
           <Grid item xs={12} md={6}>
+            <Typography variant="h6" gutterBottom>
+              3D Assembly View
+            </Typography>
+            <Lightsheet3DViewer
+              positions={lightsheetState.stagePositions}
+              axisConfig={lightsheetState.axisConfig}
+              width={600}
+              height={400}
+            />
+          </Grid>
+
+          {/* Axis Configuration Menu */}
+          <Grid item xs={12}>
+            <AxisConfigurationMenu />
+          </Grid>
+
+          {/* Position Controls */}
+          <Grid item xs={12}>
+            <LightsheetPositionControls />
+          </Grid>
+
+          {/* Scan Mode Selection */}
+          <Grid item xs={12}>
+            <Typography variant="h6" gutterBottom>
+              Scan Configuration
+            </Typography>
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            <FormControl fullWidth variant="outlined">
+              <InputLabel>Scan Mode</InputLabel>
+              <Select
+                value={scanMode}
+                onChange={(e) => dispatch(lightsheetSlice.setScanMode(e.target.value))}
+                label="Scan Mode"
+              >
+                {availableScanModes.map((mode) => (
+                  <MenuItem key={mode} value={mode}>
+                    {getScanModeLabel(mode)}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            <FormControl fullWidth variant="outlined">
+              <InputLabel>Storage Format</InputLabel>
+              <Select
+                value={storageFormat}
+                onChange={(e) => dispatch(lightsheetSlice.setStorageFormat(e.target.value))}
+                label="Storage Format"
+              >
+                {availableStorageFormats.map((format) => (
+                  <MenuItem key={format} value={format}>
+                    {getStorageFormatLabel(format)}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          <Grid item xs={12} md={4}>
             <TextField
-              label="Min Position"
+              label="Experiment Name"
+              value={experimentName}
+              onChange={(e) => dispatch(lightsheetSlice.setExperimentName(e.target.value))}
+              fullWidth
+              variant="outlined"
+            />
+          </Grid>
+
+          {/* Scanning Parameters */}
+          <Grid item xs={12}>
+            <Typography variant="h6" gutterBottom>
+              Scanning Parameters
+            </Typography>
+          </Grid>
+          
+          <Grid item xs={12} md={4}>
+            <TextField
+              label="Min Position (µm)"
               value={minPos}
-              onChange={(e) =>
-                dispatch(lightsheetSlice.setMinPos(e.target.value))
-              }
+              onChange={(e) => dispatch(lightsheetSlice.setMinPos(e.target.value))}
               fullWidth
               type="number"
               variant="outlined"
             />
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={4}>
             <TextField
-              label="Max Position"
+              label="Max Position (µm)"
               value={maxPos}
-              onChange={(e) =>
-                dispatch(lightsheetSlice.setMaxPos(e.target.value))
-              }
+              onChange={(e) => dispatch(lightsheetSlice.setMaxPos(e.target.value))}
               fullWidth
               type="number"
               variant="outlined"
             />
           </Grid>
-          <Grid item xs={12} md={6}>
-            <TextField
-              label="Speed"
-              value={speed}
-              onChange={(e) =>
-                dispatch(lightsheetSlice.setSpeed(e.target.value))
-              }
-              fullWidth
-              type="number"
-              variant="outlined"
-            />
-          </Grid>
-          <Grid item xs={12} md={6}>
+          
+          {/* Show step size for step-acquire mode, speed for continuous */}
+          {scanMode === "step_acquire" ? (
+            <Grid item xs={12} md={4}>
+              <TextField
+                label="Step Size (µm)"
+                value={stepSize}
+                onChange={(e) => dispatch(lightsheetSlice.setStepSize(e.target.value))}
+                fullWidth
+                type="number"
+                variant="outlined"
+                inputProps={{ min: 0.1, step: 0.1 }}
+              />
+            </Grid>
+          ) : (
+            <Grid item xs={12} md={4}>
+              <TextField
+                label="Speed"
+                value={speed}
+                onChange={(e) => dispatch(lightsheetSlice.setSpeed(e.target.value))}
+                fullWidth
+                type="number"
+                variant="outlined"
+              />
+            </Grid>
+          )}
+
+          <Grid item xs={12} md={4}>
             <TextField
               label="Axis"
               value={axis}
-              onChange={(e) =>
-                dispatch(lightsheetSlice.setAxis(e.target.value))
-              }
+              onChange={(e) => dispatch(lightsheetSlice.setAxis(e.target.value))}
               fullWidth
               variant="outlined"
             />
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={4}>
             <TextField
               label="Illumination Source"
               value={illuSource}
-              onChange={(e) =>
-                dispatch(lightsheetSlice.setIlluSource(e.target.value))
-              }
+              onChange={(e) => dispatch(lightsheetSlice.setIlluSource(e.target.value))}
               fullWidth
               type="number"
               variant="outlined"
             />
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={4}>
             <TextField
               label="Illumination Value"
               value={illuValue}
-              onChange={(e) =>
-                dispatch(lightsheetSlice.setIlluValue(e.target.value))
-              }
+              onChange={(e) => dispatch(lightsheetSlice.setIlluValue(e.target.value))}
               fullWidth
               type="number"
               variant="outlined"
             />
           </Grid>
+
+          {/* Progress Display */}
+          {(isRunning || scanStatus.progress > 0) && (
+            <Grid item xs={12}>
+              <Box sx={{ width: '100%' }}>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  {isRunning 
+                    ? `Scanning... Frame ${scanStatus.currentFrame}/${scanStatus.totalPositions || '?'} at position ${scanStatus.currentPosition?.toFixed(1) || 0} µm`
+                    : "Scan complete"}
+                </Typography>
+                <LinearProgress 
+                  variant="determinate" 
+                  value={scanStatus.progress || 0}
+                  sx={{ height: 10, borderRadius: 5 }}
+                />
+              </Box>
+            </Grid>
+          )}
+
+          {/* Error Display */}
+          {scanStatus.errorMessage && (
+            <Grid item xs={12}>
+              <Alert severity="error">{scanStatus.errorMessage}</Alert>
+            </Grid>
+          )}
+
+          {/* Control Buttons */}
           <Grid item xs={12}>
             <Box display="flex" alignItems="center" gap={2}>
               <Button
@@ -227,19 +530,71 @@ const LightsheetController = () => {
                 onClick={startScanning}
                 disabled={isRunning}
                 size="large"
+                startIcon={<PlayArrowIcon />}
               >
-                Start Scanning
+                {scanMode === "step_acquire" ? "Start Step-Acquire" : "Start Continuous Scan"}
               </Button>
+              
+              {isRunning && (
+                <Button
+                  variant="contained"
+                  color="error"
+                  size="large"
+                  startIcon={<StopIcon />}
+                  onClick={() => {
+                    // TODO: Implement stop functionality via API
+                    fetch(`${hostIP}:${hostPort}/LightsheetController/stopLightsheet`);
+                  }}
+                >
+                  Stop
+                </Button>
+              )}
+
+              <Button
+                variant="outlined"
+                color="secondary"
+                onClick={openZarrViewer}
+                disabled={isRunning}
+                startIcon={<ViewInArIcon />}
+              >
+                View Latest Zarr
+              </Button>
+
               {isRunning ? (
                 <CheckCircleIcon style={{ color: green[500] }} />
               ) : (
-                <CancelIcon style={{ color: red[500] }} />
+                <CancelIcon style={{ color: scanStatus.progress >= 100 ? green[500] : red[500] }} />
               )}
               <Typography variant="body2">
-                {isRunning ? "Scanning in progress..." : "Ready to scan"}
+                {isRunning 
+                  ? "Scanning in progress..." 
+                  : scanStatus.progress >= 100 
+                    ? "Scan complete" 
+                    : "Ready to scan"}
               </Typography>
             </Box>
           </Grid>
+
+          {/* Result Paths */}
+          {(scanStatus.zarrPath || scanStatus.tiffPath) && (
+            <Grid item xs={12}>
+              <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Output Files:
+                </Typography>
+                {scanStatus.zarrPath && (
+                  <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                    Zarr: {scanStatus.zarrPath}
+                  </Typography>
+                )}
+                {scanStatus.tiffPath && (
+                  <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                    TIFF: {scanStatus.tiffPath}
+                  </Typography>
+                )}
+              </Box>
+            </Grid>
+          )}
         </Grid>
       </TabPanel>
 
@@ -399,10 +754,15 @@ const LightsheetController = () => {
       <TabPanel value={tabIndex} index={2}>
         <Grid container spacing={3}>
           <Grid item xs={12}>
+            <Typography variant="h6" gutterBottom>
+              Download & External Viewers
+            </Typography>
+          </Grid>
+          <Grid item xs={12}>
             <Button
               variant="contained"
               color="primary"
-              // Use the hostIP and hostPort instead of hard-coded "localhost"
+              startIcon={<ViewInArIcon />}
               onClick={() =>
                 window.open(
                   `https://kitware.github.io/itk-vtk-viewer/app/?rotate=false&fileToLoad=${hostIP}:${hostPort}/LightsheetController/getLatestLightsheetStackAsTif`,
@@ -410,14 +770,14 @@ const LightsheetController = () => {
                 )
               }
             >
-              Open Lightsheet Stack Viewer (TIF stack to VTK Viewer - needs
-              internet)
+              Open in ITK-VTK Viewer (requires internet)
             </Button>
           </Grid>
           <Grid item xs={12}>
             <Button
               variant="contained"
               color="secondary"
+              startIcon={<DownloadIcon />}
               onClick={() =>
                 window.open(
                   `${hostIP}:${hostPort}/LightsheetController/getLatestLightsheetStackAsTif`,
@@ -425,15 +785,85 @@ const LightsheetController = () => {
                 )
               }
             >
-              Download Latest Lightsheet Stack (TIF)
+              Download Latest TIFF Stack
             </Button>
           </Grid>
+          {latestZarrPath && (
+            <Grid item xs={12}>
+              <Alert severity="info">
+                Latest Zarr path: {latestZarrPath}
+              </Alert>
+            </Grid>
+          )}
         </Grid>
       </TabPanel>
 
+      {/* 3D Zarr Viewer Tab */}
       <TabPanel value={tabIndex} index={3}>
+        <Grid container spacing={3}>
+          <Grid item xs={12}>
+            <Typography variant="h6" gutterBottom>
+              3D OME-Zarr Viewer
+            </Typography>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              Visualize lightsheet Z-stacks directly in the browser using the offline-capable Zarr viewer.
+            </Typography>
+          </Grid>
+          
+          <Grid item xs={12}>
+            <Box display="flex" gap={2} mb={2}>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={openZarrViewer}
+                startIcon={<ViewInArIcon />}
+              >
+                Load Latest Zarr Stack
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={() => setShowZarrViewer(false)}
+                disabled={!showZarrViewer}
+              >
+                Close Viewer
+              </Button>
+            </Box>
+          </Grid>
+
+          {showZarrViewer && latestZarrPath ? (
+            <Grid item xs={12}>
+              <ErrorBoundary>
+                <Box sx={{ height: '70vh', width: '100%' }}>
+                  <VizarrViewer
+                    zarrUrl={latestZarrPath}
+                    onClose={() => setShowZarrViewer(false)}
+                    embedded={true}
+                    height="100%"
+                    width="100%"
+                  />
+                </Box>
+              </ErrorBoundary>
+            </Grid>
+          ) : (
+            <Grid item xs={12}>
+              <Box sx={{ p: 4, textAlign: 'center', bgcolor: 'grey.100', borderRadius: 2 }}>
+                <Typography variant="body1" color="text.secondary">
+                  {latestZarrPath 
+                    ? "Click 'Load Latest Zarr Stack' to view the data"
+                    : "No Zarr data available. Run a scan with OME-Zarr storage format first."}
+                </Typography>
+              </Box>
+            </Grid>
+          )}
+        </Grid>
+      </TabPanel>
+
+      {/* VTK Viewer Tab */}
+      <TabPanel value={tabIndex} index={4}>
         <ErrorBoundary>
-          VTK Viewer
+          <Typography variant="h6" gutterBottom>
+            VTK Volume Viewer (TIFF)
+          </Typography>
           <VtkViewer
             tifUrl={`${hostIP}:${hostPort}/LightsheetController/getLatestLightsheetStackAsTif`}
           />
