@@ -26,6 +26,22 @@ const initialState = {
   // Imaging state
   vtkImagePrimary: null,
   isRunning: false,
+
+  // Current stage positions for 3D visualization
+  stagePositions: {
+    x: 0,
+    y: 0,
+    z: 0,
+    a: 0
+  },
+
+  // Axis configuration for 3D mapping
+  axisConfig: {
+    x: { offset: 0, scale: 1, invert: false },
+    y: { offset: 0, scale: 1, invert: false },
+    z: { offset: 0, scale: 1, invert: false },
+    a: { offset: 0, scale: 1, invert: false }
+  },
 };
 
 const lightsheetSlice = createSlice({
@@ -114,6 +130,33 @@ const lightsheetSlice = createSlice({
       state.galvoInvert = invert;
     },
 
+    // Stage position actions for 3D visualization
+    setStagePosition: (state, action) => {
+      const { axis, value } = action.payload;
+      state.stagePositions[axis] = value;
+    },
+    setAllStagePositions: (state, action) => {
+      state.stagePositions = { ...state.stagePositions, ...action.payload };
+    },
+
+    // Axis configuration actions
+    setAxisConfig: (state, action) => {
+      const { axis, config } = action.payload;
+      state.axisConfig[axis] = { ...state.axisConfig[axis], ...config };
+    },
+    setAxisOffset: (state, action) => {
+      const { axis, offset } = action.payload;
+      state.axisConfig[axis].offset = offset;
+    },
+    setAxisScale: (state, action) => {
+      const { axis, scale } = action.payload;
+      state.axisConfig[axis].scale = scale;
+    },
+    setAxisInvert: (state, action) => {
+      const { axis, invert } = action.payload;
+      state.axisConfig[axis].invert = invert;
+    },
+
     // Reset actions
     resetToDefaults: (state) => {
       return { ...initialState };
@@ -146,6 +189,12 @@ export const {
   setPositionParameters,
   setIlluminationParameters,
   setGalvoParameters,
+  setStagePosition,
+  setAllStagePositions,
+  setAxisConfig,
+  setAxisOffset,
+  setAxisScale,
+  setAxisInvert,
   resetToDefaults,
   resetScan,
 } = lightsheetSlice.actions;

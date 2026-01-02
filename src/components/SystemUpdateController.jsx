@@ -30,9 +30,11 @@ import {
   Computer,  
   Build,
   AutoFixHigh as WizardIcon,
+  Usb as UsbIcon,
 } from "@mui/icons-material";
 
 import CanOtaWizard from "./CanOtaWizard";
+import UsbFlashWizard from "./UsbFlashWizard";
 
 // Redux state management
 import * as uc2Slice from "../state/slices/UC2Slice.js";
@@ -51,6 +53,7 @@ const SystemUpdateController = () => {
 
     // Wizard state
     const [showCanOtaWizard, setShowCanOtaWizard] = React.useState(false);
+    const [showUsbFlashWizard, setShowUsbFlashWizard] = React.useState(false);
   
 
   // Mock update check (future API integration via src/backendapi/)
@@ -284,11 +287,58 @@ const SystemUpdateController = () => {
             </CardContent>
           </Card>
 
+      {/* USB Master Flash Card */}
+      <Card sx={{ mt: 3 }}>
+        <CardContent>
+          <Box
+            sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}
+          >
+            <UsbIcon color="primary" />
+            <Typography variant="h6">Master CAN HAT Firmware (USB)</Typography>
+            <Chip
+              label="esptool"
+              color="info"
+              size="small"
+              variant="outlined"
+            />
+          </Box>
+
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Flash firmware to the master CAN HAT controller via USB connection.
+            This device coordinates all CAN slave devices and cannot be updated via WiFi OTA.
+          </Typography>
+
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => setShowUsbFlashWizard(true)}
+            startIcon={<UsbIcon />}
+            size="large"
+            fullWidth
+          >
+            Launch USB Flash Wizard
+          </Button>
+
+          <Alert severity="info" sx={{ mt: 2 }}>
+            <Typography variant="body2">
+              <strong>Note:</strong> The ESP32 will be disconnected temporarily during flashing.
+              Make sure the device is connected via USB before starting.
+            </Typography>
+          </Alert>
+        </CardContent>
+      </Card>
+
 
       {/* CAN OTA Wizard */}
       <CanOtaWizard
         open={showCanOtaWizard}
         onClose={() => setShowCanOtaWizard(false)}
+      />
+
+      {/* USB Flash Wizard */}
+      <UsbFlashWizard
+        open={showUsbFlashWizard}
+        onClose={() => setShowUsbFlashWizard(false)}
       />
 
       {/* Future Features */}

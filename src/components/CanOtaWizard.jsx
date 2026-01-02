@@ -102,6 +102,30 @@ const CanOtaWizard = ({ open, onClose }) => {
     }
   };
 
+  const handleReloadFirmware = async () => {
+    if (!canOtaState.firmwareServerUrl) {
+      dispatch(canOtaSlice.setError("Please provide a firmware server URL"));
+      return;
+    }
+    try {
+      dispatch(canOtaSlice.setIsLoadingFirmwareList(true));
+      dispatch(canOtaSlice.clearMessages());
+
+      // Save the URL first to ensure the server knows which URL to check
+      await apiUC2ConfigControllerSetOTAFirmwareServer(canOtaState.firmwareServerUrl);
+
+      // Load available firmware
+      const firmwareList = await apiUC2ConfigControllerListAvailableFirmware();
+      dispatch(canOtaSlice.setAvailableFirmware(firmwareList.firmware || {}));
+      dispatch(canOtaSlice.setSuccessMessage("Firmware list reloaded"));
+    } catch (error) {
+      console.error("Error reloading firmware:", error);
+      dispatch(canOtaSlice.setError("Failed to reload firmware list"));
+    } finally {
+      dispatch(canOtaSlice.setIsLoadingFirmwareList(false));
+    }
+  };
+
   const handleNext = async () => {
     const currentStep = canOtaState.currentStep;
 
@@ -345,15 +369,30 @@ const CanOtaWizard = ({ open, onClose }) => {
         </Box>
       ) : (
         <Box sx={{ mt: 3 }}>
-          <TextField
-            fullWidth
-            label="Firmware Server URL"
-            value={canOtaState.firmwareServerUrl}
-            onChange={(e) => dispatch(canOtaSlice.setFirmwareServerUrl(e.target.value))}
-            margin="normal"
-            placeholder="http://localhost/firmware"
-            helperText={`Default: ${canOtaState.defaultFirmwareServerUrl || "http://localhost/firmware"}`}
-          />
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <TextField
+              fullWidth
+              label="Firmware Server URL"
+              value={canOtaState.firmwareServerUrl}
+              onChange={(e) => dispatch(canOtaSlice.setFirmwareServerUrl(e.target.value))}
+              margin="normal"
+              placeholder="http://localhost/firmware"
+              helperText={`Default: ${canOtaState.defaultFirmwareServerUrl || "http://localhost/firmware"}`}
+            />
+            <Tooltip title="Reload firmware files from server">
+              <IconButton
+                onClick={handleReloadFirmware}
+                disabled={canOtaState.isLoadingFirmwareList}
+                sx={{ mt: 1 }}
+              >
+                {canOtaState.isLoadingFirmwareList ? (
+                  <CircularProgress size={24} />
+                ) : (
+                  <RefreshIcon />
+                )}
+              </IconButton>
+            </Tooltip>
+          </Box>
 
           {canOtaState.isLoadingFirmwareList && (
             <Box sx={{ mt: 2 }}>
@@ -399,7 +438,7 @@ const CanOtaWizard = ({ open, onClose }) => {
         <Button
           variant="contained"
           onClick={handleScanDevices}
-          disabled={canOtaState.isScanningDevices}
+          //disabled={canOtaState.isScanningDevices}
           startIcon={canOtaState.isScanningDevices ? <CircularProgress size={20} /> : <RefreshIcon />}
         >
           {canOtaState.isScanningDevices ? "Scanning..." : "Scan CAN Bus"}
@@ -758,7 +797,7 @@ const CanOtaWizard = ({ open, onClose }) => {
             <Button onClick={handleClose}>Cancel</Button>
             <Box sx={{ flex: "1 1 auto" }} />
             <Button
-              disabled={canOtaState.currentStep === 0}
+              //disabled={canOtaState.currentStep === 0}
               onClick={handleBack}
             >
               Back
@@ -766,13 +805,13 @@ const CanOtaWizard = ({ open, onClose }) => {
             <Button
               variant="contained"
               onClick={handleNext}
-              disabled={
+              /*disabled={
                 canOtaState.isLoadingWifiCredentials ||
                 canOtaState.isLoadingFirmwareServer ||
                 canOtaState.isLoadingFirmwareList ||
                 canOtaState.isScanningDevices ||
                 canOtaState.isUpdating
-              }
+              }*/
             >
               {canOtaState.currentStep === steps.length - 2 ? "Start Update" : "Next"}
             </Button>
