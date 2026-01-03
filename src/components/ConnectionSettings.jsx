@@ -65,10 +65,13 @@ function ConnectionSettings() {
   // Smart fallbacks for empty values
   const getSmartDefaults = () => {
     const location = window.location;
+    const isHttps = location.protocol === "https:";
     return {
-      protocol: location.protocol === "https:" ? "https://" : "http://",
+      protocol: isHttps ? "https://" : "http://",
       hostname: location.hostname,
-      port: "8001",
+      // Use current port if available. If empty on HTTPS, it implies 443.
+      // Default to 8001 only on non-standard HTTP setups.
+      port: location.port || (isHttps ? "443" : "8001"),
     };
   };
 
@@ -490,7 +493,15 @@ function ConnectionSettings() {
                     </ListItemIcon>
                     <ListItemText
                       primary="Backend API"
-                      secondary={`${hostProtocol}${hostIP}:${apiPort}`}
+                      secondary={`${hostProtocol}${hostIP}${
+                        apiPort &&
+                        !(
+                          (hostProtocol === "https://" && apiPort === "443") ||
+                          (hostProtocol === "http://" && apiPort === "80")
+                        )
+                          ? `:${apiPort}`
+                          : ""
+                      }`}
                     />
                     <Chip
                       label={isBackendConnected ? "Connected" : "Disconnected"}
@@ -508,7 +519,17 @@ function ConnectionSettings() {
                         primary="WebSocket Connection"
                         secondary={`${
                           hostProtocol === "https://" ? "wss" : "ws"
-                        }://${hostIP}:${websocketPort}`}
+                        }://${hostIP}${
+                          websocketPort &&
+                          !(
+                            (hostProtocol === "https://" &&
+                              websocketPort === "443") ||
+                            (hostProtocol === "http://" &&
+                              websocketPort === "80")
+                          )
+                            ? `:${websocketPort}`
+                            : ""
+                        }`}
                       />
                       <Chip
                         label={getWebSocketStatusLabel(websocketTestStatus)}

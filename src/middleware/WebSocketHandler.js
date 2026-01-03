@@ -17,6 +17,8 @@ import * as uc2Slice from "../state/slices/UC2Slice.js";
 import * as liveViewSlice from "../state/slices/LiveViewSlice.js";
 import * as canOtaSlice from "../state/slices/canOtaSlice.js";
 import * as laserSlice from "../state/slices/LaserSlice.js";
+import * as lightsheetSlice from "../state/slices/LightsheetSlice";
+
 
 import { io } from "socket.io-client";
 
@@ -681,6 +683,21 @@ const WebSocketHandler = () => {
           dispatch(uc2Slice.addSerialLogEntry(`Write: ${message}`));
         } catch (error) {
           console.error("Error in sigUC2SerialWriteMessage handler:", error);
+        }
+        //----------------------------------------------
+      } else if (dataJson.name === "sigScanStatusUpdate") {
+        // Handle lightsheet scan status updates
+        console.log("sigScanStatusUpdate received:", dataJson);
+        try {
+          // Expected format: dataJson.args.p0 = { isRunning, scanMode, currentPosition, totalPositions, currentFrame, progress, zarrPath, tiffPath, errorMessage }
+          const scanStatus = dataJson.args?.p0;
+          
+          if (scanStatus) {
+            // Update lightsheet scan status in Redux
+            dispatch(lightsheetSlice.setScanStatus(scanStatus));
+          }
+        } catch (error) {
+          console.error("Error in sigScanStatusUpdate handler:", error);
         }
         //----------------------------------------------
       } else if (dataJson.name === "sigOTAStatusUpdate") {

@@ -193,7 +193,7 @@ const ExtendedLEDMatrixController = () => {
         <Grid container spacing={2}>
           <Grid item xs={12}>
             <img
-              src={illumination_ring}
+              src= {`${process.env.PUBLIC_URL}/assets/illumination_ring.png`} /*{illumination_ring} */
               alt="Ring"
               style={{ maxHeight: "200px" }}
             />
@@ -228,7 +228,7 @@ const ExtendedLEDMatrixController = () => {
         <Grid container spacing={2}>
           <Grid item xs={12}>
             <img
-              src={illumination_circle}
+              src= {`${process.env.PUBLIC_URL}/assets/illumination_circle.png`} /*{illumination_circle} */
               alt="Circle"
               style={{ maxHeight: "200px" }}
             />
@@ -263,7 +263,7 @@ const ExtendedLEDMatrixController = () => {
         <Grid container spacing={2}>
           <Grid item xs={12}>
             <img
-              src="/assets/illumination_all.png"
+              src={`${process.env.PUBLIC_URL}/assets/illumination_all.png`}
               alt="All"
               style={{ maxHeight: "200px" }}
             />
