@@ -235,11 +235,11 @@ const experimentSlice = createSlice({
     //------------------------ overlap parameters
     setOverlapWidth: (state, action) => {
       console.log("setOverlapWidth", action.payload);
-      state.parameterValue.overlapWidth = Math.max(-0.5, Math.min(0.5, action.payload)); // Clamp between -0.5 and 0.5 (-50% to 50%)
+      state.parameterValue.overlapWidth = Math.max(-15, Math.min(0.5, action.payload)); // Clamp between -0.5 and 0.5 (-50% to 50%)
     },
     setOverlapHeight: (state, action) => {
       console.log("setOverlapHeight", action.payload);
-      state.parameterValue.overlapHeight = Math.max(-0.5, Math.min(0.5, action.payload)); // Clamp between -0.5 and 0.5 (-50% to 50%)
+      state.parameterValue.overlapHeight = Math.max(-15, Math.min(0.5, action.payload)); // Clamp between -0.5 and 0.5 (-50% to 50%)
     },
     setIsSnakescan: (state, action) => {
       console.log("setIsSnakescan", action.payload);

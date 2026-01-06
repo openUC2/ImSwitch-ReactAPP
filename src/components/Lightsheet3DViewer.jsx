@@ -219,19 +219,19 @@ const Lightsheet3DViewer = ({
     // Apply axis mappings with configuration
     // Z axis → Objective 20x Y-axis movement
     const zPos = applyAxisConfig(positions.z || 0, 'z');
-    groups.objective20x.position.y = zPos * 0.01; // Scale factor for model units
+    groups.sample.position.y = - zPos * 0.001; // Scale factor for model units
 
     // A axis → Sample Y movement
     const aPos = applyAxisConfig(positions.a || 0, 'a');
-    groups.sample.position.y = aPos * 0.01;
+    groups.objective20x.position.y = - aPos * 0.001;
 
     // X axis → Sample X movement
     const xPos = applyAxisConfig(positions.x || 0, 'x');
-    groups.sample.position.x = xPos * 0.01;
+    groups.sample.position.x = xPos * 0.001;
 
     // Y axis → Sample Z movement
     const yPos = applyAxisConfig(positions.y || 0, 'y');
-    groups.sample.position.z = yPos * 0.01;
+    groups.sample.position.z = yPos * 0.001;
 
   }, [positions, axisConfig]);
 
