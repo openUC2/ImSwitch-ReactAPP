@@ -219,6 +219,78 @@ const WellSelectorComponent = () => {
   };
 
   //##################################################################################
+  // Save positions to JSON file
+  const handleSavePositions = () => {
+    try {
+      const positionsData = {
+        pointList: experimentState.pointList,
+        wellLayout: experimentState.wellLayout,
+        savedAt: new Date().toISOString(),
+      };
+      
+      const dataStr = JSON.stringify(positionsData, null, 2);
+      const dataBlob = new Blob([dataStr], { type: "application/json" });
+      const url = URL.createObjectURL(dataBlob);
+      
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `wellplate_positions_${new Date().toISOString().slice(0, 10)}.json`;
+      link.click();
+      
+      URL.revokeObjectURL(url);
+      
+      infoPopupRef.current?.showInfo("Positions saved successfully!");
+    } catch (error) {
+      console.error("Error saving positions:", error);
+      infoPopupRef.current?.showInfo("Error saving positions!");
+    }
+  };
+
+  //##################################################################################
+  // Load positions from JSON file
+  const handleLoadPositions = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "application/json";
+    
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const positionsData = JSON.parse(event.target.result);
+          
+          // Validate data structure
+          if (!positionsData.pointList || !Array.isArray(positionsData.pointList)) {
+            throw new Error("Invalid positions file format");
+          }
+          
+          // Load positions into Redux state
+          dispatch(experimentSlice.setPointList(positionsData.pointList));
+          
+          // Optionally restore layout if included
+          if (positionsData.wellLayout) {
+            dispatch(experimentSlice.setWellLayout(positionsData.wellLayout));
+          }
+          
+          infoPopupRef.current?.showInfo(
+            `Loaded ${positionsData.pointList.length} position(s) successfully!`
+          );
+        } catch (error) {
+          console.error("Error loading positions:", error);
+          infoPopupRef.current?.showInfo("Error loading positions file!");
+        }
+      };
+      
+      reader.readAsText(file);
+    };
+    
+    input.click();
+  };
+
+  //##################################################################################
   return (
     <div style={{ border: "0px solid #eee", padding: "10px" }}>
       
@@ -263,115 +335,63 @@ const WellSelectorComponent = () => {
           </Select>
         </FormControl>
 
-        {/* TILE OVERLAP SLIDER */}
-        <Box sx={{ width: 250, marginLeft: "20px", marginRight: "20px" }}>
-          <Typography variant="body2" gutterBottom>
-            Tile Overlap: {Math.round((experimentState.parameterValue.overlapWidth || 0) * 100)}%
-          </Typography>
-          <Slider
-            value={(experimentState.parameterValue.overlapWidth || 0) * 100}
-            onChange={(e, newValue) => {
-              const overlapValue = newValue / 100;
-              // Update both states to keep them in sync
-              dispatch(wellSelectorSlice.setOverlapWidth(overlapValue));
-              dispatch(wellSelectorSlice.setOverlapHeight(overlapValue));
-              dispatch(experimentSlice.setOverlapWidth(overlapValue));
-              dispatch(experimentSlice.setOverlapHeight(overlapValue));
-            }}
-            min={0}
-            max={50}
-            step={5}
-            marks={[
-              { value: 0, label: '0%' },
-              { value: 25, label: '25%' },
-              { value: 50, label: '50%' },
-            ]}
-            valueLabelDisplay="auto"
-            valueLabelFormat={(value) => `${value}%`}
-          />
+        {/* VIEW - All controls in one row */}
+        <Box sx={{ display: "flex", gap: 1, alignItems: "center", flexWrap: "wrap" }}>
+          <Button 
+            variant="contained" 
+            size="small"
+            onClick={() => handleResetView()}
+          >
+            Reset View
+          </Button>
+
+          <Button 
+            variant="contained" 
+            size="small"
+            onClick={() => handleResetHistory()}
+          >
+            Reset History
+          </Button>
+
+          <label style={{ fontSize: "14px", display: "flex", alignItems: "center", gap: "4px" }}>
+            <input
+              type="checkbox"
+              checked={wellSelectorState.showOverlap}
+              onChange={handleShowOverlapChange}
+            />
+            Show Overlap
+          </label>
+
+          <label style={{ fontSize: "14px", display: "flex", alignItems: "center", gap: "4px" }}>
+            <input
+              type="checkbox"
+              checked={wellSelectorState.showShape}
+              onChange={handleShowShapeChange}
+            />
+            Show Shape
+          </label>
         </Box>
 
-        {/* VIEW */}
+        {/* Save/Load Positions */}
+        <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
+          <Button 
+            variant="outlined" 
+            size="small"
+            onClick={handleSavePositions}
+            disabled={!experimentState.pointList || experimentState.pointList.length === 0}
+          >
+            💾 Save Positions
+          </Button>
 
-        <Button variant="contained" onClick={() => handleResetView()}>
-          reset view
-        </Button>
-
-        <Button 
-          variant="contained" 
-          onClick={() => handleResetHistory()}
-          style={{ marginLeft: "10px" }}
-        >
-          reset history
-        </Button>
-
-        <label style={{ fontSize: "14px" }}>
-          <input
-            type="checkbox"
-            checked={wellSelectorState.showOverlap}
-            onChange={handleShowOverlapChange}
-          />
-          show overlap
-        </label>
-
-        <label style={{ fontSize: "14px" }}>
-          <input
-            type="checkbox"
-            checked={wellSelectorState.showShape}
-            onChange={handleShowShapeChange}
-          />
-          show shape
-        </label>
+          <Button 
+            variant="outlined" 
+            size="small"
+            onClick={handleLoadPositions}
+          >
+            📂 Load Positions
+          </Button>
+        </Box>
       </div>
-
-      {/* ADVANCED SETTINGS */}
-      <Accordion style={{ marginBottom: "10px" }}>
-        <AccordionSummary
-          expandIcon={<ExpandMoreIcon />}
-          aria-controls="advanced-settings-content"
-          id="advanced-settings-header"
-        >
-          <Typography>Advanced Layout Settings</Typography>
-        </AccordionSummary>
-        <AccordionDetails>
-          <Box display="flex" flexDirection="column" gap={2}>
-            <Typography variant="body2" color="textSecondary">
-              Global layout offsets (applied to all wells in micrometers):
-            </Typography>
-            
-            <FormControl fullWidth>
-              <TextField
-                label="Layout Offset X (μm)"
-                type="number"
-                value={wellSelectorState.layoutOffsetX || 0}
-                onChange={handleLayoutOffsetXChange}
-                inputProps={{
-                  step: 100,
-                }}
-                helperText="Horizontal offset for all wells (default: 0)"
-              />
-            </FormControl>
-
-            <FormControl fullWidth>
-              <TextField
-                label="Layout Offset Y (μm)"
-                type="number"
-                value={wellSelectorState.layoutOffsetY || 0}
-                onChange={handleLayoutOffsetYChange}
-                inputProps={{
-                  step: 100,
-                }}
-                helperText="Vertical offset for all wells (default: 0)"
-              />
-            </FormControl>
-
-            <Typography variant="caption" color="textSecondary" style={{ marginTop: '8px' }}>
-              Note: Changes are applied immediately to the current layout.
-              For Wellplate 384, default startX=29490.625μm, startY=30688.125μm
-            </Typography>
-          </Box>
-        </AccordionDetails>
-      </Accordion>
 
       {/* MODE */}
       <div
@@ -436,69 +456,6 @@ const WellSelectorComponent = () => {
           </Button>
         </ButtonGroup>
       </div>
-
-      {/* MODE-SPECIFIC SETTINGS */}
-      {/* Area Select Settings */}
-      {wellSelectorState.mode === Mode.AREA_SELECT && (
-        <Box
-          sx={{
-            marginBottom: "15px",
-            padding: "12px",
-            border: (theme) => `1px solid ${theme.palette.divider}`,
-            borderRadius: "4px",
-            backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#f9f9f9',
-          }}
-        >
-          <Typography variant="subtitle2" gutterBottom>
-            Area Select Settings
-          </Typography>
-          <Box display="flex" flexDirection="column" gap={2}>
-            {/* Snakescan checkbox */}
-            <FormControlLabel
-              control={
-                <input
-                  type="checkbox"
-                  checked={wellSelectorState.areaSelectSnakescan}
-                  onChange={handleAreaSelectSnakescanChange}
-                />
-              }
-              label="Enable Snakescan Pattern"
-            />
-          </Box>
-        </Box>
-      )}
-
-      {/* Cup/Well Select Settings */}
-      {wellSelectorState.mode === Mode.CUP_SELECT && (
-        <Box
-          sx={{
-            marginBottom: "15px",
-            padding: "12px",
-            border: (theme) => `1px solid ${theme.palette.divider}`,
-            borderRadius: "4px",
-            backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#f9f9f9',
-          }}
-        >
-          <Typography variant="subtitle2" gutterBottom>
-            Well Select Settings
-          </Typography>
-          <Box display="flex" flexDirection="column" gap={2}>
-            {/* Shape selector */}
-            <FormControl size="small" sx={{ width: "200px" }}>
-              <InputLabel>Well Shape</InputLabel>
-              <Select
-                value={wellSelectorState.cupSelectShape}
-                onChange={handleCupSelectShapeChange}
-                label="Well Shape"
-              >
-                <MenuItem value="circle">Circle</MenuItem>
-                <MenuItem value="rectangle">Rectangle</MenuItem>
-              </Select>
-              <FormHelperText>Shape pattern for well scanning</FormHelperText>
-            </FormControl>
-          </Box>
-        </Box>
-      )}
 
       <InfoPopup ref={infoPopupRef}/>
     </div>

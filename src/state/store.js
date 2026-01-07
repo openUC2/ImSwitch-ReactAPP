@@ -46,6 +46,7 @@ import dpcReducer from "./slices/dpcSlice";
 import laserReducer from "./slices/LaserSlice";
 import vizarrViewerReducer from "./slices/VizarrViewerSlice";
 import compositeAcquisitionReducer from "./slices/CompositeAcquisitionSlice";
+import experimentUIReducer from "./slices/ExperimentUISlice";
 
 //#####################################################################################
 // Nested persist config for liveStreamState
@@ -63,6 +64,22 @@ const liveStreamPersistConfig = {
     "backendCapabilities",
   ],
   // Don't persist: histogramX, histogramY, showHistogram, zoom, translateX, translateY, stats
+};
+
+//#####################################################################################
+// Nested persist config for lightsheetState
+// Persist axis configuration and camera state for 3D viewer
+const lightsheetPersistConfig = {
+  key: "lightsheet",
+  storage,
+  whitelist: [
+    "axisConfig",      // Persist axis offsets, scales, and invert flags
+    "cameraState",     // Persist 3D viewer camera position and zoom
+    "experimentName",  // Persist last used experiment name
+    "storageFormat",   // Persist last used storage format
+    "scanMode",        // Persist last used scan mode
+  ],
+  // Don't persist: stagePositions, scanStatus, vtkImagePrimary, isRunning
 };
 
 //#####################################################################################
@@ -87,7 +104,7 @@ const rootReducer = combineReducers({
   uc2State: uc2Reducer,
   stageOffsetCalibration: stageOffsetCalibrationReducer,
   flowStop: flowStopReducer,
-  lightsheet: lightsheetReducer,
+  lightsheet: persistReducer(lightsheetPersistConfig, lightsheetReducer), // Nested persist for axis config
   omeZarrState: zarrinitialZarrReducer,
   stresstestState: stresstestReducer,
   workflowState: workflowReducer,
@@ -107,6 +124,7 @@ const rootReducer = combineReducers({
   laserState: laserReducer,
   vizarrViewerState: vizarrViewerReducer,
   compositeAcquisitionState: compositeAcquisitionReducer,
+  experimentUI: experimentUIReducer,
 });
 
 //#####################################################################################

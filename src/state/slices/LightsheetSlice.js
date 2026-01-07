@@ -33,6 +33,28 @@ const initialState = {
   storageFormat: "ome_zarr", // "tiff", "ome_zarr", or "both"
   experimentName: "lightsheet_scan",
 
+  // Tiling parameters (NEW)
+  enableTiling: false,
+  tilesXPositive: 1,
+  tilesXNegative: 1,
+  tilesYPositive: 1,
+  tilesYNegative: 1,
+  tileStepSizeX: 1000, // µm
+  tileStepSizeY: 1000, // µm
+  tileOverlap: 0.1, // 10% overlap
+  
+  // Timelapse parameters (NEW)
+  timepoints: 1,
+  timeLapsePeriod: 60, // seconds
+  
+  // Objective FOV (cached from backend)
+  objectiveFOV: {
+    fovX: 1000,
+    fovY: 1000,
+    pixelSize: 1.0,
+    suggestedOverlap: 0.1
+  },
+
   // Scan status (updated via socket) (NEW)
   scanStatus: {
     isRunning: false,
@@ -68,6 +90,13 @@ const initialState = {
     y: { offset: 0, scale: 1, invert: false },
     z: { offset: 0, scale: 1, invert: false },
     a: { offset: 0, scale: 1, invert: false }
+  },
+
+  // 3D viewer camera state (persisted)
+  cameraState: {
+    position: null, // Will be set on first load
+    target: null,   // Camera look-at target
+    zoom: null      // Camera zoom/distance
   },
 };
 
@@ -145,6 +174,45 @@ const lightsheetSlice = createSlice({
     },
     setExperimentName: (state, action) => {
       state.experimentName = action.payload;
+    },
+
+    // NEW: Tiling actions
+    setEnableTiling: (state, action) => {
+      state.enableTiling = action.payload;
+    },
+    setTilesXPositive: (state, action) => {
+      state.tilesXPositive = action.payload;
+    },
+    setTilesXNegative: (state, action) => {
+      state.tilesXNegative = action.payload;
+    },
+    setTilesYPositive: (state, action) => {
+      state.tilesYPositive = action.payload;
+    },
+    setTilesYNegative: (state, action) => {
+      state.tilesYNegative = action.payload;
+    },
+    setTileStepSizeX: (state, action) => {
+      state.tileStepSizeX = action.payload;
+    },
+    setTileStepSizeY: (state, action) => {
+      state.tileStepSizeY = action.payload;
+    },
+    setTileOverlap: (state, action) => {
+      state.tileOverlap = action.payload;
+    },
+
+    // NEW: Timelapse actions
+    setTimepoints: (state, action) => {
+      state.timepoints = action.payload;
+    },
+    setTimeLapsePeriod: (state, action) => {
+      state.timeLapsePeriod = action.payload;
+    },
+
+    // NEW: Objective FOV actions
+    setObjectiveFOV: (state, action) => {
+      state.objectiveFOV = { ...state.objectiveFOV, ...action.payload };
     },
 
     // NEW: Scan status actions (updated via socket)
@@ -226,6 +294,11 @@ const lightsheetSlice = createSlice({
       state.axisConfig[axis].invert = invert;
     },
 
+    // 3D viewer camera state actions
+    setCameraState: (state, action) => {
+      state.cameraState = { ...state.cameraState, ...action.payload };
+    },
+
     // Reset actions
     resetToDefaults: (state) => {
       return { ...initialState };
@@ -260,6 +333,17 @@ export const {
   setScanMode,
   setStorageFormat,
   setExperimentName,
+  setEnableTiling,
+  setTilesXPositive,
+  setTilesXNegative,
+  setTilesYPositive,
+  setTilesYNegative,
+  setTileStepSizeX,
+  setTileStepSizeY,
+  setTileOverlap,
+  setTimepoints,
+  setTimeLapsePeriod,
+  setObjectiveFOV,
   setScanStatus,
   updateScanProgress,
   setAvailableScanModes,
@@ -274,6 +358,7 @@ export const {
   setAxisOffset,
   setAxisScale,
   setAxisInvert,
+  setCameraState,
   resetToDefaults,
   resetScan,
 } = lightsheetSlice.actions;

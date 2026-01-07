@@ -5,6 +5,10 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import StopIcon from "@mui/icons-material/Stop";
 import ViewInArIcon from "@mui/icons-material/ViewInAr";
 import DownloadIcon from "@mui/icons-material/Download";
+import FlipIcon from "@mui/icons-material/Flip";
+import RotateRightIcon from "@mui/icons-material/RotateRight";
+import VideocamIcon from "@mui/icons-material/Videocam";
+import VideocamOffIcon from "@mui/icons-material/VideocamOff";
 import {
   Box,
   Button,
@@ -21,9 +25,17 @@ import {
   Typography,
   Alert,
   Chip,
+  Slider,
+  Switch,
+  FormControlLabel,
+  ToggleButton,
+  ToggleButtonGroup,
+  IconButton,
+  Tooltip,
+  Divider,
 } from "@mui/material";
 import { green, red, orange } from "@mui/material/colors";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import LiveViewControlWrapper from "../axon/LiveViewControlWrapper.js";
 import * as connectionSettingsSlice from "../state/slices/ConnectionSettingsSlice.js";
@@ -43,7 +55,22 @@ import {
   apiGetAvailableScanModes,
   apiGetAvailableStorageFormats,
   apiGetLatestZarrPath,
+  apiGetObjectiveFOV,
 } from "../backendapi/apiLightsheetController.js";
+import {
+  apiLightsheetControllerObservationStreamControl,
+  apiLightsheetControllerSetObservationExposure,
+  apiLightsheetControllerGetObservationExposure,
+  apiLightsheetControllerSetObservationGain,
+  apiLightsheetControllerGetObservationGain,
+  apiLightsheetControllerSetStreamTransform,
+} from "../backendapi/apiLightsheetControllerObservationStream.js";
+import {
+  apiGetCameraExposureTime,
+  apiSetCameraExposureTime,
+  apiGetCameraGain,
+  apiSetCameraGain,
+} from "../backendapi/apiLightsheetCameraSettings.js";
 
 // Import Socket.IO client for real-time updates
 import { io } from "socket.io-client";
@@ -107,10 +134,38 @@ const LightsheetController = () => {
   const availableScanModes = lightsheetState.availableScanModes;
   const availableStorageFormats = lightsheetState.availableStorageFormats;
   const latestZarrPath = lightsheetState.latestZarrPath;
+  
+  // Tiling and timelapse state from Redux
+  const enableTiling = lightsheetState.enableTiling;
+  const tilesXPositive = lightsheetState.tilesXPositive;
+  const tilesXNegative = lightsheetState.tilesXNegative;
+  const tilesYPositive = lightsheetState.tilesYPositive;
+  const tilesYNegative = lightsheetState.tilesYNegative;
+  const tileStepSizeX = lightsheetState.tileStepSizeX;
+  const tileStepSizeY = lightsheetState.tileStepSizeY;
+  const tileOverlap = lightsheetState.tileOverlap;
+  const timepoints = lightsheetState.timepoints;
+  const timeLapsePeriod = lightsheetState.timeLapsePeriod;
+  const objectiveFOV = lightsheetState.objectiveFOV;
 
   // Local state for socket connection
   const [socketConnected, setSocketConnected] = useState(false);
   const [showZarrViewer, setShowZarrViewer] = useState(false);
+
+  // Observation camera stream state
+  const [observationStreamActive, setObservationStreamActive] = useState(false);
+  const [observationStreamUrl, setObservationStreamUrl] = useState('');
+  const [observationExposure, setObservationExposure] = useState(50);
+  const [observationGain, setObservationGain] = useState(1);
+  const [flipX, setFlipX] = useState(false);
+  const [flipY, setFlipY] = useState(false);
+  const [rotation, setRotation] = useState(0);
+  const [streamError, setStreamError] = useState('');
+  const observationImgRef = useRef(null);
+
+  // Camera settings state for live view (2D lightsheet camera)
+  const [cameraExposure, setCameraExposure] = useState(100);
+  const [cameraGain, setCameraGain] = useState(0);
 
   // Initialize Socket.IO connection for real-time updates
   useEffect(() => {
@@ -147,6 +202,168 @@ const LightsheetController = () => {
     };
   }, [hostIP, hostPort, dispatch]);
 
+  // Set up observation stream URL
+  useEffect(() => {
+    if (hostIP && hostPort) {
+      setObservationStreamUrl(`${hostIP}:${hostPort}/LightsheetController/observationStream`);
+    }
+  }, [hostIP, hostPort]);
+
+  // Fetch initial observation camera settings
+  useEffect(() => {
+    const fetchCameraSettings = async () => {
+      try {
+        const exposure = await apiLightsheetControllerGetObservationExposure();
+        if (typeof exposure === 'number') {
+          setObservationExposure(exposure);
+        }
+        const gain = await apiLightsheetControllerGetObservationGain();
+        if (typeof gain === 'number') {
+          setObservationGain(gain);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch observation camera settings:', err);
+      }
+    };
+    
+    if (hostIP && hostPort) {
+      fetchCameraSettings();
+    }
+  }, [hostIP, hostPort]);
+
+  // Fetch initial live view camera settings (2D lightsheet camera)
+  useEffect(() => {
+    const fetchLiveViewCameraSettings = async () => {
+      try {
+        const exposureResult = await apiGetCameraExposureTime();
+        if (exposureResult.success && typeof exposureResult.exposureTime === 'number') {
+          setCameraExposure(exposureResult.exposureTime);
+        }
+        const gainResult = await apiGetCameraGain();
+        if (gainResult.success && typeof gainResult.gain === 'number') {
+          setCameraGain(gainResult.gain);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch live view camera settings:', err);
+      }
+    };
+    
+    if (hostIP && hostPort) {
+      fetchLiveViewCameraSettings();
+    }
+  }, [hostIP, hostPort]);
+
+  // Handle observation stream toggle
+  const handleObservationStreamToggle = async () => {
+    try {
+      setStreamError('');
+      const newState = !observationStreamActive;
+      
+      if (newState) {
+        // Start stream - simply toggle state, img tag will connect automatically
+        setObservationStreamActive(true);
+      } else {
+        // Stop stream via API
+        try {
+          await apiLightsheetControllerObservationStreamControl(false);
+        } catch (err) {
+          console.warn('Error stopping stream:', err);
+        }
+        setObservationStreamActive(false);
+      }
+    } catch (err) {
+      setStreamError(`Failed to ${observationStreamActive ? 'stop' : 'start'} stream: ${err.message}`);
+    }
+  };
+
+  // Handle exposure change
+  const handleExposureChange = async (event, value) => {
+    setObservationExposure(value);
+  };
+
+  const handleExposureChangeCommitted = async (event, value) => {
+    try {
+      await apiLightsheetControllerSetObservationExposure(value);
+    } catch (err) {
+      console.error('Failed to set exposure:', err);
+    }
+  };
+
+  // Handle gain change
+  const handleGainChange = async (event, value) => {
+    setObservationGain(value);
+  };
+
+  const handleGainChangeCommitted = async (event, value) => {
+    try {
+      await apiLightsheetControllerSetObservationGain(value);
+    } catch (err) {
+      console.error('Failed to set gain:', err);
+    }
+  };
+
+  // Handle flip/rotate changes
+  const handleFlipXToggle = async () => {
+    const newFlipX = !flipX;
+    setFlipX(newFlipX);
+    try {
+      await apiLightsheetControllerSetStreamTransform({ flipX: newFlipX, flipY, rotation });
+    } catch (err) {
+      console.error('Failed to set transform:', err);
+    }
+  };
+
+  const handleFlipYToggle = async () => {
+    const newFlipY = !flipY;
+    setFlipY(newFlipY);
+    try {
+      await apiLightsheetControllerSetStreamTransform({ flipX, flipY: newFlipY, rotation });
+    } catch (err) {
+      console.error('Failed to set transform:', err);
+    }
+  };
+
+  const handleRotationChange = async (event, newRotation) => {
+    if (newRotation !== null) {
+      setRotation(newRotation);
+      try {
+        await apiLightsheetControllerSetStreamTransform({ flipX, flipY, rotation: newRotation });
+      } catch (err) {
+        console.error('Failed to set rotation:', err);
+      }
+    }
+  };
+
+  // Handle live view camera exposure change
+  const handleCameraExposureChange = async (event, value) => {
+    const newExposure = value || cameraExposure;
+    try {
+      const result = await apiSetCameraExposureTime(newExposure);
+      if (result.success) {
+        console.log(`Live view camera exposure set to ${newExposure} ms`);
+      } else {
+        console.warn('Failed to set camera exposure:', result.message);
+      }
+    } catch (err) {
+      console.error('Error setting camera exposure:', err);
+    }
+  };
+
+  // Handle live view camera gain change
+  const handleCameraGainChange = async (event, value) => {
+    const newGain = value || cameraGain;
+    try {
+      const result = await apiSetCameraGain(newGain);
+      if (result.success) {
+        console.log(`Live view camera gain set to ${newGain}`);
+      } else {
+        console.warn('Failed to set camera gain:', result.message);
+      }
+    } catch (err) {
+      console.error('Error setting camera gain:', err);
+    }
+  };
+
   // Fetch available scan modes and storage formats on mount
   useEffect(() => {
     const fetchOptions = async () => {
@@ -159,6 +376,16 @@ const LightsheetController = () => {
         const formats = await apiGetAvailableStorageFormats();
         if (Array.isArray(formats)) {
           dispatch(lightsheetSlice.setAvailableStorageFormats(formats));
+        }
+        
+        // Fetch objective FOV for tiling hints
+        const fovInfo = await apiGetObjectiveFOV();
+        if (fovInfo.success) {
+          dispatch(lightsheetSlice.setObjectiveFOV(fovInfo));
+          // Auto-calculate tiling step size based on FOV with overlap
+          const overlapFactor = 1 - fovInfo.suggestedOverlap;
+          dispatch(lightsheetSlice.setTileStepSizeX(fovInfo.fovX * overlapFactor));
+          dispatch(lightsheetSlice.setTileStepSizeY(fovInfo.fovY * overlapFactor));
         }
       } catch (error) {
         console.error("Error fetching options:", error);
@@ -190,6 +417,7 @@ const LightsheetController = () => {
   }, [hostIP, hostPort, isRunning, socketConnected, dispatch]);
 
   // Poll current positions for 3D visualization
+  // Fetch immediately on mount, then poll periodically
   useEffect(() => {
     if (!hostIP || !hostPort) return;
 
@@ -214,7 +442,10 @@ const LightsheetController = () => {
       }
     };
 
+    // Fetch immediately on mount for 3D viewer initial positioning
     fetchPositions();
+    
+    // Then poll every 20 seconds
     const interval = setInterval(fetchPositions, 20000);
     return () => clearInterval(interval);
   }, [hostIP, hostPort, dispatch]);
@@ -250,6 +481,16 @@ const LightsheetController = () => {
           illuValue: parseFloat(illuValue),
           storageFormat,
           experimentName,
+          enableTiling,
+          tilesXPositive: parseInt(tilesXPositive),
+          tilesXNegative: parseInt(tilesXNegative),
+          tilesYPositive: parseInt(tilesYPositive),
+          tilesYNegative: parseInt(tilesYNegative),
+          tileStepSizeX: parseFloat(tileStepSizeX),
+          tileStepSizeY: parseFloat(tileStepSizeY),
+          tileOverlap: parseFloat(tileOverlap),
+          timepoints: parseInt(timepoints),
+          timeLapsePeriod: parseFloat(timeLapsePeriod)
         });
       } else {
         result = await apiStartContinuousScanWithZarr({
@@ -271,7 +512,9 @@ const LightsheetController = () => {
     } catch (error) {
       console.error("Error starting scan:", error);
     }
-  }, [scanMode, minPos, maxPos, stepSize, speed, axis, illuSource, illuValue, storageFormat, experimentName, dispatch]);
+  }, [scanMode, minPos, maxPos, stepSize, speed, axis, illuSource, illuValue, storageFormat, experimentName, 
+      enableTiling, tilesXPositive, tilesXNegative, tilesYPositive, tilesYNegative, 
+      tileStepSizeX, tileStepSizeY, tileOverlap, timepoints, timeLapsePeriod, dispatch]);
 
   // Fetch and show latest Zarr for visualization
   const openZarrViewer = useCallback(async () => {
@@ -321,6 +564,7 @@ const LightsheetController = () => {
         scrollButtons="auto"
       >
         <Tab label="Scanning Parameters" />
+        <Tab label="Observation Camera" />
         <Tab label="Galvo Scanner" />
         <Tab label="View Latest Stack" />
         <Tab label="3D Zarr Viewer" />
@@ -363,6 +607,10 @@ const LightsheetController = () => {
             <Lightsheet3DViewer
               positions={lightsheetState.stagePositions}
               axisConfig={lightsheetState.axisConfig}
+              cameraState={lightsheetState.cameraState}
+              onCameraChange={(newCameraState) => {
+                dispatch(lightsheetSlice.setCameraState(newCameraState));
+              }}
               width={600}
               height={400}
             />
@@ -484,13 +732,19 @@ const LightsheetController = () => {
           )}
 
           <Grid item xs={12} md={4}>
-            <TextField
-              label="Axis"
-              value={axis}
-              onChange={(e) => dispatch(lightsheetSlice.setAxis(e.target.value))}
-              fullWidth
-              variant="outlined"
-            />
+            <FormControl fullWidth variant="outlined">
+              <InputLabel>Axis</InputLabel>
+              <Select
+                value={axis}
+                onChange={(e) => dispatch(lightsheetSlice.setAxis(e.target.value))}
+                label="Axis"
+              >
+                <MenuItem value="A">A Axis</MenuItem>
+                <MenuItem value="X">X Axis</MenuItem>
+                <MenuItem value="Y">Y Axis</MenuItem>
+                <MenuItem value="Z">Z Axis</MenuItem>
+              </Select>
+            </FormControl>
           </Grid>
           <Grid item xs={12} md={4}>
             <TextField
@@ -512,6 +766,277 @@ const LightsheetController = () => {
               variant="outlined"
             />
           </Grid>
+
+          {/* Camera Settings for Live View */}
+          <Grid item xs={12}>
+            <Divider sx={{ my: 2 }} />
+            <Typography variant="h6" gutterBottom>
+              Camera Settings (Live View)
+            </Typography>
+          </Grid>
+          
+          <Grid item xs={12} md={6}>
+            <Typography variant="body2" gutterBottom>
+              Exposure Time (ms)
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Slider
+                value={cameraExposure}
+                onChange={(e, value) => setCameraExposure(value)}
+                onChangeCommitted={handleCameraExposureChange}
+                min={1}
+                max={1000}
+                valueLabelDisplay="auto"
+              />
+              <TextField
+                value={cameraExposure}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value);
+                  if (!isNaN(val)) {
+                    setCameraExposure(val);
+                    handleCameraExposureChange(null, val);
+                  }
+                }}
+                type="number"
+                size="small"
+                sx={{ width: 100 }}
+              />
+            </Box>
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <Typography variant="body2" gutterBottom>
+              Gain
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Slider
+                value={cameraGain}
+                onChange={(e, value) => setCameraGain(value)}
+                onChangeCommitted={handleCameraGainChange}
+                min={0}
+                max={100}
+                valueLabelDisplay="auto"
+              />
+              <TextField
+                value={cameraGain}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value);
+                  if (!isNaN(val)) {
+                    setCameraGain(val);
+                    handleCameraGainChange(null, val);
+                  }
+                }}
+                type="number"
+                size="small"
+                sx={{ width: 100 }}
+              />
+            </Box>
+          </Grid>
+
+          {/* Tiling Configuration (only for step-acquire mode) */}
+          {scanMode === "step_acquire" && (
+            <>
+              <Grid item xs={12}>
+                <Divider sx={{ my: 2 }} />
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Typography variant="h6" gutterBottom>
+                    XY Tiling Configuration
+                  </Typography>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={enableTiling}
+                        onChange={(e) => dispatch(lightsheetSlice.setEnableTiling(e.target.checked))}
+                        color="primary"
+                      />
+                    }
+                    label="Enable Tiling"
+                  />
+                </Box>
+                <Typography variant="caption" color="text.secondary">
+                  Suggested FOV: {objectiveFOV.fovX.toFixed(1)} x {objectiveFOV.fovY.toFixed(1)} µm
+                </Typography>
+              </Grid>
+
+              {enableTiling && (
+                <>
+                  <Grid item xs={12} md={3}>
+                    <TextField
+                      label="Tiles +X"
+                      value={tilesXPositive}
+                      onChange={(e) => dispatch(lightsheetSlice.setTilesXPositive(parseInt(e.target.value) || 0))}
+                      fullWidth
+                      type="number"
+                      variant="outlined"
+                      inputProps={{ min: 0 }}
+                      helperText="Positive X direction"
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={3}>
+                    <TextField
+                      label="Tiles -X"
+                      value={tilesXNegative}
+                      onChange={(e) => dispatch(lightsheetSlice.setTilesXNegative(parseInt(e.target.value) || 0))}
+                      fullWidth
+                      type="number"
+                      variant="outlined"
+                      inputProps={{ min: 0 }}
+                      helperText="Negative X direction"
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={3}>
+                    <TextField
+                      label="Tiles +Y"
+                      value={tilesYPositive}
+                      onChange={(e) => dispatch(lightsheetSlice.setTilesYPositive(parseInt(e.target.value) || 0))}
+                      fullWidth
+                      type="number"
+                      variant="outlined"
+                      inputProps={{ min: 0 }}
+                      helperText="Positive Y direction"
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={3}>
+                    <TextField
+                      label="Tiles -Y"
+                      value={tilesYNegative}
+                      onChange={(e) => dispatch(lightsheetSlice.setTilesYNegative(parseInt(e.target.value) || 0))}
+                      fullWidth
+                      type="number"
+                      variant="outlined"
+                      inputProps={{ min: 0 }}
+                      helperText="Negative Y direction"
+                    />
+                  </Grid>
+
+                  <Grid item xs={12} md={4}>
+                    <TextField
+                      label="Step Size X (µm)"
+                      value={tileStepSizeX}
+                      onChange={(e) => dispatch(lightsheetSlice.setTileStepSizeX(parseFloat(e.target.value) || 0))}
+                      fullWidth
+                      type="number"
+                      variant="outlined"
+                      inputProps={{ min: 0, step: 10 }}
+                      helperText={`Suggested: ${(objectiveFOV.fovX * (1 - tileOverlap)).toFixed(1)} µm`}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <TextField
+                      label="Step Size Y (µm)"
+                      value={tileStepSizeY}
+                      onChange={(e) => dispatch(lightsheetSlice.setTileStepSizeY(parseFloat(e.target.value) || 0))}
+                      fullWidth
+                      type="number"
+                      variant="outlined"
+                      inputProps={{ min: 0, step: 10 }}
+                      helperText={`Suggested: ${(objectiveFOV.fovY * (1 - tileOverlap)).toFixed(1)} µm`}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <TextField
+                      label="Overlap (%)"
+                      value={(tileOverlap * 100).toFixed(0)}
+                      onChange={(e) => dispatch(lightsheetSlice.setTileOverlap(parseFloat(e.target.value) / 100 || 0.1))}
+                      fullWidth
+                      type="number"
+                      variant="outlined"
+                      inputProps={{ min: 0, max: 50, step: 5 }}
+                      helperText="Overlap between tiles"
+                    />
+                  </Grid>
+
+                  {/* Tiling Grid Visualization */}
+                  <Grid item xs={12}>
+                    <Box sx={{ mt: 2, p: 2, border: '1px solid #ddd', borderRadius: 1, backgroundColor: 'Primary' }}>
+                      <Typography variant="subtitle2" gutterBottom>
+                        Tiling Grid Preview
+                      </Typography>
+                      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
+                        <table style={{ borderCollapse: 'collapse' }}>
+                          <tbody>
+                            {Array.from({ length: tilesYPositive + tilesYNegative + 1 }, (_, row) => {
+                              const yIndex = tilesYPositive - row;
+                              return (
+                                <tr key={row}>
+                                  {Array.from({ length: tilesXNegative + tilesXPositive + 1 }, (_, col) => {
+                                    const xIndex = col - tilesXNegative;
+                                    const isCenter = xIndex === 0 && yIndex === 0;
+                                    return (
+                                      <td
+                                        key={col}
+                                        style={{
+                                          width: '40px',
+                                          height: '40px',
+                                          border: '1px solid #666',
+                                          backgroundColor: isCenter ? '#4CAF50' : '#fff',
+                                          textAlign: 'center',
+                                          verticalAlign: 'middle',
+                                          fontSize: '10px',
+                                          fontWeight: isCenter ? 'bold' : 'normal',
+                                          color: isCenter ? '#fff' : '#333',
+                                        }}
+                                        title={`X: ${xIndex}, Y: ${yIndex}${isCenter ? ' (Center)' : ''}`}
+                                      >
+                                        {xIndex},{yIndex}
+                                      </td>
+                                    );
+                                  })}
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block', textAlign: 'center' }}>
+                        Total tiles: {(tilesXNegative + tilesXPositive + 1) * (tilesYNegative + tilesYPositive + 1)} 
+                        {' '}({tilesXNegative + tilesXPositive + 1} × {tilesYNegative + tilesYPositive + 1})
+                        {' • '}Green cell (0,0) is the center/origin
+                      </Typography>
+                    </Box>
+                  </Grid>
+                </>
+              )}
+            </>
+          )}
+
+          {/* Timelapse Configuration (only for step-acquire mode) */}
+          {scanMode === "step_acquire" && (
+            <>
+              <Grid item xs={12}>
+                <Divider sx={{ my: 2 }} />
+                <Typography variant="h6" gutterBottom>
+                  Timelapse Configuration
+                </Typography>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  label="Timepoints"
+                  value={timepoints}
+                  onChange={(e) => dispatch(lightsheetSlice.setTimepoints(parseInt(e.target.value) || 1))}
+                  fullWidth
+                  type="number"
+                  variant="outlined"
+                  inputProps={{ min: 1, step: 1 }}
+                  helperText="Number of timepoints to acquire"
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  label="Period (seconds)"
+                  value={timeLapsePeriod}
+                  onChange={(e) => dispatch(lightsheetSlice.setTimeLapsePeriod(parseFloat(e.target.value) || 60))}
+                  fullWidth
+                  type="number"
+                  variant="outlined"
+                  inputProps={{ min: 1, step: 10 }}
+                  helperText="Time between timepoints"
+                  disabled={timepoints <= 1}
+                />
+              </Grid>
+            </>
+          )}
 
           {/* Progress Display */}
           {(isRunning || scanStatus.progress > 0) && (
@@ -595,7 +1120,7 @@ const LightsheetController = () => {
           {/* Result Paths */}
           {(scanStatus.zarrPath || scanStatus.tiffPath) && (
             <Grid item xs={12}>
-              <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
+              <Box sx={{ mt: 2, p: 2, bgcolor: 'secondary', borderRadius: 1 }}>
                 <Typography variant="subtitle2" gutterBottom>
                   Output Files:
                 </Typography>
@@ -615,7 +1140,213 @@ const LightsheetController = () => {
         </Grid>
       </TabPanel>
 
+      {/* Observation Camera Tab */}
       <TabPanel value={tabIndex} index={1}>
+        <Grid container spacing={3}>
+          {/* Stream Error Display */}
+          {streamError && (
+            <Grid item xs={12}>
+              <Alert severity="error" onClose={() => setStreamError('')}>
+                {streamError}
+              </Alert>
+            </Grid>
+          )}
+
+          {/* Observation Camera Stream */}
+          <Grid item xs={12} md={8}>
+            <Paper sx={{ p: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                Observation Camera Stream
+              </Typography>
+              
+              {/* Stream Controls */}
+              <Box sx={{ mb: 2, display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
+                <Button 
+                  variant="contained" 
+                  color={observationStreamActive ? "error" : "primary"}
+                  onClick={handleObservationStreamToggle}
+                  startIcon={observationStreamActive ? <VideocamOffIcon /> : <VideocamIcon />}
+                >
+                  {observationStreamActive ? 'Stop Stream' : 'Start Stream'}
+                </Button>
+
+                <Divider orientation="vertical" flexItem />
+
+                {/* Flip Controls */}
+                <Tooltip title="Flip Horizontal">
+                  <IconButton 
+                    onClick={handleFlipXToggle}
+                    color={flipX ? "primary" : "default"}
+                  >
+                    <FlipIcon />
+                  </IconButton>
+                </Tooltip>
+                
+                <Tooltip title="Flip Vertical">
+                  <IconButton 
+                    onClick={handleFlipYToggle}
+                    color={flipY ? "primary" : "default"}
+                    sx={{ transform: 'rotate(90deg)' }}
+                  >
+                    <FlipIcon />
+                  </IconButton>
+                </Tooltip>
+
+                <Divider orientation="vertical" flexItem />
+
+                {/* Rotation Controls */}
+                <ToggleButtonGroup
+                  value={rotation}
+                  exclusive
+                  onChange={handleRotationChange}
+                  size="small"
+                >
+                  <ToggleButton value={0}>0°</ToggleButton>
+                  <ToggleButton value={90}>90°</ToggleButton>
+                  <ToggleButton value={180}>180°</ToggleButton>
+                  <ToggleButton value={270}>270°</ToggleButton>
+                </ToggleButtonGroup>
+              </Box>
+
+              {/* MJPEG Stream Display */}
+              <Box 
+                sx={{ 
+                  backgroundColor: 'black', 
+                  minHeight: 400,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  position: 'relative',
+                  borderRadius: 1,
+                  overflow: 'hidden'
+                }}
+              >
+                {observationStreamActive ? (
+                  <img
+                    ref={observationImgRef}
+                    src={observationStreamUrl}
+                    alt="Observation Camera"
+                    style={{ 
+                      display: 'block',
+                      margin: 'auto',
+                      maxWidth: '100%', 
+                      maxHeight: 500,
+                      objectFit: 'contain',
+                      WebkitUserSelect: 'none',
+                      transform: `scaleX(${flipX ? -1 : 1}) scaleY(${flipY ? -1 : 1}) rotate(${rotation}deg)`
+                    }}
+                    onError={() => setStreamError('Failed to load stream. Check if observation camera is available.')}
+                  />
+                ) : (
+                  <Typography color="white">
+                    Stream not active. Click "Start Stream" to begin.
+                  </Typography>
+                )}
+              </Box>
+            </Paper>
+          </Grid>
+
+          {/* Camera Controls */}
+          <Grid item xs={12} md={4}>
+            <Paper sx={{ p: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                Camera Settings
+              </Typography>
+
+              {/* Exposure Time Slider */}
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Exposure Time (ms)
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Slider
+                    value={observationExposure}
+                    onChange={handleExposureChange}
+                    onChangeCommitted={handleExposureChangeCommitted}
+                    min={1}
+                    max={1000}
+                    valueLabelDisplay="auto"
+                    disabled={!observationStreamActive}
+                  />
+                  <TextField
+                    value={observationExposure}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      if (!isNaN(val)) {
+                        setObservationExposure(val);
+                        handleExposureChangeCommitted(null, val);
+                      }
+                    }}
+                    type="number"
+                    size="small"
+                    sx={{ width: 80 }}
+                    disabled={!observationStreamActive}
+                  />
+                </Box>
+              </Box>
+
+              {/* Gain Slider */}
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Gain
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Slider
+                    value={observationGain}
+                    onChange={handleGainChange}
+                    onChangeCommitted={handleGainChangeCommitted}
+                    min={0}
+                    max={100}
+                    valueLabelDisplay="auto"
+                    disabled={!observationStreamActive}
+                  />
+                  <TextField
+                    value={observationGain}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      if (!isNaN(val)) {
+                        setObservationGain(val);
+                        handleGainChangeCommitted(null, val);
+                      }
+                    }}
+                    type="number"
+                    size="small"
+                    sx={{ width: 80 }}
+                    disabled={!observationStreamActive}
+                  />
+                </Box>
+              </Box>
+
+              <Divider sx={{ my: 2 }} />
+
+              {/* Transform Status */}
+              <Typography variant="subtitle2" gutterBottom>
+                Current Transform
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                <Chip 
+                  label={`Flip X: ${flipX ? 'On' : 'Off'}`} 
+                  size="small" 
+                  color={flipX ? 'primary' : 'default'}
+                />
+                <Chip 
+                  label={`Flip Y: ${flipY ? 'On' : 'Off'}`} 
+                  size="small" 
+                  color={flipY ? 'primary' : 'default'}
+                />
+                <Chip 
+                  label={`Rotation: ${rotation}°`} 
+                  size="small" 
+                  color={rotation !== 0 ? 'primary' : 'default'}
+                />
+              </Box>
+            </Paper>
+          </Grid>
+        </Grid>
+      </TabPanel>
+
+      {/* Galvo Scanner Tab - now index 2 */}
+      <TabPanel value={tabIndex} index={2}>
         <Grid container spacing={3}>
           <Grid item xs={12}>
             <Typography variant="h6" gutterBottom>
@@ -768,7 +1499,8 @@ const LightsheetController = () => {
         </Grid>
       </TabPanel>
 
-      <TabPanel value={tabIndex} index={2}>
+      {/* View Latest Stack Tab - now index 3 */}
+      <TabPanel value={tabIndex} index={3}>
         <Grid container spacing={3}>
           <Grid item xs={12}>
             <Typography variant="h6" gutterBottom>
@@ -815,8 +1547,8 @@ const LightsheetController = () => {
         </Grid>
       </TabPanel>
 
-      {/* 3D Zarr Viewer Tab */}
-      <TabPanel value={tabIndex} index={3}>
+      {/* 3D Zarr Viewer Tab - now index 4 */}
+      <TabPanel value={tabIndex} index={4}>
         <Grid container spacing={3}>
           <Grid item xs={12}>
             <Typography variant="h6" gutterBottom>
@@ -875,8 +1607,8 @@ const LightsheetController = () => {
         </Grid>
       </TabPanel>
 
-      {/* VTK Viewer Tab */}
-      <TabPanel value={tabIndex} index={4}>
+      {/* VTK Viewer Tab - now index 5 */}
+      <TabPanel value={tabIndex} index={5}>
         <ErrorBoundary>
           <Typography variant="h6" gutterBottom>
             VTK Volume Viewer (TIFF)
