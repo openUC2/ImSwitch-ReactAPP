@@ -245,22 +245,6 @@ const ZFocusDimension = () => {
                 ))}
               </Select>
             </FormControl>
-
-            {/* Checkbox for Max Focus Position */}
-            <FormControlLabel
-              control={<Switch size="small" />}
-              label={<Typography variant="caption">Max Focus Position</Typography>}
-            />
-
-            {/* Preview button */}
-            <Button
-              size="small"
-              variant="outlined"
-              startIcon={<PreviewIcon />}
-              sx={{ mt: 1 }}
-            >
-              Preview Z-stack
-            </Button>
           </Box>
         </Box>
       )}
@@ -461,37 +445,26 @@ const ZFocusDimension = () => {
                 />
               </>
             )}
-
-            {/* Legacy Z-range fields */}
-            <TextField
-              label="Min Focus Position"
-              type="number"
-              size="small"
-              value={parameterValue.autoFocusMin}
-              onChange={(e) => dispatch(experimentSlice.setAutoFocusMin(Number(e.target.value)))}
-            />
-
-            <TextField
-              label="Max Focus Position"
-              type="number"
-              size="small"
-              value={parameterValue.autoFocusMax}
-              onChange={(e) => dispatch(experimentSlice.setAutoFocusMax(Number(e.target.value)))}
-            />
-
-            <TextField
-              label="Step Size"
-              type="number"
-              size="small"
-              value={parameterValue.autoFocusStepSize}
-              onChange={(e) => dispatch(experimentSlice.setAutoFocusStepSize(Number(e.target.value)))}
-              inputProps={{ step: 0.1 }}
-            />
           </Box>
         </AccordionDetails>
       </Accordion>
+      
+      {/* Information about scan pattern */}
+      <Box
+        sx={{
+          mt: 2,
+          p: 1.5,
+          borderRadius: 1,
+          backgroundColor: alpha(theme.palette.info.main, 0.08),
+        }}
+      >
+        <Typography variant="caption" color="textSecondary" sx={{ fontStyle: "italic" }}>
+          💡 Note: Scan pattern (snake vs. raster) is configured in the Positions dimension.
+        </Typography>
+      </Box>
     </Box>
   );
 };
 
 export default ZFocusDimension;
+

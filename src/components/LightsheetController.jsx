@@ -945,6 +945,56 @@ const LightsheetController = () => {
                       helperText="Overlap between tiles"
                     />
                   </Grid>
+
+                  {/* Tiling Grid Visualization */}
+                  <Grid item xs={12}>
+                    <Box sx={{ mt: 2, p: 2, border: '1px solid #ddd', borderRadius: 1, backgroundColor: 'Primary' }}>
+                      <Typography variant="subtitle2" gutterBottom>
+                        Tiling Grid Preview
+                      </Typography>
+                      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
+                        <table style={{ borderCollapse: 'collapse' }}>
+                          <tbody>
+                            {Array.from({ length: tilesYPositive + tilesYNegative + 1 }, (_, row) => {
+                              const yIndex = tilesYPositive - row;
+                              return (
+                                <tr key={row}>
+                                  {Array.from({ length: tilesXNegative + tilesXPositive + 1 }, (_, col) => {
+                                    const xIndex = col - tilesXNegative;
+                                    const isCenter = xIndex === 0 && yIndex === 0;
+                                    return (
+                                      <td
+                                        key={col}
+                                        style={{
+                                          width: '40px',
+                                          height: '40px',
+                                          border: '1px solid #666',
+                                          backgroundColor: isCenter ? '#4CAF50' : '#fff',
+                                          textAlign: 'center',
+                                          verticalAlign: 'middle',
+                                          fontSize: '10px',
+                                          fontWeight: isCenter ? 'bold' : 'normal',
+                                          color: isCenter ? '#fff' : '#333',
+                                        }}
+                                        title={`X: ${xIndex}, Y: ${yIndex}${isCenter ? ' (Center)' : ''}`}
+                                      >
+                                        {xIndex},{yIndex}
+                                      </td>
+                                    );
+                                  })}
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block', textAlign: 'center' }}>
+                        Total tiles: {(tilesXNegative + tilesXPositive + 1) * (tilesYNegative + tilesYPositive + 1)} 
+                        {' '}({tilesXNegative + tilesXPositive + 1} × {tilesYNegative + tilesYPositive + 1})
+                        {' • '}Green cell (0,0) is the center/origin
+                      </Typography>
+                    </Box>
+                  </Grid>
                 </>
               )}
             </>

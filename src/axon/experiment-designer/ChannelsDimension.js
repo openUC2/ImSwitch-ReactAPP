@@ -289,9 +289,33 @@ const ChannelsDimension = () => {
     const laserName = illuSources[index];
     if (laserName && connectionSettings.ip && connectionSettings.apiPort) {
       try {
+        // First, turn off all other channels
+        for (let i = 0; i < illuSources.length; i++) {
+          if (i !== index) {
+            const otherLaserName = illuSources[i];
+            const encodedOtherLaserName = encodeURIComponent(otherLaserName);
+            await fetch(
+              `${connectionSettings.ip}:${connectionSettings.apiPort}/LaserController/setLaserValue?laserName=${encodedOtherLaserName}&value=0`
+            );
+          }
+        }
+
+        // Then set the selected channel with its intensity
         const encodedLaserName = encodeURIComponent(laserName);
         await fetch(
           `${connectionSettings.ip}:${connectionSettings.apiPort}/LaserController/setLaserValue?laserName=${encodedLaserName}&value=${value}`
+        );
+
+        // Also send exposure time and gain for this channel
+        const currentExposure = exposures[index] ?? 100;
+        const currentGain = gains[index] ?? 0;
+        
+        await fetch(
+          `${connectionSettings.ip}:${connectionSettings.apiPort}/SettingsController/setDetectorExposureTime?exposureTime=${currentExposure}`
+        );
+        
+        await fetch(
+          `${connectionSettings.ip}:${connectionSettings.apiPort}/SettingsController/setDetectorGain?gain=${currentGain}`
         );
       } catch (error) {
         console.error("Failed to update laser intensity:", error);

@@ -104,18 +104,21 @@ const TimeDimension = () => {
           mb: 3,
           p: 1.5,
           borderRadius: 1,
-          backgroundColor: alpha(theme.palette.info.main, 0.08),
+          backgroundColor: alpha(theme.palette.warning.main, 0.08),
         }}
       >
         <Typography variant="body2" color="textSecondary">
-          Total duration:
+          Estimated minimum duration:
         </Typography>
         <Chip
           label={totalDuration}
           size="small"
-          color="info"
+          color="warning"
           variant="outlined"
         />
+        <Typography variant="caption" color="textSecondary" sx={{ fontStyle: "italic" }}>
+          (Actual scan may take longer due to stage movement, autofocus, and acquisition time)
+        </Typography>
       </Box>
 
       {/* Interval */}
