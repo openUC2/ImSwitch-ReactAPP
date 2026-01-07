@@ -55,6 +55,7 @@ import {
   apiGetAvailableScanModes,
   apiGetAvailableStorageFormats,
   apiGetLatestZarrPath,
+  apiGetObjectiveFOV,
 } from "../backendapi/apiLightsheetController.js";
 import {
   apiLightsheetControllerObservationStreamControl,
@@ -133,6 +134,19 @@ const LightsheetController = () => {
   const availableScanModes = lightsheetState.availableScanModes;
   const availableStorageFormats = lightsheetState.availableStorageFormats;
   const latestZarrPath = lightsheetState.latestZarrPath;
+  
+  // Tiling and timelapse state from Redux
+  const enableTiling = lightsheetState.enableTiling;
+  const tilesXPositive = lightsheetState.tilesXPositive;
+  const tilesXNegative = lightsheetState.tilesXNegative;
+  const tilesYPositive = lightsheetState.tilesYPositive;
+  const tilesYNegative = lightsheetState.tilesYNegative;
+  const tileStepSizeX = lightsheetState.tileStepSizeX;
+  const tileStepSizeY = lightsheetState.tileStepSizeY;
+  const tileOverlap = lightsheetState.tileOverlap;
+  const timepoints = lightsheetState.timepoints;
+  const timeLapsePeriod = lightsheetState.timeLapsePeriod;
+  const objectiveFOV = lightsheetState.objectiveFOV;
 
   // Local state for socket connection
   const [socketConnected, setSocketConnected] = useState(false);
@@ -363,6 +377,16 @@ const LightsheetController = () => {
         if (Array.isArray(formats)) {
           dispatch(lightsheetSlice.setAvailableStorageFormats(formats));
         }
+        
+        // Fetch objective FOV for tiling hints
+        const fovInfo = await apiGetObjectiveFOV();
+        if (fovInfo.success) {
+          dispatch(lightsheetSlice.setObjectiveFOV(fovInfo));
+          // Auto-calculate tiling step size based on FOV with overlap
+          const overlapFactor = 1 - fovInfo.suggestedOverlap;
+          dispatch(lightsheetSlice.setTileStepSizeX(fovInfo.fovX * overlapFactor));
+          dispatch(lightsheetSlice.setTileStepSizeY(fovInfo.fovY * overlapFactor));
+        }
       } catch (error) {
         console.error("Error fetching options:", error);
       }
@@ -457,6 +481,16 @@ const LightsheetController = () => {
           illuValue: parseFloat(illuValue),
           storageFormat,
           experimentName,
+          enableTiling,
+          tilesXPositive: parseInt(tilesXPositive),
+          tilesXNegative: parseInt(tilesXNegative),
+          tilesYPositive: parseInt(tilesYPositive),
+          tilesYNegative: parseInt(tilesYNegative),
+          tileStepSizeX: parseFloat(tileStepSizeX),
+          tileStepSizeY: parseFloat(tileStepSizeY),
+          tileOverlap: parseFloat(tileOverlap),
+          timepoints: parseInt(timepoints),
+          timeLapsePeriod: parseFloat(timeLapsePeriod)
         });
       } else {
         result = await apiStartContinuousScanWithZarr({
@@ -478,7 +512,9 @@ const LightsheetController = () => {
     } catch (error) {
       console.error("Error starting scan:", error);
     }
-  }, [scanMode, minPos, maxPos, stepSize, speed, axis, illuSource, illuValue, storageFormat, experimentName, dispatch]);
+  }, [scanMode, minPos, maxPos, stepSize, speed, axis, illuSource, illuValue, storageFormat, experimentName, 
+      enableTiling, tilesXPositive, tilesXNegative, tilesYPositive, tilesYNegative, 
+      tileStepSizeX, tileStepSizeY, tileOverlap, timepoints, timeLapsePeriod, dispatch]);
 
   // Fetch and show latest Zarr for visualization
   const openZarrViewer = useCallback(async () => {
@@ -796,6 +832,161 @@ const LightsheetController = () => {
               />
             </Box>
           </Grid>
+
+          {/* Tiling Configuration (only for step-acquire mode) */}
+          {scanMode === "step_acquire" && (
+            <>
+              <Grid item xs={12}>
+                <Divider sx={{ my: 2 }} />
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Typography variant="h6" gutterBottom>
+                    XY Tiling Configuration
+                  </Typography>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={enableTiling}
+                        onChange={(e) => dispatch(lightsheetSlice.setEnableTiling(e.target.checked))}
+                        color="primary"
+                      />
+                    }
+                    label="Enable Tiling"
+                  />
+                </Box>
+                <Typography variant="caption" color="text.secondary">
+                  Suggested FOV: {objectiveFOV.fovX.toFixed(1)} x {objectiveFOV.fovY.toFixed(1)} µm
+                </Typography>
+              </Grid>
+
+              {enableTiling && (
+                <>
+                  <Grid item xs={12} md={3}>
+                    <TextField
+                      label="Tiles +X"
+                      value={tilesXPositive}
+                      onChange={(e) => dispatch(lightsheetSlice.setTilesXPositive(parseInt(e.target.value) || 0))}
+                      fullWidth
+                      type="number"
+                      variant="outlined"
+                      inputProps={{ min: 0 }}
+                      helperText="Positive X direction"
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={3}>
+                    <TextField
+                      label="Tiles -X"
+                      value={tilesXNegative}
+                      onChange={(e) => dispatch(lightsheetSlice.setTilesXNegative(parseInt(e.target.value) || 0))}
+                      fullWidth
+                      type="number"
+                      variant="outlined"
+                      inputProps={{ min: 0 }}
+                      helperText="Negative X direction"
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={3}>
+                    <TextField
+                      label="Tiles +Y"
+                      value={tilesYPositive}
+                      onChange={(e) => dispatch(lightsheetSlice.setTilesYPositive(parseInt(e.target.value) || 0))}
+                      fullWidth
+                      type="number"
+                      variant="outlined"
+                      inputProps={{ min: 0 }}
+                      helperText="Positive Y direction"
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={3}>
+                    <TextField
+                      label="Tiles -Y"
+                      value={tilesYNegative}
+                      onChange={(e) => dispatch(lightsheetSlice.setTilesYNegative(parseInt(e.target.value) || 0))}
+                      fullWidth
+                      type="number"
+                      variant="outlined"
+                      inputProps={{ min: 0 }}
+                      helperText="Negative Y direction"
+                    />
+                  </Grid>
+
+                  <Grid item xs={12} md={4}>
+                    <TextField
+                      label="Step Size X (µm)"
+                      value={tileStepSizeX}
+                      onChange={(e) => dispatch(lightsheetSlice.setTileStepSizeX(parseFloat(e.target.value) || 0))}
+                      fullWidth
+                      type="number"
+                      variant="outlined"
+                      inputProps={{ min: 0, step: 10 }}
+                      helperText={`Suggested: ${(objectiveFOV.fovX * (1 - tileOverlap)).toFixed(1)} µm`}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <TextField
+                      label="Step Size Y (µm)"
+                      value={tileStepSizeY}
+                      onChange={(e) => dispatch(lightsheetSlice.setTileStepSizeY(parseFloat(e.target.value) || 0))}
+                      fullWidth
+                      type="number"
+                      variant="outlined"
+                      inputProps={{ min: 0, step: 10 }}
+                      helperText={`Suggested: ${(objectiveFOV.fovY * (1 - tileOverlap)).toFixed(1)} µm`}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <TextField
+                      label="Overlap (%)"
+                      value={(tileOverlap * 100).toFixed(0)}
+                      onChange={(e) => dispatch(lightsheetSlice.setTileOverlap(parseFloat(e.target.value) / 100 || 0.1))}
+                      fullWidth
+                      type="number"
+                      variant="outlined"
+                      inputProps={{ min: 0, max: 50, step: 5 }}
+                      helperText="Overlap between tiles"
+                    />
+                  </Grid>
+                </>
+              )}
+            </>
+          )}
+
+          {/* Timelapse Configuration (only for step-acquire mode) */}
+          {scanMode === "step_acquire" && (
+            <>
+              <Grid item xs={12}>
+                <Divider sx={{ my: 2 }} />
+                <Typography variant="h6" gutterBottom>
+                  Timelapse Configuration
+                </Typography>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  label="Timepoints"
+                  value={timepoints}
+                  onChange={(e) => dispatch(lightsheetSlice.setTimepoints(parseInt(e.target.value) || 1))}
+                  fullWidth
+                  type="number"
+                  variant="outlined"
+                  inputProps={{ min: 1, step: 1 }}
+                  helperText="Number of timepoints to acquire"
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  label="Period (seconds)"
+                  value={timeLapsePeriod}
+                  onChange={(e) => dispatch(lightsheetSlice.setTimeLapsePeriod(parseFloat(e.target.value) || 60))}
+                  fullWidth
+                  type="number"
+                  variant="outlined"
+                  inputProps={{ min: 1, step: 10 }}
+                  helperText="Time between timepoints"
+                  disabled={timepoints <= 1}
+                />
+              </Grid>
+            </>
+          )}
 
           {/* Progress Display */}
           {(isRunning || scanStatus.progress > 0) && (

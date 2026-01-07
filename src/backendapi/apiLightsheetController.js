@@ -6,7 +6,7 @@ import createAxiosInstance from './createAxiosInstance';
 
 
 /**
- * Start a Go-Stop-Acquire scan with configurable storage format.
+ * Start a Go-Stop-Acquire scan with configurable storage format, optional tiling, and timelapse.
  * This mode moves the stage in discrete steps, stops, acquires an image,
  * then moves to the next position. Suitable for high-quality Z-stacks.
  * 
@@ -19,6 +19,16 @@ import createAxiosInstance from './createAxiosInstance';
  * @param {number} params.illuValue - Illumination intensity
  * @param {string} params.storageFormat - Storage format (tiff, ome_zarr, both)
  * @param {string} params.experimentName - Name for the experiment/files
+ * @param {boolean} params.enableTiling - Enable XY tiling
+ * @param {number} params.tilesXPositive - Number of tiles in positive X direction
+ * @param {number} params.tilesXNegative - Number of tiles in negative X direction
+ * @param {number} params.tilesYPositive - Number of tiles in positive Y direction
+ * @param {number} params.tilesYNegative - Number of tiles in negative Y direction
+ * @param {number} params.tileStepSizeX - Step size in X for tiling (µm)
+ * @param {number} params.tileStepSizeY - Step size in Y for tiling (µm)
+ * @param {number} params.tileOverlap - Overlap fraction between tiles (0-1)
+ * @param {number} params.timepoints - Number of timepoints to acquire
+ * @param {number} params.timeLapsePeriod - Period between timepoints (seconds)
  * @returns {Promise<Object>} Status information including file paths
  */
 export const apiStartStepAcquireScan = async ({
@@ -29,7 +39,17 @@ export const apiStartStepAcquireScan = async ({
   illuSource = "",
   illuValue = 512,
   storageFormat = "ome_zarr",
-  experimentName = "lightsheet_scan"
+  experimentName = "lightsheet_scan",
+  enableTiling = false,
+  tilesXPositive = 0,
+  tilesXNegative = 0,
+  tilesYPositive = 0,
+  tilesYNegative = 0,
+  tileStepSizeX = 0,
+  tileStepSizeY = 0,
+  tileOverlap = 0.1,
+  timepoints = 1,
+  timeLapsePeriod = 60
 }) => {
   try {
     const axiosInstance = createAxiosInstance();
@@ -42,7 +62,17 @@ export const apiStartStepAcquireScan = async ({
         illuSource,
         illuValue,
         storageFormat,
-        experimentName
+        experimentName,
+        enableTiling,
+        tilesXPositive,
+        tilesXNegative,
+        tilesYPositive,
+        tilesYNegative,
+        tileStepSizeX,
+        tileStepSizeY,
+        tileOverlap,
+        timepoints,
+        timeLapsePeriod
       }
     });
     return response.data;
@@ -157,7 +187,27 @@ export const apiGetLatestZarrPath = async () => {
     return { zarrPath: null, exists: false };
   }
 };
-
+/**
+ * Get the field of view (FOV) of the current objective.
+ * Used as a hint for tiling step size calculations.
+ * @returns {Promise<Object>} FOV information including width, height, pixelSize, and suggested overlap
+ */
+export const apiGetObjectiveFOV = async () => {
+  try {
+    const axiosInstance = createAxiosInstance();
+    const response = await axiosInstance.get("/LightsheetController/getObjectiveFOV");
+    return response.data;
+  } catch (error) {
+    console.error("Failed to get objective FOV:", error);
+    return {
+      fovX: 1000,
+      fovY: 1000,
+      pixelSize: 1.0,
+      suggestedOverlap: 0.1,
+      success: false
+    };
+  }
+};
 /**
  * Check if lightsheet scan is currently running (legacy API).
  * @returns {Promise<boolean>} Whether scan is running

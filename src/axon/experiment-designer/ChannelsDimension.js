@@ -299,11 +299,20 @@ const ChannelsDimension = () => {
     }
   };
 
+
   // Handler for exposure change
   const handleExposureChange = (index, value) => {
     const arr = [...exposures];
     arr[index] = Number(value);
     dispatch(experimentSlice.setExposureTimes(arr));
+    // update backend immediately for real-time feedback
+    if ( connectionSettings.ip && connectionSettings.apiPort) {
+      fetch(
+        `${connectionSettings.ip}:${connectionSettings.apiPort}/SettingsController/setDetectorExposureTime?exposureTime=${value}`
+      ).catch((error) => {
+        console.error("Failed to update detector exposure time:", error);
+      });
+    }
   };
 
   // Handler for gain change
@@ -311,6 +320,14 @@ const ChannelsDimension = () => {
     const arr = [...gains];
     arr[index] = Number(value);
     dispatch(experimentSlice.setGains(arr));
+    // update backend immediately for real-time feedback
+    if (connectionSettings.ip && connectionSettings.apiPort) {
+      fetch(
+        `${connectionSettings.ip}:${connectionSettings.apiPort}/SettingsController/setDetectorGain?gain=${value}`
+      ).catch((error) => {
+        console.error("Failed to update detector gain:", error);
+      });
+    }
   };
 
   // Copy settings from first channel to all
