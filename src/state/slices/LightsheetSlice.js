@@ -69,6 +69,13 @@ const initialState = {
     z: { offset: 0, scale: 1, invert: false },
     a: { offset: 0, scale: 1, invert: false }
   },
+
+  // 3D viewer camera state (persisted)
+  cameraState: {
+    position: null, // Will be set on first load
+    target: null,   // Camera look-at target
+    zoom: null      // Camera zoom/distance
+  },
 };
 
 const lightsheetSlice = createSlice({
@@ -226,6 +233,11 @@ const lightsheetSlice = createSlice({
       state.axisConfig[axis].invert = invert;
     },
 
+    // 3D viewer camera state actions
+    setCameraState: (state, action) => {
+      state.cameraState = { ...state.cameraState, ...action.payload };
+    },
+
     // Reset actions
     resetToDefaults: (state) => {
       return { ...initialState };
@@ -274,6 +286,7 @@ export const {
   setAxisOffset,
   setAxisScale,
   setAxisInvert,
+  setCameraState,
   resetToDefaults,
   resetScan,
 } = lightsheetSlice.actions;

@@ -10,6 +10,8 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
  * 
  * @param {Object} positions - Current stage positions: { x, y, z, a }
  * @param {Object} axisConfig - Per-axis configuration: { x: {offset, scale, invert}, y: {...}, z: {...}, a: {...} }
+ * @param {Object} cameraState - Saved camera state: { position: {x,y,z}, target: {x,y,z}, zoom }
+ * @param {Function} onCameraChange - Callback when camera position changes (for persistence)
  * @param {number} width - Viewer width in pixels
  * @param {number} height - Viewer height in pixels
  */
@@ -21,6 +23,8 @@ const Lightsheet3DViewer = ({
     z: { offset: 0, scale: 1, invert: false },
     a: { offset: 0, scale: 1, invert: false }
   },
+  cameraState = null,
+  onCameraChange = null,
   width = 600,
   height = 400
 }) => {
@@ -31,11 +35,15 @@ const Lightsheet3DViewer = ({
   const controlsRef = useRef(null);
   const groupsRef = useRef(null);
   const animationIdRef = useRef(null);
+  const cameraTimeoutRef = useRef(null);
 
   // Apply axis configuration (offset, scale, invert) to raw position
+  // Offset is used for calibration - applied once to compensate for hardware zero points
+  // Scale adjusts units, invert changes direction
   const applyAxisConfig = (rawValue, axisName) => {
     const config = axisConfig[axisName] || { offset: 0, scale: 1, invert: false };
-    let value = rawValue * config.scale + config.offset;
+    // Apply offset first (calibration), then scale, then invert direction
+    let value = (rawValue + config.offset) * config.scale;
     if (config.invert) {
       value = -value;
     }
@@ -155,9 +163,29 @@ const Lightsheet3DViewer = ({
         const maxDim = Math.max(size.x, size.y, size.z);
         camera.near = Math.max(0.1, maxDim / 1000);
         camera.far = maxDim * 50;
-        camera.position.copy(center).add(
-          new THREE.Vector3(maxDim * 1.2, maxDim * 0.6, maxDim * 1.2)
-        );
+        
+        // Restore saved camera state if available, otherwise use default
+        if (cameraState && cameraState.position) {
+          camera.position.set(
+            cameraState.position.x,
+            cameraState.position.y,
+            cameraState.position.z
+          );
+          if (cameraState.target) {
+            controls.target.set(
+              cameraState.target.x,
+              cameraState.target.y,
+              cameraState.target.z
+            );
+          }
+          console.log('[3D Viewer] Restored saved camera position');
+        } else {
+          // Default camera position
+          camera.position.copy(center).add(
+            new THREE.Vector3(maxDim * 1.2, maxDim * 0.6, maxDim * 1.2)
+          );
+        }
+        
         camera.updateProjectionMatrix();
         controls.update();
       },
@@ -183,6 +211,26 @@ const Lightsheet3DViewer = ({
     };
     animate();
 
+    // Save camera state on user interaction (debounced)
+    const saveCameraState = () => {
+      if (cameraTimeoutRef.current) clearTimeout(cameraTimeoutRef.current);
+      cameraTimeoutRef.current = setTimeout(() => {
+        if (onCameraChange && cameraRef.current && controlsRef.current) {
+          const camPos = cameraRef.current.position;
+          const camTarget = controlsRef.current.target;
+          onCameraChange({
+            position: { x: camPos.x, y: camPos.y, z: camPos.z },
+            target: { x: camTarget.x, y: camTarget.y, z: camTarget.z },
+          });
+        }
+      }, 500); // Debounce 500ms
+    };
+
+    // Listen to control changes
+    if (controls) {
+      controls.addEventListener('change', saveCameraState);
+    }
+
     // Handle resize
     const handleResize = () => {
       if (!cameraRef.current || !rendererRef.current) return;
@@ -200,6 +248,12 @@ const Lightsheet3DViewer = ({
     // Cleanup
     return () => {
       window.removeEventListener("resize", handleResize);
+      if (controls && saveCameraState) {
+        controls.removeEventListener('change', saveCameraState);
+      }
+      if (cameraTimeoutRef.current) {
+        clearTimeout(cameraTimeoutRef.current);
+      }
       if (animationIdRef.current) {
         cancelAnimationFrame(animationIdRef.current);
       }
@@ -208,7 +262,30 @@ const Lightsheet3DViewer = ({
         rendererRef.current.dispose();
       }
     };
-  }, [width, height]);
+  }, [width, height]); // Removed cameraState and onCameraChange to prevent re-render on every position change
+
+  // Separate useEffect for restoring camera state only when it changes in Redux
+  useEffect(() => {
+    if (!cameraRef.current || !controlsRef.current || !cameraState) return;
+    
+    // Only restore if we have a saved camera state
+    if (cameraState.position) {
+      cameraRef.current.position.set(
+        cameraState.position.x,
+        cameraState.position.y,
+        cameraState.position.z
+      );
+      if (cameraState.target) {
+        controlsRef.current.target.set(
+          cameraState.target.x,
+          cameraState.target.y,
+          cameraState.target.z
+        );
+      }
+      controlsRef.current.update();
+      console.log('[3D Viewer] Camera state updated from Redux');
+    }
+  }, [cameraState]);
 
   // Update positions based on stage movements
   useEffect(() => {

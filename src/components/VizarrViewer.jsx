@@ -151,7 +151,11 @@ const VizarrViewer = ({
     }
     
     // Build URL from connection settings
-    return `${connectionSettings.ip}:${connectionSettings.apiPort}/data${zarrUrl}`;
+    // Check if zarrUrl already starts with /data/ to avoid double prefix
+    const urlPath = zarrUrl.startsWith("/data/") || zarrUrl.startsWith("/data") 
+      ? zarrUrl 
+      : `/data${zarrUrl}`;
+    return `${connectionSettings.ip}:${connectionSettings.apiPort}${urlPath}`;
   }, [zarrUrl, connectionSettings.ip, connectionSettings.apiPort]);
   
   // Initialize channel settings when dimensions change

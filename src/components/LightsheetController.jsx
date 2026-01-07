@@ -5,6 +5,10 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import StopIcon from "@mui/icons-material/Stop";
 import ViewInArIcon from "@mui/icons-material/ViewInAr";
 import DownloadIcon from "@mui/icons-material/Download";
+import FlipIcon from "@mui/icons-material/Flip";
+import RotateRightIcon from "@mui/icons-material/RotateRight";
+import VideocamIcon from "@mui/icons-material/Videocam";
+import VideocamOffIcon from "@mui/icons-material/VideocamOff";
 import {
   Box,
   Button,
@@ -21,9 +25,17 @@ import {
   Typography,
   Alert,
   Chip,
+  Slider,
+  Switch,
+  FormControlLabel,
+  ToggleButton,
+  ToggleButtonGroup,
+  IconButton,
+  Tooltip,
+  Divider,
 } from "@mui/material";
 import { green, red, orange } from "@mui/material/colors";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import LiveViewControlWrapper from "../axon/LiveViewControlWrapper.js";
 import * as connectionSettingsSlice from "../state/slices/ConnectionSettingsSlice.js";
@@ -44,6 +56,20 @@ import {
   apiGetAvailableStorageFormats,
   apiGetLatestZarrPath,
 } from "../backendapi/apiLightsheetController.js";
+import {
+  apiLightsheetControllerObservationStreamControl,
+  apiLightsheetControllerSetObservationExposure,
+  apiLightsheetControllerGetObservationExposure,
+  apiLightsheetControllerSetObservationGain,
+  apiLightsheetControllerGetObservationGain,
+  apiLightsheetControllerSetStreamTransform,
+} from "../backendapi/apiLightsheetControllerObservationStream.js";
+import {
+  apiGetCameraExposureTime,
+  apiSetCameraExposureTime,
+  apiGetCameraGain,
+  apiSetCameraGain,
+} from "../backendapi/apiLightsheetCameraSettings.js";
 
 // Import Socket.IO client for real-time updates
 import { io } from "socket.io-client";
@@ -112,6 +138,21 @@ const LightsheetController = () => {
   const [socketConnected, setSocketConnected] = useState(false);
   const [showZarrViewer, setShowZarrViewer] = useState(false);
 
+  // Observation camera stream state
+  const [observationStreamActive, setObservationStreamActive] = useState(false);
+  const [observationStreamUrl, setObservationStreamUrl] = useState('');
+  const [observationExposure, setObservationExposure] = useState(50);
+  const [observationGain, setObservationGain] = useState(1);
+  const [flipX, setFlipX] = useState(false);
+  const [flipY, setFlipY] = useState(false);
+  const [rotation, setRotation] = useState(0);
+  const [streamError, setStreamError] = useState('');
+  const observationImgRef = useRef(null);
+
+  // Camera settings state for live view (2D lightsheet camera)
+  const [cameraExposure, setCameraExposure] = useState(100);
+  const [cameraGain, setCameraGain] = useState(0);
+
   // Initialize Socket.IO connection for real-time updates
   useEffect(() => {
     if (!hostIP || !hostPort) return;
@@ -146,6 +187,168 @@ const LightsheetController = () => {
       socket.disconnect();
     };
   }, [hostIP, hostPort, dispatch]);
+
+  // Set up observation stream URL
+  useEffect(() => {
+    if (hostIP && hostPort) {
+      setObservationStreamUrl(`${hostIP}:${hostPort}/LightsheetController/observationStream`);
+    }
+  }, [hostIP, hostPort]);
+
+  // Fetch initial observation camera settings
+  useEffect(() => {
+    const fetchCameraSettings = async () => {
+      try {
+        const exposure = await apiLightsheetControllerGetObservationExposure();
+        if (typeof exposure === 'number') {
+          setObservationExposure(exposure);
+        }
+        const gain = await apiLightsheetControllerGetObservationGain();
+        if (typeof gain === 'number') {
+          setObservationGain(gain);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch observation camera settings:', err);
+      }
+    };
+    
+    if (hostIP && hostPort) {
+      fetchCameraSettings();
+    }
+  }, [hostIP, hostPort]);
+
+  // Fetch initial live view camera settings (2D lightsheet camera)
+  useEffect(() => {
+    const fetchLiveViewCameraSettings = async () => {
+      try {
+        const exposureResult = await apiGetCameraExposureTime();
+        if (exposureResult.success && typeof exposureResult.exposureTime === 'number') {
+          setCameraExposure(exposureResult.exposureTime);
+        }
+        const gainResult = await apiGetCameraGain();
+        if (gainResult.success && typeof gainResult.gain === 'number') {
+          setCameraGain(gainResult.gain);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch live view camera settings:', err);
+      }
+    };
+    
+    if (hostIP && hostPort) {
+      fetchLiveViewCameraSettings();
+    }
+  }, [hostIP, hostPort]);
+
+  // Handle observation stream toggle
+  const handleObservationStreamToggle = async () => {
+    try {
+      setStreamError('');
+      const newState = !observationStreamActive;
+      
+      if (newState) {
+        // Start stream - simply toggle state, img tag will connect automatically
+        setObservationStreamActive(true);
+      } else {
+        // Stop stream via API
+        try {
+          await apiLightsheetControllerObservationStreamControl(false);
+        } catch (err) {
+          console.warn('Error stopping stream:', err);
+        }
+        setObservationStreamActive(false);
+      }
+    } catch (err) {
+      setStreamError(`Failed to ${observationStreamActive ? 'stop' : 'start'} stream: ${err.message}`);
+    }
+  };
+
+  // Handle exposure change
+  const handleExposureChange = async (event, value) => {
+    setObservationExposure(value);
+  };
+
+  const handleExposureChangeCommitted = async (event, value) => {
+    try {
+      await apiLightsheetControllerSetObservationExposure(value);
+    } catch (err) {
+      console.error('Failed to set exposure:', err);
+    }
+  };
+
+  // Handle gain change
+  const handleGainChange = async (event, value) => {
+    setObservationGain(value);
+  };
+
+  const handleGainChangeCommitted = async (event, value) => {
+    try {
+      await apiLightsheetControllerSetObservationGain(value);
+    } catch (err) {
+      console.error('Failed to set gain:', err);
+    }
+  };
+
+  // Handle flip/rotate changes
+  const handleFlipXToggle = async () => {
+    const newFlipX = !flipX;
+    setFlipX(newFlipX);
+    try {
+      await apiLightsheetControllerSetStreamTransform({ flipX: newFlipX, flipY, rotation });
+    } catch (err) {
+      console.error('Failed to set transform:', err);
+    }
+  };
+
+  const handleFlipYToggle = async () => {
+    const newFlipY = !flipY;
+    setFlipY(newFlipY);
+    try {
+      await apiLightsheetControllerSetStreamTransform({ flipX, flipY: newFlipY, rotation });
+    } catch (err) {
+      console.error('Failed to set transform:', err);
+    }
+  };
+
+  const handleRotationChange = async (event, newRotation) => {
+    if (newRotation !== null) {
+      setRotation(newRotation);
+      try {
+        await apiLightsheetControllerSetStreamTransform({ flipX, flipY, rotation: newRotation });
+      } catch (err) {
+        console.error('Failed to set rotation:', err);
+      }
+    }
+  };
+
+  // Handle live view camera exposure change
+  const handleCameraExposureChange = async (event, value) => {
+    const newExposure = value || cameraExposure;
+    try {
+      const result = await apiSetCameraExposureTime(newExposure);
+      if (result.success) {
+        console.log(`Live view camera exposure set to ${newExposure} ms`);
+      } else {
+        console.warn('Failed to set camera exposure:', result.message);
+      }
+    } catch (err) {
+      console.error('Error setting camera exposure:', err);
+    }
+  };
+
+  // Handle live view camera gain change
+  const handleCameraGainChange = async (event, value) => {
+    const newGain = value || cameraGain;
+    try {
+      const result = await apiSetCameraGain(newGain);
+      if (result.success) {
+        console.log(`Live view camera gain set to ${newGain}`);
+      } else {
+        console.warn('Failed to set camera gain:', result.message);
+      }
+    } catch (err) {
+      console.error('Error setting camera gain:', err);
+    }
+  };
 
   // Fetch available scan modes and storage formats on mount
   useEffect(() => {
@@ -190,6 +393,7 @@ const LightsheetController = () => {
   }, [hostIP, hostPort, isRunning, socketConnected, dispatch]);
 
   // Poll current positions for 3D visualization
+  // Fetch immediately on mount, then poll periodically
   useEffect(() => {
     if (!hostIP || !hostPort) return;
 
@@ -214,7 +418,10 @@ const LightsheetController = () => {
       }
     };
 
+    // Fetch immediately on mount for 3D viewer initial positioning
     fetchPositions();
+    
+    // Then poll every 20 seconds
     const interval = setInterval(fetchPositions, 20000);
     return () => clearInterval(interval);
   }, [hostIP, hostPort, dispatch]);
@@ -321,6 +528,7 @@ const LightsheetController = () => {
         scrollButtons="auto"
       >
         <Tab label="Scanning Parameters" />
+        <Tab label="Observation Camera" />
         <Tab label="Galvo Scanner" />
         <Tab label="View Latest Stack" />
         <Tab label="3D Zarr Viewer" />
@@ -363,6 +571,10 @@ const LightsheetController = () => {
             <Lightsheet3DViewer
               positions={lightsheetState.stagePositions}
               axisConfig={lightsheetState.axisConfig}
+              cameraState={lightsheetState.cameraState}
+              onCameraChange={(newCameraState) => {
+                dispatch(lightsheetSlice.setCameraState(newCameraState));
+              }}
               width={600}
               height={400}
             />
@@ -484,13 +696,19 @@ const LightsheetController = () => {
           )}
 
           <Grid item xs={12} md={4}>
-            <TextField
-              label="Axis"
-              value={axis}
-              onChange={(e) => dispatch(lightsheetSlice.setAxis(e.target.value))}
-              fullWidth
-              variant="outlined"
-            />
+            <FormControl fullWidth variant="outlined">
+              <InputLabel>Axis</InputLabel>
+              <Select
+                value={axis}
+                onChange={(e) => dispatch(lightsheetSlice.setAxis(e.target.value))}
+                label="Axis"
+              >
+                <MenuItem value="A">A Axis</MenuItem>
+                <MenuItem value="X">X Axis</MenuItem>
+                <MenuItem value="Y">Y Axis</MenuItem>
+                <MenuItem value="Z">Z Axis</MenuItem>
+              </Select>
+            </FormControl>
           </Grid>
           <Grid item xs={12} md={4}>
             <TextField
@@ -511,6 +729,72 @@ const LightsheetController = () => {
               type="number"
               variant="outlined"
             />
+          </Grid>
+
+          {/* Camera Settings for Live View */}
+          <Grid item xs={12}>
+            <Divider sx={{ my: 2 }} />
+            <Typography variant="h6" gutterBottom>
+              Camera Settings (Live View)
+            </Typography>
+          </Grid>
+          
+          <Grid item xs={12} md={6}>
+            <Typography variant="body2" gutterBottom>
+              Exposure Time (ms)
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Slider
+                value={cameraExposure}
+                onChange={(e, value) => setCameraExposure(value)}
+                onChangeCommitted={handleCameraExposureChange}
+                min={1}
+                max={1000}
+                valueLabelDisplay="auto"
+              />
+              <TextField
+                value={cameraExposure}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value);
+                  if (!isNaN(val)) {
+                    setCameraExposure(val);
+                    handleCameraExposureChange(null, val);
+                  }
+                }}
+                type="number"
+                size="small"
+                sx={{ width: 100 }}
+              />
+            </Box>
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <Typography variant="body2" gutterBottom>
+              Gain
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Slider
+                value={cameraGain}
+                onChange={(e, value) => setCameraGain(value)}
+                onChangeCommitted={handleCameraGainChange}
+                min={0}
+                max={100}
+                valueLabelDisplay="auto"
+              />
+              <TextField
+                value={cameraGain}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value);
+                  if (!isNaN(val)) {
+                    setCameraGain(val);
+                    handleCameraGainChange(null, val);
+                  }
+                }}
+                type="number"
+                size="small"
+                sx={{ width: 100 }}
+              />
+            </Box>
           </Grid>
 
           {/* Progress Display */}
@@ -615,7 +899,213 @@ const LightsheetController = () => {
         </Grid>
       </TabPanel>
 
+      {/* Observation Camera Tab */}
       <TabPanel value={tabIndex} index={1}>
+        <Grid container spacing={3}>
+          {/* Stream Error Display */}
+          {streamError && (
+            <Grid item xs={12}>
+              <Alert severity="error" onClose={() => setStreamError('')}>
+                {streamError}
+              </Alert>
+            </Grid>
+          )}
+
+          {/* Observation Camera Stream */}
+          <Grid item xs={12} md={8}>
+            <Paper sx={{ p: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                Observation Camera Stream
+              </Typography>
+              
+              {/* Stream Controls */}
+              <Box sx={{ mb: 2, display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
+                <Button 
+                  variant="contained" 
+                  color={observationStreamActive ? "error" : "primary"}
+                  onClick={handleObservationStreamToggle}
+                  startIcon={observationStreamActive ? <VideocamOffIcon /> : <VideocamIcon />}
+                >
+                  {observationStreamActive ? 'Stop Stream' : 'Start Stream'}
+                </Button>
+
+                <Divider orientation="vertical" flexItem />
+
+                {/* Flip Controls */}
+                <Tooltip title="Flip Horizontal">
+                  <IconButton 
+                    onClick={handleFlipXToggle}
+                    color={flipX ? "primary" : "default"}
+                  >
+                    <FlipIcon />
+                  </IconButton>
+                </Tooltip>
+                
+                <Tooltip title="Flip Vertical">
+                  <IconButton 
+                    onClick={handleFlipYToggle}
+                    color={flipY ? "primary" : "default"}
+                    sx={{ transform: 'rotate(90deg)' }}
+                  >
+                    <FlipIcon />
+                  </IconButton>
+                </Tooltip>
+
+                <Divider orientation="vertical" flexItem />
+
+                {/* Rotation Controls */}
+                <ToggleButtonGroup
+                  value={rotation}
+                  exclusive
+                  onChange={handleRotationChange}
+                  size="small"
+                >
+                  <ToggleButton value={0}>0°</ToggleButton>
+                  <ToggleButton value={90}>90°</ToggleButton>
+                  <ToggleButton value={180}>180°</ToggleButton>
+                  <ToggleButton value={270}>270°</ToggleButton>
+                </ToggleButtonGroup>
+              </Box>
+
+              {/* MJPEG Stream Display */}
+              <Box 
+                sx={{ 
+                  backgroundColor: 'black', 
+                  minHeight: 400,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  position: 'relative',
+                  borderRadius: 1,
+                  overflow: 'hidden'
+                }}
+              >
+                {observationStreamActive ? (
+                  <img
+                    ref={observationImgRef}
+                    src={observationStreamUrl}
+                    alt="Observation Camera"
+                    style={{ 
+                      display: 'block',
+                      margin: 'auto',
+                      maxWidth: '100%', 
+                      maxHeight: 500,
+                      objectFit: 'contain',
+                      WebkitUserSelect: 'none',
+                      transform: `scaleX(${flipX ? -1 : 1}) scaleY(${flipY ? -1 : 1}) rotate(${rotation}deg)`
+                    }}
+                    onError={() => setStreamError('Failed to load stream. Check if observation camera is available.')}
+                  />
+                ) : (
+                  <Typography color="white">
+                    Stream not active. Click "Start Stream" to begin.
+                  </Typography>
+                )}
+              </Box>
+            </Paper>
+          </Grid>
+
+          {/* Camera Controls */}
+          <Grid item xs={12} md={4}>
+            <Paper sx={{ p: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                Camera Settings
+              </Typography>
+
+              {/* Exposure Time Slider */}
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Exposure Time (ms)
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Slider
+                    value={observationExposure}
+                    onChange={handleExposureChange}
+                    onChangeCommitted={handleExposureChangeCommitted}
+                    min={1}
+                    max={1000}
+                    valueLabelDisplay="auto"
+                    disabled={!observationStreamActive}
+                  />
+                  <TextField
+                    value={observationExposure}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      if (!isNaN(val)) {
+                        setObservationExposure(val);
+                        handleExposureChangeCommitted(null, val);
+                      }
+                    }}
+                    type="number"
+                    size="small"
+                    sx={{ width: 80 }}
+                    disabled={!observationStreamActive}
+                  />
+                </Box>
+              </Box>
+
+              {/* Gain Slider */}
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Gain
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Slider
+                    value={observationGain}
+                    onChange={handleGainChange}
+                    onChangeCommitted={handleGainChangeCommitted}
+                    min={0}
+                    max={100}
+                    valueLabelDisplay="auto"
+                    disabled={!observationStreamActive}
+                  />
+                  <TextField
+                    value={observationGain}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      if (!isNaN(val)) {
+                        setObservationGain(val);
+                        handleGainChangeCommitted(null, val);
+                      }
+                    }}
+                    type="number"
+                    size="small"
+                    sx={{ width: 80 }}
+                    disabled={!observationStreamActive}
+                  />
+                </Box>
+              </Box>
+
+              <Divider sx={{ my: 2 }} />
+
+              {/* Transform Status */}
+              <Typography variant="subtitle2" gutterBottom>
+                Current Transform
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                <Chip 
+                  label={`Flip X: ${flipX ? 'On' : 'Off'}`} 
+                  size="small" 
+                  color={flipX ? 'primary' : 'default'}
+                />
+                <Chip 
+                  label={`Flip Y: ${flipY ? 'On' : 'Off'}`} 
+                  size="small" 
+                  color={flipY ? 'primary' : 'default'}
+                />
+                <Chip 
+                  label={`Rotation: ${rotation}°`} 
+                  size="small" 
+                  color={rotation !== 0 ? 'primary' : 'default'}
+                />
+              </Box>
+            </Paper>
+          </Grid>
+        </Grid>
+      </TabPanel>
+
+      {/* Galvo Scanner Tab - now index 2 */}
+      <TabPanel value={tabIndex} index={2}>
         <Grid container spacing={3}>
           <Grid item xs={12}>
             <Typography variant="h6" gutterBottom>
@@ -768,7 +1258,8 @@ const LightsheetController = () => {
         </Grid>
       </TabPanel>
 
-      <TabPanel value={tabIndex} index={2}>
+      {/* View Latest Stack Tab - now index 3 */}
+      <TabPanel value={tabIndex} index={3}>
         <Grid container spacing={3}>
           <Grid item xs={12}>
             <Typography variant="h6" gutterBottom>
@@ -815,8 +1306,8 @@ const LightsheetController = () => {
         </Grid>
       </TabPanel>
 
-      {/* 3D Zarr Viewer Tab */}
-      <TabPanel value={tabIndex} index={3}>
+      {/* 3D Zarr Viewer Tab - now index 4 */}
+      <TabPanel value={tabIndex} index={4}>
         <Grid container spacing={3}>
           <Grid item xs={12}>
             <Typography variant="h6" gutterBottom>
@@ -875,8 +1366,8 @@ const LightsheetController = () => {
         </Grid>
       </TabPanel>
 
-      {/* VTK Viewer Tab */}
-      <TabPanel value={tabIndex} index={4}>
+      {/* VTK Viewer Tab - now index 5 */}
+      <TabPanel value={tabIndex} index={5}>
         <ErrorBoundary>
           <Typography variant="h6" gutterBottom>
             VTK Volume Viewer (TIFF)
