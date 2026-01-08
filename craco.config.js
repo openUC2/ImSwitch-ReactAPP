@@ -3,7 +3,7 @@ const { ModuleFederationPlugin } = require("webpack").container;
 module.exports = {
   webpack: {
     configure: (config) => {
-      config.output.publicPath = "/imswitch";
+      config.output.publicPath = "/imswitch/ui";
 
       // Fix ES module resolution issues with luma.gl
       config.module.rules.push({
