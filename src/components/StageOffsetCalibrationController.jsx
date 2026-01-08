@@ -55,7 +55,7 @@ const StageOffsetCalibration = () => {
     const fetchPositionerName = async () => {
       try {
         const response = await fetch(
-          `${hostIP}:${hostPort}/PositionerController/getPositionerNames`
+          `${hostIP}:${hostPort}/imswitch/api/PositionerController/getPositionerNames`
         );
         const data = await response.json();
         if (data && data.length > 0) {
@@ -74,7 +74,7 @@ const StageOffsetCalibration = () => {
       try {
         // Fetch current offsets
         const offsetXData = await fetch(
-          `${hostIP}:${hostPort}/PositionerController/getStageOffsetAxis?axis=X`
+          `${hostIP}:${hostPort}/imswitch/api/PositionerController/getStageOffsetAxis?axis=X`
         ).then((res) => res.json());
         dispatch(
           stageOffsetCalibrationSlice.setLoadedOffsetX(
@@ -83,7 +83,7 @@ const StageOffsetCalibration = () => {
         );
 
         const offsetYData = await fetch(
-          `${hostIP}:${hostPort}/PositionerController/getStageOffsetAxis?axis=Y`
+          `${hostIP}:${hostPort}/imswitch/api/PositionerController/getStageOffsetAxis?axis=Y`
         ).then((res) => res.json());
         dispatch(
           stageOffsetCalibrationSlice.setLoadedOffsetY(
@@ -93,7 +93,7 @@ const StageOffsetCalibration = () => {
 
         // Fetch true positions (without offset)
         const truePosXData = await fetch(
-          `${hostIP}:${hostPort}/PositionerController/getTruePositionerPositionWithoutOffset?axis=X`
+          `${hostIP}:${hostPort}/imswitch/api/PositionerController/getTruePositionerPositionWithoutOffset?axis=X`
         ).then((res) => res.json());
         dispatch(
           stageOffsetCalibrationSlice.setCurrentX(
@@ -102,7 +102,7 @@ const StageOffsetCalibration = () => {
         );
 
         const truePosYData = await fetch(
-          `${hostIP}:${hostPort}/PositionerController/getTruePositionerPositionWithoutOffset?axis=Y`
+          `${hostIP}:${hostPort}/imswitch/api/PositionerController/getTruePositionerPositionWithoutOffset?axis=Y`
         ).then((res) => res.json());
         dispatch(
           stageOffsetCalibrationSlice.setCurrentY(
@@ -121,7 +121,7 @@ const StageOffsetCalibration = () => {
     const interval = setInterval(async () => {
       try {
         const truePosXData = await fetch(
-          `${hostIP}:${hostPort}/PositionerController/getTruePositionerPositionWithoutOffset?axis=X`
+          `${hostIP}:${hostPort}/imswitch/api/PositionerController/getTruePositionerPositionWithoutOffset?axis=X`
         ).then((res) => res.json());
         dispatch(
           stageOffsetCalibrationSlice.setCurrentX(
@@ -130,7 +130,7 @@ const StageOffsetCalibration = () => {
         );
 
         const truePosYData = await fetch(
-          `${hostIP}:${hostPort}/PositionerController/getTruePositionerPositionWithoutOffset?axis=Y`
+          `${hostIP}:${hostPort}/imswitch/api/PositionerController/getTruePositionerPositionWithoutOffset?axis=Y`
         ).then((res) => res.json());
         dispatch(
           stageOffsetCalibrationSlice.setCurrentY(
@@ -148,7 +148,7 @@ const StageOffsetCalibration = () => {
   // Move stage
   const moveStage = (axis, distance) => {
     fetch(
-      `${hostIP}:${hostPort}/PositionerController/movePositioner?axis=${axis}&dist=${distance}&isAbsolute=false&isBlocking=false`
+      `${hostIP}:${hostPort}/imswitch/api/PositionerController/movePositioner?axis=${axis}&dist=${distance}&isAbsolute=false&isBlocking=false`
     )
       .then((res) => res.json())
       .catch(console.error);
@@ -182,7 +182,7 @@ const StageOffsetCalibration = () => {
       return;
     }
     fetch(
-      `${hostIP}:${hostPort}/PositionerController/setStageOffsetAxis?knownOffset=${offset}&axis=${axis}`
+      `${hostIP}:${hostPort}/imswitch/api/PositionerController/setStageOffsetAxis?knownOffset=${offset}&axis=${axis}`
     )
       .then((res) => res.json())
       .then(() => {
@@ -200,7 +200,7 @@ const StageOffsetCalibration = () => {
       return;
     }
     fetch(
-      `${hostIP}:${hostPort}/PositionerController/setStageOffsetAxis?knownPosition=${knownPos}&axis=${axis}`
+      `${hostIP}:${hostPort}/imswitch/api/PositionerController/setStageOffsetAxis?knownPosition=${knownPos}&axis=${axis}`
     )
       .then((res) => res.json())
       .then(() => {
@@ -213,7 +213,7 @@ const StageOffsetCalibration = () => {
   // Reset offset for a specific axis
   const resetStageOffset = (axis) => {
     fetch(
-      `${hostIP}:${hostPort}/PositionerController/resetStageOffsetAxis?axis=${axis}`
+      `${hostIP}:${hostPort}/imswitch/api/PositionerController/resetStageOffsetAxis?axis=${axis}`
     )
       .then((res) => res.json())
       .then(() => {

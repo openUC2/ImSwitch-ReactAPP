@@ -14,7 +14,7 @@ const JupyterExecutor = () => {
     const fetchNotebookUrl = async () => {
       try {
         const response = await fetch(
-          `${hostIP}:${hostPort}/jupyternotebookurl`
+          `${hostIP}:${hostPort}/imswitch/api/jupyternotebookurl`
         );
         const data = await response.json();
         const notebookUrl = data["url"];

@@ -28,7 +28,7 @@ const JoystickController = ({ hostIP, hostPort }) => {
   // Movement functions
   const moveStage = (axis, distance) => {
     fetch(
-      `${hostIP}:${hostPort}/PositionerController/movePositioner?axis=${axis}&dist=${distance}&isAbsolute=false&isBlocking=false`
+      `${hostIP}:${hostPort}/imswitch/api/PositionerController/movePositioner?axis=${axis}&dist=${distance}&isAbsolute=false&isBlocking=false`
     )
       .then((res) => res.json())
       .catch(console.error);
@@ -37,7 +37,7 @@ const JoystickController = ({ hostIP, hostPort }) => {
   const homeAxis = (axis) => {
     // Using a homing command - this may need adjustment based on your API
     fetch(
-      `${hostIP}:${hostPort}/PositionerController/movePositioner?axis=${axis}&dist=0&isAbsolute=true&isBlocking=false`
+      `${hostIP}:${hostPort}/imswitch/api/PositionerController/movePositioner?axis=${axis}&dist=0&isAbsolute=true&isBlocking=false`
     )
       .then((res) => res.json())
       .catch(console.error);

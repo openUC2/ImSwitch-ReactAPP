@@ -128,7 +128,7 @@ const STORMControllerArkitekt = () => {
   const connectToArkitekt = async () => {
     try {
       const response = await fetch(
-        `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/ArkitektController/connect`
+        `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/ArkitektController/connect`
       );
       if (response.ok) {
         setArkitektConnected(true);
@@ -142,7 +142,7 @@ const STORMControllerArkitekt = () => {
   const loadAvailableWorkflows = async () => {
     try {
       const response = await fetch(
-        `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/ArkitektController/getWorkflows`
+        `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/ArkitektController/getWorkflows`
       );
       if (response.ok) {
         const workflows = await response.json();
@@ -156,7 +156,7 @@ const STORMControllerArkitekt = () => {
   const startArkitektProcessing = async () => {
     try {
       const response = await fetch(
-        `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/ArkitektController/startWorkflow`,
+        `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/ArkitektController/startWorkflow`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -177,7 +177,7 @@ const STORMControllerArkitekt = () => {
   const stopArkitektProcessing = async () => {
     try {
       const response = await fetch(
-        `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/ArkitektController/stopWorkflow`,
+        `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/ArkitektController/stopWorkflow`,
         { method: "POST" }
       );
       if (response.ok) {

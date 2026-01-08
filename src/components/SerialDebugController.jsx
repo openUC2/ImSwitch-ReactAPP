@@ -40,7 +40,7 @@ const SerialDebugController = () => {
   const handleSendSerial = () => {
     if (!serialPayload?.trim()) return;
 
-    const url = `${hostIP}:${hostPort}/UC2ConfigController/writeSerial?payload=${encodeURIComponent(
+    const url = `${hostIP}:${hostPort}/imswitch/api/UC2ConfigController/writeSerial?payload=${encodeURIComponent(
       serialPayload
     )}`;
 

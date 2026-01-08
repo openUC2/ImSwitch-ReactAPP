@@ -109,7 +109,7 @@ const UC2ConfigurationController = () => {
 
 
   const fetchAvailableSetups = useCallback(() => {
-    const url = `${hostIP}:${hostPort}/UC2ConfigController/returnAvailableSetups`;
+    const url = `${hostIP}:${hostPort}/imswitch/api/UC2ConfigController/returnAvailableSetups`;
     dispatch(
       setNotification({
         message: "Loading available setups...",
@@ -148,7 +148,7 @@ const UC2ConfigurationController = () => {
     const maxRetries = 30; // 5 minutes with 10-second intervals
 
     const checkStatus = () => {
-      fetch(`${hostIP}:${hostPort}/UC2ConfigController/is_connected`)
+      fetch(`${hostIP}:${hostPort}/imswitch/api/UC2ConfigController/is_connected`)
         .then((res) => res.json())
         .then((data) => {
           if (data === true) {
@@ -225,7 +225,7 @@ const UC2ConfigurationController = () => {
       })
     );
 
-    const url = `${hostIP}:${hostPort}/UC2ConfigController/setSetupFileName?setupFileName=${encodeURIComponent(
+    const url = `${hostIP}:${hostPort}/imswitch/api/UC2ConfigController/setSetupFileName?setupFileName=${encodeURIComponent(
       selectedSetup
     )}&restartSoftware=${restartSoftware}`;
 
@@ -298,7 +298,7 @@ const UC2ConfigurationController = () => {
       })
     );
 
-    const url = `${hostIP}:${hostPort}/UC2ConfigController/readSetupFile?setupFileName=${encodeURIComponent(
+    const url = `${hostIP}:${hostPort}/imswitch/api/UC2ConfigController/readSetupFile?setupFileName=${encodeURIComponent(
       selectedFileForEdit
     )}`;
 
@@ -469,7 +469,7 @@ const UC2ConfigurationController = () => {
       })
     );
 
-    const url = `${hostIP}:${hostPort}/UC2ConfigController/writeNewSetupFile?setupFileName=${encodeURIComponent(
+    const url = `${hostIP}:${hostPort}/imswitch/api/UC2ConfigController/writeNewSetupFile?setupFileName=${encodeURIComponent(
       finalFileName
     )}&setAsCurrentConfig=${setAsCurrentConfig}&restart=${restartAfterSave}&overwrite=${overwriteFile}`;
 

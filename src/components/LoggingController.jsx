@@ -48,7 +48,7 @@ export default function LoggingController() {
   const [error, setError] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
 
-  const baseUrl = `${hostIP}:${hostPort}`;
+  const baseUrl = `${hostIP}:${hostPort}/imswitch/api`;
 
   /**
    * Fetch the list of log files from the backend

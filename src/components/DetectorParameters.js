@@ -41,7 +41,7 @@ export default function DetectorParameters({ hostIP, hostPort }) {
     async function fetchParams() {
       try {
         const resp = await fetch(
-          `${hostIP}:${hostPort}/SettingsController/getDetectorParameters`
+          `${hostIP}:${hostPort}/imswitch/api/SettingsController/getDetectorParameters`
         );
         if (resp.ok) {
           const data = await resp.json();
@@ -70,28 +70,28 @@ export default function DetectorParameters({ hostIP, hostPort }) {
       switch (field) {
         case "exposure":
           await fetch(
-            `${hostIP}:${hostPort}/SettingsController/setDetectorExposureTime?exposureTime=${value}`
+            `${hostIP}:${hostPort}/imswitch/api/SettingsController/setDetectorExposureTime?exposureTime=${value}`
           );
           break;
         case "gain":
           await fetch(
-            `${hostIP}:${hostPort}/SettingsController/setDetectorGain?gain=${value}`
+            `${hostIP}:${hostPort}/imswitch/api/SettingsController/setDetectorGain?gain=${value}`
           );
           break;
         case "binning":
           await fetch(
-            `${hostIP}:${hostPort}/SettingsController/setDetectorBinning?binning=${value}`
+            `${hostIP}:${hostPort}/imswitch/api/SettingsController/setDetectorBinning?binning=${value}`
           );
           break;
         case "blacklevel":
           await fetch(
-            `${hostIP}:${hostPort}/SettingsController/setDetectorBlackLevel?blacklevel=${value}`
+            `${hostIP}:${hostPort}/imswitch/api/SettingsController/setDetectorBlackLevel?blacklevel=${value}`
           );
           break;
         case "isRGB": {
           const intVal = value ? 1 : 0;
           await fetch(
-            `${hostIP}:${hostPort}/SettingsController/setDetectorIsRGB?isRGB=${intVal}`
+            `${hostIP}:${hostPort}/imswitch/api/SettingsController/setDetectorIsRGB?isRGB=${intVal}`
           );
           break;
         }
@@ -99,7 +99,7 @@ export default function DetectorParameters({ hostIP, hostPort }) {
           // If the API expects e.g. `isAuto=true` for "auto" mode:
           const isAuto = value === "auto";
           await fetch(
-            `${hostIP}:${hostPort}/SettingsController/setDetectorMode?isAuto=${isAuto}`
+            `${hostIP}:${hostPort}/imswitch/api/SettingsController/setDetectorMode?isAuto=${isAuto}`
           );
           break;
         }

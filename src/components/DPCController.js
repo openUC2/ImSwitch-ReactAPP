@@ -62,7 +62,7 @@ const DPCController = () => {
   const processedImageRef = useRef(null);
 
   // Build stream URLs
-  const baseUrl = `${connectionSettings.ip}:${connectionSettings.apiPort}`;
+  const baseUrl = `${connectionSettings.ip}:${connectionSettings.apiPort}/imswitch/api`;
   const rawStreamUrl = `${baseUrl}/RecordingController/video_feeder`;
   const processedStreamUrl = getDpcStreamUrl(baseUrl, 85);
 

@@ -242,7 +242,7 @@ const STORMControllerLocal = () => {
   const handleLoadImage = async () => {
     try {
       const response = await fetch(
-        `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/RecordingController/snapNumpyToFastAPI?resizeFactor=1`
+        `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/RecordingController/snapNumpyToFastAPI?resizeFactor=1`
       );
       if (!response.ok) throw new Error("Failed to load image");
       const blob = await response.blob();

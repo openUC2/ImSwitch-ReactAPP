@@ -29,7 +29,7 @@ const OpenLayersComponent = () => {
       minZoom: 5,
     });
 
-    const urlTemplate = `${hostIP}:${hostPort}/HistoScanController/get_tile?z={z}&x={x}&y={y}`;
+    const urlTemplate = `${hostIP}:${hostPort}/imswitch/api/HistoScanController/get_tile?z={z}&x={x}&y={y}`;
 
     const tileLayer = new TileLayer({
       source: new XYZ({
@@ -39,7 +39,7 @@ const OpenLayersComponent = () => {
         tileUrlFunction: (tileCoord) => {
           console.log("Resolutions:", tileGrid.getResolutions());
           const [z, x, y] = tileCoord;
-          return `${hostIP}:${hostPort}/...&z=${z}&x=${x}&y=${y}`;
+          return `${hostIP}:${hostPort}/imswitch/api/...&z=${z}&x=${x}&y=${y}`;
         },
       }),
     });

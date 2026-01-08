@@ -1223,7 +1223,7 @@ const StreamControlOverlay = ({
                       sx={{ display: "block" }}
                     >
                       Host: {connectionSettingsState.ip}:
-                      {connectionSettingsState.apiPort}
+                      {connectionSettingsState.apiPort}/imswitch
                     </Typography>
                     <Typography
                       variant="caption"

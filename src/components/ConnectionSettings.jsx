@@ -501,7 +501,7 @@ function ConnectionSettings() {
                         )
                           ? `:${apiPort}`
                           : ""
-                      }`}
+                      }/imswitch/api`}
                     />
                     <Chip
                       label={isBackendConnected ? "Connected" : "Disconnected"}
@@ -529,7 +529,7 @@ function ConnectionSettings() {
                           )
                             ? `:${websocketPort}`
                             : ""
-                        }`}
+                        }/imswitch/socket.io`}
                       />
                       <Chip
                         label={getWebSocketStatusLabel(websocketTestStatus)}

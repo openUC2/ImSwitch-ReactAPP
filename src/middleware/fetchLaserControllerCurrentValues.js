@@ -19,7 +19,7 @@ const fetchLaserControllerCurrentValues = async (dispatch, connectionSettings, l
         try {
           const encodedLaserName = encodeURIComponent(laserName);
           const response = await fetch(
-            `${connectionSettings.ip}:${connectionSettings.apiPort}/LaserController/getLaserValue?laserName=${encodedLaserName}`
+            `${connectionSettings.ip}:${connectionSettings.apiPort}/imswitch/api/LaserController/getLaserValue?laserName=${encodedLaserName}`
           );
           
           if (!response.ok) {

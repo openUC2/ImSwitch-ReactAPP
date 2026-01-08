@@ -52,7 +52,7 @@ const ImprovedAxisControl = ({ hostIP, hostPort }) => {
     (async () => {
       try {
         const r = await fetch(
-          `${hostIP}:${hostPort}/PositionerController/getPositionerNames`
+          `${hostIP}:${hostPort}/imswitch/api/PositionerController/getPositionerNames`
         );
         const d = await r.json();
         setPositionerName(d[0]);
@@ -86,7 +86,7 @@ const ImprovedAxisControl = ({ hostIP, hostPort }) => {
     }
   };
 
-  const base = `${hostIP}:${hostPort}/PositionerController`;
+  const base = `${hostIP}:${hostPort}/imswitch/api/PositionerController`;
 
   const moveAxis = (axis, distance) =>
     call(

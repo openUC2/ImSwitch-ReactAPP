@@ -89,7 +89,7 @@ const ParameterEditorComponent = () => {
       try {
         const encodedLaserName = encodeURIComponent(laserName);
         await fetch(
-          `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/LaserController/setLaserValue?laserName=${encodedLaserName}&value=${value}`
+          `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/LaserController/setLaserValue?laserName=${encodedLaserName}&value=${value}`
         );
       } catch (error) {
         console.error("Failed to update laser intensity in backend:", error);

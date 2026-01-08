@@ -96,7 +96,7 @@ export default function GamepadSpeedControl({ hostIP, hostPort }) {
       });
 
       await fetch(
-        `${hostIP}:${hostPort}/PositionerController/movePositionerForever?${params}`
+        `${hostIP}:${hostPort}/imswitch/api/PositionerController/movePositionerForever?${params}`
       );
     } catch (error) {
       console.error(`Error sending movement command for ${axis}:`, error);

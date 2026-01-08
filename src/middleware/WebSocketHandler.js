@@ -62,7 +62,7 @@ const WebSocketHandler = () => {
 
         // Use cross-browser compatible fetch with timeout
         const response = await fetchWithTimeout(
-          `${ip}:${port}/UC2ConfigController/is_connected`,
+          `${ip}:${port}/imswitch/api/UC2ConfigController/is_connected`,
           { method: "GET" },
           10000
         );
@@ -147,7 +147,7 @@ const WebSocketHandler = () => {
         cleanIP = testIP;
       }
 
-      const socketIOUrl = `${protocol}://${cleanIP}:${testPort}`;
+      const socketIOUrl = `${protocol}://${cleanIP}:${testPort}/imswitch/socket.io`;
 
       console.log(
         `Testing Socket.IO connection to: ${socketIOUrl} (protocol: ${protocol})`

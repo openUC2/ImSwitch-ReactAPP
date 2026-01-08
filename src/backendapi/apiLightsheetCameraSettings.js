@@ -8,7 +8,7 @@ export async function apiGetCameraExposureTime() {
   const state = store.getState();
   const { ip, apiPort } = state.connectionSettingsState;
   
-  const url = `${ip}:${apiPort}/LightsheetController/getCameraExposureTime`;
+  const url = `${ip}:${apiPort}/imswitch/api/LightsheetController/getCameraExposureTime`;
   
   try {
     const response = await fetch(url);
@@ -31,7 +31,7 @@ export async function apiSetCameraExposureTime(exposureTime) {
   const state = store.getState();
   const { ip, apiPort } = state.connectionSettingsState;
   
-  const url = `${ip}:${apiPort}/LightsheetController/setCameraExposureTime?exposureTime=${exposureTime}`;
+  const url = `${ip}:${apiPort}/imswitch/api/LightsheetController/setCameraExposureTime?exposureTime=${exposureTime}`;
   
   try {
     const response = await fetch(url, { method: "GET" });
@@ -53,7 +53,7 @@ export async function apiGetCameraGain() {
   const state = store.getState();
   const { ip, apiPort } = state.connectionSettingsState;
   
-  const url = `${ip}:${apiPort}/LightsheetController/getCameraGain`;
+  const url = `${ip}:${apiPort}/imswitch/api/LightsheetController/getCameraGain`;
   
   try {
     const response = await fetch(url);
@@ -76,7 +76,7 @@ export async function apiSetCameraGain(gain) {
   const state = store.getState();
   const { ip, apiPort } = state.connectionSettingsState;
   
-  const url = `${ip}:${apiPort}/LightsheetController/setCameraGain?gain=${gain}`;
+  const url = `${ip}:${apiPort}/imswitch/api/LightsheetController/setCameraGain?gain=${gain}`;
   
   try {
     const response = await fetch(url, { method: "GET" });

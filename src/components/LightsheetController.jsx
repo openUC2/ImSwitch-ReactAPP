@@ -174,7 +174,7 @@ const LightsheetController = () => {
     // Build socket URL
     const socketUrl = `${hostIP}:${hostPort}`;
     const socket = io(socketUrl, {
-      path: '/socket.io',
+      path: '/imswitch/socket.io',
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionAttempts: 5,
@@ -205,7 +205,7 @@ const LightsheetController = () => {
   // Set up observation stream URL
   useEffect(() => {
     if (hostIP && hostPort) {
-      setObservationStreamUrl(`${hostIP}:${hostPort}/LightsheetController/observationStream`);
+      setObservationStreamUrl(`${hostIP}:${hostPort}/imswitch/api/LightsheetController/observationStream`);
     }
   }, [hostIP, hostPort]);
 
@@ -1085,7 +1085,7 @@ const LightsheetController = () => {
                   startIcon={<StopIcon />}
                   onClick={() => {
                     // TODO: Implement stop functionality via API
-                    fetch(`${hostIP}:${hostPort}/LightsheetController/stopLightsheet`);
+                    fetch(`${hostIP}:${hostPort}/imswitch/api/LightsheetController/stopLightsheet`);
                   }}
                 >
                   Stop
@@ -1480,7 +1480,7 @@ const LightsheetController = () => {
                 const phase = lightsheetState.galvoPhase || 0;
                 const invert = lightsheetState.galvoInvert || 1;
 
-                const url = `${hostIP}:${hostPort}/LightsheetController/setGalvo?channel=${channel}&frequency=${frequency}&offset=${offset}&amplitude=${amplitude}&clk_div=${clk_div}&phase=${phase}&invert=${invert}`;
+                const url = `${hostIP}:${hostPort}/imswitch/api/LightsheetController/setGalvo?channel=${channel}&frequency=${frequency}&offset=${offset}&amplitude=${amplitude}&clk_div=${clk_div}&phase=${phase}&invert=${invert}`;
 
                 fetch(url, { method: "GET" })
                   .then((response) => response.json())
@@ -1514,7 +1514,7 @@ const LightsheetController = () => {
               startIcon={<ViewInArIcon />}
               onClick={() =>
                 window.open(
-                  `https://kitware.github.io/itk-vtk-viewer/app/?rotate=false&fileToLoad=${hostIP}:${hostPort}/LightsheetController/getLatestLightsheetStackAsTif`,
+                  `https://kitware.github.io/itk-vtk-viewer/app/?rotate=false&fileToLoad=${hostIP}:${hostPort}/imswitch/api/LightsheetController/getLatestLightsheetStackAsTif`,
                   "_blank"
                 )
               }
@@ -1529,7 +1529,7 @@ const LightsheetController = () => {
               startIcon={<DownloadIcon />}
               onClick={() =>
                 window.open(
-                  `${hostIP}:${hostPort}/LightsheetController/getLatestLightsheetStackAsTif`,
+                  `${hostIP}:${hostPort}/imswitch/api/LightsheetController/getLatestLightsheetStackAsTif`,
                   "_blank"
                 )
               }
@@ -1614,7 +1614,7 @@ const LightsheetController = () => {
             VTK Volume Viewer (TIFF)
           </Typography>
           <VtkViewer
-            tifUrl={`${hostIP}:${hostPort}/LightsheetController/getLatestLightsheetStackAsTif`}
+            tifUrl={`${hostIP}:${hostPort}/imswitch/api/LightsheetController/getLatestLightsheetStackAsTif`}
           />
         </ErrorBoundary>
       </TabPanel>

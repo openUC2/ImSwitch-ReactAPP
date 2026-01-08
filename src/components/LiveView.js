@@ -105,7 +105,7 @@ export default function LiveView({ setFileManagerInitialPath }) {
       try {
         // 'getDetectorNames' must return something array-like
         const r = await fetch(
-          `${hostIP}:${hostPort}/SettingsController/getDetectorNames`
+          `${hostIP}:${hostPort}/imswitch/api/SettingsController/getDetectorNames`
         );
         const data = await r.json();
         // Check if data is an array before setting state
@@ -129,7 +129,7 @@ export default function LiveView({ setFileManagerInitialPath }) {
     (async () => {
       try {
         const r = await fetch(
-          `${hostIP}:${hostPort}/HistogrammController/minmaxvalues`
+          `${hostIP}:${hostPort}/imswitch/api/HistogrammController/minmaxvalues`
         );
         if (!r.ok) return;
         const d = await r.json();
@@ -147,7 +147,7 @@ export default function LiveView({ setFileManagerInitialPath }) {
       const id = setInterval(async () => {
         try {
           const res = await fetch(
-            `${hostIP}:${hostPort}/HistoScanController/getPreviewCameraImage?resizeFactor=.25`
+            `${hostIP}:${hostPort}/imswitch/api/HistoScanController/getPreviewCameraImage?resizeFactor=.25`
           );
           if (res.ok)
             dispatch(
@@ -233,7 +233,7 @@ export default function LiveView({ setFileManagerInitialPath }) {
   async function snap(fileName, format) {
     // English comment: Example fetch for snapping an image with editable fileName
     const response = await fetch(
-      `${hostIP}:${hostPort}/RecordingController/snapImageToPath?fileName=${fileName}&mSaveFormat=${format}`
+      `${hostIP}:${hostPort}/imswitch/api/RecordingController/snapImageToPath?fileName=${fileName}&mSaveFormat=${format}`
     );
     const data = await response.json();
     // data.relativePath might be "recordings/2025_05_20-11-12-44_PM"
@@ -248,12 +248,12 @@ export default function LiveView({ setFileManagerInitialPath }) {
   const startRec = async (format) => {
     setIsRecording(true);
     fetch(
-      `${hostIP}:${hostPort}/RecordingController/startRecording?mSaveFormat=${format}`
+      `${hostIP}:${hostPort}/imswitch/api/RecordingController/startRecording?mSaveFormat=${format}`
     ).catch(() => {});
   };
   const stopRec = async () => {
     setIsRecording(false);
-    fetch(`${hostIP}:${hostPort}/RecordingController/stopRecording`).catch(
+    fetch(`${hostIP}:${hostPort}/imswitch/api/RecordingController/stopRecording`).catch(
       () => {}
     );
   };

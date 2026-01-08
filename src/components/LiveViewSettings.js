@@ -38,7 +38,7 @@ const LiveViewSettings = () => {
       if (connectionSettingsState.ip && connectionSettingsState.apiPort) {
         try {
           const response = await fetch(
-            `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/SettingsController/getDetectorParameters`
+            `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/SettingsController/getDetectorParameters`
           );
           if (response.ok) {
             const data = await response.json();
@@ -78,7 +78,7 @@ const LiveViewSettings = () => {
                 try {
                   const encodedLaserName = encodeURIComponent(laserName);
                   const response = await fetch(
-                    `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/LaserController/getLaserValue?laserName=${encodedLaserName}`
+                    `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/LaserController/getLaserValue?laserName=${encodedLaserName}`
                   );
                   
                   if (response.ok) {
@@ -152,7 +152,7 @@ const LiveViewSettings = () => {
     if (connectionSettingsState.ip && connectionSettingsState.apiPort) {
       try {
         await fetch(
-          `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/SettingsController/setDetectorExposureTime?exposureTime=${newValue}`
+          `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/SettingsController/setDetectorExposureTime?exposureTime=${newValue}`
         );
       } catch (error) {
         console.error("Failed to update exposure time in backend:", error);
@@ -169,7 +169,7 @@ const LiveViewSettings = () => {
       try {
         const encodedLaserName = encodeURIComponent(laserName);
         await fetch(
-          `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/LaserController/setLaserValue?laserName=${encodedLaserName}&value=${value}`
+          `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/LaserController/setLaserValue?laserName=${encodedLaserName}&value=${value}`
         );
       } catch (error) {
         console.error("Failed to update laser intensity in backend:", error);
@@ -186,7 +186,7 @@ const LiveViewSettings = () => {
       try {
         const encodedLaserName = encodeURIComponent(laserName);
         await fetch(
-          `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/LaserController/setLaserActive?laserName=${encodedLaserName}&active=${active}`
+          `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/LaserController/setLaserActive?laserName=${encodedLaserName}&active=${active}`
         );
       } catch (error) {
         console.error("Failed to update laser active state in backend:", error);
@@ -202,7 +202,7 @@ const LiveViewSettings = () => {
     if (connectionSettingsState.ip && connectionSettingsState.apiPort) {
       try {
         await fetch(
-          `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/SettingsController/setDetectorGain?gain=${value}`
+          `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/SettingsController/setDetectorGain?gain=${value}`
         );
       } catch (error) {
         console.error("Failed to update detector gain in backend:", error);
