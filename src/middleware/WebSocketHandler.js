@@ -58,7 +58,7 @@ const WebSocketHandler = () => {
       }
 
       try {
-        console.debug(`Checking UC2 connection to ${ip}:${port}`);
+        console.debug(`Checking UC2 connection to ${ip}:${port}/imswitch`);
 
         // Use cross-browser compatible fetch with timeout
         const response = await fetchWithTimeout(
@@ -147,7 +147,7 @@ const WebSocketHandler = () => {
         cleanIP = testIP;
       }
 
-      const socketIOUrl = `${protocol}://${cleanIP}:${testPort}/imswitch/socket.io`;
+      const socketIOUrl = `${protocol}://${cleanIP}:${testPort}`;
 
       console.log(
         `Testing Socket.IO connection to: ${socketIOUrl} (protocol: ${protocol})`
@@ -157,6 +157,7 @@ const WebSocketHandler = () => {
       return new Promise((resolve) => {
         try {
           const testSocket = io(socketIOUrl, {
+            path: '/imswitch/socket.io/',
             transports: ["websocket"], // Force WebSocket transport
             timeout: 5000,
             forceNew: true, // Create new connection for test
@@ -276,6 +277,7 @@ const WebSocketHandler = () => {
 
     // Create new socket instance for this component/tab
     const socket = io(address, {
+      path: '/imswitch/socket.io/',
       transports: ["websocket"],
       secure: protocol === "https", // Enable secure connection for HTTPS
     });

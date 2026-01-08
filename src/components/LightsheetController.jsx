@@ -174,7 +174,7 @@ const LightsheetController = () => {
     // Build socket URL
     const socketUrl = `${hostIP}:${hostPort}`;
     const socket = io(socketUrl, {
-      path: '/imswitch/socket.io',
+      path: '/imswitch/socket.io/',
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionAttempts: 5,
