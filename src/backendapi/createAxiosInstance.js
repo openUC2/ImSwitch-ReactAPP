@@ -5,7 +5,7 @@ import store from '../state/store';
 const createAxiosInstance = () => {
   //get settings
   const state = store.getState(); 
-  const rootPath = '/imswitch/api`;
+  const rootPath = '/imswitch/api';
   //create instance
   return axios.create({
     baseURL: `${state.connectionSettingsState.ip}:${state.connectionSettingsState.apiPort}${rootPath}`,
