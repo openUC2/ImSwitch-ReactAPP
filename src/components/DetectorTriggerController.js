@@ -17,7 +17,7 @@ import { getConnectionSettingsState } from "../state/slices/ConnectionSettingsSl
 /* Axios factory bound to the camera host */
 const createAxiosInstance = (ip, port) =>
   axios.create({
-    baseURL: `${ip}:${port}`,
+    baseURL: `${ip}:${port}/imswitch/api`,
     timeout: 6000,
   });
 
