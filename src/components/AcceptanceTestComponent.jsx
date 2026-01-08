@@ -939,7 +939,7 @@ const AcceptanceTestComponent = () => {
                         const value = e.target.value;
                         setExposure(value);
                         try {
-                          await fetch(`http://localhost:8001/SettingsController/setDetectorExposureTime?exposureTime=${value}`);
+                          await fetch(`http://localhost/imswitch/api/SettingsController/setDetectorExposureTime?exposureTime=${value}`);
                         } catch (err) {
                           console.error('Error setting exposure:', err);
                         }
@@ -956,7 +956,7 @@ const AcceptanceTestComponent = () => {
                         const value = e.target.value;
                         setGain(value);
                         try {
-                          await fetch(`http://localhost:8001/SettingsController/setDetectorGain?gain=${value}`);
+                          await fetch(`http://localhost/imswitch/api/SettingsController/setDetectorGain?gain=${value}`);
                         } catch (err) {
                           console.error('Error setting gain:', err);
                         }

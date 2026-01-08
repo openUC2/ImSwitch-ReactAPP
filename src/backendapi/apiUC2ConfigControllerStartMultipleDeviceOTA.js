@@ -18,7 +18,7 @@ const apiUC2ConfigControllerStartMultipleDeviceOTA = async (canIds, ssid = null,
     
     /*
     curl -X 'POST' \
-      'http://localhost:8001/UC2ConfigController/startMultipleDeviceOTA?timeout=300000' \
+      'http://localhost/imswitch/api/UC2ConfigController/startMultipleDeviceOTA?timeout=300000' \
       -H 'accept: application/json' \
       -H 'Content-Type: application/json' \
       -d '[10, 20]'
