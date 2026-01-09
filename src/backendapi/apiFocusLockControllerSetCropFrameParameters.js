@@ -10,11 +10,11 @@ const apiFocusLockControllerSetCropFrameParameters = async ({ cropSize, cropCent
     const axiosInstance = createAxiosInstance();
 
     // Always send cropSize as integer in query
-    const params = { cropSize: Math.round(cropSize) };
+    const params = { crop_size: Math.round(cropSize) };
 
     // Compose JSON body for cropCenter and frameSize
     const body = {};
-    if (cropCenter) body.cropCenter = cropCenter;
+    if (cropCenter) body.crop_center = cropCenter;
     if (frameSize && Array.isArray(frameSize) && frameSize.length === 2) body.frameSize = frameSize;
 
     // POST with cropSize as query param, body as JSON

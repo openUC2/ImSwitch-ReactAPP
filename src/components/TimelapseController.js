@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
+import { useSelector } from "react-redux";
+import { getConnectionSettingsState } from "../state/slices/ConnectionSettingsSlice";
 import {
   Paper,
   Grid,
@@ -6,12 +8,14 @@ import {
   Slider,
   Button,
   Typography,
-  Checkbox,
-  FormControlLabel,
 } from "@mui/material";
 import { useWebSocket } from "../context/WebSocketContext";
 
-const TimelapseController = ({ hostIP, hostPort }) => {
+const TimelapseController = () => {
+  // Get connection settings from Redux
+  const connectionSettings = useSelector(getConnectionSettingsState);
+  const hostIP = connectionSettings.ip;
+  const hostPort = connectionSettings.apiPort;
   const socket = useWebSocket();
   const [parameters, setParameters] = useState({
     nTimes: 1,
@@ -39,7 +43,7 @@ const TimelapseController = ({ hostIP, hostPort }) => {
         if (data.detail === "Not Found") {
           setIsActivated(false);
           return;
-        } 
+        }
         setParameters(data);
         setIsActivated(true);
       } catch (error) {
@@ -114,7 +118,8 @@ const TimelapseController = ({ hostIP, hostPort }) => {
         { illuSources: [], illuIntensities: [], exposureTimes: [], gain: [] }
       );
       filteredParameters.illuSourcesSelected = filteredParameters.illuSources;
-      filteredParameters.autofocus_every_n_frames = parameters.autofocus_every_n_frames;
+      filteredParameters.autofocus_every_n_frames =
+        parameters.autofocus_every_n_frames;
       filteredParameters.nTimes = parameters.nTimes;
       filteredParameters.tPeriod = parameters.tPeriod; // TODO: why is this even necessry?
 
@@ -160,111 +165,120 @@ const TimelapseController = ({ hostIP, hostPort }) => {
     });
   };
 
-
-return (
-  <>
-    {!isActivated ? (
-      <Paper style={{ padding: "20px" }}>
-        <Typography>Timelapse Controller is not activated</Typography>
-      </Paper>
-    ) : (
-      <Paper style={{ padding: "20px" }}>
-        <Grid container spacing={2}>
-          <Grid item xs={6}>
-            <TextField
-              label="Number of Times"
-              type="number"
-              value={parameters.nTimes}
-              onChange={(e) => handleChange("nTimes", parseInt(e.target.value))}
-              fullWidth
-            />
-          </Grid>
-          <Grid item xs={6}>
-            <TextField
-              label="Time Period (s)"
-              type="number"
-              value={parameters.tPeriod}
-              onChange={(e) => handleChange("tPeriod", parseInt(e.target.value))}
-              fullWidth
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <TextField
-              label="Autofocus Every N Frames"
-              type="number"
-              value={parameters.autofocus_every_n_frames}
-              onChange={(e) =>
-                handleChange("autofocus_every_n_frames", parseInt(e.target.value))
-              }
-              fullWidth
-            />
-          </Grid>
-          {parameters.illuSources.map((source, index) => (
-            <Grid container spacing={2} key={index}>
-              <Grid item xs={6}>
-                <Typography>{`Source: ${source}`}</Typography>
-                <Slider
-                  value={parameters.illuIntensities[index] || 0}
-                  onChange={(e, value) =>
-                    handleChange("illuIntensities", value, index)
-                  }
-                  min={parameters.illuSourceMinIntensities[index] || 0}
-                  max={parameters.illuSourceMaxIntensities[index] || 100}
-                />
-              </Grid>
-              <Grid item xs={3}>
-                <TextField
-                  id={`gain${index}`}
-                  label="Gain"
-                  type="number"
-                  value={parameters.gain[index] || -1}
-                  onChange={(e) =>
-                    handleChange("gain", parseInt(e.target.value), index)
-                  }
-                  fullWidth
-                />
-              </Grid>
-              <Grid item xs={3}>
-                <TextField
-                  id={`exposureTime${index}`}
-                  label="Exposure Time (µs)"
-                  type="number"
-                  value={parameters.exposureTimes[index] || -1}
-                  onChange={(e) =>
-                    handleChange("exposureTimes", parseInt(e.target.value), index)
-                  }
-                  fullWidth
-                />
-              </Grid>
+  return (
+    <>
+      {!isActivated ? (
+        <Paper style={{ padding: "20px" }}>
+          <Typography>Timelapse Controller is not activated</Typography>
+        </Paper>
+      ) : (
+        <Paper style={{ padding: "20px" }}>
+          <Grid container spacing={2}>
+            <Grid item xs={6}>
+              <TextField
+                label="Number of Times"
+                type="number"
+                value={parameters.nTimes}
+                onChange={(e) =>
+                  handleChange("nTimes", parseInt(e.target.value))
+                }
+                fullWidth
+              />
             </Grid>
-          ))}
-          <Grid item xs={12}>
-            <Typography>{`Current Step: ${currentStep}`}</Typography>
+            <Grid item xs={6}>
+              <TextField
+                label="Time Period (s)"
+                type="number"
+                value={parameters.tPeriod}
+                onChange={(e) =>
+                  handleChange("tPeriod", parseInt(e.target.value))
+                }
+                fullWidth
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                label="Autofocus Every N Frames"
+                type="number"
+                value={parameters.autofocus_every_n_frames}
+                onChange={(e) =>
+                  handleChange(
+                    "autofocus_every_n_frames",
+                    parseInt(e.target.value)
+                  )
+                }
+                fullWidth
+              />
+            </Grid>
+            {parameters.illuSources.map((source, index) => (
+              <Grid container spacing={2} key={index}>
+                <Grid item xs={6}>
+                  <Typography>{`Source: ${source}`}</Typography>
+                  <Slider
+                    value={parameters.illuIntensities[index] || 0}
+                    onChange={(e, value) =>
+                      handleChange("illuIntensities", value, index)
+                    }
+                    min={parameters.illuSourceMinIntensities[index] || 0}
+                    max={parameters.illuSourceMaxIntensities[index] || 100}
+                  />
+                </Grid>
+                <Grid item xs={3}>
+                  <TextField
+                    id={`gain${index}`}
+                    label="Gain"
+                    type="number"
+                    value={parameters.gain[index] || -1}
+                    onChange={(e) =>
+                      handleChange("gain", parseInt(e.target.value), index)
+                    }
+                    fullWidth
+                  />
+                </Grid>
+                <Grid item xs={3}>
+                  <TextField
+                    id={`exposureTime${index}`}
+                    label="Exposure Time (µs)"
+                    type="number"
+                    value={parameters.exposureTimes[index] || -1}
+                    onChange={(e) =>
+                      handleChange(
+                        "exposureTimes",
+                        parseInt(e.target.value),
+                        index
+                      )
+                    }
+                    fullWidth
+                  />
+                </Grid>
+              </Grid>
+            ))}
+            <Grid item xs={12}>
+              <Typography>{`Current Step: ${currentStep}`}</Typography>
+            </Grid>
+            <Grid item xs={12}>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleStart}
+                disabled={isRunning}
+              >
+                Start
+              </Button>
+              <Button
+                variant="contained"
+                color="secondary"
+                onClick={handleStop}
+                disabled={!isRunning}
+                style={{ marginLeft: "10px" }}
+              >
+                Stop
+              </Button>
+            </Grid>
           </Grid>
-          <Grid item xs={12}>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleStart}
-              disabled={isRunning}
-            >
-              Start
-            </Button>
-            <Button
-              variant="contained"
-              color="secondary"
-              onClick={handleStop}
-              disabled={!isRunning}
-              style={{ marginLeft: "10px" }}
-            >
-              Stop
-            </Button>
-          </Grid>
-        </Grid>
-      </Paper>
-    )}
-  </>
-);
+        </Paper>
+      )}
+    </>
+  );
 };
 export default TimelapseController;
-

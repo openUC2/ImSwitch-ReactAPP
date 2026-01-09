@@ -13,13 +13,20 @@ const initialState = {
   // Serial communication
   serialPayload: "",
   serialLog: [],
-  uc2Connected: false,
+
+  // Connection status (IMPORTANT: Two different types!)
+  backendConnected: false, // Backend API reachable (enables UI functions)
+  uc2Connected: false, // UC2 hardware connected to backend
 
   // Config file editing
   selectedFileForEdit: "",
   editorJson: null,
   editorJsonText: "",
   useAceEditor: false,
+
+  // Current active configuration
+  currentActiveFilename: null,
+  isLoadingCurrentFilename: false,
 
   // File operations
   newFileName: "",
@@ -72,6 +79,11 @@ const uc2Slice = createSlice({
     clearSerialLog: (state) => {
       state.serialLog = [];
     },
+
+    // Connection status setters
+    setBackendConnected: (state, action) => {
+      state.backendConnected = action.payload;
+    },
     setUc2Connected: (state, action) => {
       state.uc2Connected = action.payload;
     },
@@ -88,6 +100,14 @@ const uc2Slice = createSlice({
     },
     setUseAceEditor: (state, action) => {
       state.useAceEditor = action.payload;
+    },
+
+    // Current active configuration
+    setCurrentActiveFilename: (state, action) => {
+      state.currentActiveFilename = action.payload;
+    },
+    setIsLoadingCurrentFilename: (state, action) => {
+      state.isLoadingCurrentFilename = action.payload;
     },
 
     // File operations
@@ -162,11 +182,14 @@ export const {
   setSerialPayload,
   addSerialLogEntry,
   clearSerialLog,
+  setBackendConnected,
   setUc2Connected,
   setSelectedFileForEdit,
   setEditorJson,
   setEditorJsonText,
   setUseAceEditor,
+  setCurrentActiveFilename,
+  setIsLoadingCurrentFilename,
   setNewFileName,
   setSetAsCurrentConfig,
   setRestartAfterSave,

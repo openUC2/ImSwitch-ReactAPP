@@ -18,8 +18,8 @@ const initialFocusLockState = {
   safetyMotionActive: false,
   
   // Astigmatism parameters
-  gaussianSigma: 1.0,
-  backgroundThreshold: 100.0,
+  gaussian_sigma: 1.0,
+  background_threshold: 100.0,
   cropSize: 100,
   cropCenter: [0, 0],
   frameSize: [640, 480], // Default frame size, can be adjusted
@@ -44,6 +44,12 @@ const initialFocusLockState = {
   currentFocusValue: 0.0,
   currentFocusMotorPosition: 0.0, // Add current motor position
   setPointSignal: 0.0,
+  
+  // One-step autofocus
+  storedTargetSetpoint: null, // Stored focus value for one-step AF
+  lastAutofocusResult: null, // Last autofocus result
+  isPerformingAutofocus: false,
+  calibrationRange: null, // [min, max] focus values from calibration
   
   // UI state
   selectedCropRegion: null,
@@ -94,11 +100,11 @@ const focusLockSlice = createSlice({
     },
     
     // Astigmatism parameters
-    setGaussianSigma: (state, action) => {
-      state.gaussianSigma = action.payload;
+    setgaussian_sigma: (state, action) => {
+      state.gaussian_sigma = action.payload;
     },
     setBackgroundThreshold: (state, action) => {
-      state.backgroundThreshold = action.payload;
+      state.background_threshold = action.payload;
     },
     setCropSize: (state, action) => {
       state.cropSize = action.payload;
@@ -162,6 +168,20 @@ const focusLockSlice = createSlice({
       state.currentFocusMotorPosition = action.payload;
     },
     
+    // One-step autofocus
+    setStoredTargetSetpoint: (state, action) => {
+      state.storedTargetSetpoint = action.payload;
+    },
+    setLastAutofocusResult: (state, action) => {
+      state.lastAutofocusResult = action.payload;
+    },
+    setIsPerformingAutofocus: (state, action) => {
+      state.isPerformingAutofocus = action.payload;
+    },
+    setCalibrationRange: (state, action) => {
+      state.calibrationRange = action.payload;
+    },
+    
     // UI state
     setSelectedCropRegion: (state, action) => {
       state.selectedCropRegion = action.payload;
@@ -199,7 +219,7 @@ export const {
   setSafetyMoveLimit,
   setMinStepThreshold,
   setSafetyMotionActive,
-  setGaussianSigma,
+  setgaussian_sigma,
   setBackgroundThreshold,
   setCropSize,
   setFrameSize,
@@ -213,6 +233,10 @@ export const {
   clearFocusHistory,
   setCurrentFocusValue,
   setCurrentFocusMotorPosition,
+  setStoredTargetSetpoint,
+  setLastAutofocusResult,
+  setIsPerformingAutofocus,
+  setCalibrationRange,
   setSelectedCropRegion,
   setShowImageSelector,
   setIsLoadingImage,

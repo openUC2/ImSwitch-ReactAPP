@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { useSelector } from "react-redux";
+import { getConnectionSettingsState } from "../state/slices/ConnectionSettingsSlice";
 import {
   Dialog,
   DialogTitle,
@@ -21,14 +23,18 @@ import WizardStep6 from "./wizard-steps/WizardStep6";
 
 const steps = [
   "Setup Instructions",
-  "Calibrate Slot 1 (X1)",
-  "Calibrate Slot 2 (X2)",
+  "Calibrate Slot 1 (X0)",
+  "Calibrate Slot 2 (X1)",
+  "Calibrate Focus Z0",
   "Calibrate Focus Z1",
-  "Calibrate Focus Z2",
   "Complete"
 ];
 
-const ObjectiveCalibrationWizard = ({ open, onClose, hostIP, hostPort }) => {
+const ObjectiveCalibrationWizard = ({ open, onClose }) => {
+  // Get connection settings from Redux
+  const connectionSettings = useSelector(getConnectionSettingsState);
+  const hostIP = connectionSettings.ip;
+  const hostPort = connectionSettings.apiPort;
   const [activeStep, setActiveStep] = useState(0);
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('md'));

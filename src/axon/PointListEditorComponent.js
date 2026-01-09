@@ -46,7 +46,9 @@ const PointListEditorComponent = () => {
   //##################################################################################
   const setOrderedList = (newList) => {
     //console.log("setOrderedList", newList);
-    dispatch(experimentSlice.setPointList(newList)); // Update Redux state
+    // Clean the list by removing ReactSortable's internal properties before saving to Redux
+    const cleanedList = newList.map(({ chosen, selected, filtered, ...point }) => point);
+    dispatch(experimentSlice.setPointList(cleanedList)); // Update Redux state
   };
 
   //##################################################################################
@@ -195,7 +197,7 @@ const PointListEditorComponent = () => {
       <ReactSortable
         filter=".addImageButtonContainer"
         dragClass="sortableDrag"
-        list={experimentState.pointList}
+        list={experimentState.pointList.map(point => ({ ...point }))} // Create mutable copies for ReactSortable
         setList={setOrderedList}
         animation="200"
         easing="ease-out"

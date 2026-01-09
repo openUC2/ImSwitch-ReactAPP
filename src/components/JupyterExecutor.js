@@ -1,7 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { AppBar, Toolbar, Typography, Button } from "@mui/material";
+import { useSelector } from "react-redux";
+import { getConnectionSettingsState } from "../state/slices/ConnectionSettingsSlice";
 
-const JupyterExecutor = ({ hostIP, hostPort }) => {
+const JupyterExecutor = () => {
+  // Get connection settings from Redux
+  const connectionSettings = useSelector(getConnectionSettingsState);
+  const hostIP = connectionSettings.ip;
+  const hostPort = connectionSettings.apiPort;
   const [jupyterUrl, setJupyterUrl] = useState(null);
 
   useEffect(() => {
@@ -21,7 +27,7 @@ const JupyterExecutor = ({ hostIP, hostPort }) => {
         } else {
           const updatedUrl = notebookUrl.replace(
             /https?:\/\/[^:]+/,
-            `${hostIP}`
+            `${hostIP.replace("https://", "http://")}`
           );
           setJupyterUrl(updatedUrl);
         }

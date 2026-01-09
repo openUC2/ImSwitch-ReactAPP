@@ -33,10 +33,55 @@ import stresstestReducer from "./slices/StresstestSlice";
 import workflowReducer from "./slices/WorkflowSlice";
 import stormReducer from "./slices/STORMSlice";
 import focusLockReducer from "./slices/FocusLockSlice";
-import wifiReducer from "./slices/WiFiSlice";
 import demoReducer from "./slices/DemoSlice";
+import mazeGameReducer from "./slices/MazeGameSlice";
 import themeReducer from "./slices/ThemeSlice";
 import notificationReducer from "./slices/NotificationSlice";
+import autofocusReducer from "./slices/AutofocusSlice";
+import socketDebugReducer from "./slices/SocketDebugSlice";
+import appManagerReducer from "./slices/appManagerSlice";
+import canOtaReducer from "./slices/canOtaSlice";
+import usbFlashReducer from "./slices/usbFlashSlice";
+import holoReducer from "./slices/HoloSlice";
+import dpcReducer from "./slices/dpcSlice";
+import laserReducer from "./slices/LaserSlice";
+import vizarrViewerReducer from "./slices/VizarrViewerSlice";
+import compositeAcquisitionReducer from "./slices/CompositeAcquisitionSlice";
+import experimentUIReducer from "./slices/ExperimentUISlice";
+
+//#####################################################################################
+// Nested persist config for liveStreamState
+// Only persist settings, not live data like stats or histogram
+const liveStreamPersistConfig = {
+  key: "liveStreamState",
+  storage,
+  whitelist: [
+    "minVal",
+    "maxVal",
+    "gamma",
+    "imageFormat", // Persist selected format (binary/jpeg/webrtc)
+    "streamSettings", // Persist all stream settings
+    "isLegacyBackend",
+    "backendCapabilities",
+  ],
+  // Don't persist: histogramX, histogramY, showHistogram, zoom, translateX, translateY, stats
+};
+
+//#####################################################################################
+// Nested persist config for lightsheetState
+// Persist axis configuration and camera state for 3D viewer
+const lightsheetPersistConfig = {
+  key: "lightsheet",
+  storage,
+  whitelist: [
+    "axisConfig",      // Persist axis offsets, scales, and invert flags
+    "cameraState",     // Persist 3D viewer camera position and zoom
+    "experimentName",  // Persist last used experiment name
+    "storageFormat",   // Persist last used storage format
+    "scanMode",        // Persist last used scan mode
+  ],
+  // Don't persist: stagePositions, scanStatus, vtkImagePrimary, isRunning
+};
 
 //#####################################################################################
 // Combine reducers
@@ -45,7 +90,7 @@ const rootReducer = combineReducers({
   webSocketState: webSocketReducer,
   experimentState: experimentReducer,
   experimentStatusState: experimentStatusReducer,
-  liveStreamState: liveStreamReducer,
+  liveStreamState: persistReducer(liveStreamPersistConfig, liveStreamReducer), // Nested persist
   tileStreamState: tileStreamReducer,
   parameterRangeState: parameterRangeReducer,
   wellSelectorState: wellSelectorReducer,
@@ -61,16 +106,27 @@ const rootReducer = combineReducers({
   stageOffsetCalibration: stageOffsetCalibrationReducer,
   stageCenterCalibration: stageCenterCalibrationReducer,
   flowStop: flowStopReducer,
-  lightsheet: lightsheetReducer,
+  lightsheet: persistReducer(lightsheetPersistConfig, lightsheetReducer), // Nested persist for axis config
   omeZarrState: zarrinitialZarrReducer,
   stresstestState: stresstestReducer,
   workflowState: workflowReducer,
   storm: stormReducer,
   focusLockState: focusLockReducer,
-  wifiState: wifiReducer,
   demoState: demoReducer,
+  mazeGameState: mazeGameReducer,
   themeState: themeReducer,
   notification: notificationReducer,
+  autofocusState: autofocusReducer,
+  socketDebugState: socketDebugReducer,
+  appManager: appManagerReducer,
+  canOtaState: canOtaReducer,
+  usbFlash: usbFlashReducer,
+  holoState: holoReducer,
+  dpc: dpcReducer,
+  laserState: laserReducer,
+  vizarrViewerState: vizarrViewerReducer,
+  compositeAcquisitionState: compositeAcquisitionReducer,
+  experimentUI: experimentUIReducer,
 });
 
 //#####################################################################################
@@ -84,9 +140,13 @@ const persistConfig = {
     "parameterRangeState",
     "experimentState",
     "wellSelectorState",
-    "positionState",
+    "position", // Persist step sizes
     "workflowState",
     "themeState",
+    "mazeGameState",
+    "appManager", // Persist user's app preferences
+    "liveViewState", // Persist position controller visibility
+    // liveStreamState uses nested persist config above
   ],
   //blacklist: ['webSocketState'],  // Do not persist these
 };
@@ -140,8 +200,17 @@ syncStateAcrossTabs();
 
 //#####################################################################################
 // Create the Redux store with the sync logic
+// Disable expensive development middlewares for high-frequency WebSocket updates
 const store = configureStore({
   reducer: rootReducerWithSync, // Use rootReducerWithSync to manage the state
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      // Disable serializable check - our state contains some non-serializable data
+      // and this check is very slow with frequent WebSocket dispatches
+      serializableCheck: false,
+      // Disable immutable check - this is also slow with large state updates
+      immutableCheck: false,
+    }),
 });
 
 //#####################################################################################

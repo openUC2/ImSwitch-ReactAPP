@@ -44,13 +44,13 @@ const TabPanel = (props) => {
   );
 };
 
-const StresstestController = ({ hostIP, hostPort, WindowTitle }) => {
+const StresstestController = ({ WindowTitle }) => {
   // Redux dispatcher
   const dispatch = useDispatch();
-  
+
   // Access global Redux state
   const stresstestState = useSelector(stresstestSlice.getStresstestState);
-  
+
   // Destructure state for easier access
   const {
     // Parameters
@@ -136,7 +136,7 @@ const StresstestController = ({ hostIP, hostPort, WindowTitle }) => {
         imageRegistrationMethod,
         pixelSizeUM,
       };
-      
+
       await apiStresstestControllerSetParams(params);
       console.log("Parameters updated successfully");
     } catch (error) {
@@ -170,14 +170,15 @@ const StresstestController = ({ hostIP, hostPort, WindowTitle }) => {
   };
 
   // Calculate progress percentage
-  const progressPercentage = totalPositions > 0 ? (completedPositions / totalPositions) * 100 : 0;
+  const progressPercentage =
+    totalPositions > 0 ? (completedPositions / totalPositions) * 100 : 0;
 
   return (
     <Paper>
       <Typography variant="h6" gutterBottom>
         {WindowTitle || "Stresstest Controller"}
       </Typography>
-      
+
       <Tabs
         value={tabIndex}
         onChange={handleTabChange}
@@ -199,7 +200,9 @@ const StresstestController = ({ hostIP, hostPort, WindowTitle }) => {
               label="Min X Position (μm)"
               type="number"
               value={minPosX}
-              onChange={(e) => dispatch(stresstestSlice.setMinPosX(parseFloat(e.target.value)))}
+              onChange={(e) =>
+                dispatch(stresstestSlice.setMinPosX(parseFloat(e.target.value)))
+              }
               fullWidth
             />
           </Grid>
@@ -208,7 +211,9 @@ const StresstestController = ({ hostIP, hostPort, WindowTitle }) => {
               label="Max X Position (μm)"
               type="number"
               value={maxPosX}
-              onChange={(e) => dispatch(stresstestSlice.setMaxPosX(parseFloat(e.target.value)))}
+              onChange={(e) =>
+                dispatch(stresstestSlice.setMaxPosX(parseFloat(e.target.value)))
+              }
               fullWidth
             />
           </Grid>
@@ -217,7 +222,9 @@ const StresstestController = ({ hostIP, hostPort, WindowTitle }) => {
               label="Min Y Position (μm)"
               type="number"
               value={minPosY}
-              onChange={(e) => dispatch(stresstestSlice.setMinPosY(parseFloat(e.target.value)))}
+              onChange={(e) =>
+                dispatch(stresstestSlice.setMinPosY(parseFloat(e.target.value)))
+              }
               fullWidth
             />
           </Grid>
@@ -226,7 +233,9 @@ const StresstestController = ({ hostIP, hostPort, WindowTitle }) => {
               label="Max Y Position (μm)"
               type="number"
               value={maxPosY}
-              onChange={(e) => dispatch(stresstestSlice.setMaxPosY(parseFloat(e.target.value)))}
+              onChange={(e) =>
+                dispatch(stresstestSlice.setMaxPosY(parseFloat(e.target.value)))
+              }
               fullWidth
             />
           </Grid>
@@ -239,7 +248,13 @@ const StresstestController = ({ hostIP, hostPort, WindowTitle }) => {
               label="Random Positions per Cycle"
               type="number"
               value={numRandomPositions}
-              onChange={(e) => dispatch(stresstestSlice.setNumRandomPositions(parseInt(e.target.value)))}
+              onChange={(e) =>
+                dispatch(
+                  stresstestSlice.setNumRandomPositions(
+                    parseInt(e.target.value)
+                  )
+                )
+              }
               fullWidth
             />
           </Grid>
@@ -248,7 +263,9 @@ const StresstestController = ({ hostIP, hostPort, WindowTitle }) => {
               label="Number of Cycles"
               type="number"
               value={numCycles}
-              onChange={(e) => dispatch(stresstestSlice.setNumCycles(parseInt(e.target.value)))}
+              onChange={(e) =>
+                dispatch(stresstestSlice.setNumCycles(parseInt(e.target.value)))
+              }
               fullWidth
             />
           </Grid>
@@ -257,7 +274,11 @@ const StresstestController = ({ hostIP, hostPort, WindowTitle }) => {
               label="Time Interval (s)"
               type="number"
               value={timeInterval}
-              onChange={(e) => dispatch(stresstestSlice.setTimeInterval(parseFloat(e.target.value)))}
+              onChange={(e) =>
+                dispatch(
+                  stresstestSlice.setTimeInterval(parseFloat(e.target.value))
+                )
+              }
               fullWidth
             />
           </Grid>
@@ -265,7 +286,9 @@ const StresstestController = ({ hostIP, hostPort, WindowTitle }) => {
             <TextField
               label="Output Path"
               value={outputPath}
-              onChange={(e) => dispatch(stresstestSlice.setOutputPath(e.target.value))}
+              onChange={(e) =>
+                dispatch(stresstestSlice.setOutputPath(e.target.value))
+              }
               fullWidth
             />
           </Grid>
@@ -279,10 +302,14 @@ const StresstestController = ({ hostIP, hostPort, WindowTitle }) => {
             <Typography variant="h6">Camera & Illumination</Typography>
           </Grid>
           <Grid item xs={6}>
-            <Typography>Illumination Intensity: {illuminationIntensity}%</Typography>
+            <Typography>
+              Illumination Intensity: {illuminationIntensity}%
+            </Typography>
             <Slider
               value={illuminationIntensity}
-              onChange={(e, value) => dispatch(stresstestSlice.setIlluminationIntensity(value))}
+              onChange={(e, value) =>
+                dispatch(stresstestSlice.setIlluminationIntensity(value))
+              }
               max={100}
               step={1}
             />
@@ -292,7 +319,11 @@ const StresstestController = ({ hostIP, hostPort, WindowTitle }) => {
               label="Exposure Time (s)"
               type="number"
               value={exposureTime}
-              onChange={(e) => dispatch(stresstestSlice.setExposureTime(parseFloat(e.target.value)))}
+              onChange={(e) =>
+                dispatch(
+                  stresstestSlice.setExposureTime(parseFloat(e.target.value))
+                )
+              }
               fullWidth
             />
           </Grid>
@@ -301,7 +332,9 @@ const StresstestController = ({ hostIP, hostPort, WindowTitle }) => {
               control={
                 <Switch
                   checked={saveImages}
-                  onChange={(e) => dispatch(stresstestSlice.setSaveImages(e.target.checked))}
+                  onChange={(e) =>
+                    dispatch(stresstestSlice.setSaveImages(e.target.checked))
+                  }
                 />
               }
               label="Save Images"
@@ -316,7 +349,11 @@ const StresstestController = ({ hostIP, hostPort, WindowTitle }) => {
               control={
                 <Switch
                   checked={enableImageBasedError}
-                  onChange={(e) => dispatch(stresstestSlice.setEnableImageBasedError(e.target.checked))}
+                  onChange={(e) =>
+                    dispatch(
+                      stresstestSlice.setEnableImageBasedError(e.target.checked)
+                    )
+                  }
                 />
               }
               label="Enable Image-Based Error Estimation"
@@ -329,7 +366,13 @@ const StresstestController = ({ hostIP, hostPort, WindowTitle }) => {
                   label="Images per Position"
                   type="number"
                   value={numImagesPerPosition}
-                  onChange={(e) => dispatch(stresstestSlice.setNumImagesPerPosition(parseInt(e.target.value)))}
+                  onChange={(e) =>
+                    dispatch(
+                      stresstestSlice.setNumImagesPerPosition(
+                        parseInt(e.target.value)
+                      )
+                    )
+                  }
                   fullWidth
                 />
               </Grid>
@@ -338,7 +381,13 @@ const StresstestController = ({ hostIP, hostPort, WindowTitle }) => {
                   <InputLabel>Registration Method</InputLabel>
                   <Select
                     value={imageRegistrationMethod}
-                    onChange={(e) => dispatch(stresstestSlice.setImageRegistrationMethod(e.target.value))}
+                    onChange={(e) =>
+                      dispatch(
+                        stresstestSlice.setImageRegistrationMethod(
+                          e.target.value
+                        )
+                      )
+                    }
                   >
                     <MenuItem value="fft">FFT</MenuItem>
                     <MenuItem value="correlation">Correlation</MenuItem>
@@ -350,7 +399,11 @@ const StresstestController = ({ hostIP, hostPort, WindowTitle }) => {
                   label="Pixel Size (μm)"
                   type="number"
                   value={pixelSizeUM}
-                  onChange={(e) => dispatch(stresstestSlice.setPixelSizeUM(parseFloat(e.target.value)))}
+                  onChange={(e) =>
+                    dispatch(
+                      stresstestSlice.setPixelSizeUM(parseFloat(e.target.value))
+                    )
+                  }
                   fullWidth
                 />
               </Grid>
@@ -393,10 +446,7 @@ const StresstestController = ({ hostIP, hostPort, WindowTitle }) => {
               >
                 Stop Stresstest
               </Button>
-              <Button
-                variant="outlined"
-                onClick={updateParameters}
-              >
+              <Button variant="outlined" onClick={updateParameters}>
                 Update Parameters
               </Button>
             </Box>

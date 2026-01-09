@@ -50,6 +50,18 @@ const initialExperimentState = {
     autoFocusMin: 0.0,
     autoFocusMax: 0.0,
     autoFocusStepSize: 0.1,
+    autoFocusIlluminationChannel: "", // Selected illumination channel for autofocus
+    autoFocusSettleTime: 0.1, // Settling time between steps (seconds)
+    autoFocusRange: 100, // Z-range to scan (±range from current position)
+    autoFocusResolution: 10, // Step size in Z
+    autoFocusCropsize: 2048, // Crop size for focus calculation
+    autoFocusStaticOffset: 0.0, // Static offset to add to final focus position
+    autoFocusTwoStage: false, // Enable two-stage autofocus (coarse + fine scan)
+    autoFocusAlgorithm: "LAPE", // Focus measurement method (LAPE, GLVA, JPEG)
+    // Hardware autofocus (FocusLock-based one-shot) parameters
+    autoFocusMode: "software", // "software" (Z-sweep) or "hardware" (one-shot using FocusLock)
+    autofocus_max_attempts: 3, // Max attempts for hardware autofocus
+    autofocus_target_focus_setpoint: 0, // Target focus setpoint for hardware autofocus
     zStack: false,
     zStackMin: 0.0,
     zStackMax: 0.0,
@@ -59,8 +71,14 @@ const initialExperimentState = {
     exposureTimes: 0,
     performanceMode: false,
     ome_write_tiff: false,
-    ome_write_zarr: true,
-    ome_write_stitched_tiff: false
+    ome_write_zarr: false,
+    ome_write_stitched_tiff: true,
+    ome_write_individual_tiffs: false,
+    // Tile overlap parameters (moved from WellSelectorSlice)
+    overlapWidth: 0.0,  // 0.0 = no overlap (100% spacing), 0.1 = 10% overlap (90% spacing)
+    overlapHeight: 0.0,  // 0.0 = no overlap (100% spacing), 0.1 = 10% overlap (90% spacing)
+    // Snakescan pattern for tiling
+    is_snakescan: false,  // Enable snakescan pattern (alternating row directions)
   },
 };
 
@@ -114,6 +132,50 @@ const experimentSlice = createSlice({
       console.log("setAutoFocusStepSize");
       state.parameterValue.autoFocusStepSize = action.payload;
     },
+    setAutoFocusIlluminationChannel: (state, action) => {
+      console.log("setAutoFocusIlluminationChannel");
+      state.parameterValue.autoFocusIlluminationChannel = action.payload;
+    },
+    setAutoFocusSettleTime: (state, action) => {
+      console.log("setAutoFocusSettleTime");
+      state.parameterValue.autoFocusSettleTime = action.payload;
+    },
+    setAutoFocusRange: (state, action) => {
+      console.log("setAutoFocusRange");
+      state.parameterValue.autoFocusRange = action.payload;
+    },
+    setAutoFocusResolution: (state, action) => {
+      console.log("setAutoFocusResolution");
+      state.parameterValue.autoFocusResolution = action.payload;
+    },
+    setAutoFocusCropsize: (state, action) => {
+      console.log("setAutoFocusCropsize");
+      state.parameterValue.autoFocusCropsize = action.payload;
+    },
+    setAutoFocusStaticOffset: (state, action) => {
+      console.log("setAutoFocusStaticOffset");
+      state.parameterValue.autoFocusStaticOffset = action.payload;
+    },
+    setAutoFocusTwoStage: (state, action) => {
+      console.log("setAutoFocusTwoStage");
+      state.parameterValue.autoFocusTwoStage = action.payload;
+    },
+    setAutoFocusAlgorithm: (state, action) => {
+      console.log("setAutoFocusAlgorithm");
+      state.parameterValue.autoFocusAlgorithm = action.payload;
+    },
+    setAutoFocusMode: (state, action) => {
+      console.log("setAutoFocusMode", action.payload);
+      state.parameterValue.autoFocusMode = action.payload;
+    },
+    setAutoFocusMaxAttempts: (state, action) => {
+      console.log("setAutoFocusMaxAttempts", action.payload);
+      state.parameterValue.autofocus_max_attempts = action.payload;
+    },
+    setAutoFocusTargetSetpoint: (state, action) => {
+      console.log("setAutoFocusTargetSetpoint", action.payload);
+      state.parameterValue.autofocus_target_focus_setpoint = action.payload;
+    },
     setZStack: (state, action) => {
       console.log("setZStack");
       state.parameterValue.zStack = action.payload;
@@ -165,6 +227,23 @@ const experimentSlice = createSlice({
     setOmeWriteStitchedTiff: (state, action) => {
       console.log("setOmeWriteStitchedTiff", action.payload);
       state.parameterValue.ome_write_stitched_tiff = action.payload;
+    },
+    setOmeWriteIndividualTiffs: (state, action) => {
+      console.log("setOmeWriteIndividualTiffs", action.payload);
+      state.parameterValue.ome_write_individual_tiffs = action.payload;
+    },
+    //------------------------ overlap parameters
+    setOverlapWidth: (state, action) => {
+      console.log("setOverlapWidth", action.payload);
+      state.parameterValue.overlapWidth = Math.max(-15, Math.min(0.5, action.payload)); // Clamp between -0.5 and 0.5 (-50% to 50%)
+    },
+    setOverlapHeight: (state, action) => {
+      console.log("setOverlapHeight", action.payload);
+      state.parameterValue.overlapHeight = Math.max(-15, Math.min(0.5, action.payload)); // Clamp between -0.5 and 0.5 (-50% to 50%)
+    },
+    setIsSnakescan: (state, action) => {
+      console.log("setIsSnakescan", action.payload);
+      state.parameterValue.is_snakescan = action.payload;
     },
     //------------------------ points
     createPoint: (state, action) => {
@@ -229,6 +308,17 @@ export const {
   setAutoFocusMin,
   setAutoFocusMax,
   setAutoFocusStepSize,
+  setAutoFocusIlluminationChannel,
+  setAutoFocusSettleTime,
+  setAutoFocusRange,
+  setAutoFocusResolution,
+  setAutoFocusCropsize,
+  setAutoFocusStaticOffset,
+  setAutoFocusTwoStage,
+  setAutoFocusAlgorithm,
+  setAutoFocusMode,
+  setAutoFocusMaxAttempts,
+  setAutoFocusTargetSetpoint,
   setZStack,
   setZStackMin,
   setZStackMax,
@@ -240,6 +330,10 @@ export const {
   setOmeWriteTiff,
   setOmeWriteZarr,
   setOmeWriteStitchedTiff,
+  setOmeWriteIndividualTiffs,
+  setOverlapWidth,
+  setOverlapHeight,
+  setIsSnakescan,
   createPoint,
   addPoint,
   removePoint,

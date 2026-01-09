@@ -17,19 +17,24 @@ import {
   Box,
   Chip,
 } from "@mui/material";
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 // ggf. weitere MUI-Komponenten wie Slider, IconButton etc.
 
 import { useWebSocket } from "../context/WebSocketContext"; // Beispiel: eigener WebSocket-Context
 import * as lepmonSlice from "../state/slices/LepmonSlice.js";
+import { getConnectionSettingsState } from "../state/slices/ConnectionSettingsSlice";
 
-export default function LepmonController({ hostIP, hostPort }) {
+export default function LepmonController() {
+  // Get connection settings from Redux
+  const connectionSettings = useSelector(getConnectionSettingsState);
+  const hostIP = connectionSettings.ip;
+  const hostPort = connectionSettings.apiPort;
   // Redux dispatcher
   const dispatch = useDispatch();
-  
+
   // Access global Redux state
   const lepmonState = useSelector(lepmonSlice.getLepmonState);
-  
+
   // Use Redux state instead of local useState
   const isRunning = lepmonState.isRunning;
   const currentImageCount = lepmonState.currentImageCount;
@@ -60,7 +65,7 @@ export default function LepmonController({ hostIP, hostPort }) {
   // const buttonStates = lepmonState.buttonStates; // Currently unused in UI
   // const availableButtons = lepmonState.availableButtons; // Currently unused in UI
   const timingConfig = lepmonState.timingConfig;
-  // const sensorData = lepmonState.sensorData; // Currently unused in UI  
+  // const sensorData = lepmonState.sensorData; // Currently unused in UI
   // const availableSensors = lepmonState.availableSensors; // Currently unused in UI
 
   // WebSocket
@@ -70,6 +75,7 @@ export default function LepmonController({ hostIP, hostPort }) {
   useEffect(() => {
     async function fetchInitialData() {
       try {
+        // Build base URL from Redux state
         const urlStatus = `${hostIP}:${hostPort}/LepmonController/getStatus`;
         const resStatus = await fetch(urlStatus);
         const statusData = await resStatus.json();
@@ -89,7 +95,9 @@ export default function LepmonController({ hostIP, hostPort }) {
         dispatch(lepmonSlice.setLightStates(hardwareData.lightStates));
         dispatch(lepmonSlice.setAvailableLights(hardwareData.availableLEDs));
         dispatch(lepmonSlice.setButtonStates(hardwareData.buttonStates));
-        dispatch(lepmonSlice.setAvailableButtons(hardwareData.availableButtons));
+        dispatch(
+          lepmonSlice.setAvailableButtons(hardwareData.availableButtons)
+        );
         dispatch(lepmonSlice.setLcdDisplay(hardwareData.lcdDisplay));
 
         // 4. Hole Timing-Konfiguration (new)
@@ -138,21 +146,23 @@ export default function LepmonController({ hostIP, hostPort }) {
           dispatch(lepmonSlice.setCurrentImageCount(data.args.p0));
           break;
         case "temperatureUpdate":
-            const _args = data.args.p0;
-            dispatch(lepmonSlice.setTemperatureData({
+          const _args = data.args.p0;
+          dispatch(
+            lepmonSlice.setTemperatureData({
               innerTemp: _args.innerTemp,
               outerTemp: _args.outerTemp,
-              humidity: _args.humidity
-            }));
+              humidity: _args.humidity,
+            })
+          );
           break;
         case "freeSpaceUpdate": {
-            let _argsFreeSpace;
-            if (typeof data.args.p0 === "string") {
-              _argsFreeSpace = JSON.parse(data.args.p0.replace(/'/g, '"'));
-            } else {
-              _argsFreeSpace = data.args.p0;
-            }
-            dispatch(lepmonSlice.setFreeSpace(_argsFreeSpace.freeSpace));
+          let _argsFreeSpace;
+          if (typeof data.args.p0 === "string") {
+            _argsFreeSpace = JSON.parse(data.args.p0.replace(/'/g, '"'));
+          } else {
+            _argsFreeSpace = data.args.p0;
+          }
+          dispatch(lepmonSlice.setFreeSpace(_argsFreeSpace.freeSpace));
           break;
         }
         case "sigFocusSharpness":
@@ -164,7 +174,10 @@ export default function LepmonController({ hostIP, hostPort }) {
           break;
         case "sigUpdateImage":
           // Handle lepmon images specifically
-          if (data.detectorname === "LepmonCamera" || data.detectorname === "lepmonCam") {
+          if (
+            data.detectorname === "LepmonCamera" ||
+            data.detectorname === "lepmonCam"
+          ) {
             dispatch(lepmonSlice.setLatestImage(data.image));
             if (data.format) {
               dispatch(lepmonSlice.setImageFormat(data.format));
@@ -177,25 +190,31 @@ export default function LepmonController({ hostIP, hostPort }) {
             let lightData;
             if (Array.isArray(data.args.p0)) {
               // If p0 is an array, handle each entry as a light state update
-              data.args.p0.forEach(ld => {
-                dispatch(lepmonSlice.setLightState({
-                  lightName: ld.lightName,
-                  isOn: ld.state
-                }));
+              data.args.p0.forEach((ld) => {
+                dispatch(
+                  lepmonSlice.setLightState({
+                    lightName: ld.lightName,
+                    isOn: ld.state,
+                  })
+                );
               });
               break;
             } else if (typeof data.args.p0 === "string") {
               lightData = JSON.parse(data.args.p0.replace(/'/g, '"'));
-              dispatch(lepmonSlice.setLightState({
-                lightName: lightData.lightName,
-                isOn: lightData.state
-              }));
+              dispatch(
+                lepmonSlice.setLightState({
+                  lightName: lightData.lightName,
+                  isOn: lightData.state,
+                })
+              );
             } else if (typeof data.args.p0 === "object") {
               lightData = data.args.p0;
-              dispatch(lepmonSlice.setLightState({
-                lightName: lightData.lightName,
-                isOn: lightData.state
-              }));
+              dispatch(
+                lepmonSlice.setLightState({
+                  lightName: lightData.lightName,
+                  isOn: lightData.state,
+                })
+              );
             } else {
               // fallback: do nothing
             }
@@ -206,18 +225,20 @@ export default function LepmonController({ hostIP, hostPort }) {
           if (data.args && data.args.p0) {
             let displayLines;
             if (typeof data.args.p0 === "string") {
-              displayLines = data.args.p0.split('\n');
+              displayLines = data.args.p0.split("\n");
             } else if (Array.isArray(data.args.p0)) {
               displayLines = data.args.p0;
             } else {
               displayLines = ["", "", "", ""];
             }
-            dispatch(lepmonSlice.setLcdDisplay({
-              line1: displayLines[0] || "",
-              line2: displayLines[1] || "",
-              line3: displayLines[2] || "",
-              line4: displayLines[3] || ""
-            }));
+            dispatch(
+              lepmonSlice.setLcdDisplay({
+                line1: displayLines[0] || "",
+                line2: displayLines[1] || "",
+                line3: displayLines[2] || "",
+                line4: displayLines[3] || "",
+              })
+            );
           }
           break;
         case "sigButtonPressed":
@@ -231,10 +252,12 @@ export default function LepmonController({ hostIP, hostPort }) {
             } else {
               buttonData = {};
             }
-            dispatch(lepmonSlice.setButtonState({
-              buttonName: buttonData.buttonName,
-              isPressed: buttonData.state
-            }));
+            dispatch(
+              lepmonSlice.setButtonState({
+                buttonName: buttonData.buttonName,
+                isPressed: buttonData.state,
+              })
+            );
           }
           break;
         default:
@@ -254,7 +277,7 @@ export default function LepmonController({ hostIP, hostPort }) {
     // ggf. Client-Zeit und GPS hochladen
     const userTime = new Date().toISOString();
     dispatch(lepmonSlice.setDeviceTime(userTime));
-  
+
     const params = new URLSearchParams({
       deviceTime: userTime,
       deviceLat: lat,
@@ -265,7 +288,7 @@ export default function LepmonController({ hostIP, hostPort }) {
       time: time,
       date: date,
     });
-  
+
     try {
       const urlStart = `${hostIP}:${hostPort}/LepmonController/startExperiment?${params.toString()}`;
       const res = await fetch(urlStart, {
@@ -323,11 +346,11 @@ export default function LepmonController({ hostIP, hostPort }) {
       // Build query string
       const params = new URLSearchParams({
         lightName: lightName,
-        state: newState
+        state: newState,
       });
       const url = `${hostIP}:${hostPort}/LepmonController/setLightState?${params.toString()}`;
       const response = await fetch(url, {
-        method: "POST"
+        method: "POST",
       });
       const data = await response.json();
       if (data.success) {
@@ -342,17 +365,17 @@ export default function LepmonController({ hostIP, hostPort }) {
     try {
       // Build query string
       const params = new URLSearchParams({
-        state: newState
+        state: newState,
       });
       const url = `${hostIP}:${hostPort}/LepmonController/setAllLightsState?${params.toString()}`;
       const response = await fetch(url, {
-        method: "POST"
+        method: "POST",
       });
       const data = await response.json();
       if (data.success) {
         // Update all light states
         const newLightStates = {};
-        availableLights.forEach(light => {
+        availableLights.forEach((light) => {
           newLightStates[light] = newState;
         });
         dispatch(lepmonSlice.setLightStates(newLightStates));
@@ -369,7 +392,7 @@ export default function LepmonController({ hostIP, hostPort }) {
       const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ format: "jpeg", exposure: exposure })
+        body: JSON.stringify({ format: "jpeg", exposure: exposure }),
       });
       const data = await response.json();
       if (data.success) {
@@ -387,7 +410,7 @@ export default function LepmonController({ hostIP, hostPort }) {
       const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ line1, line2, line3, line4 })
+        body: JSON.stringify({ line1, line2, line3, line4 }),
       });
       const data = await response.json();
       if (data.success) {
@@ -405,7 +428,7 @@ export default function LepmonController({ hostIP, hostPort }) {
       const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ config: newConfig })
+        body: JSON.stringify({ config: newConfig }),
       });
       const data = await response.json();
       if (data.success) {
@@ -449,11 +472,13 @@ export default function LepmonController({ hostIP, hostPort }) {
       const params = new URLSearchParams({ action });
       const url = `${hostIP}:${hostPort}/LepmonController/lepmonUVLed?${params.toString()}`;
       const response = await fetch(url, {
-        method: "POST"
+        method: "POST",
       });
       const data = await response.json();
       if (data.success) {
-        dispatch(lepmonSlice.setLightState({ lightName: "UV_LED", isOn: data.state }));
+        dispatch(
+          lepmonSlice.setLightState({ lightName: "UV_LED", isOn: data.state })
+        );
       }
     } catch (err) {
       console.error("Error controlling UV LED:", err);
@@ -466,11 +491,16 @@ export default function LepmonController({ hostIP, hostPort }) {
       const params = new URLSearchParams({ action });
       const url = `${hostIP}:${hostPort}/LepmonController/lepmonVisibleLed?${params.toString()}`;
       const response = await fetch(url, {
-        method: "POST"
+        method: "POST",
       });
       const data = await response.json();
       if (data.success) {
-        dispatch(lepmonSlice.setLightState({ lightName: "Visible_LED", isOn: data.state }));
+        dispatch(
+          lepmonSlice.setLightState({
+            lightName: "Visible_LED",
+            isOn: data.state,
+          })
+        );
       }
     } catch (err) {
       console.error("Error controlling Visible LED:", err);
@@ -495,7 +525,7 @@ export default function LepmonController({ hostIP, hostPort }) {
   return (
     <Paper style={{ padding: 20 }}>
       <Typography variant="h5">LepMon Controller</Typography>
-      
+
       {/* Main Status Section */}
       <Grid container spacing={2}>
         <Grid item xs={12}>
@@ -521,29 +551,36 @@ export default function LepmonController({ hostIP, hostPort }) {
             <AccordionDetails>
               <Grid container spacing={2}>
                 <Grid item xs={6}>
-                  <Typography>GPIO Available: 
-                    <Chip 
-                      label={hardwareStatus.gpio_available ? "Yes" : "No"} 
-                      color={hardwareStatus.gpio_available ? "success" : "error"}
+                  <Typography>
+                    GPIO Available:
+                    <Chip
+                      label={hardwareStatus.gpio_available ? "Yes" : "No"}
+                      color={
+                        hardwareStatus.gpio_available ? "success" : "error"
+                      }
                       size="small"
                       style={{ marginLeft: 8 }}
                     />
                   </Typography>
                 </Grid>
                 <Grid item xs={6}>
-                  <Typography>OLED Available: 
-                    <Chip 
-                      label={hardwareStatus.oled_available ? "Yes" : "No"} 
-                      color={hardwareStatus.oled_available ? "success" : "error"}
+                  <Typography>
+                    OLED Available:
+                    <Chip
+                      label={hardwareStatus.oled_available ? "Yes" : "No"}
+                      color={
+                        hardwareStatus.oled_available ? "success" : "error"
+                      }
                       size="small"
                       style={{ marginLeft: 8 }}
                     />
                   </Typography>
                 </Grid>
                 <Grid item xs={6}>
-                  <Typography>I2C Available: 
-                    <Chip 
-                      label={hardwareStatus.i2c_available ? "Yes" : "No"} 
+                  <Typography>
+                    I2C Available:
+                    <Chip
+                      label={hardwareStatus.i2c_available ? "Yes" : "No"}
                       color={hardwareStatus.i2c_available ? "success" : "error"}
                       size="small"
                       style={{ marginLeft: 8 }}
@@ -551,10 +588,13 @@ export default function LepmonController({ hostIP, hostPort }) {
                   </Typography>
                 </Grid>
                 <Grid item xs={6}>
-                  <Typography>Simulation Mode: 
-                    <Chip 
-                      label={hardwareStatus.simulation_mode ? "On" : "Off"} 
-                      color={hardwareStatus.simulation_mode ? "warning" : "success"}
+                  <Typography>
+                    Simulation Mode:
+                    <Chip
+                      label={hardwareStatus.simulation_mode ? "On" : "Off"}
+                      color={
+                        hardwareStatus.simulation_mode ? "warning" : "success"
+                      }
                       size="small"
                       style={{ marginLeft: 8 }}
                     />
@@ -591,10 +631,13 @@ export default function LepmonController({ hostIP, hostPort }) {
                     All Lights Off
                   </Button>
                 </Grid>
-                
+
                 {/* Specialized LED Controls */}
                 <Grid item xs={12}>
-                  <Typography variant="subtitle2" style={{ marginTop: 16, marginBottom: 8 }}>
+                  <Typography
+                    variant="subtitle2"
+                    style={{ marginTop: 16, marginBottom: 8 }}
+                  >
                     Specialized LEDs
                   </Typography>
                 </Grid>
@@ -633,7 +676,10 @@ export default function LepmonController({ hostIP, hostPort }) {
 
                 {/* Individual Light Controls */}
                 <Grid item xs={12}>
-                  <Typography variant="subtitle2" style={{ marginTop: 16, marginBottom: 8 }}>
+                  <Typography
+                    variant="subtitle2"
+                    style={{ marginTop: 16, marginBottom: 8 }}
+                  >
                     Individual LED Controls
                   </Typography>
                 </Grid>
@@ -643,7 +689,9 @@ export default function LepmonController({ hostIP, hostPort }) {
                       control={
                         <Switch
                           checked={lightStates[lightName] || false}
-                          onChange={(e) => handleLightToggle(lightName, e.target.checked)}
+                          onChange={(e) =>
+                            handleLightToggle(lightName, e.target.checked)
+                          }
                           color="primary"
                         />
                       }
@@ -696,7 +744,14 @@ export default function LepmonController({ hostIP, hostPort }) {
                 <Grid item xs={6} md={3}>
                   <Button
                     variant="outlined"
-                    onClick={() => handleUpdateDisplay("Status Update", `Images: ${currentImageCount}`, `Time: ${new Date().toLocaleTimeString()}`, "LepMon Ready")}
+                    onClick={() =>
+                      handleUpdateDisplay(
+                        "Status Update",
+                        `Images: ${currentImageCount}`,
+                        `Time: ${new Date().toLocaleTimeString()}`,
+                        "LepMon Ready"
+                      )
+                    }
                     fullWidth
                   >
                     Update Display
@@ -720,7 +775,7 @@ export default function LepmonController({ hostIP, hostPort }) {
                     <Card>
                       <CardMedia
                         component="img"
-                        style={{ maxHeight: 400, objectFit: 'contain' }}
+                        style={{ maxHeight: 400, objectFit: "contain" }}
                         image={`data:image/jpeg;base64,${latestImage}`}
                         alt="Latest captured image"
                       />
@@ -731,14 +786,14 @@ export default function LepmonController({ hostIP, hostPort }) {
                       </CardContent>
                     </Card>
                   ) : (
-                    <Box 
-                      style={{ 
-                        height: 200, 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center',
-                        border: '2px dashed #ccc',
-                        borderRadius: 8
+                    <Box
+                      style={{
+                        height: 200,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        border: "2px dashed #ccc",
+                        borderRadius: 8,
                       }}
                     >
                       <Typography color="textSecondary">
@@ -771,18 +826,24 @@ export default function LepmonController({ hostIP, hostPort }) {
             <AccordionDetails>
               <Grid container spacing={2}>
                 <Grid item xs={12}>
-                  <Card style={{ backgroundColor: '#000', color: '#0f0', fontFamily: 'monospace' }}>
+                  <Card
+                    style={{
+                      backgroundColor: "#000",
+                      color: "#0f0",
+                      fontFamily: "monospace",
+                    }}
+                  >
                     <CardContent>
-                      <Typography style={{ color: '#0f0', fontSize: '12px' }}>
+                      <Typography style={{ color: "#0f0", fontSize: "12px" }}>
                         {lcdDisplay.line1 || "Line 1"}
                       </Typography>
-                      <Typography style={{ color: '#0f0', fontSize: '12px' }}>
+                      <Typography style={{ color: "#0f0", fontSize: "12px" }}>
                         {lcdDisplay.line2 || "Line 2"}
                       </Typography>
-                      <Typography style={{ color: '#0f0', fontSize: '12px' }}>
+                      <Typography style={{ color: "#0f0", fontSize: "12px" }}>
                         {lcdDisplay.line3 || "Line 3"}
                       </Typography>
-                      <Typography style={{ color: '#0f0', fontSize: '12px' }}>
+                      <Typography style={{ color: "#0f0", fontSize: "12px" }}>
                         {lcdDisplay.line4 || "Line 4"}
                       </Typography>
                     </CardContent>
@@ -813,12 +874,16 @@ export default function LepmonController({ hostIP, hostPort }) {
           <Typography>Timelapse Period (Sekunden)</Typography>
           <Switch
             checked={!timelapseLocked}
-            onChange={() => dispatch(lepmonSlice.setTimelapseLocked(!timelapseLocked))}
+            onChange={() =>
+              dispatch(lepmonSlice.setTimelapseLocked(!timelapseLocked))
+            }
           />
           <TextField
             disabled={timelapseLocked}
             value={timelapsePeriod}
-            onChange={(e) => dispatch(lepmonSlice.setTimelapsePeriod(e.target.value))}
+            onChange={(e) =>
+              dispatch(lepmonSlice.setTimelapsePeriod(e.target.value))
+            }
           />
         </Grid>
 
@@ -826,7 +891,9 @@ export default function LepmonController({ hostIP, hostPort }) {
           <Typography>Reboot Control</Typography>
           <Switch
             checked={!rebootLocked}
-            onChange={() => dispatch(lepmonSlice.setRebootLocked(!rebootLocked))}
+            onChange={() =>
+              dispatch(lepmonSlice.setRebootLocked(!rebootLocked))
+            }
           />
           <Button
             disabled={rebootLocked}
@@ -851,7 +918,11 @@ export default function LepmonController({ hostIP, hostPort }) {
                     label="Acquisition Interval (s)"
                     type="number"
                     value={timingConfig.acquisitionInterval || 60}
-                    onChange={(e) => handleTimingConfigUpdate({ acquisitionInterval: parseInt(e.target.value) })}
+                    onChange={(e) =>
+                      handleTimingConfigUpdate({
+                        acquisitionInterval: parseInt(e.target.value),
+                      })
+                    }
                     fullWidth
                   />
                 </Grid>
@@ -860,7 +931,11 @@ export default function LepmonController({ hostIP, hostPort }) {
                     label="Stabilization Time (s)"
                     type="number"
                     value={timingConfig.stabilizationTime || 5}
-                    onChange={(e) => handleTimingConfigUpdate({ stabilizationTime: parseInt(e.target.value) })}
+                    onChange={(e) =>
+                      handleTimingConfigUpdate({
+                        stabilizationTime: parseInt(e.target.value),
+                      })
+                    }
                     fullWidth
                   />
                 </Grid>
@@ -869,7 +944,11 @@ export default function LepmonController({ hostIP, hostPort }) {
                     label="Pre-Acquisition Delay (s)"
                     type="number"
                     value={timingConfig.preAcquisitionDelay || 2}
-                    onChange={(e) => handleTimingConfigUpdate({ preAcquisitionDelay: parseInt(e.target.value) })}
+                    onChange={(e) =>
+                      handleTimingConfigUpdate({
+                        preAcquisitionDelay: parseInt(e.target.value),
+                      })
+                    }
                     fullWidth
                   />
                 </Grid>
@@ -878,7 +957,11 @@ export default function LepmonController({ hostIP, hostPort }) {
                     label="Post-Acquisition Delay (s)"
                     type="number"
                     value={timingConfig.postAcquisitionDelay || 1}
-                    onChange={(e) => handleTimingConfigUpdate({ postAcquisitionDelay: parseInt(e.target.value) })}
+                    onChange={(e) =>
+                      handleTimingConfigUpdate({
+                        postAcquisitionDelay: parseInt(e.target.value),
+                      })
+                    }
                     fullWidth
                   />
                 </Grid>
@@ -923,10 +1006,10 @@ export default function LepmonController({ hostIP, hostPort }) {
             Focus
           </Button>
           {sharpnessValue && (
-            <Typography style={{ marginLeft: 16, display: 'inline' }}>
+            <Typography style={{ marginLeft: 16, display: "inline" }}>
               Sharpness: {sharpnessValue}
             </Typography>
-          )}  
+          )}
         </Grid>
 
         {/* Experiment Control */}

@@ -1,4 +1,4 @@
-import Blockly from "blockly";
+import * as Blockly from "blockly";
 
 // 1) Create your generator
 //    This ensures it inherits from the base Generator prototype.
@@ -271,19 +271,21 @@ JSONGenerator["math_number"] = function (block) {
 // 4) Example “acquire_frame_block”
 // Note: acquire_frame_block is already defined above
 
-JSONGenerator['controls_for'] = function(block) {
+JSONGenerator["controls_for"] = function (block) {
   // For now, we'll flatten for loops - this would need more complex handling
   // to properly support variable iterations in the backend
-  const variable = block.getFieldValue('VAR') || 'i';
-  const fromBlock = block.getInputTargetBlock('FROM');
-  const toBlock = block.getInputTargetBlock('TO');
-  const byBlock = block.getInputTargetBlock('BY');
-  
+  const variable = block.getFieldValue("VAR") || "i";
+  const fromBlock = block.getInputTargetBlock("FROM");
+  const toBlock = block.getInputTargetBlock("TO");
+  const byBlock = block.getInputTargetBlock("BY");
+
   // Get numeric values from the connected blocks
-  const fromValue = fromBlock ? this.blockToCode(fromBlock).replace(/,$/, '') : '1';
-  const toValue = toBlock ? this.blockToCode(toBlock).replace(/,$/, '') : '10';
-  const byValue = byBlock ? this.blockToCode(byBlock).replace(/,$/, '') : '1';
-  
+  const fromValue = fromBlock
+    ? this.blockToCode(fromBlock).replace(/,$/, "")
+    : "1";
+  const toValue = toBlock ? this.blockToCode(toBlock).replace(/,$/, "") : "10";
+  const byValue = byBlock ? this.blockToCode(byBlock).replace(/,$/, "") : "1";
+
   const step = {
     id: block.id,
     stepName: "For Loop",
@@ -292,14 +294,14 @@ JSONGenerator['controls_for'] = function(block) {
       variable: variable,
       from: parseInt(fromValue) || 1,
       to: parseInt(toValue) || 10,
-      by: parseInt(byValue) || 1
+      by: parseInt(byValue) || 1,
     },
     preFuncs: [],
     preParams: {},
     postFuncs: [],
     postParams: {},
   };
-  
+
   return JSON.stringify(step) + ",";
 };
 

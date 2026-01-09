@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useState, useEffect } from "react";
+import { useDispatch } from "react-redux";
 import {
   Typography,
   Box,
@@ -25,9 +25,16 @@ import apiObjectiveControllerMoveToObjective from "../../backendapi/apiObjective
 import apiPositionerControllerGetPositions from "../../backendapi/apiPositionerControllerGetPositions.js";
 import apiObjectiveControllerSetPositions from "../../backendapi/apiObjectiveControllerSetPositions.js";
 
-const WizardStep4 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps }) => {
+const WizardStep4 = ({
+  hostIP,
+  hostPort,
+  onNext,
+  onBack,
+  activeStep,
+  totalSteps,
+}) => {
   const dispatch = useDispatch();
-  
+
   const [setupComplete, setSetupComplete] = useState(false);
   const [movedToObjective1, setMovedToObjective1] = useState(false);
   const [currentPositions, setCurrentPositions] = useState({
@@ -110,19 +117,19 @@ const WizardStep4 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
       });
   };
 
-  const handleSaveZ1Position = () => {
+  const handleSaveZ0Position = () => {
     if (currentPositions.Z !== null) {
-      // Save current Z position as Z1 using the proper API
+      // Save current Z position as Z0 using the proper API
       apiObjectiveControllerSetPositions({
-        z1: currentPositions.Z,
+        z0: currentPositions.Z,
         isBlocking: false,
       })
         .then((data) => {
-          dispatch(objectiveSlice.setPosZ1(currentPositions.Z));
-          alert(`Z1 position set to: ${currentPositions.Z}`);
+          dispatch(objectiveSlice.setPosZ0(currentPositions.Z));
+          alert(`Z0 position set to: ${currentPositions.Z}`);
         })
         .catch((err) => {
-          console.error("Error setting Z1:", err);
+          console.error("Error setting Z0:", err);
         });
     }
   };
@@ -130,12 +137,12 @@ const WizardStep4 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
   return (
     <Box sx={{ p: 2 }}>
       <Typography variant="h5" gutterBottom>
-        Step 4: Calibrate Focus Position Z1
+        Step 4: Calibrate Focus Position Z0
       </Typography>
-      
+
       <Alert severity="info" sx={{ mb: 3 }}>
-        Insert objectives into slots 1 and 2, add a sample, switch to objective 1, 
-        find a feature to focus on, and save the Z1 focus position.
+        Insert objectives into slots 1 and 2, add a sample, switch to objective
+        1, find a feature to focus on, and save the Z0 focus position.
       </Alert>
 
       <Grid container spacing={3}>
@@ -145,11 +152,11 @@ const WizardStep4 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
             <Typography variant="h6" gutterBottom>
               Live View with XYZ Controls
             </Typography>
-            <Box sx={{ height: '400px', border: '1px solid #ccc' }}>
+            <Box sx={{ height: "400px", border: "1px solid #ccc" }}>
               <LiveViewControlWrapper />
             </Box>
             {/* XYZ Joystick Controls */}
-            <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
+            <Box sx={{ mt: 2, display: "flex", justifyContent: "center" }}>
               <PositionControllerComponent />
             </Box>
           </Paper>
@@ -166,7 +173,7 @@ const WizardStep4 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
                 <ListItemIcon>
                   <CheckIcon color={setupComplete ? "success" : "disabled"} />
                 </ListItemIcon>
-                <ListItemText 
+                <ListItemText
                   primary="Insert objective lenses into slots 1 and 2"
                   secondary="Screw in both objectives securely"
                 />
@@ -175,7 +182,7 @@ const WizardStep4 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
                 <ListItemIcon>
                   <CheckIcon color={setupComplete ? "success" : "disabled"} />
                 </ListItemIcon>
-                <ListItemText 
+                <ListItemText
                   primary="Insert a sample"
                   secondary="Place a sample with visible features under the objectives"
                 />
@@ -207,7 +214,7 @@ const WizardStep4 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
 
           <Paper elevation={2} sx={{ p: 2, mb: 2 }}>
             <Typography variant="h6" gutterBottom>
-              <FocusIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+              <FocusIcon sx={{ mr: 1, verticalAlign: "middle" }} />
               3. Find Focus
             </Typography>
             <Typography variant="body2" sx={{ mb: 2 }}>
@@ -215,13 +222,13 @@ const WizardStep4 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
             </Typography>
             <List dense>
               <ListItem>
-                <ListItemText 
+                <ListItemText
                   primary="• Move X/Y to find a feature on your sample"
                   secondary="Use the arrow buttons for X/Y movement"
                 />
               </ListItem>
               <ListItem>
-                <ListItemText 
+                <ListItemText
                   primary="• Adjust Z to achieve sharp focus"
                   secondary="Use the +/- buttons for Z movement (focus)"
                 />
@@ -231,36 +238,36 @@ const WizardStep4 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps 
 
           <Paper elevation={2} sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
-              <SaveIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-              4. Save Z1 Focus Position
+              <SaveIcon sx={{ mr: 1, verticalAlign: "middle" }} />
+              4. Save Z0 Focus Position
             </Typography>
             <Typography variant="body2" sx={{ mb: 2 }}>
               Current Positions:
             </Typography>
             <Typography variant="body2" sx={{ mb: 1 }}>
-              X: <strong>{currentPositions.X || "Unknown"}</strong>, 
-              Y: <strong>{currentPositions.Y || "Unknown"}</strong>
+              X: <strong>{currentPositions.X || "Unknown"}</strong>, Y:{" "}
+              <strong>{currentPositions.Y || "Unknown"}</strong>
             </Typography>
             <Typography variant="body2" sx={{ mb: 2 }}>
-              Z: <strong>{currentPositions.Z || "Unknown"}</strong>, 
-              A: <strong>{currentPositions.A || "Unknown"}</strong>
+              Z: <strong>{currentPositions.Z || "Unknown"}</strong>, A:{" "}
+              <strong>{currentPositions.A || "Unknown"}</strong>
             </Typography>
             <Button
               variant="contained"
               color="success"
-              onClick={handleSaveZ1Position}
+              onClick={handleSaveZ0Position}
               disabled={!movedToObjective1 || currentPositions.Z === null}
               startIcon={<SaveIcon />}
             >
-              Save Current Z as Z1
+              Save Current Z as Z0
             </Button>
           </Paper>
         </Grid>
       </Grid>
 
       <Alert severity="success" sx={{ mt: 3 }}>
-        <strong>Tip:</strong> Once you have a sharp focus on a feature, 
-        click "Save Current Z as Z1" to store this focus position for objective 1.
+        <strong>Tip:</strong> Once you have a sharp focus on a feature, click
+        "Save Current Z as Z0" to store this focus position for objective 1.
       </Alert>
     </Box>
   );

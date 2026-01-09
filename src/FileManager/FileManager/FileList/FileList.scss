@@ -14,7 +14,7 @@
 
   .drag-move-tooltip {
     background-color: white;
-    font-size: .78em;
+    font-size: 0.78em;
     position: fixed;
     text-wrap: nowrap;
     border: 1px dashed black;
@@ -37,7 +37,7 @@
       position: absolute !important;
       top: -1000px;
       left: -1000px;
-      z-Index: -1;
+      z-index: -1;
       border-radius: 4px;
       position: relative;
       color: white;
@@ -145,7 +145,7 @@
     padding: 4px 0 4px 5px;
     position: sticky;
     top: 0;
-    background-color: #f5f5f5;
+    background-color: #424242;
     z-index: 1;
 
     .file-select-all {
@@ -154,13 +154,13 @@
     }
 
     .file-name {
-      width: calc(65% - 35px);
+      width: calc(75% - 35px);
       padding-left: 35px;
     }
 
     .file-date {
       text-align: center;
-      width: 20%;
+      width: 15%;
     }
 
     .file-size {
@@ -193,7 +193,7 @@
     padding: 15px;
     padding-left: 33px;
     margin: 0;
-    width: calc(70% - 30px);
+    width: calc(75% - 30px);
 
     &:hover {
       background-color: unset;
@@ -204,7 +204,7 @@
     }
 
     .file-name {
-      max-width: 285px;
+      max-width: 400px;
     }
   }
 
@@ -213,7 +213,7 @@
     align-items: center;
     justify-content: center;
     font-size: 0.8em;
-    width: calc(20%);
+    width: calc(15%);
   }
 
   .size {

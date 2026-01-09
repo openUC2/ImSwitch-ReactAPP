@@ -1,7 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { Box, Typography, Button } from "@mui/material";
+import { useSelector } from "react-redux";
+import { getConnectionSettingsState } from "../state/slices/ConnectionSettingsSlice";
 
-const ImJoyView = ({ hostIP, hostPort, sharedImage }) => {
+const ImJoyView = ({ sharedImage }) => {
+  // Get connection settings from Redux
+  const { ip: hostIP, apiPort: hostPort } = useSelector(
+    getConnectionSettingsState
+  );
   const [imjoyAPI, setImjoyAPI] = useState(null);
 
   useEffect(() => {
@@ -86,8 +92,17 @@ const ImJoyView = ({ hostIP, hostPort, sharedImage }) => {
   };
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 2, position: "relative" }}>
-      <Typography variant="h6" gutterBottom>ImJoy Integration Page</Typography>
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 2,
+        position: "relative",
+      }}
+    >
+      <Typography variant="h6" gutterBottom>
+        ImJoy Integration Page
+      </Typography>
       <Button variant="contained" onClick={handleSnapAndSend}>
         Snap and Send to ImJoy
       </Button>

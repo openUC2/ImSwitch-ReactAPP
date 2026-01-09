@@ -9,9 +9,9 @@ import InfoPopup from "./InfoPopup.js";
 
 
 import * as wellSelectorSlice from "../state/slices/WellSelectorSlice.js";
-import * as experimentSlice from "../state/slices/ExperimentSlice.js"; 
+import * as experimentSlice from "../state/slices/ExperimentSlice.js";
+import * as positionSlice from "../state/slices/PositionSlice.js"; 
 
-import apiHistoScanControllerGetSampleLayoutFilePaths from "../backendapi/apiHistoScanControllerGetSampleLayoutFilePaths.js";
 import apiDownloadJson from "../backendapi/apiDownloadJson.js";
 
 import {
@@ -25,8 +25,14 @@ import {
   FormControl,
   InputLabel,
   FormHelperText,
+  FormControlLabel,
   ButtonGroup,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Slider,
 } from "@mui/material";
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 //##################################################################################
 const WellSelectorComponent = () => {
@@ -45,23 +51,9 @@ const WellSelectorComponent = () => {
 
   // Access global Redux state
   const wellSelectorState = useSelector(wellSelectorSlice.getWellSelectorState);
-  const experimentState = useSelector(experimentSlice.getExperimentState); 
+  const experimentState = useSelector(experimentSlice.getExperimentState);
+  const positionState = useSelector(positionSlice.getPositionState); 
 
-
-  //##################################################################################
-  useEffect(() => {
-    //request welllayout file list
-    apiHistoScanControllerGetSampleLayoutFilePaths()
-      .then((data) => {
-        //console.log("apiHistoScanControllerGetSampleLayoutFilePaths",data)
-        //set file list
-        setWellLayoutFileList(data);
-      })
-      .catch((err) => {
-        //handle error if needed
-        console.error(err);
-      });
-  }, []); // Empty dependency array ensures this runs once on mount
 
   //##################################################################################
   const handleModeChange = (mode) => {
@@ -76,19 +68,9 @@ const WellSelectorComponent = () => {
   };
 
   //##################################################################################
-  const handleOverlapWidthSpinnerChange = (event) => {
-    // Update the spinner value
-    const value = parseFloat(event.target.value, 10);
-    // Update Redux state
-    dispatch(wellSelectorSlice.setOverlapWidth(value));
-  };
-
-  //##################################################################################
-  const handleOverlapHeightSpinnerChange = (event) => {
-    // Update the spinner value
-    const value = parseFloat(event.target.value, 10);
-    // Update Redux state
-    dispatch(wellSelectorSlice.setOverlapHeight(value));
+  const handleResetHistory = () => {
+    //call child method to reset position history
+    childRef.current.resetHistory();
   };
 
   //##################################################################################
@@ -107,6 +89,10 @@ const WellSelectorComponent = () => {
     //select layout
     let wellLayout; // = wsUtils.wellLayoutDefault;
 
+    // Get current offsets from Redux state
+    const offsetX = wellSelectorState.layoutOffsetX || 0;
+    const offsetY = wellSelectorState.layoutOffsetY || 0;
+
     //check defaults
     if (event.target.value === "Default") {
       wellLayout = wsUtils.wellLayoutDefault;
@@ -118,6 +104,12 @@ const WellSelectorComponent = () => {
       wellLayout = wsUtils.wellLayout32;
     } else if (event.target.value === "Wellplate 96") {
       wellLayout = wsUtils.wellLayout96;
+    } else if (event.target.value === "Wellplate 384") {
+      // Generate 384 layout with offsets
+      wellLayout = wsUtils.generateWellLayout384({
+        offsetX: offsetX,
+        offsetY: offsetY
+      });
     } else if (event.target.value === "Ropod") {
       wellLayout = wsUtils.ropodLayout;      
     } else {
@@ -128,7 +120,9 @@ const WellSelectorComponent = () => {
           //handle layout
           //TODO
         //set popup
-           infoPopupRef.current.showMessage("TODO impl me"); 
+        if (infoPopupRef.current) {
+          infoPopupRef.current.showMessage("TODO impl me");
+        } 
           console.error("-----------------------------------------------TODO impl me------------------------------------------------------------");
         })
         .catch((err) => {
@@ -139,6 +133,9 @@ const WellSelectorComponent = () => {
       return;
     }
 
+    // Apply offsets to the layout
+    wellLayout = wsUtils.applyLayoutOffset(wellLayout, offsetX, offsetY);
+
     //get from web
     ///TODO 
     //console.log(JSON.stringify(wsUtils.wellLayoutDevelopment));
@@ -148,6 +145,149 @@ const WellSelectorComponent = () => {
 
     //set new layout
     dispatch(experimentSlice.setWellLayout(wellLayout));
+  };
+
+  //##################################################################################
+  const handleAddCurrentPosition = () => {
+    // Get current position from Redux state
+    const currentX = positionState.x;
+    const currentY = positionState.y;
+    
+    // Create a new point with current position
+    dispatch(experimentSlice.createPoint({
+      x: currentX,
+      y: currentY,
+      name: `Position ${experimentState.pointList.length + 1}`,
+      shape: ""
+    }));
+    
+    // Show confirmation message
+    if (infoPopupRef.current) {
+      infoPopupRef.current.showMessage(`Added position: X=${currentX}, Y=${currentY}`);
+    }
+  };
+
+  //##################################################################################
+  const handleCalibrateOffset = () => {
+    // Stage offset calibration is now available via right-click context menu on the canvas.
+    // Right-click on the map and select "We are here (Calibrate Offset)" to set the stage offset.
+    // This uses the clicked position as the known position and transmits it to the backend
+    // via the setStageOffsetAxis API (similar to StageOffsetCalibrationController.jsx).
+    if (infoPopupRef.current) {
+      infoPopupRef.current.showMessage("Right-click on the map where you are and select 'We are here' to calibrate the stage offset.");
+    }
+  }
+
+  //##################################################################################
+  const handleLayoutOffsetXChange = (event) => {
+    const value = parseFloat(event.target.value);
+    dispatch(wellSelectorSlice.setLayoutOffsetX(value));
+    
+    // Re-apply the current layout with new offset
+    handleLayoutChange({ target: { value: experimentState.wellLayout.name } });
+  };
+
+  //##################################################################################
+  const handleLayoutOffsetYChange = (event) => {
+    const value = parseFloat(event.target.value);
+    dispatch(wellSelectorSlice.setLayoutOffsetY(value));
+    
+    // Re-apply the current layout with new offset
+    handleLayoutChange({ target: { value: experimentState.wellLayout.name } });
+  };
+
+  //##################################################################################
+  const handleAreaSelectSnakescanChange = (event) => {
+    dispatch(wellSelectorSlice.setAreaSelectSnakescan(event.target.checked));
+  };
+
+  //##################################################################################
+  const handleAreaSelectOverlapChange = (event) => {
+    const value = parseFloat(event.target.value);
+    dispatch(wellSelectorSlice.setAreaSelectOverlap(value));
+  };
+
+  //##################################################################################
+  const handleCupSelectShapeChange = (event) => {
+    dispatch(wellSelectorSlice.setCupSelectShape(event.target.value));
+  };
+
+  //##################################################################################
+  const handleCupSelectOverlapChange = (event) => {
+    const value = parseFloat(event.target.value);
+    dispatch(wellSelectorSlice.setCupSelectOverlap(value));
+  };
+
+  //##################################################################################
+  // Save positions to JSON file
+  const handleSavePositions = () => {
+    try {
+      const positionsData = {
+        pointList: experimentState.pointList,
+        wellLayout: experimentState.wellLayout,
+        savedAt: new Date().toISOString(),
+      };
+      
+      const dataStr = JSON.stringify(positionsData, null, 2);
+      const dataBlob = new Blob([dataStr], { type: "application/json" });
+      const url = URL.createObjectURL(dataBlob);
+      
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `wellplate_positions_${new Date().toISOString().slice(0, 10)}.json`;
+      link.click();
+      
+      URL.revokeObjectURL(url);
+      
+      infoPopupRef.current?.showInfo("Positions saved successfully!");
+    } catch (error) {
+      console.error("Error saving positions:", error);
+      infoPopupRef.current?.showInfo("Error saving positions!");
+    }
+  };
+
+  //##################################################################################
+  // Load positions from JSON file
+  const handleLoadPositions = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "application/json";
+    
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const positionsData = JSON.parse(event.target.result);
+          
+          // Validate data structure
+          if (!positionsData.pointList || !Array.isArray(positionsData.pointList)) {
+            throw new Error("Invalid positions file format");
+          }
+          
+          // Load positions into Redux state
+          dispatch(experimentSlice.setPointList(positionsData.pointList));
+          
+          // Optionally restore layout if included
+          if (positionsData.wellLayout) {
+            dispatch(experimentSlice.setWellLayout(positionsData.wellLayout));
+          }
+          
+          infoPopupRef.current?.showInfo(
+            `Loaded ${positionsData.pointList.length} position(s) successfully!`
+          );
+        } catch (error) {
+          console.error("Error loading positions:", error);
+          infoPopupRef.current?.showInfo("Error loading positions file!");
+        }
+      };
+      
+      reader.readAsText(file);
+    };
+    
+    input.click();
   };
 
   //##################################################################################
@@ -182,10 +322,11 @@ const WellSelectorComponent = () => {
             </MenuItem>
             {/* hard coded layouts */}
             <MenuItem value="Default">Default</MenuItem>
-            <MenuItem value="Heidstar 4x Histosample">Development</MenuItem>
+            <MenuItem value="Heidstar 4x Histosample">4 Slide Heidstar</MenuItem>
             <MenuItem value="Ropod">Ropod</MenuItem>  
             <MenuItem value="Wellplate 32">Wellplate 32</MenuItem>
             <MenuItem value="Wellplate 96">Wellplate 96</MenuItem>
+            <MenuItem value="Wellplate 384">Wellplate 384</MenuItem>
             <MenuItem value="histolayout">histolayout</MenuItem>
             {/* online layouts */}
             {wellLayoutFileList.map((file, index) => (
@@ -194,61 +335,62 @@ const WellSelectorComponent = () => {
           </Select>
         </FormControl>
 
-        {/* OVERLAP */}
+        {/* VIEW - All controls in one row */}
+        <Box sx={{ display: "flex", gap: 1, alignItems: "center", flexWrap: "wrap" }}>
+          <Button 
+            variant="contained" 
+            size="small"
+            onClick={() => handleResetView()}
+          >
+            Reset View
+          </Button>
 
-        <FormControl style={{ marginLeft: "10px", width: "80px" }}>
-          <TextField
-            label="Overlap X"
-            type="number"
-            value={wellSelectorState.overlapWidth}
-            onChange={handleOverlapWidthSpinnerChange}
-            inputProps={{
-              min: -1,
-              max: 1,
-              step: 0.1,
-            }}
-          />
-        </FormControl>
+          <Button 
+            variant="contained" 
+            size="small"
+            onClick={() => handleResetHistory()}
+          >
+            Reset History
+          </Button>
 
-        <FormControl>
-          <TextField
-            label="Overlap Y"
-            type="number"
-            value={wellSelectorState.overlapHeight}
-            onChange={handleOverlapHeightSpinnerChange}
-            inputProps={{
-              min: -1,
-              max: 1,
-              step: 0.1,
-            }}
-            style={{ marginRight: "10px", width: "80px" }}
-          />
-        </FormControl>
+          <label style={{ fontSize: "14px", display: "flex", alignItems: "center", gap: "4px" }}>
+            <input
+              type="checkbox"
+              checked={wellSelectorState.showOverlap}
+              onChange={handleShowOverlapChange}
+            />
+            Show Overlap
+          </label>
 
-      
-        {/* VIEW */}
+          <label style={{ fontSize: "14px", display: "flex", alignItems: "center", gap: "4px" }}>
+            <input
+              type="checkbox"
+              checked={wellSelectorState.showShape}
+              onChange={handleShowShapeChange}
+            />
+            Show Shape
+          </label>
+        </Box>
 
-        <Button variant="contained" onClick={() => handleResetView()}>
-          reset view
-        </Button>
+        {/* Save/Load Positions */}
+        <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
+          <Button 
+            variant="outlined" 
+            size="small"
+            onClick={handleSavePositions}
+            disabled={!experimentState.pointList || experimentState.pointList.length === 0}
+          >
+            💾 Save Positions
+          </Button>
 
-        <label style={{ fontSize: "14px" }}>
-          <input
-            type="checkbox"
-            checked={wellSelectorState.showOverlap}
-            onChange={handleShowOverlapChange}
-          />
-          show overlap
-        </label>
-
-        <label style={{ fontSize: "14px" }}>
-          <input
-            type="checkbox"
-            checked={wellSelectorState.showShape}
-            onChange={handleShowShapeChange}
-          />
-          show shape
-        </label>
+          <Button 
+            variant="outlined" 
+            size="small"
+            onClick={handleLoadPositions}
+          >
+            📂 Load Positions
+          </Button>
+        </Box>
       </div>
 
       {/* MODE */}
@@ -285,7 +427,7 @@ const WellSelectorComponent = () => {
             onClick={() => handleModeChange(Mode.CUP_SELECT)}
             disabled={wellSelectorState.mode == Mode.CUP_SELECT}
           >
-            CUP select
+            Well select
           </Button>
 
           <Button
@@ -295,6 +437,22 @@ const WellSelectorComponent = () => {
             disabled={wellSelectorState.mode == Mode.MOVE_CAMERA}
           >
             MOVE CAMERA
+          </Button>
+
+          <Button
+            variant="contained"
+            style={{}}
+            onClick={() => handleAddCurrentPosition()}
+          >
+            ADD CURRENT POSITION
+          </Button>
+
+          <Button
+            variant="contained"
+            style={{}}
+            onClick={() => handleCalibrateOffset()}
+          >
+            CALIBRATE OFFSET
           </Button>
         </ButtonGroup>
       </div>

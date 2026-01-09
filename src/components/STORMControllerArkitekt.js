@@ -49,12 +49,14 @@ const TabPanel = (props) => {
   );
 };
 
-const STORMControllerArkitekt = ({ hostIP, hostPort, WindowTitle }) => {
+const STORMControllerArkitekt = () => {
   const dispatch = useDispatch();
-  
+
   // Redux state
   const stormState = useSelector(stormSlice.getSTORMState);
-  const connectionSettingsState = useSelector(connectionSettingsSlice.getConnectionSettingsState);
+  const connectionSettingsState = useSelector(
+    connectionSettingsSlice.getConnectionSettingsState
+  );
 
   // Local state
   const [activeStep, setActiveStep] = useState(0);
@@ -62,8 +64,8 @@ const STORMControllerArkitekt = ({ hostIP, hostPort, WindowTitle }) => {
   const [visualizationTabIndex, setVisualizationTabIndex] = useState(0);
   const [arkitektConnected, setArkitektConnected] = useState(false);
   const [availableWorkflows, setAvailableWorkflows] = useState([]);
-  const [selectedWorkflow, setSelectedWorkflow] = useState('');
-  const [workflowStatus, setWorkflowStatus] = useState('idle');
+  const [selectedWorkflow, setSelectedWorkflow] = useState("");
+  const [workflowStatus, setWorkflowStatus] = useState("idle");
   const [reconImage, setReconImage] = useState(null);
   const [plotData, setPlotData] = useState(null);
   const [statistics, setStatistics] = useState(null);
@@ -74,11 +76,11 @@ const STORMControllerArkitekt = ({ hostIP, hostPort, WindowTitle }) => {
   const acquisitionParameters = stormState.acquisitionParameters;
 
   const steps = [
-    'Connect to Arkitekt',
-    'Select Workflow', 
-    'Configure Parameters',
-    'Start Processing',
-    'Monitor Results'
+    "Connect to Arkitekt",
+    "Select Workflow",
+    "Configure Parameters",
+    "Start Processing",
+    "Monitor Results",
   ];
 
   // WebSocket signal handling for Arkitekt
@@ -87,27 +89,30 @@ const STORMControllerArkitekt = ({ hostIP, hostPort, WindowTitle }) => {
 
     const handleSignal = (data) => {
       try {
-        const jdata = typeof data === 'string' ? JSON.parse(data) : data;
-        
+        const jdata = typeof data === "string" ? JSON.parse(data) : data;
+
         // Handle Arkitekt-specific signals
-        if (jdata.name === 'sigArkitektConnectionStatus') {
+        if (jdata.name === "sigArkitektConnectionStatus") {
           setArkitektConnected(jdata.connected);
         }
-        
-        if (jdata.name === 'sigArkitektWorkflowUpdate') {
+
+        if (jdata.name === "sigArkitektWorkflowUpdate") {
           setWorkflowStatus(jdata.status);
         }
-        
+
         // Handle reconstruction results from Arkitekt
-        if (jdata.name === 'sigArkitektReconstructionResult' && jdata.image) {
+        if (jdata.name === "sigArkitektReconstructionResult" && jdata.image) {
           setReconImage(`data:image/jpeg;base64,${jdata.image}`);
         }
-        
-        if (jdata.name === 'sigArkitektLocalizationResult' && jdata.localizations) {
+
+        if (
+          jdata.name === "sigArkitektLocalizationResult" &&
+          jdata.localizations
+        ) {
           setPlotData(jdata.localizations);
         }
-        
-        if (jdata.name === 'sigArkitektStatisticsResult' && jdata.statistics) {
+
+        if (jdata.name === "sigArkitektStatisticsResult" && jdata.statistics) {
           setStatistics(jdata.statistics);
         }
       } catch (error) {
@@ -153,16 +158,16 @@ const STORMControllerArkitekt = ({ hostIP, hostPort, WindowTitle }) => {
       const response = await fetch(
         `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/ArkitektController/startWorkflow`,
         {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             workflow: selectedWorkflow,
-            parameters: acquisitionParameters
-          })
+            parameters: acquisitionParameters,
+          }),
         }
       );
       if (response.ok) {
-        setWorkflowStatus('running');
+        setWorkflowStatus("running");
       }
     } catch (error) {
       console.error("Error starting Arkitekt processing:", error);
@@ -173,10 +178,10 @@ const STORMControllerArkitekt = ({ hostIP, hostPort, WindowTitle }) => {
     try {
       const response = await fetch(
         `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/ArkitektController/stopWorkflow`,
-        { method: 'POST' }
+        { method: "POST" }
       );
       if (response.ok) {
-        setWorkflowStatus('stopped');
+        setWorkflowStatus("stopped");
       }
     } catch (error) {
       console.error("Error stopping Arkitekt processing:", error);
@@ -210,10 +215,19 @@ const STORMControllerArkitekt = ({ hostIP, hostPort, WindowTitle }) => {
         return (
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>Connect to Arkitekt</Typography>
+              <Typography variant="h6" gutterBottom>
+                Connect to Arkitekt
+              </Typography>
               <Grid container spacing={2}>
                 <Grid item xs={12}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 2,
+                      mb: 2,
+                    }}
+                  >
                     <Typography variant="body1">Arkitekt Status:</Typography>
                     {arkitektConnected ? (
                       <>
@@ -236,13 +250,16 @@ const STORMControllerArkitekt = ({ hostIP, hostPort, WindowTitle }) => {
                     color="primary"
                     fullWidth
                   >
-                    {arkitektConnected ? 'Connected to Arkitekt' : 'Connect to Arkitekt'}
+                    {arkitektConnected
+                      ? "Connected to Arkitekt"
+                      : "Connect to Arkitekt"}
                   </Button>
                 </Grid>
                 <Grid item xs={12}>
                   <Typography variant="body2" color="textSecondary">
-                    Arkitekt provides distributed processing capabilities for STORM reconstruction 
-                    with advanced algorithms and cloud resources.
+                    Arkitekt provides distributed processing capabilities for
+                    STORM reconstruction with advanced algorithms and cloud
+                    resources.
                   </Typography>
                 </Grid>
               </Grid>
@@ -254,14 +271,16 @@ const STORMControllerArkitekt = ({ hostIP, hostPort, WindowTitle }) => {
         return (
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>Select Workflow</Typography>
+              <Typography variant="h6" gutterBottom>
+                Select Workflow
+              </Typography>
               <Grid container spacing={2}>
                 <Grid item xs={12}>
                   <FormControl fullWidth>
                     <InputLabel>Available Workflows</InputLabel>
                     <Select
                       value={selectedWorkflow}
-                      onChange={e => setSelectedWorkflow(e.target.value)}
+                      onChange={(e) => setSelectedWorkflow(e.target.value)}
                       label="Available Workflows"
                       disabled={!arkitektConnected}
                     >
@@ -285,8 +304,9 @@ const STORMControllerArkitekt = ({ hostIP, hostPort, WindowTitle }) => {
                 </Grid>
                 <Grid item xs={12}>
                   <Typography variant="body2" color="textSecondary">
-                    Select a workflow that matches your experimental requirements. 
-                    Different workflows offer various algorithms and processing options.
+                    Select a workflow that matches your experimental
+                    requirements. Different workflows offer various algorithms
+                    and processing options.
                   </Typography>
                 </Grid>
               </Grid>
@@ -298,14 +318,18 @@ const STORMControllerArkitekt = ({ hostIP, hostPort, WindowTitle }) => {
         return (
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>Configure Parameters</Typography>
+              <Typography variant="h6" gutterBottom>
+                Configure Parameters
+              </Typography>
               <Grid container spacing={2}>
                 <Grid item xs={12}>
                   <TextField
                     fullWidth
                     label="Session ID"
-                    value={acquisitionParameters.session_id || ''}
-                    onChange={e => setAcquisitionParameter('session_id', e.target.value)}
+                    value={acquisitionParameters.session_id || ""}
+                    onChange={(e) =>
+                      setAcquisitionParameter("session_id", e.target.value)
+                    }
                     size="small"
                   />
                 </Grid>
@@ -315,7 +339,12 @@ const STORMControllerArkitekt = ({ hostIP, hostPort, WindowTitle }) => {
                     label="Max Frames (-1 for unlimited)"
                     type="number"
                     value={acquisitionParameters.max_frames}
-                    onChange={e => setAcquisitionParameter('max_frames', parseInt(e.target.value) || -1)}
+                    onChange={(e) =>
+                      setAcquisitionParameter(
+                        "max_frames",
+                        parseInt(e.target.value) || -1
+                      )
+                    }
                     size="small"
                   />
                 </Grid>
@@ -323,8 +352,10 @@ const STORMControllerArkitekt = ({ hostIP, hostPort, WindowTitle }) => {
                   <FormControl fullWidth size="small">
                     <InputLabel>Priority</InputLabel>
                     <Select
-                      value={acquisitionParameters.priority || 'normal'}
-                      onChange={e => setAcquisitionParameter('priority', e.target.value)}
+                      value={acquisitionParameters.priority || "normal"}
+                      onChange={(e) =>
+                        setAcquisitionParameter("priority", e.target.value)
+                      }
                       label="Priority"
                     >
                       <MenuItem value="low">Low</MenuItem>
@@ -338,8 +369,15 @@ const STORMControllerArkitekt = ({ hostIP, hostPort, WindowTitle }) => {
                   <FormControlLabel
                     control={
                       <Checkbox
-                        checked={acquisitionParameters.process_arkitekt || false}
-                        onChange={e => setAcquisitionParameter('process_arkitekt', e.target.checked)}
+                        checked={
+                          acquisitionParameters.process_arkitekt || false
+                        }
+                        onChange={(e) =>
+                          setAcquisitionParameter(
+                            "process_arkitekt",
+                            e.target.checked
+                          )
+                        }
                       />
                     }
                     label="Process with Arkitekt"
@@ -350,7 +388,12 @@ const STORMControllerArkitekt = ({ hostIP, hostPort, WindowTitle }) => {
                     control={
                       <Checkbox
                         checked={acquisitionParameters.save_results || false}
-                        onChange={e => setAcquisitionParameter('save_results', e.target.checked)}
+                        onChange={(e) =>
+                          setAcquisitionParameter(
+                            "save_results",
+                            e.target.checked
+                          )
+                        }
                       />
                     }
                     label="Save Results"
@@ -365,17 +408,26 @@ const STORMControllerArkitekt = ({ hostIP, hostPort, WindowTitle }) => {
         return (
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>Start Processing</Typography>
+              <Typography variant="h6" gutterBottom>
+                Start Processing
+              </Typography>
               <Grid container spacing={2}>
                 <Grid item xs={12}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 2,
+                      mb: 2,
+                    }}
+                  >
                     <Typography variant="body1">Workflow Status:</Typography>
-                    {workflowStatus === 'running' ? (
+                    {workflowStatus === "running" ? (
                       <>
                         <CheckCircleIcon style={{ color: green[500] }} />
                         <Typography color="success.main">Running</Typography>
                       </>
-                    ) : workflowStatus === 'completed' ? (
+                    ) : workflowStatus === "completed" ? (
                       <>
                         <CheckCircleIcon style={{ color: green[500] }} />
                         <Typography color="success.main">Completed</Typography>
@@ -392,18 +444,20 @@ const STORMControllerArkitekt = ({ hostIP, hostPort, WindowTitle }) => {
                   <Button
                     variant="contained"
                     onClick={startArkitektProcessing}
-                    disabled={!selectedWorkflow || workflowStatus === 'running'}
+                    disabled={!selectedWorkflow || workflowStatus === "running"}
                     color="primary"
                     fullWidth
                   >
-                    {workflowStatus === 'running' ? 'Processing...' : 'Start Processing'}
+                    {workflowStatus === "running"
+                      ? "Processing..."
+                      : "Start Processing"}
                   </Button>
                 </Grid>
                 <Grid item xs={6}>
                   <Button
                     variant="contained"
                     onClick={stopArkitektProcessing}
-                    disabled={workflowStatus !== 'running'}
+                    disabled={workflowStatus !== "running"}
                     color="secondary"
                     fullWidth
                   >
@@ -412,8 +466,8 @@ const STORMControllerArkitekt = ({ hostIP, hostPort, WindowTitle }) => {
                 </Grid>
                 <Grid item xs={12}>
                   <Typography variant="body2" color="textSecondary">
-                    Monitor the processing status in the next step. Results will be 
-                    displayed in real-time as they become available.
+                    Monitor the processing status in the next step. Results will
+                    be displayed in real-time as they become available.
                   </Typography>
                 </Grid>
               </Grid>
@@ -425,27 +479,34 @@ const STORMControllerArkitekt = ({ hostIP, hostPort, WindowTitle }) => {
         return (
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>Monitor Results</Typography>
+              <Typography variant="h6" gutterBottom>
+                Monitor Results
+              </Typography>
               <Grid container spacing={2}>
                 <Grid item xs={12}>
                   <Typography variant="body1" gutterBottom>
                     Processing Status: {workflowStatus}
                   </Typography>
                   <Typography variant="body2" color="textSecondary">
-                    Results are displayed in the reconstruction panel on the right. 
-                    The workflow will continue processing until manually stopped or completed.
+                    Results are displayed in the reconstruction panel on the
+                    right. The workflow will continue processing until manually
+                    stopped or completed.
                   </Typography>
                 </Grid>
                 <Grid item xs={12}>
                   <Divider sx={{ my: 2 }} />
-                  <Typography variant="subtitle1" gutterBottom>Quick Actions</Typography>
+                  <Typography variant="subtitle1" gutterBottom>
+                    Quick Actions
+                  </Typography>
                   <Grid container spacing={1}>
                     <Grid item xs={6}>
                       <Button
                         variant="outlined"
                         size="small"
                         fullWidth
-                        onClick={() => {/* Export results */}}
+                        onClick={() => {
+                          /* Export results */
+                        }}
                       >
                         Export Results
                       </Button>
@@ -455,7 +516,9 @@ const STORMControllerArkitekt = ({ hostIP, hostPort, WindowTitle }) => {
                         variant="outlined"
                         size="small"
                         fullWidth
-                        onClick={() => {/* Share workflow */}}
+                        onClick={() => {
+                          /* Share workflow */
+                        }}
                       >
                         Share Workflow
                       </Button>
@@ -468,34 +531,57 @@ const STORMControllerArkitekt = ({ hostIP, hostPort, WindowTitle }) => {
         );
 
       default:
-        return 'Unknown step';
+        return "Unknown step";
     }
   };
 
   return (
-    <Paper sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <Typography variant="h5" sx={{ p: 2, borderBottom: '1px solid #ddd' }}>
+    <Paper sx={{ height: "100vh", display: "flex", flexDirection: "column" }}>
+      <Typography variant="h5" sx={{ p: 2, borderBottom: "1px solid #ddd" }}>
         STORM Arkitekt Controller
       </Typography>
-      
-      <Grid container sx={{ flex: 1, height: 'calc(100vh - 80px)' }}>
+
+      <Grid container sx={{ flex: 1, height: "calc(100vh - 80px)" }}>
         {/* Left Column - Live View */}
-        <Grid item xs={4} sx={{ borderRight: '1px solid #ddd', height: '100%' }}>
-          <Box sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <Typography variant="h6" gutterBottom>Live View Stream</Typography>
-            <Box sx={{ flex: 1, minHeight: 400, border: '1px solid #ccc', mb: 2 }}>
+        <Grid
+          item
+          xs={4}
+          sx={{ borderRight: "1px solid #ddd", height: "100%" }}
+        >
+          <Box
+            sx={{
+              p: 2,
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            <Typography variant="h6" gutterBottom>
+              Live View Stream
+            </Typography>
+            <Box
+              sx={{ flex: 1, minHeight: 400, border: "1px solid #ccc", mb: 2 }}
+            >
               <LiveViewControlWrapper />
             </Box>
-            <Typography variant="h6" gutterBottom>Live View Settings</Typography>
+            <Typography variant="h6" gutterBottom>
+              Live View Settings
+            </Typography>
             <LiveViewSettings />
           </Box>
         </Grid>
 
         {/* Middle Column - Arkitekt Settings Flow */}
-        <Grid item xs={4} sx={{ borderRight: '1px solid #ddd', height: '100%' }}>
-          <Box sx={{ p: 2, height: '100%', overflow: 'auto' }}>
-            <Typography variant="h6" gutterBottom>Arkitekt Settings</Typography>
-            
+        <Grid
+          item
+          xs={4}
+          sx={{ borderRight: "1px solid #ddd", height: "100%" }}
+        >
+          <Box sx={{ p: 2, height: "100%", overflow: "auto" }}>
+            <Typography variant="h6" gutterBottom>
+              Arkitekt Settings
+            </Typography>
+
             <Stepper activeStep={activeStep} orientation="vertical">
               {steps.map((label, index) => (
                 <Step key={label}>
@@ -509,7 +595,7 @@ const STORMControllerArkitekt = ({ hostIP, hostPort, WindowTitle }) => {
                         sx={{ mr: 1 }}
                         disabled={index === steps.length - 1}
                       >
-                        {index === steps.length - 1 ? 'Finish' : 'Continue'}
+                        {index === steps.length - 1 ? "Finish" : "Continue"}
                       </Button>
                       <Button
                         disabled={index === 0}
@@ -527,8 +613,15 @@ const STORMControllerArkitekt = ({ hostIP, hostPort, WindowTitle }) => {
         </Grid>
 
         {/* Right Column - Live Reconstruction */}
-        <Grid item xs={4} sx={{ height: '100%' }}>
-          <Box sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <Grid item xs={4} sx={{ height: "100%" }}>
+          <Box
+            sx={{
+              p: 2,
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
             <Tabs
               value={reconstructionTabIndex}
               onChange={handleReconstructionTabChange}
@@ -552,24 +645,28 @@ const STORMControllerArkitekt = ({ hostIP, hostPort, WindowTitle }) => {
               </Tabs>
 
               <TabPanel value={visualizationTabIndex} index={0}>
-                <Box sx={{ textAlign: 'center' }}>
-                  <Typography variant="h6" gutterBottom>Arkitekt Reconstruction</Typography>
+                <Box sx={{ textAlign: "center" }}>
+                  <Typography variant="h6" gutterBottom>
+                    Arkitekt Reconstruction
+                  </Typography>
                   {reconImage ? (
                     <img
                       src={reconImage}
                       alt="Arkitekt STORM Reconstruction"
-                      style={{ maxWidth: '100%', maxHeight: 400 }}
+                      style={{ maxWidth: "100%", maxHeight: 400 }}
                     />
                   ) : (
-                    <Box sx={{ 
-                      width: '100%', 
-                      height: 300, 
-                      backgroundColor: '#f5f5f5', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center',
-                      border: '1px dashed #ccc'
-                    }}>
+                    <Box
+                      sx={{
+                        width: "100%",
+                        height: 300,
+                        backgroundColor: "#f5f5f5",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        border: "1px dashed #ccc",
+                      }}
+                    >
                       <Typography color="textSecondary">
                         No reconstruction available
                       </Typography>
@@ -579,22 +676,28 @@ const STORMControllerArkitekt = ({ hostIP, hostPort, WindowTitle }) => {
               </TabPanel>
 
               <TabPanel value={visualizationTabIndex} index={1}>
-                <Typography variant="h6" gutterBottom>XY Plot</Typography>
+                <Typography variant="h6" gutterBottom>
+                  XY Plot
+                </Typography>
                 <STORMPlot data={plotData} title="Arkitekt Localizations" />
               </TabPanel>
 
               <TabPanel value={visualizationTabIndex} index={2}>
-                <Box sx={{ textAlign: 'center' }}>
-                  <Typography variant="h6" gutterBottom>Brightfield</Typography>
-                  <Box sx={{ 
-                    width: '100%', 
-                    height: 300, 
-                    backgroundColor: '#f5f5f5', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    border: '1px dashed #ccc'
-                  }}>
+                <Box sx={{ textAlign: "center" }}>
+                  <Typography variant="h6" gutterBottom>
+                    Brightfield
+                  </Typography>
+                  <Box
+                    sx={{
+                      width: "100%",
+                      height: 300,
+                      backgroundColor: "#f5f5f5",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      border: "1px dashed #ccc",
+                    }}
+                  >
                     <Typography color="textSecondary">
                       Brightfield imaging via Arkitekt workflow
                     </Typography>
@@ -605,29 +708,42 @@ const STORMControllerArkitekt = ({ hostIP, hostPort, WindowTitle }) => {
 
             {/* Statistics Tab */}
             <TabPanel value={reconstructionTabIndex} index={1}>
-              <Typography variant="h6" gutterBottom>Arkitekt Statistics</Typography>
+              <Typography variant="h6" gutterBottom>
+                Arkitekt Statistics
+              </Typography>
               {statistics ? (
                 <Grid container spacing={2}>
                   <Grid item xs={6}>
-                    <Typography variant="body2">Total Localizations: {statistics.totalLocalizations || 0}</Typography>
+                    <Typography variant="body2">
+                      Total Localizations: {statistics.totalLocalizations || 0}
+                    </Typography>
                   </Grid>
                   <Grid item xs={6}>
-                    <Typography variant="body2">Processing Rate: {statistics.processingRate || 0} fps</Typography>
+                    <Typography variant="body2">
+                      Processing Rate: {statistics.processingRate || 0} fps
+                    </Typography>
                   </Grid>
                   <Grid item xs={6}>
-                    <Typography variant="body2">Workflow: {statistics.workflow || 'N/A'}</Typography>
+                    <Typography variant="body2">
+                      Workflow: {statistics.workflow || "N/A"}
+                    </Typography>
                   </Grid>
                   <Grid item xs={6}>
-                    <Typography variant="body2">Quality Score: {statistics.qualityScore || 0}</Typography>
+                    <Typography variant="body2">
+                      Quality Score: {statistics.qualityScore || 0}
+                    </Typography>
                   </Grid>
                   <Grid item xs={12}>
                     <Typography variant="body2">
-                      Cloud Resources: {statistics.cloudResources || 'Local processing'}
+                      Cloud Resources:{" "}
+                      {statistics.cloudResources || "Local processing"}
                     </Typography>
                   </Grid>
                 </Grid>
               ) : (
-                <Typography color="textSecondary">No statistics available</Typography>
+                <Typography color="textSecondary">
+                  No statistics available
+                </Typography>
               )}
             </TabPanel>
           </Box>

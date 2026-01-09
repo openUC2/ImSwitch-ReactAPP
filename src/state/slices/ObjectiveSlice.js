@@ -11,10 +11,10 @@ const initialObjectiveState = {
   pixelsize: 0.0,
   NA: 0.0,
   magnification: 0,
+  posX0: 0,
   posX1: 0,
-  posX2: 0,
+  posZ0: 0,
   posZ1: 0,
-  posZ2: 0,
   magnification1: 0,
   magnification2: 0,
   
@@ -23,10 +23,10 @@ const initialObjectiveState = {
   currentZ: "",
   imageUrls: {},
   detectors: [],
+  manualX0: "",
   manualX1: "",
-  manualX2: "",
+  manualZ0: "",
   manualZ1: "",
-  manualZ2: "",
 };
 
 // Create slice
@@ -70,21 +70,21 @@ const objectiveSlice = createSlice({
       console.log("setmagnification2", action.payload);
       state.magnification2 = action.payload;
     },
+    setPosX0: (state, action) => {
+      console.log("setPosX0", action.payload);
+      state.posX0 = action.payload;
+    },
     setPosX1: (state, action) => {
       console.log("setPosX1", action.payload);
       state.posX1 = action.payload;
     },
-    setPosX2: (state, action) => {
-      console.log("setPosX2", action.payload);
-      state.posX2 = action.payload;
+    setPosZ0: (state, action) => {
+      console.log("setPosZ0", action.payload);
+      state.posZ0 = action.payload;
     },
     setPosZ1: (state, action) => {
       console.log("setPosZ1", action.payload);
       state.posZ1 = action.payload;
-    },
-    setPosZ2: (state, action) => {
-      console.log("setPosZ2", action.payload);
-      state.posZ2 = action.payload;
     },
     
     // New reducers for ObjectiveController state
@@ -100,17 +100,17 @@ const objectiveSlice = createSlice({
     setDetectors: (state, action) => {
       state.detectors = action.payload;
     },
+    setManualX0: (state, action) => {
+      state.manualX0 = action.payload;
+    },
     setManualX1: (state, action) => {
       state.manualX1 = action.payload;
     },
-    setManualX2: (state, action) => {
-      state.manualX2 = action.payload;
+    setManualZ0: (state, action) => {
+      state.manualZ0 = action.payload;
     },
     setManualZ1: (state, action) => {
       state.manualZ1 = action.payload;
-    },
-    setManualZ2: (state, action) => {
-      state.manualZ2 = action.payload;
     },
 
     resetState: (state) => {
@@ -131,18 +131,18 @@ export const {
   setMagnification,
   setmagnification1,
   setmagnification2,
+  setPosX0,
   setPosX1,
-  setPosX2,
+  setPosZ0,
   setPosZ1,
-  setPosZ2,
   setCurrentA,
   setCurrentZ,
   setImageUrls,
   setDetectors,
+  setManualX0,
   setManualX1,
-  setManualX2,
+  setManualZ0,
   setManualZ1,
-  setManualZ2,
   resetState,
 } = objectiveSlice.actions;
 

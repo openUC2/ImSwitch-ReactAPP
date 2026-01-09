@@ -4,7 +4,6 @@ import ZarrTileViewController from "./ZarrTileView";
 import GenericTabBar from "./GenericTabBar";
 import WellSelectorComponent from "./WellSelectorComponent";
 import PointListEditorComponent from "./PointListEditorComponent";
-import PointListShapeEditorComponent from "./PointListShapeEditorComponent";
 import WebSocketComponent from "./WebSocketComponent";
 import PositionViewComponent from "./PositionViewComponent";
 import ParameterEditorWrapper from "./ParameterEditorWrapper";
@@ -12,6 +11,7 @@ import ExperimentComponent from "./ExperimentComponent";
 import ObjectiveController from "../components/ObjectiveController";
 import ResizablePanel from "./ResizablePanel"; //<ResizablePanel></ResizablePanel> performace issues :/
 import ObjectiveSwitcher from "../components/ObjectiveSwitcher";
+import FocusLockMiniController from "../components/FocusLockMiniController";
 
 const AxonTabComponent = () => {
   return (
@@ -46,18 +46,18 @@ const AxonTabComponent = () => {
               "Live View",
               "Tile View",
               "Points",
-              "Shape",
               "Parameter",
-              "Objective"
+              "Objective", 
+              "Focus Lock"
             ]}
           >
             <LiveViewControlWrapper />
             <ZarrTileViewController/>
             <PointListEditorComponent />
-            <PointListShapeEditorComponent />
             <ParameterEditorWrapper />
             {/*<ExperimentComponent />*/}
             <ObjectiveSwitcher />
+            <FocusLockMiniController />
           </GenericTabBar>
         </div>
       </div>

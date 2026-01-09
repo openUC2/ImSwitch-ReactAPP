@@ -11,6 +11,8 @@ import {
   MenuItem,
 } from "@mui/material";
 import axios from "axios";
+import { useSelector } from "react-redux";
+import { getConnectionSettingsState } from "../state/slices/ConnectionSettingsSlice";
 
 /* Axios factory bound to the camera host */
 const createAxiosInstance = (ip, port) =>
@@ -19,7 +21,12 @@ const createAxiosInstance = (ip, port) =>
     timeout: 6000,
   });
 
-const DetectorTriggerController = ({ hostIP, hostPort }) => {
+const DetectorTriggerController = () => {
+  // Get connection settings from Redux
+  const connectionSettings = useSelector(getConnectionSettingsState);
+  const hostIP = connectionSettings.ip;
+  const hostPort = connectionSettings.apiPort;
+  // Memoize axios instance for current connection settings
   const api = useMemo(
     () => createAxiosInstance(hostIP, hostPort),
     [hostIP, hostPort]

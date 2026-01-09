@@ -11,8 +11,6 @@ const tileStreamSlice = createSlice({
   initialState: initialTileStreamState,
   reducers: {
     setTileViewImage: (state, action) => {
-      //console.log("setLiveViewImage");
-      //console.log(action.payload);
       state.tileViewImage = action.payload;
     },
 

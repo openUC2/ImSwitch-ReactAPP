@@ -9,6 +9,7 @@ import * as objectiveSlice from "../state/slices/ObjectiveSlice.js";
 
 import * as wsUtils from "./WellSelectorUtils.js";
 import apiPositionerControllerMovePositioner from "../backendapi/apiPositionerControllerMovePositioner.js";
+import apiPositionerControllerSetStageOffsetAxis from "../backendapi/apiPositionerControllerSetStageOffsetAxis.js";
 
 import fetchObjectiveControllerGetStatus from "../middleware/fetchObjectiveControllerGetStatus.js";
 
@@ -49,6 +50,9 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
   const [mouseDownPosition, setMouseDownPosition] = useState({ x: 0, y: 0 });
   const [mouseMovePosition, setMouseMovePosition] = useState({ x: 0, y: 0 });
 
+  // Position history for trace drawing
+  const [positionHistory, setPositionHistory] = useState([]);
+
   const [isCtrlKeyPressed, setIsCtrlKeyPressed] = useState(false);
   const [isShiftKeyPressed, setIsShiftKeyPressed] = useState(false);
 
@@ -72,6 +76,10 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
       //reset scale and offset
       setScale(1);
       setOffset({ x: 0, y: 0 });
+    },
+    resetHistory: () => {
+      //clear position history
+      setPositionHistory([]);
     },
   }));
 
@@ -103,6 +111,25 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
 
   //##################################################################################
   useEffect(() => {
+    // Track position changes and add to history
+    if (positionState.x !== undefined && positionState.y !== undefined) {
+      const newPosition = { x: positionState.x, y: positionState.y };
+      
+      // Only add if position actually changed (avoid duplicates)
+      setPositionHistory(prevHistory => {
+        const lastPosition = prevHistory[prevHistory.length - 1];
+        if (!lastPosition || lastPosition.x !== newPosition.x || lastPosition.y !== newPosition.y) {
+          // Limit history to prevent memory issues (keep last 1000 points)
+          const updatedHistory = [...prevHistory, newPosition];
+          return updatedHistory.length > 1000 ? updatedHistory.slice(-1000) : updatedHistory;
+        }
+        return prevHistory;
+      });
+    }
+  }, [positionState.x, positionState.y]);
+
+  //##################################################################################
+  useEffect(() => {
     // Draw canvas content when state changed
     renderCanvas();
   }, [
@@ -115,6 +142,7 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
     mouseMovePosition,
     positionState,
     objectiveState,
+    positionHistory,
   ]);
 
   //##################################################################################
@@ -363,9 +391,9 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
     experimentState.pointList.forEach((itPoint, index) => {
       // Define the square's position and size
       const rasterWidthOverlapedPx =
-        getRasterWidthAsPx() * (1 - wellSelectorState.overlapWidth);
+        getRasterWidthAsPx() * (1 - (experimentState.parameterValue.overlapWidth || 0));
       const rasterHeightOverlapedPx =
-        getRasterHeightAsPx() * (1 - wellSelectorState.overlapHeight);
+        getRasterHeightAsPx() * (1 - (experimentState.parameterValue.overlapHeight || 0));
 
       //center square
       const pointCenterXpx = calcPhy2Px(itPoint.x); // - Math.min(squareWidth, getRasterWidthAsPx()) / 2;
@@ -379,7 +407,49 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
 
       //calc neighbors
       let neighborPointList = [];
-      if (itPoint.shape == Shape.CIRCLE) {
+      
+      // Check for new well-based patterns first
+      if (itPoint.wellMode === "center_only") {
+        // Find wells that intersect with this point and return their centers
+        const intersectingWells = wsUtils.findWellsAtPosition(itPoint, experimentState.wellLayout);
+        const centerPositions = wsUtils.generateWellCenterPositions(intersectingWells, experimentState.wellLayout);
+        neighborPointList = centerPositions.map(pos => ({
+          x: calcPhy2Px(pos.x),
+          y: calcPhy2Px(pos.y),
+          iX: pos.iX,
+          iY: pos.iY
+        }));
+        
+      } else if (itPoint.wellMode === "pattern") {
+        // Generate pattern within wells
+        const intersectingWells = wsUtils.findWellsAtPosition(itPoint, experimentState.wellLayout);
+        let patternPositions = [];
+        
+        if (itPoint.patternType === "circle") {
+          patternPositions = wsUtils.generateWellCirclePattern(
+            intersectingWells,
+            itPoint.patternRadius || 50,
+            itPoint.patternOverlap || 0.1,
+            Math.min(objectiveState.fovX, objectiveState.fovY) * (1 - (experimentState.parameterValue.overlapWidth || 0))
+          );
+        } else if (itPoint.patternType === "rectangle") {
+          patternPositions = wsUtils.generateWellRectanglePattern(
+            intersectingWells,
+            itPoint.patternWidth || 100,
+            itPoint.patternHeight || 100,
+            itPoint.patternOverlap || 0.1,
+            Math.min(objectiveState.fovX, objectiveState.fovY) * (1 - (experimentState.parameterValue.overlapWidth || 0))
+          );
+        }
+        
+        neighborPointList = patternPositions.map(pos => ({
+          x: calcPhy2Px(pos.x),
+          y: calcPhy2Px(pos.y),
+          iX: pos.iX,
+          iY: pos.iY
+        }));
+        
+      } else if (itPoint.shape == Shape.CIRCLE) {
         //calc neighbors
         const rasterCenterPx = {
           x: calcPhy2Px(itPoint.x),
@@ -413,14 +483,11 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
 
       // draw the neighbors
       neighborPointList.forEach((point) => {
-        const neighborWidth = wellSelectorState.showOverlap
-          ? getRasterWidthAsPx()
-          : Math.min(rasterWidthOverlapedPx, getRasterWidthAsPx());
-        const neighborHeight = wellSelectorState.showOverlap
-          ? getRasterHeightAsPx()
-          : Math.min(rasterHeightOverlapedPx, getRasterHeightAsPx());
-        //const neighborWidth = Math.min(rasterWidthOverlaped, getRasterWidthAsPx());
-        //const neighborHeight = Math.min(rasterHeightOverlaped, getRasterHeightAsPx());
+        // Tiles should always be the same size (full FOV)
+        // Only the spacing between them changes based on overlap
+        const neighborWidth = getRasterWidthAsPx();
+        const neighborHeight = getRasterHeightAsPx();
+        
         ctx.strokeStyle = "lightgray";
         ctx.fillRect(
           point.x - neighborWidth / 2,
@@ -530,11 +597,14 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
 
     if (wellSelectorState.mode == Mode.AREA_SELECT) {
       if (mouseDownFlag) {
+        // Use area select overlap settings from wellSelectorState
+        const areaOverlap = wellSelectorState.areaSelectOverlap || 0;
+        
         // Define the square's position and size
         const rasterWidthOverlaped =
-          getRasterWidthAsPx() * (1 - wellSelectorState.overlapWidth);
+          getRasterWidthAsPx() * (1 - areaOverlap);
         const rasterHeightOverlaped =
-          getRasterHeightAsPx() * (1 - wellSelectorState.overlapHeight);
+          getRasterHeightAsPx() * (1 - areaOverlap);
 
         //draw the tiles
         ctx.strokeStyle = "red"; // Grid line color
@@ -553,14 +623,9 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
           //shift: create multiple points
           //create multiple points
           pointsInRectList.forEach((point) => {
-            const insideWidth = wellSelectorState.showOverlap
-              ? getRasterWidthAsPx()
-              : Math.min(rasterWidthOverlaped, getRasterWidthAsPx());
-            const insideHeight = wellSelectorState.showOverlap
-              ? getRasterHeightAsPx()
-              : Math.min(rasterHeightOverlaped, getRasterHeightAsPx());
-            //const insideWidth = getRasterWidthAsPx();
-            //const insideHeight = getRasterHeightAsPx();
+            // Tiles should always be the same size (full FOV)
+            const insideWidth = getRasterWidthAsPx();
+            const insideHeight = getRasterHeightAsPx();
             ctx.strokeRect(
               point.x, // - insideWidth/2,
               point.y, // - insideHeight/2,
@@ -575,12 +640,9 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
             mouseDownPosition,
             mouseMovePosition
           );
-          const usedWidth = wellSelectorState.showOverlap
-            ? getRasterWidthAsPx()
-            : Math.min(rasterWidthOverlaped, getRasterWidthAsPx());
-          const usedHeight = wellSelectorState.showOverlap
-            ? getRasterHeightAsPx()
-            : Math.min(rasterHeightOverlaped, getRasterHeightAsPx());
+          // Tiles should always be the same size (full FOV)
+          const usedWidth = getRasterWidthAsPx();
+          const usedHeight = getRasterHeightAsPx();
           ctx.strokeRect(
             centerPoint.x - usedWidth / 2,
             centerPoint.y - usedHeight / 2,
@@ -615,12 +677,9 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
 
           // draw neighbors
           neighborPointList.forEach((point) => {
-            const neighborWidth = wellSelectorState.showOverlap
-              ? getRasterWidthAsPx()
-              : Math.min(rasterWidthOverlaped, getRasterWidthAsPx());
-            const neighborHeight = wellSelectorState.showOverlap
-              ? getRasterHeightAsPx()
-              : Math.min(rasterHeightOverlaped, getRasterHeightAsPx());
+            // Tiles should always be the same size (full FOV)
+            const neighborWidth = getRasterWidthAsPx();
+            const neighborHeight = getRasterHeightAsPx();
 
             ctx.strokeRect(
               point.x - neighborWidth / 2,
@@ -747,7 +806,34 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
       );
     }*/
 
+    //------------ draw position trace
+    drawPositionTrace(ctx);
+
     //ctx.restore();
+  };
+
+  //##################################################################################
+  const drawPositionTrace = (ctx) => {
+    if (positionHistory.length < 2) return; // Need at least 2 points to draw a line
+    
+    ctx.strokeStyle = "rgba(255, 100, 100, 0.7)"; // Light red with transparency
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    
+    ctx.beginPath();
+    
+    // Convert first position to pixel coordinates and move to it
+    const firstPos = positionHistory[0];
+    ctx.moveTo(calcPhy2Px(firstPos.x), calcPhy2Px(firstPos.y));
+    
+    // Draw lines to all subsequent positions
+    for (let i = 1; i < positionHistory.length; i++) {
+      const pos = positionHistory[i];
+      ctx.lineTo(calcPhy2Px(pos.x), calcPhy2Px(pos.y));
+    }
+    
+    ctx.stroke();
   };
 
   //##################################################################################
@@ -959,30 +1045,33 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
           if (
             isWellInsideSelection(well, mouseDownPosition, mouseMovePosition)
           ) {
+            // Use the selected cup shape from wellSelectorState
+            const selectedShape = wellSelectorState.cupSelectShape === 'circle' ? Shape.CIRCLE : Shape.RECTANGLE;
+            
             dispatch(
               experimentSlice.createPoint({
                 x: well.x,
                 y: well.y,
                 name: well.name,
-                shape: well.shape,
+                shape: selectedShape,
                 rectPlusX:
-                  well.shape == Shape.RECTANGLE
-                    ? Math.round(well.width / 2)
+                  selectedShape == Shape.RECTANGLE
+                    ? Math.round((well.width || well.radius * 2) / 2)
                     : 0,
                 rectPlusY:
-                  well.shape == Shape.RECTANGLE
-                    ? Math.round(well.height / 2)
+                  selectedShape == Shape.RECTANGLE
+                    ? Math.round((well.height || well.radius * 2) / 2)
                     : 0,
                 rectMinusX:
-                  well.shape == Shape.RECTANGLE
-                    ? Math.round(well.width / 2)
+                  selectedShape == Shape.RECTANGLE
+                    ? Math.round((well.width || well.radius * 2) / 2)
                     : 0,
                 rectMinusY:
-                  well.shape == Shape.RECTANGLE
-                    ? Math.round(well.height / 2)
+                  selectedShape == Shape.RECTANGLE
+                    ? Math.round((well.height || well.radius * 2) / 2)
                     : 0,
-                circleRadiusX: well.shape == Shape.CIRCLE ? well.radius : 0,
-                circleRadiusY: well.shape == Shape.CIRCLE ? well.radius : 0,
+                circleRadiusX: selectedShape == Shape.CIRCLE ? (well.radius || Math.min(well.width, well.height) / 2) : 0,
+                circleRadiusY: selectedShape == Shape.CIRCLE ? (well.radius || Math.min(well.width, well.height) / 2) : 0,
               })
             );
           }
@@ -990,17 +1079,20 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
       }
     }
 
-    //handle mode cup select
+    //handle mode area select
     if (wellSelectorState.mode == Mode.AREA_SELECT) {
       //check mouse
       if (mouseDownFlag) {
         //mode
         if (e.shiftKey) {
+          // Use area select overlap settings from wellSelectorState
+          const areaOverlap = wellSelectorState.areaSelectOverlap || 0;
+          
           // Define the square's position and size
           const squareWidthPx =
-            getRasterWidthAsPx() * (1 - wellSelectorState.overlapWidth);
+            getRasterWidthAsPx() * (1 - areaOverlap);
           const squareHeightPx =
-            getRasterHeightAsPx() * (1 - wellSelectorState.overlapHeight);
+            getRasterHeightAsPx() * (1 - areaOverlap);
 
           //generate points in rect
           const pointsInRectList = wsUtils.generateCenterPointsInRect(
@@ -1248,7 +1340,7 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
         }
       });
 
-      // build acton list
+      // build action list
       if (pointIndex != -1) {
         actionList.push({
           label: "Remove Point",
@@ -1272,6 +1364,40 @@ const WellSelectorCanvas = forwardRef((props, ref) => {
         });
       }
     }
+
+    // Add "We are here" calibration option to set stage offset
+    // This uses the clicked position on the canvas/wellplate as the known position
+    // and transmits it to the backend to calibrate the stage offset
+    const clickedPhysicalPosition = calcPxPoint2PhyPoint(menuPositionLocal);
+    actionList.push({
+      label: "📍 We are here (Calibrate Offset)",
+      action: async () => {
+        try {
+          // Set stage offset for X axis using clicked position as known position
+          await apiPositionerControllerSetStageOffsetAxis({
+            knownPosition: clickedPhysicalPosition.x,
+            axis: "X",
+          });
+          console.log(`Stage offset X calibrated to known position: ${clickedPhysicalPosition.x}`);
+
+          // Small delay between API calls to avoid race conditions on the backend
+          await new Promise(resolve => setTimeout(resolve, 100));
+
+          // Set stage offset for Y axis using clicked position as known position
+          await apiPositionerControllerSetStageOffsetAxis({
+            knownPosition: clickedPhysicalPosition.y,
+            axis: "Y",
+          });
+          console.log(`Stage offset Y calibrated to known position: ${clickedPhysicalPosition.y}`);
+
+          console.log(`Stage offset calibrated: X=${clickedPhysicalPosition.x}, Y=${clickedPhysicalPosition.y}`);
+        } catch (error) {
+          console.error("Error calibrating stage offset:", error);
+        }
+        setShowMenu(false);
+      },
+    });
+
     //return list
     return actionList;
   };

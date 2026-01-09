@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import "./blockly/customblocks";
-import Blockly from "blockly";
+import * as Blockly from "blockly";
 import { javascriptGenerator } from "blockly/javascript";
 import { BlocklyWorkspace } from "react-blockly";
 import "./blockly/style.css";
-import DarkTheme from '@blockly/theme-dark';
+import DarkTheme from "@blockly/theme-dark";
 
 import JSONGenerator from "./blockly/jsonGenerator"; // <-- our custom JSON generator
 
@@ -44,42 +44,42 @@ const toolbox = {
       contents: [
         {
           kind: "block",
-          type: "controls_if"
+          type: "controls_if",
         },
         {
           kind: "block",
           type: "logic_compare",
           fields: {
-            OP: "EQ"
-          }
+            OP: "EQ",
+          },
         },
         {
           kind: "block",
           type: "logic_operation",
           fields: {
-            OP: "AND"
-          }
+            OP: "AND",
+          },
         },
         {
           kind: "block",
-          type: "logic_negate"
+          type: "logic_negate",
         },
         {
           kind: "block",
           type: "logic_boolean",
           fields: {
-            BOOL: "TRUE"
-          }
+            BOOL: "TRUE",
+          },
         },
         {
           kind: "block",
-          type: "logic_null"
+          type: "logic_null",
         },
         {
           kind: "block",
-          type: "logic_ternary"
-        }
-      ]
+          type: "logic_ternary",
+        },
+      ],
     },
     {
       kind: "category",
@@ -94,17 +94,17 @@ const toolbox = {
               kind: "block",
               type: "math_number",
               fields: {
-                NUM: "10"
-              }
-            }
-          }
+                NUM: "10",
+              },
+            },
+          },
         },
         {
           kind: "block",
           type: "controls_whileUntil",
           fields: {
-            MODE: "WHILE"
-          }
+            MODE: "WHILE",
+          },
         },
         {
           kind: "block",
@@ -112,32 +112,32 @@ const toolbox = {
           fields: {
             VAR: {
               id: "XECl4GVs-^+[?1V:UI%Z",
-              name: "i"
-            }
+              name: "i",
+            },
           },
           values: {
             FROM: {
               kind: "block",
               type: "math_number",
               fields: {
-                NUM: "1"
-              }
+                NUM: "1",
+              },
             },
             TO: {
               kind: "block",
               type: "math_number",
               fields: {
-                NUM: "10"
-              }
+                NUM: "10",
+              },
             },
             BY: {
               kind: "block",
               type: "math_number",
               fields: {
-                NUM: "1"
-              }
-            }
-          }
+                NUM: "1",
+              },
+            },
+          },
         },
         {
           kind: "block",
@@ -145,18 +145,18 @@ const toolbox = {
           fields: {
             VAR: {
               id: "zbX-3A%GYRcl`Ngw=KCn",
-              name: "j"
-            }
-          }
+              name: "j",
+            },
+          },
         },
         {
           kind: "block",
           type: "controls_flow_statements",
           fields: {
-            FLOW: "BREAK"
-          }
-        }
-      ]
+            FLOW: "BREAK",
+          },
+        },
+      ],
     },
     {
       kind: "category",
@@ -167,112 +167,112 @@ const toolbox = {
           kind: "block",
           type: "math_number",
           fields: {
-            NUM: "0"
-          }
+            NUM: "0",
+          },
         },
         {
           kind: "block",
           type: "math_arithmetic",
           fields: {
-            OP: "ADD"
+            OP: "ADD",
           },
           values: {
             A: {
               kind: "block",
               type: "math_number",
               fields: {
-                NUM: "1"
-              }
+                NUM: "1",
+              },
             },
             B: {
               kind: "block",
               type: "math_number",
               fields: {
-                NUM: "1"
-              }
-            }
-          }
+                NUM: "1",
+              },
+            },
+          },
         },
         {
           kind: "block",
           type: "math_single",
           fields: {
-            OP: "ROOT"
+            OP: "ROOT",
           },
           values: {
             NUM: {
               kind: "block",
               type: "math_number",
               fields: {
-                NUM: "9"
-              }
-            }
-          }
+                NUM: "9",
+              },
+            },
+          },
         },
         {
           kind: "block",
           type: "math_trig",
           fields: {
-            OP: "SIN"
+            OP: "SIN",
           },
           values: {
             NUM: {
               kind: "block",
               type: "math_number",
               fields: {
-                NUM: "45"
-              }
-            }
-          }
+                NUM: "45",
+              },
+            },
+          },
         },
         {
           kind: "block",
           type: "math_constant",
           fields: {
-            CONSTANT: "PI"
-          }
+            CONSTANT: "PI",
+          },
         },
         {
           kind: "block",
           type: "math_number_property",
           fields: {
-            PROPERTY: "EVEN"
+            PROPERTY: "EVEN",
           },
           values: {
             NUMBER_TO_CHECK: {
               kind: "block",
               type: "math_number",
               fields: {
-                NUM: "0"
-              }
-            }
-          }
+                NUM: "0",
+              },
+            },
+          },
         },
         {
           kind: "block",
           type: "math_round",
           fields: {
-            OP: "ROUND"
+            OP: "ROUND",
           },
           values: {
             NUM: {
               kind: "block",
               type: "math_number",
               fields: {
-                NUM: "3.1"
-              }
-            }
-          }
+                NUM: "3.1",
+              },
+            },
+          },
         },
         {
           kind: "block",
           type: "math_on_list",
           mutation: {
-            op: "SUM"
+            op: "SUM",
           },
           fields: {
-            OP: "SUM"
-          }
+            OP: "SUM",
+          },
         },
         {
           kind: "block",
@@ -282,17 +282,17 @@ const toolbox = {
               kind: "block",
               type: "math_number",
               fields: {
-                NUM: "64"
-              }
+                NUM: "64",
+              },
             },
             DIVISOR: {
               kind: "block",
               type: "math_number",
               fields: {
-                NUM: "10"
-              }
-            }
-          }
+                NUM: "10",
+              },
+            },
+          },
         },
         {
           kind: "block",
@@ -302,24 +302,24 @@ const toolbox = {
               kind: "block",
               type: "math_number",
               fields: {
-                NUM: "50"
-              }
+                NUM: "50",
+              },
             },
             LOW: {
               kind: "block",
               type: "math_number",
               fields: {
-                NUM: "1"
-              }
+                NUM: "1",
+              },
             },
             HIGH: {
               kind: "block",
               type: "math_number",
               fields: {
-                NUM: "100"
-              }
-            }
-          }
+                NUM: "100",
+              },
+            },
+          },
         },
         {
           kind: "block",
@@ -329,23 +329,23 @@ const toolbox = {
               kind: "block",
               type: "math_number",
               fields: {
-                NUM: "1"
-              }
+                NUM: "1",
+              },
             },
             TO: {
               kind: "block",
               type: "math_number",
               fields: {
-                NUM: "100"
-              }
-            }
-          }
+                NUM: "100",
+              },
+            },
+          },
         },
         {
           kind: "block",
-          type: "math_random_float"
-        }
-      ]
+          type: "math_random_float",
+        },
+      ],
     },
     {
       kind: "category",
@@ -356,15 +356,15 @@ const toolbox = {
           kind: "block",
           type: "text",
           fields: {
-            TEXT: ""
-          }
+            TEXT: "",
+          },
         },
         {
           kind: "block",
           type: "text_join",
           mutation: {
-            items: "2"
-          }
+            items: "2",
+          },
         },
         {
           kind: "block",
@@ -372,18 +372,18 @@ const toolbox = {
           fields: {
             VAR: {
               id: "7j+{(eU@3Nf`G7G@/J%}",
-              name: "item"
-            }
+              name: "item",
+            },
           },
           values: {
             TEXT: {
               kind: "block",
               type: "text",
               fields: {
-                TEXT: ""
-              }
-            }
-          }
+                TEXT: "",
+              },
+            },
+          },
         },
         {
           kind: "block",
@@ -393,10 +393,10 @@ const toolbox = {
               kind: "block",
               type: "text",
               fields: {
-                TEXT: "abc"
-              }
-            }
-          }
+                TEXT: "abc",
+              },
+            },
+          },
         },
         {
           kind: "block",
@@ -406,16 +406,16 @@ const toolbox = {
               kind: "block",
               type: "text",
               fields: {
-                TEXT: ""
-              }
-            }
-          }
+                TEXT: "",
+              },
+            },
+          },
         },
         {
           kind: "block",
           type: "text_indexOf",
           fields: {
-            END: "FIRST"
+            END: "FIRST",
           },
           values: {
             VALUE: {
@@ -424,27 +424,27 @@ const toolbox = {
               fields: {
                 VAR: {
                   id: ",Yd_J]Tvz2@pj)r9I|p$",
-                  name: "text"
-                }
-              }
+                  name: "text",
+                },
+              },
             },
             FIND: {
               kind: "block",
               type: "text",
               fields: {
-                TEXT: "abc"
-              }
-            }
-          }
+                TEXT: "abc",
+              },
+            },
+          },
         },
         {
           kind: "block",
           type: "text_charAt",
           mutation: {
-            at: "true"
+            at: "true",
           },
           fields: {
-            WHERE: "FROM_START"
+            WHERE: "FROM_START",
           },
           values: {
             VALUE: {
@@ -453,22 +453,22 @@ const toolbox = {
               fields: {
                 VAR: {
                   id: ",Yd_J]Tvz2@pj)r9I|p$",
-                  name: "text"
-                }
-              }
-            }
-          }
+                  name: "text",
+                },
+              },
+            },
+          },
         },
         {
           kind: "block",
           type: "text_getSubstring",
           mutation: {
             at1: "true",
-            at2: "true"
+            at2: "true",
           },
           fields: {
             WHERE1: "FROM_START",
-            WHERE2: "FROM_START"
+            WHERE2: "FROM_START",
           },
           values: {
             STRING: {
@@ -477,43 +477,43 @@ const toolbox = {
               fields: {
                 VAR: {
                   id: ",Yd_J]Tvz2@pj)r9I|p$",
-                  name: "text"
-                }
-              }
-            }
-          }
+                  name: "text",
+                },
+              },
+            },
+          },
         },
         {
           kind: "block",
           type: "text_changeCase",
           fields: {
-            CASE: "UPPERCASE"
+            CASE: "UPPERCASE",
           },
           values: {
             TEXT: {
               kind: "block",
               type: "text",
               fields: {
-                TEXT: "abc"
-              }
-            }
-          }
+                TEXT: "abc",
+              },
+            },
+          },
         },
         {
           kind: "block",
           type: "text_trim",
           fields: {
-            MODE: "BOTH"
+            MODE: "BOTH",
           },
           values: {
             TEXT: {
               kind: "block",
               type: "text",
               fields: {
-                TEXT: "abc"
-              }
-            }
-          }
+                TEXT: "abc",
+              },
+            },
+          },
         },
         {
           kind: "block",
@@ -523,31 +523,31 @@ const toolbox = {
               kind: "block",
               type: "text",
               fields: {
-                TEXT: "abc"
-              }
-            }
-          }
+                TEXT: "abc",
+              },
+            },
+          },
         },
         {
           kind: "block",
           type: "text_prompt_ext",
           mutation: {
-            type: "TEXT"
+            type: "TEXT",
           },
           fields: {
-            TYPE: "TEXT"
+            TYPE: "TEXT",
           },
           values: {
             TEXT: {
               kind: "block",
               type: "text",
               fields: {
-                TEXT: "abc"
-              }
-            }
-          }
-        }
-      ]
+                TEXT: "abc",
+              },
+            },
+          },
+        },
+      ],
     },
     {
       kind: "category",
@@ -558,15 +558,15 @@ const toolbox = {
           kind: "block",
           type: "lists_create_with",
           mutation: {
-            items: "0"
-          }
+            items: "0",
+          },
         },
         {
           kind: "block",
           type: "lists_create_with",
           mutation: {
-            items: "3"
-          }
+            items: "3",
+          },
         },
         {
           kind: "block",
@@ -576,24 +576,24 @@ const toolbox = {
               kind: "block",
               type: "math_number",
               fields: {
-                NUM: "5"
-              }
-            }
-          }
+                NUM: "5",
+              },
+            },
+          },
         },
         {
           kind: "block",
-          type: "lists_length"
+          type: "lists_length",
         },
         {
           kind: "block",
-          type: "lists_isEmpty"
+          type: "lists_isEmpty",
         },
         {
           kind: "block",
           type: "lists_indexOf",
           fields: {
-            END: "FIRST"
+            END: "FIRST",
           },
           values: {
             VALUE: {
@@ -602,21 +602,21 @@ const toolbox = {
               fields: {
                 VAR: {
                   id: "/KVKU4..*N9aqt7tc`r)",
-                  name: "list"
-                }
-              }
-            }
-          }
+                  name: "list",
+                },
+              },
+            },
+          },
         },
         {
           kind: "block",
           type: "lists_getIndex",
           mutation: {
-            statement: "false"
+            statement: "false",
           },
           fields: {
             MODE: "GET",
-            WHERE: "FROM_START"
+            WHERE: "FROM_START",
           },
           values: {
             VALUE: {
@@ -625,21 +625,21 @@ const toolbox = {
               fields: {
                 VAR: {
                   id: "/KVKU4..*N9aqt7tc`r)",
-                  name: "list"
-                }
-              }
-            }
-          }
+                  name: "list",
+                },
+              },
+            },
+          },
         },
         {
           kind: "block",
           type: "lists_setIndex",
           mutation: {
-            at: "true"
+            at: "true",
           },
           fields: {
             MODE: "SET",
-            WHERE: "FROM_START"
+            WHERE: "FROM_START",
           },
           values: {
             LIST: {
@@ -648,22 +648,22 @@ const toolbox = {
               fields: {
                 VAR: {
                   id: "/KVKU4..*N9aqt7tc`r)",
-                  name: "list"
-                }
-              }
-            }
-          }
+                  name: "list",
+                },
+              },
+            },
+          },
         },
         {
           kind: "block",
           type: "lists_getSublist",
           mutation: {
             at1: "true",
-            at2: "true"
+            at2: "true",
           },
           fields: {
             WHERE1: "FROM_START",
-            WHERE2: "FROM_START"
+            WHERE2: "FROM_START",
           },
           values: {
             LIST: {
@@ -672,40 +672,40 @@ const toolbox = {
               fields: {
                 VAR: {
                   id: "/KVKU4..*N9aqt7tc`r)",
-                  name: "list"
-                }
-              }
-            }
-          }
+                  name: "list",
+                },
+              },
+            },
+          },
         },
         {
           kind: "block",
           type: "lists_split",
           mutation: {
-            mode: "SPLIT"
+            mode: "SPLIT",
           },
           fields: {
-            MODE: "SPLIT"
+            MODE: "SPLIT",
           },
           values: {
             DELIM: {
               kind: "block",
               type: "text",
               fields: {
-                TEXT: ","
-              }
-            }
-          }
+                TEXT: ",",
+              },
+            },
+          },
         },
         {
           kind: "block",
           type: "lists_sort",
           fields: {
             TYPE: "NUMERIC",
-            DIRECTION: "1"
-          }
-        }
-      ]
+            DIRECTION: "1",
+          },
+        },
+      ],
     },
     {
       kind: "category",
@@ -716,12 +716,12 @@ const toolbox = {
           kind: "block",
           type: "colour_picker",
           fields: {
-            COLOUR: "#ff0000"
-          }
+            COLOUR: "#ff0000",
+          },
         },
         {
           kind: "block",
-          type: "colour_random"
+          type: "colour_random",
         },
         {
           kind: "block",
@@ -731,24 +731,24 @@ const toolbox = {
               kind: "block",
               type: "math_number",
               fields: {
-                NUM: "100"
-              }
+                NUM: "100",
+              },
             },
             GREEN: {
               kind: "block",
               type: "math_number",
               fields: {
-                NUM: "50"
-              }
+                NUM: "50",
+              },
             },
             BLUE: {
               kind: "block",
               type: "math_number",
               fields: {
-                NUM: "0"
-              }
-            }
-          }
+                NUM: "0",
+              },
+            },
+          },
         },
         {
           kind: "block",
@@ -758,92 +758,92 @@ const toolbox = {
               kind: "block",
               type: "colour_picker",
               fields: {
-                COLOUR: "#ff0000"
-              }
+                COLOUR: "#ff0000",
+              },
             },
             COLOUR2: {
               kind: "block",
               type: "colour_picker",
               fields: {
-                COLOUR: "#3333ff"
-              }
+                COLOUR: "#3333ff",
+              },
             },
             RATIO: {
               kind: "block",
               type: "math_number",
               fields: {
-                NUM: "0.5"
-              }
-            }
-          }
-        }
-      ]
+                NUM: "0.5",
+              },
+            },
+          },
+        },
+      ],
     },
     {
-      kind: "sep"
+      kind: "sep",
     },
     {
       kind: "category",
       name: "Variables",
       colour: "#a55b80",
-      custom: "VARIABLE"
+      custom: "VARIABLE",
     },
     {
       kind: "category",
       name: "Functions",
       colour: "#995ba5",
-      custom: "PROCEDURE"
+      custom: "PROCEDURE",
     },
     {
-      kind: "sep"
+      kind: "sep",
     },
     {
-        kind: "category",
-        name: "Workflow",
-        colour: "#cf6b58",
-        contents: [
-          {
-            kind: "block",
-            type: "set_laser_power_block"
-          },
-          {
-            kind: "block",
-            type: "wait_time_block"
-          },
-          {
-            kind: "block",
-            type: "acquire_frame_block"
-          }, 
-          {
-            kind: "block",
-            type: "move_stage_block"
-          },
-          {
-            kind: "block",
-            type: "set_exposure_time_block"
-          },
-          {
-            kind: "block",
-            type: "set_gain_block"
-          },
-          {
-            kind: "block",
-            type: "save_image_block"
-          },
-          {
-            kind: "block",
-            type: "autofocus_block"
-          }
-        ]
-      }
-  ]
+      kind: "category",
+      name: "Workflow",
+      colour: "#cf6b58",
+      contents: [
+        {
+          kind: "block",
+          type: "set_laser_power_block",
+        },
+        {
+          kind: "block",
+          type: "wait_time_block",
+        },
+        {
+          kind: "block",
+          type: "acquire_frame_block",
+        },
+        {
+          kind: "block",
+          type: "move_stage_block",
+        },
+        {
+          kind: "block",
+          type: "set_exposure_time_block",
+        },
+        {
+          kind: "block",
+          type: "set_gain_block",
+        },
+        {
+          kind: "block",
+          type: "save_image_block",
+        },
+        {
+          kind: "block",
+          type: "autofocus_block",
+        },
+      ],
+    },
+  ],
 };
 
 const BlocklyController = () => {
   // Redux hooks
   const dispatch = useDispatch();
   const workflowState = useSelector(getWorkflowState);
-  
+
   // Local state
   const [xml, setXml] = useState("");
 
@@ -852,11 +852,11 @@ const BlocklyController = () => {
     try {
       dispatch(setIsGeneratingJson(true));
       dispatch(clearWorkflowError());
-      
+
       const workspace = Blockly.getMainWorkspace();
       const jsonCode = JSONGenerator.workspaceToCode(workspace);
       console.log("Generated workflow JSON:", jsonCode);
-      
+
       dispatch(setWorkflowJson(jsonCode));
     } catch (error) {
       console.error("Error generating JSON:", error);
@@ -869,23 +869,29 @@ const BlocklyController = () => {
   // Upload workflow to backend
   const handleUploadWorkflow = async () => {
     if (!workflowState.workflowJson) {
-      dispatch(setWorkflowError("No workflow JSON to upload. Please generate workflow first."));
+      dispatch(
+        setWorkflowError(
+          "No workflow JSON to upload. Please generate workflow first."
+        )
+      );
       return;
     }
 
     try {
       dispatch(setIsUploading(true));
       dispatch(clearWorkflowError());
-      
+
       const workflowData = JSON.parse(workflowState.workflowJson);
-      const response = await apiExperimentControllerUploadWorkflow(workflowData);
+      const response = await apiExperimentControllerUploadWorkflow(
+        workflowData
+      );
       console.log("Workflow uploaded successfully:", response);
-      
+
       // Store the UID from the response
       if (response && response.workflow_id) {
         dispatch(setWorkflowUid(response.workflow_id));
       }
-      
+
       dispatch(setWorkflowStatus("uploaded"));
     } catch (error) {
       console.error("Error uploading workflow:", error);
@@ -898,17 +904,23 @@ const BlocklyController = () => {
   // Start workflow execution
   const handleStartWorkflow = async () => {
     if (!workflowState.workflowUid) {
-      dispatch(setWorkflowError("No workflow UID available. Please upload workflow first."));
+      dispatch(
+        setWorkflowError(
+          "No workflow UID available. Please upload workflow first."
+        )
+      );
       return;
     }
 
     try {
       dispatch(setIsStarting(true));
       dispatch(clearWorkflowError());
-      
-      const response = await apiExperimentControllerStartWorkflow(workflowState.workflowUid);
+
+      const response = await apiExperimentControllerStartWorkflow(
+        workflowState.workflowUid
+      );
       console.log("Workflow started:", response);
-      
+
       dispatch(setWorkflowStatus("running"));
     } catch (error) {
       console.error("Error starting workflow:", error);
@@ -923,10 +935,10 @@ const BlocklyController = () => {
     try {
       dispatch(setIsStopping(true));
       dispatch(clearWorkflowError());
-      
+
       const response = await apiExperimentControllerStopWorkflow();
       console.log("Workflow stopped:", response);
-      
+
       dispatch(setWorkflowStatus("stopped"));
     } catch (error) {
       console.error("Error stopping workflow:", error);
@@ -941,10 +953,10 @@ const BlocklyController = () => {
     try {
       dispatch(setIsPausing(true));
       dispatch(clearWorkflowError());
-      
+
       const response = await apiExperimentControllerPauseWorkflow();
       console.log("Workflow paused:", response);
-      
+
       dispatch(setWorkflowStatus("paused"));
     } catch (error) {
       console.error("Error pausing workflow:", error);
@@ -959,10 +971,10 @@ const BlocklyController = () => {
     try {
       dispatch(setIsResuming(true));
       dispatch(clearWorkflowError());
-      
+
       const response = await apiExperimentControllerResumeWorkflow();
       console.log("Workflow resumed:", response);
-      
+
       dispatch(setWorkflowStatus("running"));
     } catch (error) {
       console.error("Error resuming workflow:", error);
@@ -985,70 +997,129 @@ const BlocklyController = () => {
 
   // Render control buttons based on workflow status
   const renderControlButtons = () => {
-    const { status, isUploading, isStarting, isStopping, isPausing, isResuming } = workflowState;
-    
+    const {
+      status,
+      isUploading,
+      isStarting,
+      isStopping,
+      isPausing,
+      isResuming,
+    } = workflowState;
+
     return (
-      <div style={{ display: "flex", gap: "10px", marginBottom: "10px", flexWrap: "wrap" }}>
-        <button 
+      <div
+        style={{
+          display: "flex",
+          gap: "10px",
+          marginBottom: "10px",
+          flexWrap: "wrap",
+        }}
+      >
+        <button
           onClick={handleGenerateJson}
           disabled={workflowState.isGeneratingJson}
-          style={{ backgroundColor: "#4CAF50", color: "white", padding: "8px 16px", border: "none", borderRadius: "4px" }}
+          style={{
+            backgroundColor: "#4CAF50",
+            color: "white",
+            padding: "8px 16px",
+            border: "none",
+            borderRadius: "4px",
+          }}
         >
-          {workflowState.isGeneratingJson ? "Generating..." : "Generate Workflow JSON"}
+          {workflowState.isGeneratingJson
+            ? "Generating..."
+            : "Generate Workflow JSON"}
         </button>
-        
-        <button 
+
+        <button
           onClick={handleUploadWorkflow}
           disabled={!workflowState.workflowJson || isUploading}
-          style={{ backgroundColor: "#2196F3", color: "white", padding: "8px 16px", border: "none", borderRadius: "4px" }}
+          style={{
+            backgroundColor: "#2196F3",
+            color: "white",
+            padding: "8px 16px",
+            border: "none",
+            borderRadius: "4px",
+          }}
         >
           {isUploading ? "Uploading..." : "Upload Workflow"}
         </button>
-        
-        {(status === "idle" || status === "uploaded" || status === "stopped") && workflowState.workflowUid && (
-          <button 
-            onClick={handleStartWorkflow}
-            disabled={isStarting}
-            style={{ backgroundColor: "#FF9800", color: "white", padding: "8px 16px", border: "none", borderRadius: "4px" }}
-          >
-            {isStarting ? "Starting..." : "Start Workflow"}
-          </button>
-        )}
-        
+
+        {(status === "idle" || status === "uploaded" || status === "stopped") &&
+          workflowState.workflowUid && (
+            <button
+              onClick={handleStartWorkflow}
+              disabled={isStarting}
+              style={{
+                backgroundColor: "#FF9800",
+                color: "white",
+                padding: "8px 16px",
+                border: "none",
+                borderRadius: "4px",
+              }}
+            >
+              {isStarting ? "Starting..." : "Start Workflow"}
+            </button>
+          )}
+
         {status === "running" && (
           <React.Fragment>
-            <button 
+            <button
               onClick={handlePauseWorkflow}
               disabled={isPausing}
-              style={{ backgroundColor: "#FF5722", color: "white", padding: "8px 16px", border: "none", borderRadius: "4px" }}
+              style={{
+                backgroundColor: "#FF5722",
+                color: "white",
+                padding: "8px 16px",
+                border: "none",
+                borderRadius: "4px",
+              }}
             >
               {isPausing ? "Pausing..." : "Pause Workflow"}
             </button>
-            
-            <button 
+
+            <button
               onClick={handleStopWorkflow}
               disabled={isStopping}
-              style={{ backgroundColor: "#f44336", color: "white", padding: "8px 16px", border: "none", borderRadius: "4px" }}
+              style={{
+                backgroundColor: "#f44336",
+                color: "white",
+                padding: "8px 16px",
+                border: "none",
+                borderRadius: "4px",
+              }}
             >
               {isStopping ? "Stopping..." : "Stop Workflow"}
             </button>
           </React.Fragment>
         )}
-        
+
         {status === "paused" && (
           <React.Fragment>
-            <button 
+            <button
               onClick={handleResumeWorkflow}
               disabled={isResuming}
-              style={{ backgroundColor: "#4CAF50", color: "white", padding: "8px 16px", border: "none", borderRadius: "4px" }}
+              style={{
+                backgroundColor: "#4CAF50",
+                color: "white",
+                padding: "8px 16px",
+                border: "none",
+                borderRadius: "4px",
+              }}
             >
               {isResuming ? "Resuming..." : "Resume Workflow"}
             </button>
-            
-            <button 
+
+            <button
               onClick={handleStopWorkflow}
               disabled={isStopping}
-              style={{ backgroundColor: "#f44336", color: "white", padding: "8px 16px", border: "none", borderRadius: "4px" }}
+              style={{
+                backgroundColor: "#f44336",
+                color: "white",
+                padding: "8px 16px",
+                border: "none",
+                borderRadius: "4px",
+              }}
             >
               {isStopping ? "Stopping..." : "Stop Workflow"}
             </button>
@@ -1061,15 +1132,22 @@ const BlocklyController = () => {
   return (
     <div className="container">
       <h1>Create your Workflow</h1>
-      
+
       {/* Status Display */}
       <div style={{ marginBottom: "10px" }}>
         <strong>Status: </strong>
-        <span style={{ 
-          color: workflowState.status === "running" ? "green" : 
-                workflowState.status === "error" ? "red" : 
-                workflowState.status === "paused" ? "orange" : "black" 
-        }}>
+        <span
+          style={{
+            color:
+              workflowState.status === "running"
+                ? "green"
+                : workflowState.status === "error"
+                ? "red"
+                : workflowState.status === "paused"
+                ? "orange"
+                : "black",
+          }}
+        >
           {workflowState.status}
         </span>
         {workflowState.error && (
@@ -1081,7 +1159,7 @@ const BlocklyController = () => {
 
       {/* Control Buttons */}
       {renderControlButtons()}
-      
+
       {/* Blockly Workspace */}
       <BlocklyWorkspace
         className="blockly_container"
@@ -1092,15 +1170,22 @@ const BlocklyController = () => {
             spacing: 20,
             length: 3,
             colour: "#ccc",
-            snap: true
+            snap: true,
           },
-          theme: DarkTheme
+          theme: DarkTheme,
         }}
         onXmlChange={handleXmlChange}
       />
-      
+
       {/* JSON Output */}
-      <pre style={{ backgroundColor: "#272822", color: "#fff", padding: "1rem", marginTop: "10px" }}>
+      <pre
+        style={{
+          backgroundColor: "#272822",
+          color: "#fff",
+          padding: "1rem",
+          marginTop: "10px",
+        }}
+      >
         {workflowState.workflowJson || "No workflow JSON generated yet."}
       </pre>
     </div>
