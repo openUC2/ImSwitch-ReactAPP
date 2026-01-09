@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import {
   Dialog,
@@ -32,13 +32,22 @@ const steps = [
   "Complete"
 ];
 
-const StageCenterCalibrationWizard = ({ hostIP, hostPort }) => {
+const StageCenterCalibrationWizard = () => {
   const dispatch = useDispatch();
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
   
   const stageCenterState = useSelector(stageCenterCalibrationSlice.getStageCenterCalibrationState);
   const { isWizardOpen, activeStep } = stageCenterState;
+
+  // Auto-open wizard when component mounts
+  useEffect(() => {
+    dispatch(stageCenterCalibrationSlice.setWizardOpen(true));
+    // Clean up: close wizard when component unmounts
+    return () => {
+      dispatch(stageCenterCalibrationSlice.setWizardOpen(false));
+    };
+  }, [dispatch]);
 
   const handleNext = () => {
     dispatch(stageCenterCalibrationSlice.nextStep());
@@ -58,8 +67,6 @@ const StageCenterCalibrationWizard = ({ hostIP, hostPort }) => {
 
   const getStepContent = (step) => {
     const commonProps = {
-      hostIP,
-      hostPort,
       onNext: handleNext,
       onBack: handleBack,
       activeStep,

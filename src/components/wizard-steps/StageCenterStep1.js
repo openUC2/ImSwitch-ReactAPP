@@ -25,7 +25,7 @@ import {
 import { useTheme } from '@mui/material/styles';
 import LiveStreamTile from "../LiveStreamTile";
 
-const StageCenterStep1 = ({ hostIP, hostPort, onNext, activeStep, totalSteps }) => {
+const StageCenterStep1 = ({ onNext, activeStep, totalSteps }) => {
   const theme = useTheme();
   const placeholderImageStyle = {
     width: "100%",
@@ -43,7 +43,7 @@ const StageCenterStep1 = ({ hostIP, hostPort, onNext, activeStep, totalSteps }) 
     <Box sx={{ maxWidth: 1000, mx: "auto", p: 2 }}>
       {/* Live Stream Tile - positioned in top right */}
       <Box sx={{ position: 'absolute', top: 20, right: 20, zIndex: 10 }}>
-        <LiveStreamTile hostIP={hostIP} hostPort={hostPort} width={200} height={150} />
+        <LiveStreamTile width={200} height={150} />
       </Box>
 
       <Alert severity="info" sx={{ mb: 3 }}>

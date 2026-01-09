@@ -20,10 +20,11 @@ import {
 } from "@mui/icons-material";
 import * as stageCenterCalibrationSlice from "../../state/slices/StageCenterCalibrationSlice";
 import apiPositionerControllerMovePositioner from "../../backendapi/apiPositionerControllerMovePositioner";
+import apiPositionerControllerGetPositions from "../../backendapi/apiPositionerControllerGetPositions";
 import LiveStreamTile from "../LiveStreamTile";
 import { useTheme } from '@mui/material/styles';
 
-const StageCenterStep2 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps }) => {
+const StageCenterStep2 = ({ onNext, onBack, activeStep, totalSteps }) => {
   const theme = useTheme();
   const dispatch = useDispatch();
   const stageCenterState = useSelector(stageCenterCalibrationSlice.getStageCenterCalibrationState);
@@ -46,8 +47,7 @@ const StageCenterStep2 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
   const fetchCurrentPosition = async () => {
     dispatch(stageCenterCalibrationSlice.setIsLoading(true));
     try {
-      const response = await fetch(`${hostIP}:${hostPort}/PositionerController/getPositionerPositions`);
-      const data = await response.json();
+      const data = await apiPositionerControllerGetPositions();
       
       if (data.ESP32Stage) {
         dispatch(stageCenterCalibrationSlice.setCurrentPosition({
@@ -131,7 +131,7 @@ const StageCenterStep2 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
     <Box sx={{ maxWidth: 1000, mx: "auto", p: 2 }}>
       {/* Live Stream Tile - positioned in top right */}
       <Box sx={{ position: 'absolute', top: 20, right: 20, zIndex: 10 }}>
-        <LiveStreamTile hostIP={hostIP} hostPort={hostPort} width={200} height={150} />
+        <LiveStreamTile width={200} height={150} />
       </Box>
 
       <Alert severity="info" sx={{ mb: 3 }}>

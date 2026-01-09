@@ -451,10 +451,7 @@ const StageOffsetCalibration = ({ hostIP, hostPort }) => {
       </Grid>
       
       {/* Stage Center Calibration Wizard */}
-      <StageCenterCalibrationWizard
-        hostIP={hostIP}
-        hostPort={hostPort}
-      />
+      <StageCenterCalibrationWizard />
     </Paper>
   );
 };

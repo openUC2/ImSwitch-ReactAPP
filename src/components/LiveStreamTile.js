@@ -4,10 +4,15 @@ import { Box, Card, CardContent, Typography } from "@mui/material";
 import { Videocam as VideocamIcon } from "@mui/icons-material";
 import { useWebSocket } from "../context/WebSocketContext";
 import * as stageOffsetCalibrationSlice from "../state/slices/StageOffsetCalibrationSlice.js";
+import { getConnectionSettingsState } from "../state/slices/ConnectionSettingsSlice";
+import apiSettingsControllerGetDetectorNames from "../backendapi/apiSettingsControllerGetDetectorNames";
 
-const LiveStreamTile = ({ hostIP, hostPort, width = 200, height = 150 }) => {
+const LiveStreamTile = ({ width = 200, height = 150 }) => {
   const socket = useWebSocket();
   const dispatch = useDispatch();
+  
+  // Get connection settings from Redux
+  const connectionSettings = useSelector(getConnectionSettingsState);
   
   // Access Redux state for image display
   const stageOffsetState = useSelector(stageOffsetCalibrationSlice.getStageOffsetCalibrationState);
@@ -18,10 +23,7 @@ const LiveStreamTile = ({ hostIP, hostPort, width = 200, height = 150 }) => {
   useEffect(() => {
     const fetchDetectorNames = async () => {
       try {
-        const response = await fetch(
-          `${hostIP}:${hostPort}/SettingsController/getDetectorNames`
-        );
-        const data = await response.json();
+        const data = await apiSettingsControllerGetDetectorNames();
         dispatch(stageOffsetCalibrationSlice.setDetectors(data || []));
       } catch (error) {
         console.error("Error fetching detector names:", error);
@@ -29,7 +31,7 @@ const LiveStreamTile = ({ hostIP, hostPort, width = 200, height = 150 }) => {
     };
 
     fetchDetectorNames();
-  }, [hostIP, hostPort, dispatch]);
+  }, [dispatch]);
 
   // Handle socket signals for live stream
   useEffect(() => {

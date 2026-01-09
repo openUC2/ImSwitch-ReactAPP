@@ -6,7 +6,7 @@ import { Mode } from "../axon/WellSelectorCanvas";
 import * as wellSelectorSlice from "../state/slices/WellSelectorSlice";
 import * as experimentSlice from "../state/slices/ExperimentSlice";
 
-const StageMapCanvas = ({ hostIP, hostPort, width = 500, height = 400 }) => {
+const StageMapCanvas = ({ width = 500, height = 400 }) => {
   const dispatch = useDispatch();
   
   // Initialize the well selector state for camera movement mode

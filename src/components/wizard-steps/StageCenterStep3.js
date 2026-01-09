@@ -16,11 +16,12 @@ import {
   Refresh as RefreshIcon,
 } from "@mui/icons-material";
 import * as stageCenterCalibrationSlice from "../../state/slices/StageCenterCalibrationSlice";
+import apiPositionerControllerGetPositions from "../../backendapi/apiPositionerControllerGetPositions";
 import StageMapCanvas from "../StageMapCanvas";
 import LiveStreamTile from "../LiveStreamTile";
 import { useTheme } from '@mui/material/styles';
 
-const StageCenterStep3 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps }) => {
+const StageCenterStep3 = ({ onNext, onBack, activeStep, totalSteps }) => {
   const dispatch = useDispatch();
   const theme = useTheme();
   const stageCenterState = useSelector(stageCenterCalibrationSlice.getStageCenterCalibrationState);
@@ -42,8 +43,7 @@ const StageCenterStep3 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
 
   const fetchCurrentPosition = async () => {
     try {
-      const response = await fetch(`${hostIP}:${hostPort}/PositionerController/getPositionerPositions`);
-      const data = await response.json();
+      const data = await apiPositionerControllerGetPositions();
       
       if (data.ESP32Stage) {
         dispatch(stageCenterCalibrationSlice.setCurrentPosition({
@@ -77,7 +77,7 @@ const StageCenterStep3 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
     <Box sx={{ maxWidth: 1200, mx: "auto", p: 2 }}>
       {/* Live Stream Tile - positioned in top right */}
       <Box sx={{ position: 'absolute', top: 20, right: 20, zIndex: 10 }}>
-        <LiveStreamTile hostIP={hostIP} hostPort={hostPort} width={200} height={150} />
+        <LiveStreamTile width={200} height={150} />
       </Box>
 
       <Alert severity="info" sx={{ mb: 3 }}>
@@ -111,8 +111,6 @@ const StageCenterStep3 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
               </Typography>
               
               <StageMapCanvas 
-                hostIP={hostIP} 
-                hostPort={hostPort} 
                 width={500} 
                 height={400} 
               />

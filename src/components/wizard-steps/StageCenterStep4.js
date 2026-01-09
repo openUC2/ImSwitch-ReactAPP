@@ -32,7 +32,7 @@ import apiStageCenterCalibrationStopCalibration from "../../backendapi/apiStageC
 import LiveStreamTile from "../LiveStreamTile";
 import { useTheme } from '@mui/material/styles';
 
-const StageCenterStep4 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps }) => {
+const StageCenterStep4 = ({ onNext, onBack, activeStep, totalSteps }) => {
   const dispatch = useDispatch();
   const theme = useTheme();
   const stageCenterState = useSelector(stageCenterCalibrationSlice.getStageCenterCalibrationState);
@@ -144,7 +144,7 @@ const StageCenterStep4 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
     <Box sx={{ maxWidth: 1000, mx: "auto", p: 2 }}>
       {/* Live Stream Tile - positioned in top right */}
       <Box sx={{ position: 'absolute', top: 20, right: 20, zIndex: 10 }}>
-        <LiveStreamTile hostIP={hostIP} hostPort={hostPort} width={200} height={150} />
+        <LiveStreamTile width={200} height={150} />
       </Box>
 
       <Alert severity="info" sx={{ mb: 3 }}>

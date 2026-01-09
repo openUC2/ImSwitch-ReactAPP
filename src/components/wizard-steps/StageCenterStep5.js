@@ -26,10 +26,11 @@ import {
 } from "@mui/icons-material";
 import { useTheme } from '@mui/material/styles';
 import * as stageCenterCalibrationSlice from "../../state/slices/StageCenterCalibrationSlice";
+import apiPositionerControllerSetStageOffsetAxis from "../../backendapi/apiPositionerControllerSetStageOffsetAxis";
 import StageMapCanvas from "../StageMapCanvas";
 import LiveStreamTile from "../LiveStreamTile";
 
-const StageCenterStep5 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalSteps }) => {
+const StageCenterStep5 = ({ onNext, onBack, activeStep, totalSteps }) => {
   const dispatch = useDispatch();
   const theme = useTheme();
   const stageCenterState = useSelector(stageCenterCalibrationSlice.getStageCenterCalibrationState);
@@ -63,15 +64,17 @@ const StageCenterStep5 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
     if (!hasManualCenter) return;
     
     try {
-      const response = await fetch(
-        `${hostIP}:${hostPort}/PositionerController/setStageOffsetAxis?knownPosition=${manualCenterX}&currentPosition=0&axis=X`
-      );
-      await response.json();
+      await apiPositionerControllerSetStageOffsetAxis({
+        axis: "X",
+        knownPosition: parseFloat(manualCenterX),
+        currentPosition: 0
+      });
       
-      const response2 = await fetch(
-        `${hostIP}:${hostPort}/PositionerController/setStageOffsetAxis?knownPosition=${manualCenterY}&currentPosition=0&axis=Y`
-      );
-      await response2.json();
+      await apiPositionerControllerSetStageOffsetAxis({
+        axis: "Y",
+        knownPosition: parseFloat(manualCenterY),
+        currentPosition: 0
+      });
       
       dispatch(stageCenterCalibrationSlice.setSuccessMessage("Manual center position applied successfully"));
     } catch (error) {
@@ -84,15 +87,17 @@ const StageCenterStep5 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
     if (!hasFoundCenter) return;
     
     try {
-      const response = await fetch(
-        `${hostIP}:${hostPort}/PositionerController/setStageOffsetAxis?knownPosition=${foundCenterX}&currentPosition=0&axis=X`
-      );
-      await response.json();
+      await apiPositionerControllerSetStageOffsetAxis({
+        axis: "X",
+        knownPosition: parseFloat(foundCenterX),
+        currentPosition: 0
+      });
       
-      const response2 = await fetch(
-        `${hostIP}:${hostPort}/PositionerController/setStageOffsetAxis?knownPosition=${foundCenterY}&currentPosition=0&axis=Y`
-      );
-      await response2.json();
+      await apiPositionerControllerSetStageOffsetAxis({
+        axis: "Y",
+        knownPosition: parseFloat(foundCenterY),
+        currentPosition: 0
+      });
       
       dispatch(stageCenterCalibrationSlice.setSuccessMessage("Found center position applied successfully"));
     } catch (error) {
@@ -109,7 +114,7 @@ const StageCenterStep5 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
     <Box sx={{ maxWidth: 1200, mx: "auto", p: 2 }}>
       {/* Live Stream Tile - positioned in top right */}
       <Box sx={{ position: 'absolute', top: 20, right: 20, zIndex: 10 }}>
-        <LiveStreamTile hostIP={hostIP} hostPort={hostPort} width={200} height={150} />
+        <LiveStreamTile width={200} height={150} />
       </Box>
 
       <Alert severity="info" sx={{ mb: 3 }}>
@@ -290,8 +295,6 @@ const StageCenterStep5 = ({ hostIP, hostPort, onNext, onBack, activeStep, totalS
               </Typography>
               
               <StageMapCanvas 
-                hostIP={hostIP} 
-                hostPort={hostPort} 
                 width={450} 
                 height={350} 
               />
