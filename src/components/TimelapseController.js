@@ -37,7 +37,7 @@ const TimelapseController = () => {
     const fetchParameters = async () => {
       try {
         const response = await fetch(
-          `${hostIP}:${hostPort}/TimelapseController/getCurrentTimelapseParameters`
+          `${hostIP}:${hostPort}/imswitch/api/TimelapseController/getCurrentTimelapseParameters`
         );
         const data = await response.json();
         if (data.detail === "Not Found") {
@@ -124,7 +124,7 @@ const TimelapseController = () => {
       filteredParameters.tPeriod = parameters.tPeriod; // TODO: why is this even necessry?
 
       const response = await fetch(
-        `${hostIP}:${hostPort}/TimelapseController/start_multicolour_timelapse_workflow`,
+        `${hostIP}:${hostPort}/imswitch/api/TimelapseController/start_multicolour_timelapse_workflow`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -143,7 +143,7 @@ const TimelapseController = () => {
   const handleStop = async () => {
     try {
       const response = await fetch(
-        `${hostIP}:${hostPort}/TimelapseController/stop_workflow_tl`,
+        `${hostIP}:${hostPort}/imswitch/api/TimelapseController/stop_workflow_tl`,
         { method: "get" }
       );
       const result = await response.json();

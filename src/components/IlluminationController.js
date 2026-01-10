@@ -58,7 +58,7 @@ export default function IlluminationController({ hostIP, hostPort }) {
     async function fetchIlluminationData() {
       try {
         // Fetch laser names
-        const namesRes = await fetch(`${hostIP}:${hostPort}/LaserController/getLaserNames`);
+        const namesRes = await fetch(`${hostIP}:${hostPort}/imswitch/api/LaserController/getLaserNames`);
         const names = await namesRes.json();
         dispatch(parameterRangeSlice.setIlluSources(names));
 
@@ -68,17 +68,17 @@ export default function IlluminationController({ hostIP, hostPort }) {
         for (const name of names) {
           const encodedName = encodeURIComponent(name);
           // Value range
-          const rangeRes = await fetch(`${hostIP}:${hostPort}/LaserController/getLaserValueRanges?laserName=${encodedName}`);
+          const rangeRes = await fetch(`${hostIP}:${hostPort}/imswitch/api/LaserController/getLaserValueRanges?laserName=${encodedName}`);
           const range = await rangeRes.json();
           minArr.push(range[0]);
           maxArr.push(range[1]);
           
           // Fetch initial laser state (power and active)
           try {
-            const valueRes = await fetch(`${hostIP}:${hostPort}/LaserController/getLaserValue?laserName=${encodedName}`);
+            const valueRes = await fetch(`${hostIP}:${hostPort}/imswitch/api/LaserController/getLaserValue?laserName=${encodedName}`);
             const power = await valueRes.json();
             
-            const activeRes = await fetch(`${hostIP}:${hostPort}/LaserController/getLaserActive?laserName=${encodedName}`);
+            const activeRes = await fetch(`${hostIP}:${hostPort}/imswitch/api/LaserController/getLaserActive?laserName=${encodedName}`);
             const enabled = await activeRes.json();
             
             // Initialize laser state in Redux
@@ -118,7 +118,7 @@ export default function IlluminationController({ hostIP, hostPort }) {
       if (ip && port) {
         try {
           const encodedLaserName = encodeURIComponent(laserName);
-          await fetch(`${ip}:${port}/LaserController/setLaserValue?laserName=${encodedLaserName}&value=${val}`);
+          await fetch(`${ip}:${port}/imswitch/api/LaserController/setLaserValue?laserName=${encodedLaserName}&value=${val}`);
           console.log(`${laserName} intensity updated to: ${val}`);
         } catch (error) {
           console.error("Failed to set laser value in backend:", error);
@@ -139,7 +139,7 @@ export default function IlluminationController({ hostIP, hostPort }) {
     if (ip && port) {
       try {
         const encodedLaserName = encodeURIComponent(laserName);
-        await fetch(`${ip}:${port}/LaserController/setLaserActive?laserName=${encodedLaserName}&active=${active}`);
+        await fetch(`${ip}:${port}/imswitch/api/LaserController/setLaserActive?laserName=${encodedLaserName}&active=${active}`);
         console.log(`${laserName} active state updated to: ${active}`);
       } catch (error) {
         console.error("Failed to set laser active state in backend:", error);

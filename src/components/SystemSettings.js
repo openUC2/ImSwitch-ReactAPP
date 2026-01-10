@@ -40,7 +40,7 @@ export default function SystemSettings() {
   const [isImSwitchRunning, setIsImSwitchRunning] = useState(false);
   const [diskUsage, setDiskUsage] = useState(null);
 
-  const base = `${hostIP}:${hostPort}/UC2ConfigController`;
+  const base = `${hostIP}:${hostPort}/imswitch/api/UC2ConfigController`;
 
   // API communication
   const callEndpoint = async (url) => {

@@ -71,7 +71,7 @@ const TestHomingTab = () => {
   // Set up stream URL
   useEffect(() => {
     if (hostIP && hostPort) {
-      setStreamUrl(`${hostIP}:${hostPort}/PixelCalibrationController/overviewStream`);
+      setStreamUrl(`${hostIP}:${hostPort}/imswitch/api/PixelCalibrationController/overviewStream`);
     }
   }, [hostIP, hostPort]);
 

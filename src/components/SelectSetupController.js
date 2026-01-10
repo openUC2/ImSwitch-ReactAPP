@@ -45,7 +45,7 @@ const SelectSetupController = ({ hostIP, hostPort }) => {
   const isRestarting = uc2State.isRestarting;
 
   const fetchCurrentActiveFilename = useCallback(() => {
-    const url = `${hostIP}:${hostPort}/UC2ConfigController/getCurrentSetupFilename`;
+    const url = `${hostIP}:${hostPort}/imswitch/api/UC2ConfigController/getCurrentSetupFilename`;
     dispatch(uc2Slice.setIsLoadingCurrentFilename(true));
     
     fetch(url)
@@ -88,7 +88,7 @@ const SelectSetupController = ({ hostIP, hostPort }) => {
   }, [hostIP, hostPort, dispatch]);
 
   const fetchAvailableSetups = useCallback(() => {
-    const url = `${hostIP}:${hostPort}/UC2ConfigController/returnAvailableSetups`;
+    const url = `${hostIP}:${hostPort}/imswitch/api/UC2ConfigController/returnAvailableSetups`;
     dispatch(
       setNotification({
         message: "Loading available setups...",
@@ -127,7 +127,7 @@ const SelectSetupController = ({ hostIP, hostPort }) => {
     const maxRetries = 30; // 5 minutes with 10-second intervals
 
     const checkStatus = () => {
-      fetch(`${hostIP}:${hostPort}/UC2ConfigController/is_connected`)
+      fetch(`${hostIP}:${hostPort}/imswitch/api/UC2ConfigController/is_connected`)
         .then((res) => res.json())
         .then((data) => {
           if (data === true) {
@@ -207,7 +207,7 @@ const SelectSetupController = ({ hostIP, hostPort }) => {
       })
     );
 
-    const url = `${hostIP}:${hostPort}/UC2ConfigController/setSetupFileName?setupFileName=${encodeURIComponent(
+    const url = `${hostIP}:${hostPort}/imswitch/api/UC2ConfigController/setSetupFileName?setupFileName=${encodeURIComponent(
       selectedSetup
     )}&restartSoftware=${restartSoftware}`;
 

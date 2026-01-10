@@ -60,7 +60,7 @@ const PixelCalibrationTab = () => {
   // Set up overview stream URL
   useEffect(() => {
     if (hostIP && hostPort) {
-      setOverviewStreamUrl(`${hostIP}:${hostPort}/PixelCalibrationController/overviewStream`);
+      setOverviewStreamUrl(`${hostIP}:${hostPort}/imswitch/api/PixelCalibrationController/overviewStream`);
     }
   }, [hostIP, hostPort]);
 

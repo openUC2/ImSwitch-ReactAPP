@@ -59,7 +59,7 @@ export default function VirtualJoystickControl({ hostIP, hostPort }) {
       });
 
       await fetch(
-        `${hostIP}:${hostPort}/PositionerController/movePositionerForeverXYZA?${params}`
+        `${hostIP}:${hostPort}/imswitch/api/PositionerController/movePositionerForeverXYZA?${params}`
       );
     } catch (error) {
       console.error("Error sending movement command:", error);

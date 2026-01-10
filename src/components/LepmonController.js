@@ -76,19 +76,19 @@ export default function LepmonController() {
     async function fetchInitialData() {
       try {
         // Build base URL from Redux state
-        const urlStatus = `${hostIP}:${hostPort}/LepmonController/getStatus`;
+        const urlStatus = `${hostIP}:${hostPort}/imswitch/api/LepmonController/getStatus`;
         const resStatus = await fetch(urlStatus);
         const statusData = await resStatus.json();
         dispatch(lepmonSlice.setInitialStatus(statusData));
 
         // 2. Hole Kamera-/Timelapse-Einstellungen
-        const urlInitialParams = `${hostIP}:${hostPort}/LepmonController/getInitialParams`;
+        const urlInitialParams = `${hostIP}:${hostPort}/imswitch/api/LepmonController/getInitialParams`;
         const resParams = await fetch(urlInitialParams);
         const paramsData = await resParams.json();
         dispatch(lepmonSlice.setInitialParams(paramsData));
 
         // 3. Hole Hardware-Status (new)
-        const urlHardwareStatus = `${hostIP}:${hostPort}/LepmonController/getHardwareStatus`;
+        const urlHardwareStatus = `${hostIP}:${hostPort}/imswitch/api/LepmonController/getHardwareStatus`;
         const resHardware = await fetch(urlHardwareStatus);
         const hardwareData = await resHardware.json();
         dispatch(lepmonSlice.setHardwareStatus(hardwareData.hardwareStatus));
@@ -101,7 +101,7 @@ export default function LepmonController() {
         dispatch(lepmonSlice.setLcdDisplay(hardwareData.lcdDisplay));
 
         // 4. Hole Timing-Konfiguration (new)
-        const urlTimingConfig = `${hostIP}:${hostPort}/LepmonController/getTimingConfig`;
+        const urlTimingConfig = `${hostIP}:${hostPort}/imswitch/api/LepmonController/getTimingConfig`;
         const resTiming = await fetch(urlTimingConfig);
         const timingData = await resTiming.json();
         dispatch(lepmonSlice.setTimingConfig(timingData));
@@ -290,7 +290,7 @@ export default function LepmonController() {
     });
 
     try {
-      const urlStart = `${hostIP}:${hostPort}/LepmonController/startExperiment?${params.toString()}`;
+      const urlStart = `${hostIP}:${hostPort}/imswitch/api/LepmonController/startExperiment?${params.toString()}`;
       const res = await fetch(urlStart, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -306,7 +306,7 @@ export default function LepmonController() {
 
   const handleStop = async () => {
     try {
-      const urlStop = `${hostIP}:${hostPort}/LepmonController/stopLepmonExperiment`;
+      const urlStop = `${hostIP}:${hostPort}/imswitch/api/LepmonController/stopLepmonExperiment`;
       const res = await fetch(urlStop, { method: "POST" });
       const data = await res.json();
       if (data.success) {
@@ -320,7 +320,7 @@ export default function LepmonController() {
   // Fokusmodus
   const handleFocus = async () => {
     try {
-      const urlFocus = `${hostIP}:${hostPort}/LepmonController/focusMode`;
+      const urlFocus = `${hostIP}:${hostPort}/imswitch/api/LepmonController/focusMode`;
       await fetch(urlFocus, { method: "POST" });
       // Backend startet 15s-Fokusmodus => sendet "focusSharpness" als WS
     } catch (err) {
@@ -332,7 +332,7 @@ export default function LepmonController() {
   const handleReboot = async () => {
     // z. B. mit Confirm-Dialog
     try {
-      const urlReboot = `${hostIP}:${hostPort}/LepmonController/reboot`;
+      const urlReboot = `${hostIP}:${hostPort}/imswitch/api/LepmonController/reboot`;
       await fetch(urlReboot, { method: "POST" });
     } catch (err) {
       console.error("Reboot-Error:", err);
@@ -348,7 +348,7 @@ export default function LepmonController() {
         lightName: lightName,
         state: newState,
       });
-      const url = `${hostIP}:${hostPort}/LepmonController/setLightState?${params.toString()}`;
+      const url = `${hostIP}:${hostPort}/imswitch/api/LepmonController/setLightState?${params.toString()}`;
       const response = await fetch(url, {
         method: "POST",
       });
@@ -367,7 +367,7 @@ export default function LepmonController() {
       const params = new URLSearchParams({
         state: newState,
       });
-      const url = `${hostIP}:${hostPort}/LepmonController/setAllLightsState?${params.toString()}`;
+      const url = `${hostIP}:${hostPort}/imswitch/api/LepmonController/setAllLightsState?${params.toString()}`;
       const response = await fetch(url, {
         method: "POST",
       });
@@ -388,7 +388,7 @@ export default function LepmonController() {
   // Snap Image Function (new)
   const handleSnapImage = async () => {
     try {
-      const url = `${hostIP}:${hostPort}/LepmonController/lepmonSnapImage`;
+      const url = `${hostIP}:${hostPort}/imswitch/api/LepmonController/lepmonSnapImage`;
       const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -406,7 +406,7 @@ export default function LepmonController() {
   // Update LCD Display Function (new)
   const handleUpdateDisplay = async (line1, line2, line3, line4) => {
     try {
-      const url = `${hostIP}:${hostPort}/LepmonController/updateLCDDisplay`;
+      const url = `${hostIP}:${hostPort}/imswitch/api/LepmonController/updateLCDDisplay`;
       const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -424,7 +424,7 @@ export default function LepmonController() {
   // Timing Configuration Update Function (new)
   const handleTimingConfigUpdate = async (newConfig) => {
     try {
-      const url = `${hostIP}:${hostPort}/LepmonController/setTimingConfig`;
+      const url = `${hostIP}:${hostPort}/imswitch/api/LepmonController/setTimingConfig`;
       const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -442,7 +442,7 @@ export default function LepmonController() {
   // LepmonOS Control Functions (new)
   const handleLepmonStartup = async () => {
     try {
-      const url = `${hostIP}:${hostPort}/LepmonController/lepmonStartup`;
+      const url = `${hostIP}:${hostPort}/imswitch/api/LepmonController/lepmonStartup`;
       const response = await fetch(url, { method: "POST" });
       const data = await response.json();
       if (data.success) {
@@ -455,7 +455,7 @@ export default function LepmonController() {
 
   const handleLepmonShutdown = async () => {
     try {
-      const url = `${hostIP}:${hostPort}/LepmonController/lepmonShutdown`;
+      const url = `${hostIP}:${hostPort}/imswitch/api/LepmonController/lepmonShutdown`;
       const response = await fetch(url, { method: "POST" });
       const data = await response.json();
       if (data.success) {
@@ -470,7 +470,7 @@ export default function LepmonController() {
   const handleUVLedControl = async (action) => {
     try {
       const params = new URLSearchParams({ action });
-      const url = `${hostIP}:${hostPort}/LepmonController/lepmonUVLed?${params.toString()}`;
+      const url = `${hostIP}:${hostPort}/imswitch/api/LepmonController/lepmonUVLed?${params.toString()}`;
       const response = await fetch(url, {
         method: "POST",
       });
@@ -489,7 +489,7 @@ export default function LepmonController() {
   const handleVisibleLedControl = async (action) => {
     try {
       const params = new URLSearchParams({ action });
-      const url = `${hostIP}:${hostPort}/LepmonController/lepmonVisibleLed?${params.toString()}`;
+      const url = `${hostIP}:${hostPort}/imswitch/api/LepmonController/lepmonVisibleLed?${params.toString()}`;
       const response = await fetch(url, {
         method: "POST",
       });
@@ -510,7 +510,7 @@ export default function LepmonController() {
   // Live Sensor Data Fetch (new)
   const fetchLiveSensorData = async () => {
     try {
-      const url = `${hostIP}:${hostPort}/LepmonController/getSensorDataLive`;
+      const url = `${hostIP}:${hostPort}/imswitch/api/LepmonController/getSensorDataLive`;
       const response = await fetch(url);
       const data = await response.json();
       if (data.success) {

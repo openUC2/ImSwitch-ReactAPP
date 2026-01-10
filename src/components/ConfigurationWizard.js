@@ -95,7 +95,7 @@ const ConfigurationWizard = ({ open, onClose, hostIP, hostPort }) => {
   }, [selectedSource]);
 
   const fetchCurrentActiveFilename = useCallback(() => {
-    const url = `${hostIP}:${hostPort}/UC2ConfigController/getCurrentSetupFilename`;
+    const url = `${hostIP}:${hostPort}/imswitch/api/UC2ConfigController/getCurrentSetupFilename`;
     fetch(url)
       .then((response) => {
         if (!response.ok) {
@@ -124,7 +124,7 @@ const ConfigurationWizard = ({ open, onClose, hostIP, hostPort }) => {
   }, [hostIP, hostPort]);
 
   const fetchAvailableSetups = useCallback(() => {
-    const url = `${hostIP}:${hostPort}/UC2ConfigController/returnAvailableSetups`;
+    const url = `${hostIP}:${hostPort}/imswitch/api/UC2ConfigController/returnAvailableSetups`;
     fetch(url)
       .then((response) => response.json())
       .then((data) => {
@@ -184,7 +184,7 @@ const ConfigurationWizard = ({ open, onClose, hostIP, hostPort }) => {
     setLoadError('');
     
     // Use the readSetupFile API without setupFileName parameter to get current config
-    const url = `${hostIP}:${hostPort}/UC2ConfigController/readSetupFile`;
+    const url = `${hostIP}:${hostPort}/imswitch/api/UC2ConfigController/readSetupFile`;
     
     fetch(url)
       .then((response) => {
@@ -210,7 +210,7 @@ const ConfigurationWizard = ({ open, onClose, hostIP, hostPort }) => {
     setIsLoading(true);
     setLoadError('');
     
-    const url = `${hostIP}:${hostPort}/UC2ConfigController/readSetupFile?setupFileName=${encodeURIComponent(fileName)}`;
+    const url = `${hostIP}:${hostPort}/imswitch/api/UC2ConfigController/readSetupFile?setupFileName=${encodeURIComponent(fileName)}`;
     
     fetch(url)
       .then((response) => {
@@ -334,7 +334,7 @@ const ConfigurationWizard = ({ open, onClose, hostIP, hostPort }) => {
       return;
     }
 
-    const url = `${hostIP}:${hostPort}/UC2ConfigController/writeNewSetupFile?setupFileName=${encodeURIComponent(
+    const url = `${hostIP}:${hostPort}/imswitch/api/UC2ConfigController/writeNewSetupFile?setupFileName=${encodeURIComponent(
       filename
     )}&setAsCurrentConfig=${setAsCurrentConfig}&restart=${restartAfterSave}&overwrite=${overwriteFile}`;
 
@@ -367,7 +367,7 @@ const ConfigurationWizard = ({ open, onClose, hostIP, hostPort }) => {
     const maxRetries = 30;
     
     const checkStatus = () => {
-      fetch(`${hostIP}:${hostPort}/UC2ConfigController/is_connected`)
+      fetch(`${hostIP}:${hostPort}/imswitch/api/UC2ConfigController/is_connected`)
         .then((res) => res.json())
         .then((data) => {
           if (data === true) {

@@ -63,7 +63,7 @@ const FlowStopController = () => {
     const fetchStatus = async () => {
       try {
         const response = await fetch(
-          `${hostIP}:${hostPort}/FlowStopController/getStatus`
+          `${hostIP}:${hostPort}/imswitch/api/FlowStopController/getStatus`
         );
         const data = await response.json();
         dispatch(flowStopSlice.setIsRunning(data[0]));
@@ -76,7 +76,7 @@ const FlowStopController = () => {
     const fetchExperimentParameters = async () => {
       try {
         const response = await fetch(
-          `${hostIP}:${hostPort}/FlowStopController/getExperimentParameters`
+          `${hostIP}:${hostPort}/imswitch/api/FlowStopController/getExperimentParameters`
         );
         const data = await response.json();
         dispatch(flowStopSlice.setTimeStamp(data.timeStamp));
@@ -124,9 +124,9 @@ const FlowStopController = () => {
   }, [socket]);
 
   const startExperiment = () => {
-    // https://localhost:8001/FlowStopController/startFlowStopExperimentFastAPI?timeStamp=asdf&experimentName=adf&experimentDescription=asdf&uniqueId=asdf&numImages=19&volumePerImage=199&timeToStabilize=1&delayToStart=1&frameRate=1&filePath=.%2F&fileFormat=TIF&isRecordVideo=true&pumpSpeed=10000
+    // https://localhost/imswitch/api/FlowStopController/startFlowStopExperimentFastAPI?timeStamp=asdf&experimentName=adf&experimentDescription=asdf&uniqueId=asdf&numImages=19&volumePerImage=199&timeToStabilize=1&delayToStart=1&frameRate=1&filePath=.%2F&fileFormat=TIF&isRecordVideo=true&pumpSpeed=10000
     // Build URL from Redux connection settings
-    const url = `${hostIP}:${hostPort}/FlowStopController/startFlowStopExperimentFastAPI?timeStamp=${timeStamp}&experimentName=${experimentName}&experimentDescription=${experimentDescription}&uniqueId=${uniqueId}&numImages=${numImages}&volumePerImage=${volumePerImage}&timeToStabilize=${timeToStabilize}&isRecordVideo=true&pumpSpeed=${pumpSpeed}`;
+    const url = `${hostIP}:${hostPort}/imswitch/api/FlowStopController/startFlowStopExperimentFastAPI?timeStamp=${timeStamp}&experimentName=${experimentName}&experimentDescription=${experimentDescription}&uniqueId=${uniqueId}&numImages=${numImages}&volumePerImage=${volumePerImage}&timeToStabilize=${timeToStabilize}&isRecordVideo=true&pumpSpeed=${pumpSpeed}`;
     fetch(url, { method: "GET" })
       .then((response) => response.json())
       .then((data) => {
@@ -137,7 +137,7 @@ const FlowStopController = () => {
   };
 
   const stopExperiment = () => {
-    const url = `${hostIP}:${hostPort}/FlowStopController/stopFlowStopExperiment`;
+    const url = `${hostIP}:${hostPort}/imswitch/api/FlowStopController/stopFlowStopExperiment`;
 
     fetch(url, { method: "GET" })
       .then((response) => response.json())

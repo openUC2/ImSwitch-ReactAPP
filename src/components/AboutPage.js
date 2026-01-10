@@ -44,7 +44,7 @@ const AboutPage = () => {
 
   const hostIP = connectionSettings.ip || "http://localhost";
   const hostPort = connectionSettings.apiPort || "8000";
-  const apiDocsUrl = `${hostIP}:${hostPort}/docs`;
+  const apiDocsUrl = `${hostIP}:${hostPort}/imswitch/api/docs`;
 
   // Backend version state
   const [backendVersion, setBackendVersion] = useState(null);
@@ -63,7 +63,7 @@ const AboutPage = () => {
 
         // Use cross-browser compatible fetch with timeout
         const response = await fetchWithTimeout(
-          `${hostIP}:${hostPort}/version`,
+          `${hostIP}:${hostPort}/imswitch/api/version`,
           { method: "GET" },
           5000
         );

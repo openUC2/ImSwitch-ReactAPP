@@ -29,8 +29,8 @@ const ZarrTileViewController = () => {
   // log debug info
   useEffect(() => {
     console.info("[ZARR-VIEW] new zarrUrl ➜", omeZarrState.zarrUrl);
-    // e.g. https://avivator.gehlenborglab.org/?image_url=https://localhost:8001/data/ExperimentController/20250603_140818_FastStageScan.ome.zarr
-    setfullURL(`${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/data${omeZarrState.zarrUrl}`); // Switch to https if needed
+    // e.g. https://avivator.gehlenborglab.org/?image_url=https://localhost/imswitch/data/ExperimentController/20250603_140818_FastStageScan.ome.zarr
+    setfullURL(`${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/data${omeZarrState.zarrUrl}`); // Switch to https if needed
   }, [omeZarrState.zarrUrl]);
 
   useEffect(() => {

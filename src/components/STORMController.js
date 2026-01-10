@@ -138,7 +138,7 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
         // Try to get a snapshot from the backend for initial cropping
         try {
           const response = await fetch(
-            `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/DetectorController/getLatestDetectorFrame`
+            `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/DetectorController/getLatestDetectorFrame`
           );
           if (response.ok) {
             const blob = await response.blob();
@@ -162,7 +162,7 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
       if (connectionSettingsState.ip && connectionSettingsState.apiPort) {
         try {
           const response = await fetch(
-            `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/SettingsController/getDetectorParameters`
+            `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/SettingsController/getDetectorParameters`
           );
           if (response.ok) {
             const data = await response.json();
@@ -251,7 +251,7 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
                 try {
                   const encodedLaserName = encodeURIComponent(laserName);
                   const response = await fetch(
-                    `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/LaserController/getLaserValue?laserName=${encodedLaserName}`
+                    `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/LaserController/getLaserValue?laserName=${encodedLaserName}`
                   );
                   
                   if (response.ok) {
@@ -391,7 +391,7 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
     if (connectionSettingsState.ip && connectionSettingsState.apiPort) {
       try {
         await fetch(
-          `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/SettingsController/setDetectorExposureTime?exposureTime=${newValue}`
+          `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/SettingsController/setDetectorExposureTime?exposureTime=${newValue}`
         );
       } catch (error) {
         console.error("Failed to update exposure time in backend:", error);
@@ -408,7 +408,7 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
       try {
         const encodedLaserName = encodeURIComponent(laserName);
         await fetch(
-          `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/LaserController/setLaserValue?laserName=${encodedLaserName}&value=${value}`
+          `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/LaserController/setLaserValue?laserName=${encodedLaserName}&value=${value}`
         );
       } catch (error) {
         console.error("Failed to update laser intensity in backend:", error);
@@ -425,7 +425,7 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
       try {
         const encodedLaserName = encodeURIComponent(laserName);
         await fetch(
-          `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/LaserController/setLaserActive?laserName=${encodedLaserName}&active=${active}`
+          `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/LaserController/setLaserActive?laserName=${encodedLaserName}&active=${active}`
         );
       } catch (error) {
         console.error("Failed to update laser active state in backend:", error);
@@ -441,7 +441,7 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
     if (connectionSettingsState.ip && connectionSettingsState.apiPort) {
       try {
         await fetch(
-          `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/SettingsController/setDetectorGain?gain=${value}`
+          `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/SettingsController/setDetectorGain?gain=${value}`
         );
       } catch (error) {
         console.error("Failed to update detector gain in backend:", error);
@@ -484,7 +484,7 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
   const handleLoadImage = async () => {
     try {
       const response = await fetch(
-        `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/RecordingController/snapNumpyToFastAPI?resizeFactor=1`
+        `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/RecordingController/snapNumpyToFastAPI?resizeFactor=1`
       );
       if (!response.ok) throw new Error("Failed to load image");
       const blob = await response.blob();
@@ -689,7 +689,7 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
       const imagePath = await apiSTORMControllerGetLastReconstructedImagePath();
       if (imagePath && connectionSettingsState.ip && connectionSettingsState.apiPort) {
         // Construct the URL to load the image
-        const imageUrl = `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/FileManager/preview/${encodeURIComponent(imagePath)}`;
+        const imageUrl = `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/FileManager/preview/${encodeURIComponent(imagePath)}`;
         dispatch(stormSlice.setReconstructedImage(imageUrl));
       }
     } catch (error) {

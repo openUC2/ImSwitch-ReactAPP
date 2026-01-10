@@ -82,7 +82,7 @@ const MCTController = ({ hostIP, hostPort }) => {
   */
   useEffect(() => {
     const fetchMCTStatus = () => {
-      const url = `${hostIP}:${hostPort}/MCTController/getMCTStatus`;
+      const url = `${hostIP}:${hostPort}/imswitch/api/MCTController/getMCTStatus`;
 
   
       fetch(url)
@@ -126,7 +126,7 @@ const MCTController = ({ hostIP, hostPort }) => {
   
   const handleStart = () => {
     const url =
-      `${hostIP}:${hostPort}/MCTController/startTimelapseImaging?` +
+      `${hostIP}:${hostPort}/imswitch/api/MCTController/startTimelapseImaging?` +
       `tperiod=${timePeriod}&nImagesToCapture=${numMeasurements}&MCTFilename=${fileName}&` +
       `zStackEnabled=${zStackEnabled}&zStackMin=${zMin}&zStackMax=${zMax}&zStackStep=${zSteps}&` +
       `xyScanEnabled=${xStackEnabled}&xScanMin=${xMin}&xScanMax=${xMax}&xScanStep=${xSteps}&` +
@@ -143,7 +143,7 @@ const MCTController = ({ hostIP, hostPort }) => {
   };
 
   const handleStop = () => {
-    const url = `${hostIP}:${hostPort}/MCTController/stopTimelapseImaging`;
+    const url = `${hostIP}:${hostPort}/imswitch/api/MCTController/stopTimelapseImaging`;
     fetch(url, { method: "GET" })
       .then((response) => response.json())
       .then((data) => {

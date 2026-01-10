@@ -13,8 +13,8 @@ const createMockStore = (hostIP = "http://192.168.1.1") => {
     preloadedState: {
       connectionSettingsState: {
         ip: hostIP,
-        apiPort: "8001",
-        websocketPort: "8001",
+        apiPort: "80",
+        websocketPort: "80",
       },
     },
   });

@@ -162,16 +162,16 @@ const ExperimentComponent = () => {
     //    setfullURL(${omeZarrState.zarrUrl}`); // Switch to https if needed
 
     fetch(
-      `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/ExperimentController/getLastScanAsOMEZARR`
+      `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/ExperimentController/getLastScanAsOMEZARR`
     )
       .then((res) => res.json())
       .then((data) => {
         // English comment: 'data' should contain the relative path like "/recordings/...ome.zarr"
         const lastZarrPath = data || "";
         // English comment: build the final URL for VTK viewer
-        // https://hms-dbmi.github.io/vizarr/?source=https://localhost:8001/data/ExperimentController/20250703_122249/20250703_122249_experiment0_0_experiment_0_.ome.zarr
-        // const viewerURL = `https://kitware.github.io/itk-vtk-viewer/app/?rotate=false&fileToLoad=${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/data${lastZarrPath}`;
-        const viewerURL = `https://hms-dbmi.github.io/vizarr/?source=${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/data${lastZarrPath}`;
+        // https://hms-dbmi.github.io/vizarr/?source=https://localhost/imswitch/data/ExperimentController/20250703_122249/20250703_122249_experiment0_0_experiment_0_.ome.zarr
+        // const viewerURL = `https://kitware.github.io/itk-vtk-viewer/app/?rotate=false&fileToLoad=${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/data${lastZarrPath}`;
+        const viewerURL = `https://hms-dbmi.github.io/vizarr/?source=${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/data${lastZarrPath}`;
         window.open(viewerURL, "_blank");
       })
       .catch((err) => {
@@ -187,7 +187,7 @@ const ExperimentComponent = () => {
     console.log("Fetching last OME-Zarr path to open in integrated Vizarr viewer");
     
     fetch(
-      `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/ExperimentController/getLastScanAsOMEZARR`
+      `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/ExperimentController/getLastScanAsOMEZARR`
     )
       .then((res) => res.json())
       .then((data) => {

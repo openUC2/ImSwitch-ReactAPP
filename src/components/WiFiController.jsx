@@ -15,7 +15,7 @@ const WiFiController = () => {
   const hostIP = connectionSettingsState.ip;
 
   // Construct Internet Access URL from backend connection settings
-  // According to developer: if ImSwitch URL is {protocol}://{hostname}:8001/imswitch/index.html
+  // According to developer: if ImSwitch URL is {protocol}://{hostname}/imswitch/ui/index.html
   // then device-admin Internet Access page is {protocol}://{hostname}/admin/panel/internet
   const internetAccessUrl = `${hostIP}/admin/panel/internet?nav=hidden&theme=dark`;
 

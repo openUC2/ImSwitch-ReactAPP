@@ -65,7 +65,7 @@ export const lightTheme = createTheme({
           font-display: swap;
           font-weight: 400;
           src: local('Roboto'),
-               url('/imswitch/fonts/Roboto-Regular.ttf') format('truetype');
+               url('/imswitch/ui/fonts/Roboto-Regular.ttf') format('truetype');
         }
         @font-face {
           font-family: 'Roboto';
@@ -73,7 +73,7 @@ export const lightTheme = createTheme({
           font-display: swap;
           font-weight: 700;
           src: local('Roboto Bold'),
-               url('/imswitch/fonts/Roboto-Bold.ttf') format('truetype');
+               url('/imswitch/ui/fonts/Roboto-Bold.ttf') format('truetype');
         }
       `,
     },

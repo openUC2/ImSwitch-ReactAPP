@@ -5,7 +5,7 @@ import axios from "axios";
 
 /**
  * Get current DPC parameters
- * @param {string} baseUrl - Base URL of the backend API (e.g., "http://localhost:8001")
+ * @param {string} baseUrl - Base URL of the backend API (e.g., "http://localhost/imswitch/api")
  * @returns {Promise<Object>} DPC parameters
  */
 export const getDpcParams = async (baseUrl) => {

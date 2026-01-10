@@ -208,7 +208,7 @@ const ExperimentDesigner = () => {
 
   const handleOpenVizarr = () => {
     fetch(
-      `${connectionSettings.ip}:${connectionSettings.apiPort}/ExperimentController/getLastScanAsOMEZARR`
+      `${connectionSettings.ip}:${connectionSettings.apiPort}/imswitch/api/ExperimentController/getLastScanAsOMEZARR`
     )
       .then((res) => res.json())
       .then((data) => {

@@ -73,7 +73,7 @@ const AutofocusController = ({ hostIP, hostPort }) => {
     try {
       for (const illumination of availableIlluminations) {
         const encodedName = encodeURIComponent(illumination);
-        const response = await fetch(`${ip}:${port}/LaserController/getLaserValue?laserName=${encodedName}`);
+        const response = await fetch(`${ip}:${port}/imswitch/api/LaserController/getLaserValue?laserName=${encodedName}`);
         if (response.ok) {
           const value = await response.json();
           if (value > 0) {
@@ -105,7 +105,7 @@ const AutofocusController = ({ hostIP, hostPort }) => {
   const handleStart = () => {
     // Use selected illumination channel or fallback to currently active one
     const selectedChannel = illuminationChannel || availableIlluminations[0];
-    const url = `${hostIP}:${hostPort}/AutofocusController/autoFocus?rangez=${rangeZ}&resolutionz=${resolutionZ}&defocusz=${defocusZ}&illuminationChannel=${encodeURIComponent(selectedChannel || '')}&tSettle=${tSettle}&isDebug=${isDebug}&nGauss=${nGauss}&nCropsize=${nCropsize}&focusAlgorithm=${focusAlgorithm}&static_offset=${staticOffset}&twoStage=${twoStage}`;
+    const url = `${hostIP}:${hostPort}/imswitch/api/AutofocusController/autoFocus?rangez=${rangeZ}&resolutionz=${resolutionZ}&defocusz=${defocusZ}&illuminationChannel=${encodeURIComponent(selectedChannel || '')}&tSettle=${tSettle}&isDebug=${isDebug}&nGauss=${nGauss}&nCropsize=${nCropsize}&focusAlgorithm=${focusAlgorithm}&static_offset=${staticOffset}&twoStage=${twoStage}`;
     fetch(url, { method: "GET" })
       .then((response) => response.json())
       .then(() => {
@@ -117,7 +117,7 @@ const AutofocusController = ({ hostIP, hostPort }) => {
   };
 
   const handleStop = () => {
-    const url = `${hostIP}:${hostPort}/AutofocusController/stopAutoFocus`;
+    const url = `${hostIP}:${hostPort}/imswitch/api/AutofocusController/stopAutoFocus`;
     fetch(url, { method: "GET" })
       .then((response) => response.json())
       .then(() => dispatch(autofocusSlice.setIsRunning(false)))

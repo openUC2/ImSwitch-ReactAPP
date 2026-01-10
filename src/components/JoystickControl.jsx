@@ -25,7 +25,7 @@ export default function JoystickControl({ hostIP, hostPort }) {
     (async () => {
       try {
         const r = await fetch(
-          `${hostIP}:${hostPort}/PositionerController/getPositionerNames`
+          `${hostIP}:${hostPort}/imswitch/api/PositionerController/getPositionerNames`
         );
         const d = await r.json();
         if (d && d.length > 0) {
@@ -40,7 +40,7 @@ export default function JoystickControl({ hostIP, hostPort }) {
   // Joystick movement functions
   const moveJoystickStage = (axis, distance) => {
     fetch(
-      `${hostIP}:${hostPort}/PositionerController/movePositioner?axis=${axis}&dist=${distance}&isAbsolute=false&isBlocking=false`
+      `${hostIP}:${hostPort}/imswitch/api/PositionerController/movePositioner?axis=${axis}&dist=${distance}&isAbsolute=false&isBlocking=false`
     )
       .then((res) => res.json())
       .catch(console.error);
@@ -52,7 +52,7 @@ export default function JoystickControl({ hostIP, hostPort }) {
       return;
     }
     fetch(
-      `${hostIP}:${hostPort}/PositionerController/homeAxis?positionerName=${positionerName}&axis=${axis}&isBlocking=false`
+      `${hostIP}:${hostPort}/imswitch/api/PositionerController/homeAxis?positionerName=${positionerName}&axis=${axis}&isBlocking=false`
     )
       .then((res) => res.json())
       .catch(console.error);

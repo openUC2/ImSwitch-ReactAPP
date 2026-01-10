@@ -107,7 +107,7 @@ const HoloController = () => {
   const processedImageRef = useRef(null);
 
   // Build stream URLs
-  const baseUrl = `${connectionSettings.ip}:${connectionSettings.apiPort}`;
+  const baseUrl = `${connectionSettings.ip}:${connectionSettings.apiPort}/imswitch/api`;
   const processedStreamUrl = `${baseUrl}/InLineHoloController/mjpeg_stream_inlineholo?startStream=true&jpeg_quality=85`;
 
   // Load initial parameters and state on mount

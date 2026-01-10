@@ -68,7 +68,7 @@ const ConfigurationEditorController = ({ hostIP, hostPort }) => {
   const [showConfigWizard, setShowConfigWizard] = React.useState(false);
 
   const fetchCurrentActiveFilename = useCallback(() => {
-    const url = `${hostIP}:${hostPort}/UC2ConfigController/getCurrentSetupFilename`;
+    const url = `${hostIP}:${hostPort}/imswitch/api/UC2ConfigController/getCurrentSetupFilename`;
     dispatch(uc2Slice.setIsLoadingCurrentFilename(true));
     
     fetch(url)
@@ -111,7 +111,7 @@ const ConfigurationEditorController = ({ hostIP, hostPort }) => {
   }, [hostIP, hostPort, dispatch]);
 
   const fetchAvailableSetups = useCallback(() => {
-    const url = `${hostIP}:${hostPort}/UC2ConfigController/returnAvailableSetups`;
+    const url = `${hostIP}:${hostPort}/imswitch/api/UC2ConfigController/returnAvailableSetups`;
     dispatch(
       setNotification({
         message: "Loading available setups...",
@@ -169,7 +169,7 @@ const ConfigurationEditorController = ({ hostIP, hostPort }) => {
       })
     );
 
-    const url = `${hostIP}:${hostPort}/UC2ConfigController/readSetupFile?setupFileName=${encodeURIComponent(
+    const url = `${hostIP}:${hostPort}/imswitch/api/UC2ConfigController/readSetupFile?setupFileName=${encodeURIComponent(
       fileName
     )}`;
 
@@ -348,7 +348,7 @@ const ConfigurationEditorController = ({ hostIP, hostPort }) => {
       })
     );
 
-    const url = `${hostIP}:${hostPort}/UC2ConfigController/writeNewSetupFile?setupFileName=${encodeURIComponent(
+    const url = `${hostIP}:${hostPort}/imswitch/api/UC2ConfigController/writeNewSetupFile?setupFileName=${encodeURIComponent(
       newFileName
     )}&setAsCurrentConfig=${setAsCurrentConfig}&restart=${restartAfterSave}&overwrite=${overwriteFile}`;
 

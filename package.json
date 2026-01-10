@@ -2,7 +2,7 @@
   "name": "microscope-app",
   "version": "1.4.0",
   "private": true,
-  "homepage": "/imswitch",
+  "homepage": "/imswitch/ui",
   "dependencies": {
     "@blockly/theme-dark": "^8.0.1",
     "@deck.gl/core": "^9.2.1",

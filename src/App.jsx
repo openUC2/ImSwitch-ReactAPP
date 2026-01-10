@@ -135,7 +135,7 @@ function App() {
   */
   // Update fileUploadConfig to use hostIP (with protocol)
   const fileUploadConfig = {
-    url: `${hostIP}:${apiPort}/upload`,
+    url: `${hostIP}:${apiPort}/imswitch/api/FileManager/upload`,
   };
 
   // Fetch Files
@@ -211,7 +211,7 @@ function App() {
   };
 
   const handleOpenWithImJoy = (file) => {
-    const fileUrl = `${hostIP}:${apiPort}/FileManager/download/${file.path}`;
+    const fileUrl = `${hostIP}:${apiPort}/imswitch/api/FileManager/download/${file.path}`;
     setSharedImage({
       url: fileUrl,
       name: file.name,
@@ -249,7 +249,7 @@ function App() {
 
   // change API url/port and update filelist
   useEffect(() => {
-    api.defaults.baseURL = `${hostIP}:${apiPort}/FileManager`;
+    api.defaults.baseURL = `${hostIP}:${apiPort}/imswitch/api/FileManager`;
     handleRefresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hostIP, apiPort]);
@@ -274,7 +274,7 @@ function App() {
   PLUGIN LOADING from ImSwitch
   */
   function loadRemote({ remote, scope, exposed }) {
-    const url = `${hostIP}:${apiPort}${remote}`;
+    const url = `${hostIP}:${apiPort}/imswitch/api${remote}`;
 
     return new Promise((resolve, reject) => {
       if (!document.querySelector(`script[data-mf="${scope}"]`)) {
@@ -321,7 +321,7 @@ function App() {
       const fetchPlugins = async () => {
         try {
           // Construct the API URL dynamically using hostIP and apiPort
-          const apiUrl = `${hostIP}:${apiPort}/plugins`;
+          const apiUrl = `${hostIP}:${apiPort}/imswitch/api/plugins`;
 
           // Fetch the plugin data
           const response = await fetch(apiUrl);
@@ -453,7 +453,7 @@ function App() {
               >
                 <FileManager
                   key={`fm-${storageRefreshKey}`} // Force remount on storage change
-                  baseUrl={`${hostIP}:${apiPort}`}
+                  baseUrl={`${hostIP}:${apiPort}/imswitch/api`}
                   files={files}
                   fileUploadConfig={fileUploadConfig}
                   isLoading={isLoading}
@@ -470,7 +470,7 @@ function App() {
                   layout="list"
                   enableFilePreview
                   maxFileSize={10485760}
-                  filePreviewPath={`${hostIP}:${apiPort}/`}
+                  filePreviewPath={`${hostIP}:${apiPort}/imswitch/api`}
                   acceptedFileTypes=".txt, .png, .jpg, .jpeg, .pdf, .doc, .docx, .exe, .js, .csv"
                   initialPath={fileManagerInitialPath}
                 />

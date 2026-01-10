@@ -151,10 +151,10 @@ const VizarrViewer = ({
     }
     
     // Build URL from connection settings
-    // Check if zarrUrl already starts with /data/ to avoid double prefix
-    const urlPath = zarrUrl.startsWith("/data/") || zarrUrl.startsWith("/data") 
+    // Check if zarrUrl already starts with /imswitch/data/ to avoid double prefix
+    const urlPath = zarrUrl.startsWith("/imswitch/data/") || zarrUrl.startsWith("/imswitch/data") 
       ? zarrUrl 
-      : `/data${zarrUrl}`;
+      : `/imswitch/data${zarrUrl}`;
     return `${connectionSettings.ip}:${connectionSettings.apiPort}${urlPath}`;
   }, [zarrUrl, connectionSettings.ip, connectionSettings.apiPort]);
   

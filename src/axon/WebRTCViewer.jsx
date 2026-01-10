@@ -32,7 +32,7 @@ const WebRTCViewer = ({ detectorName, onDoubleClick }) => {
   const connectionSettings = useSelector(
     (state) => state.connectionSettingsState
   );
-  const baseUrl = `${connectionSettings.ip}:${connectionSettings.apiPort}`;
+  const baseUrl = `${connectionSettings.ip}:${connectionSettings.apiPort}/imswitch/api`;
 
   // Detect if connection is local
   const isLocalConnection = useCallback(() => {

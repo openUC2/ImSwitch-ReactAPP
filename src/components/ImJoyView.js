@@ -51,7 +51,7 @@ const ImJoyView = ({ sharedImage }) => {
     if (!imjoyAPI) return;
     try {
       const response = await fetch(
-        `${hostIP}:${hostPort}/RecordingController/snapNumpyToFastAPI?resizeFactor=1`
+        `${hostIP}:${hostPort}/imswitch/api/RecordingController/snapNumpyToFastAPI?resizeFactor=1`
       );
       const arrayBuffer = await response.arrayBuffer();
       let ij = await imjoyAPI.getWindow("ImageJ.JS");

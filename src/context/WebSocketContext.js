@@ -10,6 +10,7 @@ export const WebSocketProvider = ({ hostIP, children }) => {
   useEffect(() => {
     console.log("Connecting to WebSocket server:", hostIP, wsPort);
     const socket = io(`${hostIP}:8002`, {
+      path: '/imswitch/socket.io/',
       transports: ["websocket"],
     });
 

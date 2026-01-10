@@ -30,7 +30,7 @@ describe('FocusLockController', () => {
     
     render(
       <Provider store={store}>
-        <FocusLockController hostIP="http://localhost" hostPort="8001" />
+        <FocusLockController hostIP="http://localhost" hostPort="80" />
       </Provider>
     );
     
@@ -45,7 +45,7 @@ describe('FocusLockController', () => {
     
     render(
       <Provider store={store}>
-        <FocusLockController hostIP="http://localhost" hostPort="8001" />
+        <FocusLockController hostIP="http://localhost" hostPort="80" />
       </Provider>
     );
     

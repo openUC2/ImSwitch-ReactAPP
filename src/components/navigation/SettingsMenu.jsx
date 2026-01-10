@@ -65,7 +65,7 @@ const SettingsMenu = ({ onNavigate }) => {
   const allowAccess = isBackendConnected || isDeveloperMode;
 
   // API endpoint for disk usage - following Copilot Instructions for API communication
-  const base = `${connectionSettings.ip}:${connectionSettings.apiPort}/UC2ConfigController`;
+  const base = `${connectionSettings.ip}:${connectionSettings.apiPort}/imswitch/api/UC2ConfigController`;
 
   // Fetch disk usage when backend is connected - following Copilot Instructions
   useEffect(() => {
@@ -248,7 +248,7 @@ const SettingsMenu = ({ onNavigate }) => {
               color="text.secondary"
               sx={{ display: "block", mb: 1 }}
             >
-              {connectionSettings.ip}:{connectionSettings.apiPort}
+              {connectionSettings.ip}:{connectionSettings.apiPort}/imswitch
             </Typography>
           )}
           {!hasConnectionSettings && (

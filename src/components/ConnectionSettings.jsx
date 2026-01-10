@@ -70,8 +70,8 @@ function ConnectionSettings() {
       protocol: isHttps ? "https://" : "http://",
       hostname: location.hostname,
       // Use current port if available. If empty on HTTPS, it implies 443.
-      // Default to 8001 only on non-standard HTTP setups.
-      port: location.port || (isHttps ? "443" : "8001"),
+      // Default to 80 only on non-standard HTTP setups.
+      port: location.port || (isHttps ? "443" : "80"),
     };
   };
 
@@ -437,7 +437,7 @@ function ConnectionSettings() {
             </AccordionSummary>
             <AccordionDetails>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Both services typically run on port 8001. Only change these if
+                Both services typically run on port 80. Only change these if
                 you have a custom setup.
               </Typography>
 
@@ -457,7 +457,7 @@ function ConnectionSettings() {
                   value={websocketPort}
                   onChange={(e) => setWebsocketPortState(e.target.value.trim())}
                   fullWidth
-                  placeholder="e.g., 8001"
+                  placeholder="e.g., 80"
                 />
 
                 {/* API Port */}
@@ -468,7 +468,7 @@ function ConnectionSettings() {
                   value={apiPort}
                   onChange={(e) => setApiPortState(e.target.value.trim())}
                   fullWidth
-                  placeholder="e.g., 8001"
+                  placeholder="e.g., 80"
                 />
               </Box>
             </AccordionDetails>
@@ -501,7 +501,7 @@ function ConnectionSettings() {
                         )
                           ? `:${apiPort}`
                           : ""
-                      }`}
+                      }/imswitch/api`}
                     />
                     <Chip
                       label={isBackendConnected ? "Connected" : "Disconnected"}
@@ -529,7 +529,7 @@ function ConnectionSettings() {
                           )
                             ? `:${websocketPort}`
                             : ""
-                        }`}
+                        }/imswitch/socket.io`}
                       />
                       <Chip
                         label={getWebSocketStatusLabel(websocketTestStatus)}
@@ -638,7 +638,7 @@ function ConnectionSettings() {
               </ListItemIcon>
               <ListItemText
                 primary="Local Development"
-                secondary="IP: localhost, API Port: 8000, WebSocket Port: 8001"
+                secondary="IP: localhost, API Port: 8000, WebSocket Port: 80"
               />
             </ListItem>
             <ListItem>
