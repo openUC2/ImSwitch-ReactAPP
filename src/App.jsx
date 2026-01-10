@@ -38,6 +38,7 @@ import VizarrViewer from "./components/VizarrViewer.jsx";
 import { JupyterProvider } from "./context/JupyterContext.js";
 import DemoController from "./components/DemoController.js";
 import AcceptanceTestComponent from "./components/AcceptanceTestComponent.jsx";
+import StageCenterCalibrationWizard from "./components/StageCenterCalibrationWizard.js";
 
 // ImSwitch Navigation Drawer
 import { NavigationDrawer, TopBar } from "./components/navigation";
@@ -426,6 +427,7 @@ function App() {
           {selectedPlugin === "Stresstest" && <StresstestController />}
           {selectedPlugin === "FocusLock" && <FocusLockController />}
           {selectedPlugin === "AcceptanceTest" && <AcceptanceTestComponent />}
+          {selectedPlugin === "StageCenterCalibration" && <StageCenterCalibrationWizard />}
           {selectedPlugin === "HoloController" && <HoloController />}
           {selectedPlugin === "DPCController" && <DPCController />}
           {selectedPlugin === "JupyterNotebook" && (

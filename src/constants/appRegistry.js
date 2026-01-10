@@ -364,6 +364,26 @@ export const APP_REGISTRY = {
     ],
     pluginId: "AcceptanceTest",
   },
+
+  StageCenterCalibration: {
+    id: "StageCenterCalibration",
+    name: "Stage Center Calibration",
+    description:
+      "Wizard-guided calibration of stage center position. Interactive tools to accurately define the center of the microscope stage.",
+    category: APP_CATEGORIES.SYSTEM,
+    icon: TuneIcon,
+    enabled: false,
+    essential: false,
+    keywords: [
+      "stage",
+      "center",
+      "calibration",
+      "wizard",
+      "interactive",
+      "positioning",
+    ],
+    pluginId: "StageCenterCalibration",
+  },  
   
   holoController: {
     id: "holoController",
