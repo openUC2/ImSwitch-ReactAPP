@@ -47,10 +47,12 @@ import {
   Assessment as ReportIcon,
   Download as DownloadIcon
 } from '@mui/icons-material';
+import { useDispatch, useSelector } from "react-redux";
 
 // Import LiveView component
 import LiveViewControlWrapper from '../axon/LiveViewControlWrapper';
 
+import * as connectionSettingsSlice from "../state/slices/ConnectionSettingsSlice.js";
 // Import API functions
 import apiAcceptanceTestControllerHomeAxisX from '../backendapi/apiAcceptanceTestControllerHomeAxisX';
 import apiAcceptanceTestControllerHomeAxisY from '../backendapi/apiAcceptanceTestControllerHomeAxisY';
@@ -79,6 +81,8 @@ const AcceptanceTestComponent = () => {
   // Centralized decision storage - THIS IS THE KEY FIX
   // Structure: { testId: 'yes' | 'no' | 'skip' }
   const [decisions, setDecisions] = useState({});
+  
+  const connectionSettings = useSelector(connectionSettingsSlice.getConnectionSettingsState);
   
   // Track which actions have been started (for enabling Yes/No buttons)
   // Structure: { testId: boolean }
@@ -939,7 +943,7 @@ const AcceptanceTestComponent = () => {
                         const value = e.target.value;
                         setExposure(value);
                         try {
-                          await fetch(`http://localhost/imswitch/api/SettingsController/setDetectorExposureTime?exposureTime=${value}`);
+                          await fetch(`${connectionSettings.ip}:${connectionSettings.apiPort}/imswitch/api/SettingsController/setDetectorExposureTime?exposureTime=${value}`);
                         } catch (err) {
                           console.error('Error setting exposure:', err);
                         }
@@ -956,7 +960,7 @@ const AcceptanceTestComponent = () => {
                         const value = e.target.value;
                         setGain(value);
                         try {
-                          await fetch(`http://localhost/imswitch/api/SettingsController/setDetectorGain?gain=${value}`);
+                          await fetch(`${connectionSettings.ip}:${connectionSettings.apiPort}/imswitch/api/SettingsController/setDetectorGain?gain=${value}`);
                         } catch (err) {
                           console.error('Error setting gain:', err);
                         }

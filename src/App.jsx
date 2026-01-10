@@ -453,7 +453,7 @@ function App() {
               >
                 <FileManager
                   key={`fm-${storageRefreshKey}`} // Force remount on storage change
-                  baseUrl={`${hostIP}:${apiPort}/imswitch`}
+                  baseUrl={`${hostIP}:${apiPort}/imswitch/api`}
                   files={files}
                   fileUploadConfig={fileUploadConfig}
                   isLoading={isLoading}
@@ -470,7 +470,7 @@ function App() {
                   layout="list"
                   enableFilePreview
                   maxFileSize={10485760}
-                  filePreviewPath={`${hostIP}:${apiPort}/imswitch`}
+                  filePreviewPath={`${hostIP}:${apiPort}/imswitch/api`}
                   acceptedFileTypes=".txt, .png, .jpg, .jpeg, .pdf, .doc, .docx, .exe, .js, .csv"
                   initialPath={fileManagerInitialPath}
                 />
