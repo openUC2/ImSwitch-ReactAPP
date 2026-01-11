@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import createAxiosInstance from '../backendapi/createAxiosInstance';
 
 import { Button, ButtonGroup, LinearProgress } from "@mui/material";
 
@@ -161,10 +162,11 @@ const ExperimentComponent = () => {
     console.log("Fetching last OME-Zarr path to open in VTK viewer");
     //    setfullURL(${omeZarrState.zarrUrl}`); // Switch to https if needed
 
-    fetch(
-      `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/ExperimentController/getLastScanAsOMEZARR`
+    const api = createAxiosInstance();
+    api.get(
+      `/ExperimentController/getLastScanAsOMEZARR`
     )
-      .then((res) => res.json())
+      .then((res) => res.data)
       .then((data) => {
         // English comment: 'data' should contain the relative path like "/recordings/...ome.zarr"
         const lastZarrPath = data || "";
@@ -186,10 +188,11 @@ const ExperimentComponent = () => {
   const handleOpenOfflineVizarr = () => {
     console.log("Fetching last OME-Zarr path to open in integrated Vizarr viewer");
     
-    fetch(
-      `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/ExperimentController/getLastScanAsOMEZARR`
+    const api = createAxiosInstance();
+    api.get(
+      `/ExperimentController/getLastScanAsOMEZARR`
     )
-      .then((res) => res.json())
+      .then((res) => res.data)
       .then((data) => {
         // English comment: 'data' should contain the relative path like "/recordings/...ome.zarr"
         const lastZarrPath = data || "";

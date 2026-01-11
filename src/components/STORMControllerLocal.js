@@ -1,6 +1,7 @@
 // src/components/STORMControllerLocal.js
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import createAxiosInstance from '../backendapi/createAxiosInstance';
 import {
   Paper,
   Tabs,
@@ -241,12 +242,12 @@ const STORMControllerLocal = () => {
   // Load image from backend and stretch
   const handleLoadImage = async () => {
     try {
-      const response = await fetch(
-        `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/RecordingController/snapNumpyToFastAPI?resizeFactor=1`
+      const api = createAxiosInstance();
+      const response = await api.get(
+        `/RecordingController/snapNumpyToFastAPI?resizeFactor=1`,
+        { responseType: 'blob' }
       );
-      if (!response.ok) throw new Error("Failed to load image");
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
+      const url = URL.createObjectURL(response.data);
       const img = new window.Image();
       img.onload = async () => {
         setImageDims({ width: img.naturalWidth, height: img.naturalHeight });

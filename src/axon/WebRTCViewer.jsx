@@ -32,6 +32,7 @@ const WebRTCViewer = ({ detectorName, onDoubleClick }) => {
   const connectionSettings = useSelector(
     (state) => state.connectionSettingsState
   );
+  // Build base URL for WebRTC streaming - requires full URL
   const baseUrl = `${connectionSettings.ip}:${connectionSettings.apiPort}/imswitch/api`;
 
   // Detect if connection is local

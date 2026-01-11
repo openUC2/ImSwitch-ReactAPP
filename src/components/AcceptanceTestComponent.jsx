@@ -33,8 +33,9 @@ import {
   TableRow,
   Paper,
   Chip,
-  Divider
+  Divider,
 } from '@mui/material';
+import createAxiosInstance from '../backendapi/createAxiosInstance';
 import {
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
@@ -943,7 +944,8 @@ const AcceptanceTestComponent = () => {
                         const value = e.target.value;
                         setExposure(value);
                         try {
-                          await fetch(`${connectionSettings.ip}:${connectionSettings.apiPort}/imswitch/api/SettingsController/setDetectorExposureTime?exposureTime=${value}`);
+                          const api = createAxiosInstance();
+                          await api.get(`/SettingsController/setDetectorExposureTime?exposureTime=${value}`);
                         } catch (err) {
                           console.error('Error setting exposure:', err);
                         }
@@ -960,7 +962,8 @@ const AcceptanceTestComponent = () => {
                         const value = e.target.value;
                         setGain(value);
                         try {
-                          await fetch(`${connectionSettings.ip}:${connectionSettings.apiPort}/imswitch/api/SettingsController/setDetectorGain?gain=${value}`);
+                          const api = createAxiosInstance();
+                          await api.get(`/SettingsController/setDetectorGain?gain=${value}`);
                         } catch (err) {
                           console.error('Error setting gain:', err);
                         }

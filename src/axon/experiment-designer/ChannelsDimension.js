@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import createAxiosInstance from '../../backendapi/createAxiosInstance';
 import {
   Box,
   Typography,
@@ -290,32 +291,33 @@ const ChannelsDimension = () => {
     if (laserName && connectionSettings.ip && connectionSettings.apiPort) {
       try {
         // First, turn off all other channels
+        const api = createAxiosInstance();
         for (let i = 0; i < illuSources.length; i++) {
           if (i !== index) {
             const otherLaserName = illuSources[i];
             const encodedOtherLaserName = encodeURIComponent(otherLaserName);
-            await fetch(
-              `${connectionSettings.ip}:${connectionSettings.apiPort}/imswitch/api/LaserController/setLaserValue?laserName=${encodedOtherLaserName}&value=0`
+            await api.get(
+              `/LaserController/setLaserValue?laserName=${encodedOtherLaserName}&value=0`
             );
           }
         }
 
         // Then set the selected channel with its intensity
         const encodedLaserName = encodeURIComponent(laserName);
-        await fetch(
-          `${connectionSettings.ip}:${connectionSettings.apiPort}/imswitch/api/LaserController/setLaserValue?laserName=${encodedLaserName}&value=${value}`
+        await api.get(
+          `/LaserController/setLaserValue?laserName=${encodedLaserName}&value=${value}`
         );
 
         // Also send exposure time and gain for this channel
         const currentExposure = exposures[index] ?? 100;
         const currentGain = gains[index] ?? 0;
         
-        await fetch(
-          `${connectionSettings.ip}:${connectionSettings.apiPort}/imswitch/api/SettingsController/setDetectorExposureTime?exposureTime=${currentExposure}`
+        await api.get(
+          `/SettingsController/setDetectorExposureTime?exposureTime=${currentExposure}`
         );
         
-        await fetch(
-          `${connectionSettings.ip}:${connectionSettings.apiPort}/imswitch/api/SettingsController/setDetectorGain?gain=${currentGain}`
+        await api.get(
+          `/SettingsController/setDetectorGain?gain=${currentGain}`
         );
       } catch (error) {
         console.error("Failed to update laser intensity:", error);
@@ -331,8 +333,9 @@ const ChannelsDimension = () => {
     dispatch(experimentSlice.setExposureTimes(arr));
     // update backend immediately for real-time feedback
     if ( connectionSettings.ip && connectionSettings.apiPort) {
-      fetch(
-        `${connectionSettings.ip}:${connectionSettings.apiPort}/imswitch/api/SettingsController/setDetectorExposureTime?exposureTime=${value}`
+      const api = createAxiosInstance();
+      api.get(
+        `/SettingsController/setDetectorExposureTime?exposureTime=${value}`
       ).catch((error) => {
         console.error("Failed to update detector exposure time:", error);
       });
@@ -346,8 +349,9 @@ const ChannelsDimension = () => {
     dispatch(experimentSlice.setGains(arr));
     // update backend immediately for real-time feedback
     if (connectionSettings.ip && connectionSettings.apiPort) {
-      fetch(
-        `${connectionSettings.ip}:${connectionSettings.apiPort}/imswitch/api/SettingsController/setDetectorGain?gain=${value}`
+      const api = createAxiosInstance();
+      api.get(
+        `/SettingsController/setDetectorGain?gain=${value}`
       ).catch((error) => {
         console.error("Failed to update detector gain:", error);
       });
