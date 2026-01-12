@@ -1,3 +1,5 @@
+Note: this repo has been merged into github.com/openUC2/ImSwitch; development and maintenance will continue there.
+
 # React Frontend for ImSwitch
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
