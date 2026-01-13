@@ -47,13 +47,11 @@ const ChannelBlock = ({
   gain,
   minIntensity,
   maxIntensity,
-  performanceMode,
   isExpanded,
   onToggleExpand,
   onIntensityChange,
   onExposureChange,
   onGainChange,
-  onPerformanceModeChange,
   onRemove,
 }) => {
   const theme = useTheme();
@@ -187,19 +185,7 @@ const ChannelBlock = ({
             </Box>
           </Box>
 
-          {/* Performance Mode */}
-          <FormControlLabel
-            control={
-              <Switch
-                size="small"
-                checked={performanceMode}
-                onChange={(e) => onPerformanceModeChange(e.target.checked)}
-              />
-            }
-            label={
-              <Typography variant="caption">Performance Mode</Typography>
-            }
-          />
+          {/* Performance Mode toggle removed - now in OutputDimension */}
         </Box>
       </Collapse>
     </Box>
@@ -438,15 +424,11 @@ const ChannelsDimension = () => {
             gain={gains[idx] ?? 0}
             minIntensity={parameterRange.illuSourceMinIntensities?.[idx] ?? 0}
             maxIntensity={parameterRange.illuSourceMaxIntensities?.[idx] ?? 1023}
-            performanceMode={parameterValue.performanceMode ?? false}
             isExpanded={expandedChannels[idx] ?? idx === 0}
             onToggleExpand={() => toggleChannelExpand(idx)}
             onIntensityChange={(val) => handleIntensityChange(idx, val)}
             onExposureChange={(val) => handleExposureChange(idx, val)}
             onGainChange={(val) => handleGainChange(idx, val)}
-            onPerformanceModeChange={(val) =>
-              dispatch(experimentSlice.setPerformanceMode(val))
-            }
           />
         ))
       )}

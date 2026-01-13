@@ -11,11 +11,19 @@ import {
   Chip,
   Tooltip,
   IconButton,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Divider,
 } from "@mui/material";
 import { useTheme, alpha } from "@mui/material/styles";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import InfoIcon from "@mui/icons-material/Info";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import SpeedIcon from "@mui/icons-material/Speed";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 
 import * as experimentSlice from "../../state/slices/ExperimentSlice";
 import * as experimentUISlice from "../../state/slices/ExperimentUISlice";
@@ -99,6 +107,164 @@ const OutputDimension = () => {
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column" }}>
+      {/* Performance Mode Section */}
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600, display: "flex", alignItems: "center", gap: 1 }}>
+          <SpeedIcon fontSize="small" />
+          Acquisition Mode
+        </Typography>
+
+        {/* Performance Mode Toggle */}
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "flex-start",
+            p: 2,
+            border: `2px solid ${parameterValue.performanceMode ? theme.palette.warning.main : theme.palette.divider}`,
+            borderRadius: 1,
+            backgroundColor: parameterValue.performanceMode 
+              ? alpha(theme.palette.warning.main, 0.08) 
+              : "transparent",
+            mb: 2,
+          }}
+        >
+          <Switch
+            checked={parameterValue.performanceMode || false}
+            onChange={(e) => dispatch(experimentSlice.setPerformanceMode(e.target.checked))}
+            color="warning"
+            sx={{ mr: 1.5, mt: -0.5 }}
+          />
+          
+          <Box sx={{ flex: 1 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                Performance Mode (Hardware Triggering)
+              </Typography>
+              {parameterValue.performanceMode && (
+                <Chip
+                  label="Active"
+                  size="small"
+                  color="warning"
+                  sx={{ fontSize: "0.65rem", height: "18px" }}
+                />
+              )}
+            </Box>
+            <Typography variant="caption" color="textSecondary">
+              Offloads timing-critical operations to the microcontroller for maximum speed. 
+              Stage movement, illumination switching, and camera triggering are handled by hardware.
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* Performance Mode Settings (shown when enabled) */}
+        {parameterValue.performanceMode && (
+          <Box
+            sx={{
+              p: 2,
+              border: `1px solid ${theme.palette.divider}`,
+              borderRadius: 1,
+              backgroundColor: alpha(theme.palette.background.paper, 0.5),
+            }}
+          >
+            {/* Trigger Mode Selection */}
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="caption" sx={{ fontWeight: 500, mb: 1, display: "block" }}>
+                Trigger Mode
+              </Typography>
+              <FormControl size="small" fullWidth>
+                <Select
+                  value={parameterValue.performanceTriggerMode || "hardware"}
+                  onChange={(e) => dispatch(experimentSlice.setPerformanceTriggerMode(e.target.value))}
+                >
+                  <MenuItem value="hardware">
+                    <Box>
+                      <Typography variant="body2">Hardware Trigger (External)</Typography>
+                      <Typography variant="caption" color="textSecondary">
+                        Camera triggered via TTL signal from microcontroller
+                      </Typography>
+                    </Box>
+                  </MenuItem>
+                  <MenuItem value="software">
+                    <Box>
+                      <Typography variant="body2">Software Trigger (Callback)</Typography>
+                      <Typography variant="caption" color="textSecondary">
+                        Camera triggered via software when receiving {"{"}"cam":1{"}"} signal
+                      </Typography>
+                    </Box>
+                  </MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+
+            {/* Timing Parameters */}
+            <Box sx={{ display: "flex", gap: 2 }}>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="caption" sx={{ fontWeight: 500, mb: 0.5, display: "block" }}>
+                  tPre (Settle Time)
+                </Typography>
+                <TextField
+                  type="number"
+                  size="small"
+                  fullWidth
+                  value={parameterValue.performanceTPreMs || 90}
+                  onChange={(e) => dispatch(experimentSlice.setPerformanceTPreMs(Number(e.target.value)))}
+                  InputProps={{
+                    endAdornment: <Typography variant="caption" sx={{ ml: 1 }}>ms</Typography>,
+                  }}
+                  inputProps={{ min: 0, step: 10 }}
+                />
+                <Typography variant="caption" color="textSecondary" sx={{ mt: 0.5, display: "block" }}>
+                  Time before exposure (stage settling)
+                </Typography>
+              </Box>
+
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="caption" sx={{ fontWeight: 500, mb: 0.5, display: "block" }}>
+                  tPost (Exposure)
+                </Typography>
+                <TextField
+                  type="number"
+                  size="small"
+                  fullWidth
+                  value={parameterValue.performanceTPostMs || 50}
+                  onChange={(e) => dispatch(experimentSlice.setPerformanceTPostMs(Number(e.target.value)))}
+                  InputProps={{
+                    endAdornment: <Typography variant="caption" sx={{ ml: 1 }}>ms</Typography>,
+                  }}
+                  inputProps={{ min: 0, step: 10 }}
+                />
+                <Typography variant="caption" color="textSecondary" sx={{ mt: 0.5, display: "block" }}>
+                  Exposure/acquisition time
+                </Typography>
+              </Box>
+            </Box>
+
+            {/* Warning for software trigger mode */}
+            {parameterValue.performanceTriggerMode === "software" && (
+              <Box
+                sx={{
+                  mt: 2,
+                  p: 1.5,
+                  borderRadius: 1,
+                  backgroundColor: alpha(theme.palette.info.main, 0.08),
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 1,
+                }}
+              >
+                <InfoIcon sx={{ fontSize: 16, color: theme.palette.info.main, mt: 0.25 }} />
+                <Typography variant="caption" color="textSecondary">
+                  Software trigger mode uses callbacks from the microcontroller to trigger the camera. 
+                  This allows for more flexibility but may have slightly higher latency than hardware triggering.
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        )}
+      </Box>
+
+      <Divider sx={{ mb: 3 }} />
+
       {/* Format Selection */}
       <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
         Output Formats
