@@ -334,6 +334,35 @@ const SettingsMenu = ({ onNavigate }) => {
           />
         </MenuItem>
 
+        {/* Motor Settings - Motor configuration per axis */}
+        <MenuItem
+          onClick={() => handleNavigationClick("MotorSettings")}
+          disabled={!allowAccess}
+          sx={{
+            opacity: allowAccess ? 1 : 0.5,
+            "&.Mui-disabled": {
+              opacity: 0.5,
+            },
+          }}
+        >
+          <ListItemIcon>
+            <Tune
+              fontSize="small"
+              color={allowAccess ? "inherit" : "disabled"}
+            />
+          </ListItemIcon>
+          <ListItemText
+            primary="Motor Settings"
+            secondary={
+              allowAccess
+                ? isDeveloperMode && !isBackendConnected
+                  ? "Stepsize, homing, TMC config (Developer Mode)"
+                  : "Stepsize, homing, TMC config"
+                : "Requires backend connection"
+            }
+          />
+        </MenuItem>
+
         {/* ImSwitch Backend Settings */}
         <MenuItem
           onClick={() => handleNavigationClick("UC2")}
