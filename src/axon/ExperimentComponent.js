@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import createAxiosInstance from '../backendapi/createAxiosInstance';
 
 import { Button, ButtonGroup, LinearProgress } from "@mui/material";
 
@@ -159,19 +160,20 @@ const ExperimentComponent = () => {
 
   const handleOpenVTKViewer = () => {
     console.log("Fetching last OME-Zarr path to open in VTK viewer");
-    //    setfullURL(${omeZarrState.zarrUrl}`); // Switch to https if needed
 
-    fetch(
-      `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/ExperimentController/getLastScanAsOMEZARR`
+    const api = createAxiosInstance();
+    api.get(
+      `/ExperimentController/getLastScanAsOMEZARR`
     )
-      .then((res) => res.json())
+      .then((res) => res.data)
       .then((data) => {
         // English comment: 'data' should contain the relative path like "/recordings/...ome.zarr"
         const lastZarrPath = data || "";
         // English comment: build the final URL for VTK viewer
-        // https://hms-dbmi.github.io/vizarr/?source=https://localhost/imswitch/data/ExperimentController/20250703_122249/20250703_122249_experiment0_0_experiment_0_.ome.zarr
-        // const viewerURL = `https://kitware.github.io/itk-vtk-viewer/app/?rotate=false&fileToLoad=${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/data${lastZarrPath}`;
-        const viewerURL = `https://hms-dbmi.github.io/vizarr/?source=${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/data${lastZarrPath}`;
+        // Determine protocol based on current page or use http as default for local development
+        const protocol = window.location.protocol === 'https:' ? 'https' : 'http';
+        const viewerURL = `https://hms-dbmi.github.io/vizarr/?source=${protocol}://${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/data${lastZarrPath}`;
+        console.log("Opening Vizarr with URL:", viewerURL);
         window.open(viewerURL, "_blank");
       })
       .catch((err) => {
@@ -186,10 +188,11 @@ const ExperimentComponent = () => {
   const handleOpenOfflineVizarr = () => {
     console.log("Fetching last OME-Zarr path to open in integrated Vizarr viewer");
     
-    fetch(
-      `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/ExperimentController/getLastScanAsOMEZARR`
+    const api = createAxiosInstance();
+    api.get(
+      `/ExperimentController/getLastScanAsOMEZARR`
     )
-      .then((res) => res.json())
+      .then((res) => res.data)
       .then((data) => {
         // English comment: 'data' should contain the relative path like "/recordings/...ome.zarr"
         const lastZarrPath = data || "";

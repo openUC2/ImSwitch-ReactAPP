@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import createAxiosInstance from '../../backendapi/createAxiosInstance';
 import {
   IconButton,
   Menu,
@@ -64,9 +65,6 @@ const SettingsMenu = ({ onNavigate }) => {
   // Developer Override: Allow access to all features when developer mode is active
   const allowAccess = isBackendConnected || isDeveloperMode;
 
-  // API endpoint for disk usage - following Copilot Instructions for API communication
-  const base = `${connectionSettings.ip}:${connectionSettings.apiPort}/imswitch/api/UC2ConfigController`;
-
   // Fetch disk usage when backend is connected - following Copilot Instructions
   useEffect(() => {
     // Only fetch if backend is connected and menu is open
@@ -77,20 +75,17 @@ const SettingsMenu = ({ onNavigate }) => {
 
     const fetchDiskUsage = async () => {
       try {
-        const response = await fetch(`${base}/getDiskUsage`);
-        if (response.ok) {
-          const data = await response.json();
+        const api = createAxiosInstance();
+        const response = await api.get('/UC2ConfigController/getDiskUsage');
+        const data = response.data;
 
-          // Handle the actual API response format - direct number
-          const usage = formatDiskUsage(data);
+        // Handle the actual API response format - direct number
+        const usage = formatDiskUsage(data);
 
-          setDiskUsage(usage);
-        } else {
-          console.error("Failed to fetch disk usage:", response.status);
-          setDiskUsage("Error");
-        }
+        setDiskUsage(usage);
       } catch (error) {
         console.error("Error fetching disk usage:", error);
+        setDiskUsage("Error");
         setDiskUsage("Error");
       }
     };
@@ -101,7 +96,7 @@ const SettingsMenu = ({ onNavigate }) => {
     // Refresh every 30 seconds while menu is open
     const intervalId = setInterval(fetchDiskUsage, 30000);
     return () => clearInterval(intervalId);
-  }, [base, isBackendConnected, open]);
+  }, [isBackendConnected, open]);
 
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
@@ -334,6 +329,35 @@ const SettingsMenu = ({ onNavigate }) => {
                 ? isDeveloperMode && !isBackendConnected
                   ? "Hardware configuration (Developer Mode)"
                   : "Hardware configuration"
+                : "Requires backend connection"
+            }
+          />
+        </MenuItem>
+
+        {/* Motor Settings - Motor configuration per axis */}
+        <MenuItem
+          onClick={() => handleNavigationClick("MotorSettings")}
+          disabled={!allowAccess}
+          sx={{
+            opacity: allowAccess ? 1 : 0.5,
+            "&.Mui-disabled": {
+              opacity: 0.5,
+            },
+          }}
+        >
+          <ListItemIcon>
+            <Tune
+              fontSize="small"
+              color={allowAccess ? "inherit" : "disabled"}
+            />
+          </ListItemIcon>
+          <ListItemText
+            primary="Motor Settings"
+            secondary={
+              allowAccess
+                ? isDeveloperMode && !isBackendConnected
+                  ? "Stepsize, homing, TMC config (Developer Mode)"
+                  : "Stepsize, homing, TMC config"
                 : "Requires backend connection"
             }
           />

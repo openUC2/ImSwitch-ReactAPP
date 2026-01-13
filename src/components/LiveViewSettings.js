@@ -1,6 +1,7 @@
 // src/components/LiveViewSettings.js
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import createAxiosInstance from '../backendapi/createAxiosInstance';
 import {
   Box,
   Typography,
@@ -37,13 +38,12 @@ const LiveViewSettings = () => {
     const fetchDetectorGain = async () => {
       if (connectionSettingsState.ip && connectionSettingsState.apiPort) {
         try {
-          const response = await fetch(
-            `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/SettingsController/getDetectorParameters`
+          const api = createAxiosInstance();
+          const response = await api.get(
+            `/SettingsController/getDetectorParameters`
           );
-          if (response.ok) {
-            const data = await response.json();
-            setDetectorGain(data.gain || 0);
-          }
+          const data = response.data;
+          setDetectorGain(data.gain || 0);
         } catch (error) {
           console.error("Error fetching detector gain:", error);
         }
@@ -73,18 +73,17 @@ const LiveViewSettings = () => {
         // Fetch current laser values from backend
         if (connectionSettingsState.ip && connectionSettingsState.apiPort) {
           try {
+            const api = createAxiosInstance();
             const laserValues = await Promise.all(
               parameterRangeState.illuSources.map(async (laserName) => {
                 try {
                   const encodedLaserName = encodeURIComponent(laserName);
-                  const response = await fetch(
-                    `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/LaserController/getLaserValue?laserName=${encodedLaserName}`
+                  const response = await api.get(
+                    `/LaserController/getLaserValue?laserName=${encodedLaserName}`
                   );
                   
-                  if (response.ok) {
-                    const value = await response.json();
-                    return { laserName, value: typeof value === 'number' ? value : 0 };
-                  }
+                  const value = response.data;
+                  return { laserName, value: typeof value === 'number' ? value : 0 };
                 } catch (error) {
                   console.warn(`Failed to fetch value for laser ${laserName}:`, error);
                 }
@@ -151,8 +150,9 @@ const LiveViewSettings = () => {
     // Update backend immediately
     if (connectionSettingsState.ip && connectionSettingsState.apiPort) {
       try {
-        await fetch(
-          `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/SettingsController/setDetectorExposureTime?exposureTime=${newValue}`
+        const api = createAxiosInstance();
+        await api.get(
+          `/SettingsController/setDetectorExposureTime?exposureTime=${newValue}`
         );
       } catch (error) {
         console.error("Failed to update exposure time in backend:", error);
@@ -167,9 +167,10 @@ const LiveViewSettings = () => {
     // Also update backend immediately if connected
     if (connectionSettingsState.ip && connectionSettingsState.apiPort) {
       try {
+        const api = createAxiosInstance();
         const encodedLaserName = encodeURIComponent(laserName);
-        await fetch(
-          `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/LaserController/setLaserValue?laserName=${encodedLaserName}&value=${value}`
+        await api.get(
+          `/LaserController/setLaserValue?laserName=${encodedLaserName}&value=${value}`
         );
       } catch (error) {
         console.error("Failed to update laser intensity in backend:", error);
@@ -184,9 +185,10 @@ const LiveViewSettings = () => {
     // Also update backend immediately if connected
     if (connectionSettingsState.ip && connectionSettingsState.apiPort) {
       try {
+        const api = createAxiosInstance();
         const encodedLaserName = encodeURIComponent(laserName);
-        await fetch(
-          `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/LaserController/setLaserActive?laserName=${encodedLaserName}&active=${active}`
+        await api.get(
+          `/LaserController/setLaserActive?laserName=${encodedLaserName}&active=${active}`
         );
       } catch (error) {
         console.error("Failed to update laser active state in backend:", error);
@@ -201,8 +203,9 @@ const LiveViewSettings = () => {
     // Also update backend immediately if connected
     if (connectionSettingsState.ip && connectionSettingsState.apiPort) {
       try {
-        await fetch(
-          `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/SettingsController/setDetectorGain?gain=${value}`
+        const api = createAxiosInstance();
+        await api.get(
+          `/SettingsController/setDetectorGain?gain=${value}`
         );
       } catch (error) {
         console.error("Failed to update detector gain in backend:", error);

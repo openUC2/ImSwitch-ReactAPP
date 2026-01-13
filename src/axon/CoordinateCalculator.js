@@ -17,6 +17,10 @@ import * as wsUtils from './WellSelectorUtils';
  * @returns {Object} Complete scan configuration with ordered coordinates and metadata
  */
 export function calculateScanCoordinates(experimentState, objectiveState, wellSelectorState) {
+  // Use experiment state is_snakescan as primary, with wellSelectorState as fallback
+  // This ensures TilingDimension snake toggle takes precedence
+  const isSnakeScan = experimentState.parameterValue.is_snakescan ?? wellSelectorState.areaSelectSnakescan ?? false;
+  
   const scanConfig = {
     version: "1.0",
     scanAreas: [],
@@ -26,7 +30,7 @@ export function calculateScanCoordinates(experimentState, objectiveState, wellSe
       fovY: objectiveState.fovY,
       overlapWidth: experimentState.parameterValue.overlapWidth || 0,
       overlapHeight: experimentState.parameterValue.overlapHeight || 0,
-      scanPattern: wellSelectorState.areaSelectSnakescan ? "snake" : "raster"
+      scanPattern: isSnakeScan ? "snake" : "raster"
     }
   };
 
@@ -133,9 +137,11 @@ function processScanPoint(point, pointIndex, experimentState, objectiveState, we
   }
 
   // Apply scan pattern ordering (snake vs raster)
+  // Use experiment state is_snakescan as primary, with wellSelectorState as fallback
+  const isSnakeScan = experimentState.parameterValue.is_snakescan ?? wellSelectorState.areaSelectSnakescan ?? false;
   const orderedPositions = applyScanPattern(
     rawPositions,
-    wellSelectorState.areaSelectSnakescan
+    isSnakeScan
   );
 
   // Calculate bounding box for metadata
@@ -151,7 +157,7 @@ function processScanPoint(point, pointIndex, experimentState, objectiveState, we
       y: point.y
     },
     bounds: bounds,
-    scanPattern: wellSelectorState.areaSelectSnakescan ? "snake" : "raster",
+    scanPattern: isSnakeScan ? "snake" : "raster",
     positions: orderedPositions.map((pos, idx) => ({
       index: idx,
       x: pos.x,

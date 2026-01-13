@@ -1,6 +1,7 @@
 // src/components/STORMControllerArkitekt.js
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import createAxiosInstance from '../backendapi/createAxiosInstance';
 import {
   Paper,
   Tabs,
@@ -127,13 +128,12 @@ const STORMControllerArkitekt = () => {
   // Arkitekt operations
   const connectToArkitekt = async () => {
     try {
-      const response = await fetch(
-        `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/ArkitektController/connect`
+      const api = createAxiosInstance();
+      const response = await api.get(
+        `/ArkitektController/connect`
       );
-      if (response.ok) {
-        setArkitektConnected(true);
-        await loadAvailableWorkflows();
-      }
+      setArkitektConnected(true);
+      await loadAvailableWorkflows();
     } catch (error) {
       console.error("Error connecting to Arkitekt:", error);
     }
@@ -141,13 +141,12 @@ const STORMControllerArkitekt = () => {
 
   const loadAvailableWorkflows = async () => {
     try {
-      const response = await fetch(
-        `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/ArkitektController/getWorkflows`
+      const api = createAxiosInstance();
+      const response = await api.get(
+        `/ArkitektController/getWorkflows`
       );
-      if (response.ok) {
-        const workflows = await response.json();
-        setAvailableWorkflows(workflows);
-      }
+      const workflows = response.data;
+      setAvailableWorkflows(workflows);
     } catch (error) {
       console.error("Error loading workflows:", error);
     }
@@ -155,20 +154,15 @@ const STORMControllerArkitekt = () => {
 
   const startArkitektProcessing = async () => {
     try {
-      const response = await fetch(
-        `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/ArkitektController/startWorkflow`,
+      const api = createAxiosInstance();
+      const response = await api.post(
+        `/ArkitektController/startWorkflow`,
         {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            workflow: selectedWorkflow,
-            parameters: acquisitionParameters,
-          }),
+          workflow: selectedWorkflow,
+          parameters: acquisitionParameters,
         }
       );
-      if (response.ok) {
-        setWorkflowStatus("running");
-      }
+      setWorkflowStatus("running");
     } catch (error) {
       console.error("Error starting Arkitekt processing:", error);
     }
@@ -176,13 +170,11 @@ const STORMControllerArkitekt = () => {
 
   const stopArkitektProcessing = async () => {
     try {
-      const response = await fetch(
-        `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/ArkitektController/stopWorkflow`,
-        { method: "POST" }
+      const api = createAxiosInstance();
+      const response = await api.post(
+        `/ArkitektController/stopWorkflow`
       );
-      if (response.ok) {
-        setWorkflowStatus("stopped");
-      }
+      setWorkflowStatus("stopped");
     } catch (error) {
       console.error("Error stopping Arkitekt processing:", error);
     }

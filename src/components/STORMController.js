@@ -1,6 +1,7 @@
 // src/components/STORMController.js
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import createAxiosInstance from '../backendapi/createAxiosInstance';
 import {
   Paper,
   Tabs,
@@ -137,14 +138,13 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
       } else if (connectionSettingsState.ip && connectionSettingsState.apiPort) {
         // Try to get a snapshot from the backend for initial cropping
         try {
-          const response = await fetch(
-            `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/DetectorController/getLatestDetectorFrame`
+          const api = createAxiosInstance();
+          const response = await api.get(
+            `/DetectorController/getLatestDetectorFrame`,
+            { responseType: 'blob' }
           );
-          if (response.ok) {
-            const blob = await response.blob();
-            const dataUrl = URL.createObjectURL(blob);
-            setCropImage(dataUrl);
-          }
+          const dataUrl = URL.createObjectURL(response.data);
+          setCropImage(dataUrl);
         } catch (error) {
           console.warn("Could not load initial crop image:", error);
           // Use a placeholder or the current live stream image
@@ -161,13 +161,12 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
     const fetchDetectorGain = async () => {
       if (connectionSettingsState.ip && connectionSettingsState.apiPort) {
         try {
-          const response = await fetch(
-            `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/SettingsController/getDetectorParameters`
+          const api = createAxiosInstance();
+          const response = await api.get(
+            `/SettingsController/getDetectorParameters`
           );
-          if (response.ok) {
-            const data = await response.json();
-            setDetectorGain(data.gain || 0);
-          }
+          const data = response.data;
+          setDetectorGain(data.gain || 0);
         } catch (error) {
           console.error("Error fetching detector gain:", error);
         }
@@ -246,18 +245,17 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
         // Fetch current laser values from backend
         if (connectionSettingsState.ip && connectionSettingsState.apiPort) {
           try {
+            const api = createAxiosInstance();
             const laserValues = await Promise.all(
               parameterRangeState.illuSources.map(async (laserName) => {
                 try {
                   const encodedLaserName = encodeURIComponent(laserName);
-                  const response = await fetch(
-                    `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/LaserController/getLaserValue?laserName=${encodedLaserName}`
+                  const response = await api.get(
+                    `/LaserController/getLaserValue?laserName=${encodedLaserName}`
                   );
                   
-                  if (response.ok) {
-                    const value = await response.json();
-                    return { laserName, value: typeof value === 'number' ? value : 0 };
-                  }
+                  const value = response.data;
+                  return { laserName, value: typeof value === 'number' ? value : 0 };
                 } catch (error) {
                   console.warn(`Failed to fetch value for laser ${laserName}:`, error);
                 }
@@ -390,8 +388,9 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
     // Update backend immediately
     if (connectionSettingsState.ip && connectionSettingsState.apiPort) {
       try {
-        await fetch(
-          `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/SettingsController/setDetectorExposureTime?exposureTime=${newValue}`
+        const api = createAxiosInstance();
+        await api.get(
+          `/SettingsController/setDetectorExposureTime?exposureTime=${newValue}`
         );
       } catch (error) {
         console.error("Failed to update exposure time in backend:", error);
@@ -406,9 +405,10 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
     // Also update backend immediately if connected
     if (connectionSettingsState.ip && connectionSettingsState.apiPort) {
       try {
+        const api = createAxiosInstance();
         const encodedLaserName = encodeURIComponent(laserName);
-        await fetch(
-          `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/LaserController/setLaserValue?laserName=${encodedLaserName}&value=${value}`
+        await api.get(
+          `/LaserController/setLaserValue?laserName=${encodedLaserName}&value=${value}`
         );
       } catch (error) {
         console.error("Failed to update laser intensity in backend:", error);
@@ -423,9 +423,10 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
     // Also update backend immediately if connected
     if (connectionSettingsState.ip && connectionSettingsState.apiPort) {
       try {
+        const api = createAxiosInstance();
         const encodedLaserName = encodeURIComponent(laserName);
-        await fetch(
-          `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/LaserController/setLaserActive?laserName=${encodedLaserName}&active=${active}`
+        await api.get(
+          `/LaserController/setLaserActive?laserName=${encodedLaserName}&active=${active}`
         );
       } catch (error) {
         console.error("Failed to update laser active state in backend:", error);
@@ -440,8 +441,9 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
     // Also update backend immediately if connected
     if (connectionSettingsState.ip && connectionSettingsState.apiPort) {
       try {
-        await fetch(
-          `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/SettingsController/setDetectorGain?gain=${value}`
+        const api = createAxiosInstance();
+        await api.get(
+          `/SettingsController/setDetectorGain?gain=${value}`
         );
       } catch (error) {
         console.error("Failed to update detector gain in backend:", error);
@@ -483,12 +485,12 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
   // Load image from backend and stretch
   const handleLoadImage = async () => {
     try {
-      const response = await fetch(
-        `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/RecordingController/snapNumpyToFastAPI?resizeFactor=1`
+      const api = createAxiosInstance();
+      const response = await api.get(
+        `/RecordingController/snapNumpyToFastAPI?resizeFactor=1`,
+        { responseType: 'blob' }
       );
-      if (!response.ok) throw new Error("Failed to load image");
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
+      const url = URL.createObjectURL(response.data);
       // Get true pixel dimensions
       const img = new window.Image();
       img.onload = async () => {
@@ -688,7 +690,7 @@ const STORMController = ({ hostIP, hostPort, WindowTitle }) => {
     try {
       const imagePath = await apiSTORMControllerGetLastReconstructedImagePath();
       if (imagePath && connectionSettingsState.ip && connectionSettingsState.apiPort) {
-        // Construct the URL to load the image
+        // Construct the URL to load the image - keep full URL for image preview
         const imageUrl = `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/FileManager/preview/${encodeURIComponent(imagePath)}`;
         dispatch(stormSlice.setReconstructedImage(imageUrl));
       }

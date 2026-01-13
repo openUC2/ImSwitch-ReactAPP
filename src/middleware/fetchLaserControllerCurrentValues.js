@@ -1,3 +1,4 @@
+import createAxiosInstance from '../backendapi/createAxiosInstance';
 import * as experimentSlice from "../state/slices/ExperimentSlice.js";
 
 /**
@@ -13,21 +14,17 @@ const fetchLaserControllerCurrentValues = async (dispatch, connectionSettings, l
   }
 
   try {
+    const api = createAxiosInstance();
     // Fetch current values for each laser
     const laserValues = await Promise.all(
       laserNames.map(async (laserName, index) => {
         try {
           const encodedLaserName = encodeURIComponent(laserName);
-          const response = await fetch(
-            `${connectionSettings.ip}:${connectionSettings.apiPort}/imswitch/api/LaserController/getLaserValue?laserName=${encodedLaserName}`
+          const response = await api.get(
+            `/LaserController/getLaserValue?laserName=${encodedLaserName}`
           );
           
-          if (!response.ok) {
-            console.warn(`Failed to fetch value for laser ${laserName}: ${response.status}`);
-            return 0; // Default value if fetch fails
-          }
-          
-          const value = await response.json();
+          const value = response.data;
           return typeof value === 'number' ? value : 0;
         } catch (error) {
           console.error(`Error fetching value for laser ${laserName}:`, error);

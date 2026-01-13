@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import createAxiosInstance from '../../backendapi/createAxiosInstance';
 import {
   Box,
   Typography,
@@ -207,10 +208,11 @@ const ExperimentDesigner = () => {
   };
 
   const handleOpenVizarr = () => {
-    fetch(
-      `${connectionSettings.ip}:${connectionSettings.apiPort}/imswitch/api/ExperimentController/getLastScanAsOMEZARR`
+    const api = createAxiosInstance();
+    api.get(
+      `/ExperimentController/getLastScanAsOMEZARR`
     )
-      .then((res) => res.json())
+      .then((res) => res.data)
       .then((data) => {
         const lastZarrPath = data || "";
         if (lastZarrPath) {

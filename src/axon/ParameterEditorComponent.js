@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import createAxiosInstance from '../backendapi/createAxiosInstance';
 import { FormControlLabel, Switch, Tooltip, IconButton, Button } from "@mui/material";
 import { Info as InfoIcon } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
@@ -87,9 +88,10 @@ const ParameterEditorComponent = () => {
     const laserName = parameterRange.illuSources[idx];
     if (laserName && connectionSettingsState.ip && connectionSettingsState.apiPort) {
       try {
+        const api = createAxiosInstance();
         const encodedLaserName = encodeURIComponent(laserName);
-        await fetch(
-          `${connectionSettingsState.ip}:${connectionSettingsState.apiPort}/imswitch/api/LaserController/setLaserValue?laserName=${encodedLaserName}&value=${value}`
+        await api.get(
+          `/LaserController/setLaserValue?laserName=${encodedLaserName}&value=${value}`
         );
       } catch (error) {
         console.error("Failed to update laser intensity in backend:", error);

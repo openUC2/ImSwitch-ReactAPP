@@ -70,6 +70,10 @@ const initialExperimentState = {
     gains: 0,
     exposureTimes: 0,
     performanceMode: false,
+    // Performance mode advanced settings
+    performanceTriggerMode: "hardware", // "hardware" (external trigger) or "software" (callback-based)
+    performanceTPreMs: 90,   // Pre-exposure settle time in milliseconds
+    performanceTPostMs: 50,  // Post-exposure time (exposure) in milliseconds
     ome_write_tiff: false,
     ome_write_zarr: false,
     ome_write_stitched_tiff: true,
@@ -216,6 +220,18 @@ const experimentSlice = createSlice({
       console.log("setPerformanceMode", action.payload);
       state.parameterValue.performanceMode = action.payload;
     },
+    setPerformanceTriggerMode: (state, action) => {
+      console.log("setPerformanceTriggerMode", action.payload);
+      state.parameterValue.performanceTriggerMode = action.payload; // "hardware" or "software"
+    },
+    setPerformanceTPreMs: (state, action) => {
+      console.log("setPerformanceTPreMs", action.payload);
+      state.parameterValue.performanceTPreMs = Math.max(0, action.payload);
+    },
+    setPerformanceTPostMs: (state, action) => {
+      console.log("setPerformanceTPostMs", action.payload);
+      state.parameterValue.performanceTPostMs = Math.max(0, action.payload);
+    },
     setOmeWriteTiff: (state, action) => {
       console.log("setOmeWriteTiff", action.payload);
       state.parameterValue.ome_write_tiff = action.payload;
@@ -327,6 +343,9 @@ export const {
   setGains,
   setExposureTimes,
   setPerformanceMode,
+  setPerformanceTriggerMode,
+  setPerformanceTPreMs,
+  setPerformanceTPostMs,
   setOmeWriteTiff,
   setOmeWriteZarr,
   setOmeWriteStitchedTiff,

@@ -19,6 +19,7 @@ import LepMonController from "./components/LepmonController.js";
 import LightsheetController from "./components/LightsheetController.jsx";
 import LiveView from "./components/LiveView.js";
 import MazeGameController from "./components/MazeGameController.js";
+import MotorSettingsController from "./components/MotorSettingsController.jsx";
 import ObjectiveController from "./components/ObjectiveController.js";
 import LargeFovScanController from "./components/OpenLayers.js";
 import SocketView from "./components/SocketView.js";
@@ -445,6 +446,7 @@ function App() {
           {selectedPlugin === "Objective" && <ObjectiveController />}
           {selectedPlugin === "About" && <AboutPage />}
           {selectedPlugin === "SystemSettings" && <SystemSettings />}
+          {selectedPlugin === "MotorSettings" && <MotorSettingsController />}
           {selectedPlugin === "FileManager" && (
             <div className="app" style={{ width: "100%", maxWidth: "100%" }}>
               <div
